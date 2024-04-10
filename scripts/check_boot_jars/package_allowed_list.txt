@@ -263,6 +263,10 @@ org\.chromium\.arc\..*
 com\.nvidia
 com\.nvidia\..*
 
+# Nothing
+com\.nothing
+com\.nothing\..*
+
 # OPLUS adds
 com\.oplus\..*
 net\.oneplus\..*
