@@ -259,6 +259,10 @@ com\.google\.i18n\.phonenumbers
 org\.chromium\.arc
 org\.chromium\.arc\..*
 
+# Nothing
+com\.nothing
+com\.nothing\..*
+
 # OPLUS adds
 com\.oplus\..*
 net\.oneplus\..*
