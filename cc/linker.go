@@ -863,3 +863,11 @@ func XomEnabledByModule(ctx android.BaseModuleContext) bool {
 	}
 	return false
 }
+
+// XomEnabledForModule returns whether the module implicitly or explicitly has XOM
+// enabled. This differs from XomEnabledByModule, which checks if XOM is explicitly
+// enabled.
+func XomEnabledForModule(ctx android.BaseModuleContext) bool {
+	return ctx.Arch().ArchType == android.Arm64 && ctx.Config().EnableXOM() &&
+		!ctx.Config().XOMDisabledForPath(ctx.ModuleDir()) && !XomDisabledByModule(ctx)
+}

@@ -778,6 +778,28 @@ func toDisableUnsignedShiftBaseChange(flags []string) bool {
 	return false
 }
 
+func toDisableFunctionAndKcfiSanitizer(ctx ModuleContext, flags []string) bool {
+	// Function and kcfi sanitizers are not compatible with execute-only mode.
+	// If either of them are enabled explicitly together with XOM, then throw an error.
+	// If none of them is enabled explicitly they still need to be disabled if
+	// execute-only is on, as they still can be enabled implicitly via undefined sanitizer.
+
+	// XomEnabledForModule may return true even if a static dependency disables XOM in this module.
+	// In those cases we should still error out since it makes more sense for the module definition
+	// to be explicit with regard to XOM and this sanitizer mixing. Otherwise, changing static
+	// dependencies may result in this error appearing and disappearing in a non-obvious manner.
+	if XomEnabledForModule(ctx) {
+		for _, f := range flags {
+			if strings.HasPrefix(f, "-fsanitize") &&
+				(strings.Contains(f, "function") || strings.Contains(f, "kcfi")) {
+				ctx.ModuleErrorf("\nFunction and kcfi sanitizers are not supported with XOMenabled")
+			}
+		}
+		return true
+	}
+	return false
+}
+
 func (s *sanitize) flags(ctx ModuleContext, flags Flags) Flags {
 	if s.Properties.ForceDisable {
 		return flags
@@ -966,6 +988,10 @@ func (s *sanitize) flags(ctx ModuleContext, flags Flags) Flags {
 		// http://b/171275751, Android doesn't build with this sanitizer yet.
 		if toDisableUnsignedShiftBaseChange(flags.Local.CFlags) {
 			flags.Local.CFlags = append(flags.Local.CFlags, "-fno-sanitize=unsigned-shift-base")
+		}
+
+		if toDisableFunctionAndKcfiSanitizer(ctx, flags.Local.CFlags) {
+			flags.Local.CFlags = append(flags.Local.CFlags, "-fno-sanitize=function", "-fno-sanitize=kcfi")
 		}
 	}
 
