@@ -921,7 +921,8 @@ func (j *Module) deps(ctx android.BottomUpMutatorContext) {
 	if ctx.Device() {
 		j.linter.deps(ctx)
 
-		sdkDeps(ctx, android.SdkContext(j), j.dexer)
+		compileDex := proptools.Bool(j.properties.Installable) || proptools.Bool(j.dexProperties.Compile_dex)
+		sdkDeps(ctx, android.SdkContext(j), compileDex)
 
 		if j.deviceProperties.SyspropPublicStub != "" {
 			// This is a sysprop implementation library that has a corresponding sysprop public
@@ -2226,7 +2227,7 @@ func (j *Module) collectProguardSpecInfo(ctx android.ModuleContext) ProguardSpec
 	transitiveProguardFlags, transitiveUnconditionalExportedFlags := collectDepProguardSpecInfo(ctx)
 
 	directUnconditionalExportedFlags := android.Paths{}
-	proguardFlagsForThisModule := android.PathsForModuleSrc(ctx, j.dexProperties.Optimize.Proguard_flags_files)
+	proguardFlagsForThisModule := android.PathsForModuleSrc(ctx, j.ProguardFlagsFiles(ctx))
 	exportUnconditionally := proptools.Bool(j.dexProperties.Optimize.Export_proguard_flags_files)
 	if exportUnconditionally {
 		// if we explicitly export, then our unconditional exports are the same as our transitive flags
