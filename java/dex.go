@@ -52,6 +52,14 @@ type DexProperties struct {
 		// True if the module containing this has it set by default.
 		EnabledByDefault bool `blueprint:"mutated"`
 
+		// If true, force disable all optimizations and the use of R8, overriding
+		// the enabled property. As opposed to that one, this is not configurable
+		// with select(), and when true it avoids the otherwise automatically added
+		// dependencies on boot classpath and framework APIs that are required by
+		// R8, which can be necessary to avoid dependency cycles. true by default
+		// for stubs.
+		Force_disabled *bool
+
 		// If true, then `d8` will be used on eng builds instead of `r8`, even though
 		// optimize.enabled is true.
 		D8_on_eng *bool
@@ -198,11 +206,41 @@ type dexer struct {
 	resourcesOutput         android.OptionalPath
 
 	providesTransitiveHeaderJarsForR8
+
+	// Overrides the force_disabled property if true. Set in the deps stage
+	// (before any R8 dependencies may be added), because it needs to take the
+	// is_stubs_module property into account.
+	optimizeForceDisabled bool
+}
+
+func (d *dexer) setOptimizeForceDisabled(isStub bool) {
+	if isStub {
+		// Always force disable R8 on stubs to avoid cyclic dependencies between
+		// them, since we add the SDK libraries to all R8 invocations. It's not
+		// useful on stubs anyway.
+		d.optimizeForceDisabled = true
+	}
+}
+
+func (d *dexer) isOptimizeForceDisabled(ctx android.EarlyModuleContext) bool {
+	if d.optimizeForceDisabled {
+		return true
+	}
+	// TODO(b/418247371): Force disable R8 by default when coverage is enabled,
+	// unless enabled by default for the module type (e.g. android_app). Necessary
+	// because coverage forces source stubs (cf. BuildFromTextStub in
+	// android/config.go), which create dependency cycles with the extra SDK
+	// dependencies added for R8.
+	disabledByDefault := ctx.Config().JavaCoverageEnabled() && !d.dexProperties.Optimize.EnabledByDefault
+	return proptools.BoolDefault(d.dexProperties.Optimize.Force_disabled, disabledByDefault)
 }
 
 func (d *dexer) effectiveOptimizeEnabled(ctx android.ModuleContext) bool {
 	// For eng builds, if Optimize.D8_on_eng is true, then disable optimization.
 	if ctx.Config().Eng() && proptools.Bool(d.dexProperties.Optimize.D8_on_eng) {
+		return false
+	}
+	if d.isOptimizeForceDisabled(ctx) {
 		return false
 	}
 	// Otherwise, use the legacy logic of a default value which can be explicitly overridden by the module.
