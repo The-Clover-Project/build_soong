@@ -60,6 +60,7 @@ type compiler interface {
 	cfgFlags(ctx ModuleContext, flags Flags) Flags
 	featureFlags(ctx ModuleContext, flags Flags) Flags
 	baseCompilerProps() BaseCompilerProperties
+	useExpansiveDefaultSrcs() bool
 	compilerProps() []any
 	compile(ctx ModuleContext, flags Flags, deps PathDeps) buildOutput
 	compilerDeps(ctx DepsContext, deps Deps) Deps
@@ -698,13 +699,17 @@ func (compiler *baseCompiler) crateRootPath(ctx ModuleContext) android.Path {
 	}
 }
 
+func (compiler *baseCompiler) useExpansiveDefaultSrcs() bool {
+	return BoolDefault(compiler.Properties.Use_expansive_default_srcs, true)
+}
+
 func (compiler *baseCompiler) crateSources(ctx ModuleContext) android.Paths {
 	crateSources := android.PathsForModuleSrc(ctx, compiler.Properties.Srcs.GetOrDefault(ctx, nil))
 
 	// By default use an expansive set of required sources.
 	// Check for UseREWrapper here since this isn't necessary for local builds and can
 	// break some tests as the MockFS doesn't support globbing in all instances.
-	if BoolDefault(compiler.Properties.Use_expansive_default_srcs, true) && ctx.Config().IsEnvTrue("RBE_RUST") && ctx.Config().IsEnvTrue("USE_REWRAPPER") {
+	if compiler.useExpansiveDefaultSrcs() && ctx.Config().IsEnvTrue("RBE_RUST") && ctx.Config().IsEnvTrue("USE_REWRAPPER") {
 		crateSources = append(crateSources, android.PathsForModuleSrc(ctx,
 			[]string{
 				"*.md",

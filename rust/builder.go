@@ -35,8 +35,9 @@ var (
 			Command: "$relPwd $reTemplate/usr/bin/env $envVars ${RustcWrapper} ${rustcCmd} " +
 				"-C linker=${RustcLinkerCmd} -C link-args=\"--android-clang-bin=${config.ClangCmd} ${linkerScriptFlags}\" " +
 				"-C link-args=@${out}.clang.rsp " +
-				"--emit ${emitType} -o $out --emit dep-info=$out.d.raw $in ${libFlags} $rustcFlags",
-			CommandDeps:     []string{"$rustcCmd", "${RustcLinkerCmd}", "${config.ClangCmd}", "${RustcWrapper}"},
+				"--emit ${emitType} -o $out --emit dep-info=$out.d.raw $in ${libFlags} $rustcFlags" +
+				" && ${DepfileVerifier} ${depfileVerifierSkip} --check-suffix-only $out.d ${soongSrcsFile}",
+			CommandDeps:     []string{"$rustcCmd", "${RustcLinkerCmd}", "${config.ClangCmd}", "${DepfileVerifier}", "${RustcWrapper}"},
 			Rspfile:         "${out}.clang.rsp",
 			RspfileContent:  "${crtBegin} ${earlyLinkFlags} ${linkFlags} ${crtEnd}",
 			Deps:            blueprint.DepsGCC,
@@ -56,11 +57,12 @@ var (
 				"${RustcLinkerCmd}",
 				"${config.ClangCmd}",
 				"${config.LlvmDlltool}",
+				"${DepfileVerifier}",
 				"${RustcWrapper}",
 			},
 			Platform: map[string]string{remoteexec.PoolKey: "${config.RERustPool}"},
 		},
-		[]string{"rustcFlags", "linkerScriptFlags", "earlyLinkFlags", "linkFlags", "libFlags", "crtBegin", "crtEnd", "emitType", "envVars"},
+		[]string{"rustcFlags", "linkerScriptFlags", "earlyLinkFlags", "linkFlags", "libFlags", "crtBegin", "crtEnd", "emitType", "envVars", "soongSrcsFile", "depfileVerifierSkip"},
 		[]string{"rbeRspFile"})
 
 	_       = pctx.SourcePathVariable("rustdocCmd", "${config.RustBin}/rustdoc")
@@ -124,23 +126,25 @@ func init() {
 	pctx.HostBinToolVariable("SoongZipCmd", "soong_zip")
 	pctx.HostBinToolVariable("RustcLinkerCmd", "rustc_linker")
 	pctx.HostBinToolVariable("RustcWrapper", "rustc_wrapper")
+	pctx.HostBinToolVariable("DepfileVerifier", "depfile_verifier")
 	pctx.StaticVariable("relPwd", cc.PwdPrefix())
 
 	cc.TransformRlibstoStaticlib = TransformRlibstoStaticlib
 }
 
 type transformProperties struct {
-	crateName       string
-	targetTriple    string
-	is64Bit         bool
-	bootstrap       bool
-	inRecovery      bool
-	inRamdisk       bool
-	inVendorRamdisk bool
-	cargoOutDir     android.OptionalPath
-	synthetic       bool
-	crateType       string
-	emitType        string
+	crateName               string
+	targetTriple            string
+	is64Bit                 bool
+	bootstrap               bool
+	inRecovery              bool
+	inRamdisk               bool
+	inVendorRamdisk         bool
+	cargoOutDir             android.OptionalPath
+	synthetic               bool
+	crateType               string
+	emitType                string
+	useExpansiveDefaultSrcs bool
 }
 
 // Populates a standard transformProperties struct for Rust modules
@@ -163,6 +167,8 @@ func getTransformProperties(ctx ModuleContext, crateType string) transformProper
 		synthetic: false,
 
 		emitType: module.compiler.emitType(),
+
+		useExpansiveDefaultSrcs: module.compiler.useExpansiveDefaultSrcs(),
 	}
 }
 
@@ -222,6 +228,10 @@ func TransformRlibstoStaticlib(ctx android.ModuleContext, mainSrc android.Path, 
 
 		// synthetic indicates whether this is an actual Rust module or not
 		synthetic: true,
+
+		// To match the default value of useExpansiveDefaultSrcs() from rust'd baseCompiler.
+		// Should switch to false in the future.
+		useExpansiveDefaultSrcs: true,
 	}
 
 	rustFlags = CommonDefaultFlags(ctx, toolchain, rustFlags)
@@ -453,6 +463,14 @@ func transformSrctoCrate(ctx android.ModuleContext, main android.Path, deps Path
 
 	orderOnly = append(orderOnly, deps.SharedLibs...)
 
+	srcInputs := android.Paths{}
+	srcInputs = append(srcInputs, main)
+	srcInputs = append(srcInputs, deps.srcProviderFiles...)
+	srcInputs = append(srcInputs, deps.SrcFiles...)
+	// AFDO profiles are included in Rusts deps file, so include these here
+	// so they're not missing when comparing inputs.
+	srcInputs = append(srcInputs, deps.AfdoProfiles...)
+
 	if !t.synthetic {
 		// Only worry about OUT_DIR for actual Rust modules.
 		// Libraries built from cc use generated source, and do not utilize OUT_DIR.
@@ -464,7 +482,9 @@ func transformSrctoCrate(ctx android.ModuleContext, main android.Path, deps Path
 					ctx.PropertyErrorf("srcs",
 						"multiple source providers generate the same filename output: "+genSrc.Base())
 				}
-				outputs = append(outputs, android.PathForModuleOut(ctx, genSubDir+genSrc.Base()))
+				copiedFile := android.PathForModuleOut(ctx, genSubDir+genSrc.Base())
+				outputs = append(outputs, copiedFile)
+				srcInputs = append(srcInputs, copiedFile)
 			}
 
 			ctx.Build(pctx, android.BuildParams{
@@ -532,17 +552,28 @@ func transformSrctoCrate(ctx android.ModuleContext, main android.Path, deps Path
 		}
 	}
 
+	soongDepsFile := android.PathForModuleOut(ctx, outputFile.Base()+".soong_deps")
+	android.WriteFileRule(ctx, soongDepsFile, strings.Join(srcInputs.Strings(), "\n"))
+	implicits = append(implicits, soongDepsFile)
+
+	depfileVerifierSkipFlag := "--skip"
+	if !t.useExpansiveDefaultSrcs {
+		depfileVerifierSkipFlag = ""
+	}
+
 	rule := rustc
 	args := map[string]string{
-		"rustcFlags":        strings.Join(rustcFlags, " "),
-		"linkerScriptFlags": strings.Join(linkerScriptFlags, " "),
-		"earlyLinkFlags":    earlyLinkFlags,
-		"linkFlags":         strings.Join(linkFlags, " "),
-		"libFlags":          strings.Join(libFlags, " "),
-		"crtBegin":          strings.Join(deps.CrtBegin.Strings(), " "),
-		"crtEnd":            strings.Join(deps.CrtEnd.Strings(), " "),
-		"envVars":           rustStringifyEnvVars(envVars),
-		"emitType":          t.emitType,
+		"rustcFlags":          strings.Join(rustcFlags, " "),
+		"linkerScriptFlags":   strings.Join(linkerScriptFlags, " "),
+		"earlyLinkFlags":      earlyLinkFlags,
+		"linkFlags":           strings.Join(linkFlags, " "),
+		"libFlags":            strings.Join(libFlags, " "),
+		"crtBegin":            strings.Join(deps.CrtBegin.Strings(), " "),
+		"crtEnd":              strings.Join(deps.CrtEnd.Strings(), " "),
+		"envVars":             rustStringifyEnvVars(envVars),
+		"emitType":            t.emitType,
+		"soongSrcsFile":       soongDepsFile.String(),
+		"depfileVerifierSkip": depfileVerifierSkipFlag,
 	}
 
 	// If SrcFiles populating is ever tied to some other property being set
@@ -551,14 +582,10 @@ func transformSrctoCrate(ctx android.ModuleContext, main android.Path, deps Path
 		rule = rustcRbe
 		rbeInputs := android.Paths{}
 		rbeInputs = append(rbeInputs, implicits...)
-		rbeInputs = append(rbeInputs, deps.SrcDeps...)
-		rbeInputs = append(rbeInputs, deps.srcProviderFiles...)
-		rbeInputs = append(rbeInputs, main)
+		rbeInputs = append(rbeInputs, srcInputs...)
 		rbeInputs = append(rbeInputs, depset.New(depset.PREORDER, deps.directApexImplementationDeps, deps.transitiveApexImplementationDeps).ToList()...)
 		rbeInputs = append(rbeInputs, depset.New(depset.PREORDER, deps.directNonApexImplementationDeps, deps.transitiveNonApexImplementationDeps).ToList()...)
-		rbeInputs = append(rbeInputs, deps.SrcFiles...)
 		rbeInputs = android.FirstUniquePaths(rbeInputs)
-
 		// Produce an rsp file for RBE as the inputs list can easily grow too large.
 		rbeRustRspFile := android.PathForModuleOut(ctx, "", outputFile.Base()+".rbe.rsp")
 		android.WriteFileRule(ctx, rbeRustRspFile, strings.Join(rbeInputs.Strings(), "\n"))
