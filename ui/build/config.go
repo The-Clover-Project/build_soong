@@ -167,6 +167,9 @@ type configImpl struct {
 
 	// Control which JDK is used for builds
 	useJdk25 bool
+
+	// The directory where Siso config can be found.
+	sisoConfigDir string
 }
 
 type NinjaWeightListSource uint
@@ -373,6 +376,12 @@ func newConfig(ctx Context, isDumpVar bool, args ...string) Config {
 			} else {
 				ret.environ.Unset("USE_REWRAPPER")
 			}
+		}
+	} else {
+		if value, ok := ret.environ.Get("SISO_CONFIG_DIR"); ok {
+			ret.sisoConfigDir = value
+		} else {
+			ret.sisoConfigDir = "build/soong/siso_config"
 		}
 	}
 
@@ -1849,6 +1858,9 @@ func (c *configImpl) N2Bin() string {
 }
 
 func (c *configImpl) SisoBin() string {
+	// TODO(b/374176257): remove this once Siso is built from source.
+	return filepath.Join("prebuilts/siso", c.HostPrebuiltTag(), "siso")
+
 	path := c.PrebuiltBuildTool("siso")
 	// Use musl instead of glibc because glibc on the build server is old and has bugs
 	return strings.ReplaceAll(path, "/linux-x86/", "/linux_musl-x86/")
@@ -1933,6 +1945,10 @@ func (c *configImpl) LogsDir() string {
 // MkFileMetrics returns the file path for make-related metrics.
 func (c *configImpl) MkMetrics() string {
 	return filepath.Join(c.LogsDir(), "mk_metrics.pb")
+}
+
+func (c *configImpl) SisoConfigDir() string {
+	return c.sisoConfigDir
 }
 
 func (c *configImpl) SetEmptyNinjaFile(v bool) {
