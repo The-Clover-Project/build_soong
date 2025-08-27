@@ -98,7 +98,7 @@ func createState(version string, tools, inputs []string, inspect_contents bool, 
 }
 
 // We ignore any suffix digit caused by sharding.
-var InspectExtsZipRegexp = regexp.MustCompile("\\.(jar|apex|apk)[0-9]*$")
+var InspectExtsZipRegexp = regexp.MustCompile("\\.(srcjar|jar|apex|apk)[0-9]*$")
 
 // Inspect the file and extract the state of the elements in the archive.
 // If this is not an archive of some sort, nil is returned.

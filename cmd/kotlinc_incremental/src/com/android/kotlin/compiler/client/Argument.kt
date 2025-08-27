@@ -18,7 +18,8 @@ package com.android.kotlin.compiler.client
 
 import com.android.kotlin.compiler.cli.Argument
 import com.android.kotlin.compiler.cli.NoArgument
-import com.android.kotlin.compiler.cli.ReadableDirectoryArgument
+import com.android.kotlin.compiler.cli.SourceDeltaArgument
+import com.android.kotlin.compiler.cli.SrcJarsDirArgument
 import com.android.kotlin.compiler.cli.StringArgument
 import com.android.kotlin.compiler.cli.SubdirectoryArgument
 import com.android.kotlin.compiler.cli.WritableDirectoryArgument
@@ -167,18 +168,7 @@ class RootDirArgument : WritableDirectoryArgument<ClientOptions>() {
     }
 }
 
-class SrcJarsDirArgument : ReadableDirectoryArgument<ClientOptions>() {
-    override val argumentName = "src-jars-dir"
-    override val helpText =
-        """
-        Directory where src jars were unzipped into _before_ this client was invoked.
-        Any entries in the source-delta argument that are listed as being part of the
-        contents of another file should be located inside of here.
-        This option is REQUIRED.
-        """
-            .trimIndent()
-    override val default = null
-
+class SrcJarsDirArgument : SrcJarsDirArgument<ClientOptions>() {
     override fun setDirectory(dir: File, opts: ClientOptions) {
         opts.srcJarsDir = dir
     }
@@ -231,18 +221,7 @@ class BuildDirArgument : SubdirectoryArgument<ClientOptions>() {
     }
 }
 
-class SourceDeltaArgument : StringArgument<ClientOptions>() {
-    override val argumentName = "source-delta-file"
-    override val helpText =
-        """
-            Input file containing a list of added, modified, and deleted source files since the last
-            run. Additions and modifications should be the file name preceded by a +. Deletions should
-            be the file name preceded by a -. Files should be separated by white space.
-        """
-            .trimIndent()
-
-    override val default = null
-
+class SourceDeltaArgument : SourceDeltaArgument<ClientOptions>() {
     override fun setOption(option: String, opts: ClientOptions) {
         opts.sourceDeltaFileName = option
     }
