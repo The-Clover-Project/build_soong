@@ -106,6 +106,8 @@ type compiler interface {
 	moduleInfoJSON(ctx ModuleContext, moduleInfoJSON *android.ModuleInfoJSON)
 
 	emitType() string
+
+	Xom() *bool
 }
 
 func (compiler *baseCompiler) edition() string {
@@ -118,6 +120,10 @@ func (compiler *baseCompiler) setNoStdlibs() {
 
 func (compiler *baseCompiler) disableLints() {
 	compiler.Properties.Lints = proptools.StringPtr("none")
+}
+
+func (compiler *baseCompiler) Xom() *bool {
+	return compiler.Properties.Xom
 }
 
 func NewBaseCompiler(dir, dir64 string, location installLocation) *baseCompiler {
@@ -278,6 +284,11 @@ type BaseCompilerProperties struct {
 	// This is primarily for tracking sources for RBE purposes. Currently defaults
 	// to true, though this may change in the future.
 	Use_expansive_default_srcs *bool
+
+	// Xom controls whether or not xom should be enabled for this module. Setting
+	// this to false will disable xom for all dependents which link this module
+	// statically.
+	Xom *bool
 }
 
 type baseCompiler struct {
@@ -471,6 +482,10 @@ func CommonDefaultFlags(ctx android.ModuleContext, toolchain config.Toolchain, f
 			"-lpthread",
 			"-lm",
 		)
+	}
+	if ctx.Device() {
+		flags.LinkFlags = append(flags.LinkFlags, cc.XomFlags(ctx)...)
+
 	}
 	return flags
 }
