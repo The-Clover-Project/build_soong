@@ -247,7 +247,7 @@ func FindSources(ctx Context, config Config, f *finder.Finder) {
 	if config.Dist() {
 		f.WaitForDbDump()
 		// Dist the files.db plain text database.
-		distFile(ctx, config, f.DbPath, "module_paths")
+		distFile(ctx, config, f.DbPath, "soong_ui/module_paths")
 	}
 }
 
@@ -263,7 +263,7 @@ func dumpListToFile(ctx Context, config Config, list []string, filePath string) 
 		}
 	}
 
-	distFile(ctx, config, filePath, "module_paths")
+	distFile(ctx, config, filePath, "soong_ui/module_paths")
 
 	return nil
 }

@@ -273,7 +273,7 @@ func runKatiBuild(ctx Context, config Config) {
 	runKati(ctx, config, e, katiBuildSuffix, args, func(env *Environment) {})
 
 	// compress and dist the main build ninja file.
-	distGzipFile(ctx, config, config.KatiBuildNinjaFile())
+	distGzipFile(ctx, config, config.KatiBuildNinjaFile(), "soong_ui")
 
 	// Cleanup steps.
 	cleanCopyHeaders(ctx, config)
@@ -403,7 +403,7 @@ func runKatiPackage(ctx Context, config Config, soongOnly bool) {
 	})
 
 	// Compress and dist the packaging Ninja file.
-	distGzipFile(ctx, config, ninjaFile)
+	distGzipFile(ctx, config, ninjaFile, "soong_ui")
 }
 
 // Run Kati on the cleanspec files to clean the build.

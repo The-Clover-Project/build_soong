@@ -15,7 +15,10 @@
 package build
 
 import (
+	"crypto/sha256"
+	"encoding/base64"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -85,6 +88,29 @@ func SetupOutDir(ctx Context, config Config) {
 		}
 	}
 	writeValueIfChanged(ctx, filepath.Join(config.SoongOutDir(), "build_hostname.txt"), hostname)
+
+	buildTargetName, ok := config.environ.Get("BUILD_TARGET_NAME")
+	if !ok {
+		buildTargetName = config.TargetProduct()
+	}
+
+	buildUUID := buildUUID(buildTargetName, buildNumber)
+	buildUUIDFile := config.BuildUUIDFile()
+	writeValueIfChanged(ctx, buildUUIDFile, buildUUID)
+	distFileToFile(ctx, config, buildUUIDFile, "BUILD_UUID")
+}
+
+// Compute a UUID based on the hash of the build name and the build number.
+func buildUUID(targetName, number string) string {
+	h := sha256.New()
+	must := func(n int, err error) {
+		if err != nil {
+			panic(err)
+		}
+	}
+	must(io.WriteString(h, targetName))
+	must(io.WriteString(h, number))
+	return base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(h.Sum(nil))
 }
 
 // SetupTempDir makes sure config.TempDir() exists and is empty.
@@ -377,7 +403,7 @@ func Build(ctx Context, config Config) {
 	// Write combined ninja file
 	createCombinedBuildNinjaFile(ctx, config)
 
-	distGzipFile(ctx, config, config.CombinedNinjaFile())
+	distGzipFile(ctx, config, config.CombinedNinjaFile(), "soong_ui")
 
 	if what&RunBuildTests != 0 {
 		testForDanglingRules(ctx, config)
@@ -510,7 +536,18 @@ func distFile(ctx Context, config Config, src string, subDirs ...string) {
 	}
 
 	subDir := filepath.Join(subDirs...)
-	destDir := filepath.Join(config.RealDistDir(), "soong_ui", subDir)
+	distFileToFile(ctx, config, src, subDir, filepath.Base(src))
+}
+
+// distFileToFile writes a copy of src to dest in distDir if dist is enabled.  Failures are printed but
+// non-fatal. Uses the distWaitGroup func for backgrounding (optimization).
+func distFileToFile(ctx Context, config Config, src string, destParts ...string) {
+	if !config.Dist() {
+		return
+	}
+
+	dest := filepath.Join(config.RealDistDir(), filepath.Join(destParts...))
+	destDir := filepath.Dir(dest)
 
 	if err := os.MkdirAll(destDir, 0777); err != nil { // a+rwx
 		ctx.Printf("failed to mkdir %s: %s", destDir, err.Error())
@@ -519,7 +556,7 @@ func distFile(ctx Context, config Config, src string, subDirs ...string) {
 	distWaitGroup.Add(1)
 	go func() {
 		defer distWaitGroup.Done()
-		if _, err := copyFile(src, filepath.Join(destDir, filepath.Base(src))); err != nil {
+		if _, err := copyFile(src, dest); err != nil {
 			ctx.Printf("failed to dist %s: %s", filepath.Base(src), err.Error())
 		}
 	}()

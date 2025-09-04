@@ -107,6 +107,7 @@ func testForDanglingRules(ctx Context, config Config) {
 			line == buildDatetimeFilePath ||
 			line == buildHostnameFilePath ||
 			line == buildNumberFilePath ||
+			line == config.BuildUUIDFile() ||
 			strings.HasPrefix(line, releaseConfigDir) ||
 			buildFingerprintFilePattern.MatchString(line) {
 			// Leaf node is in one of Soong's bootstrap directories, which do not have

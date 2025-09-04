@@ -1989,6 +1989,14 @@ func (c *configImpl) BuildStartedTimeOrDefault(defaultTime time.Time) time.Time 
 	return time.UnixMilli(c.buildStartedTime)
 }
 
+func (c *configImpl) BuildUUIDFile() string {
+	suffix := ""
+	if targetProduct, err := c.TargetProductOrErr(); err == nil {
+		suffix = "-" + targetProduct
+	}
+	return filepath.Join(c.SoongOutDir(), "build_uuid"+suffix+".txt")
+}
+
 func GetMetricsUploader(topDir string, env *Environment) string {
 	if p, ok := env.Get("METRICS_UPLOADER"); ok {
 		metricsUploader := filepath.Join(topDir, p)

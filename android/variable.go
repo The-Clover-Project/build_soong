@@ -203,6 +203,7 @@ type ProductVariables struct {
 	BuildId                    *string `json:",omitempty"`
 	BuildFingerprintFile       *string `json:",omitempty"`
 	BuildNumberFile            *string `json:",omitempty"`
+	BuildUUIDFile              *string `json:",omitempty"`
 	BuildHostnameFile          *string `json:",omitempty"`
 	BuildSystemFingerprintFile *string `json:",omitempty"`
 	BuildThumbprintFile        *string `json:",omitempty"`
