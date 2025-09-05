@@ -17,7 +17,6 @@ package rust
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
 
 	"github.com/google/blueprint/proptools"
 
@@ -185,7 +184,6 @@ func (singleton *projectGeneratorSingleton) addCrate(ctx android.SingletonContex
 	if cargoOutDir := rustInfo.CompilerInfo.CargoOutDir; cargoOutDir.Valid() {
 		crate.Env["OUT_DIR"] = cargoOutDir.String()
 	}
-
 	for _, feature := range rustInfo.CompilerInfo.Features {
 		crate.Cfg = append(crate.Cfg, "feature=\""+feature+"\"")
 	}
@@ -201,37 +199,14 @@ func (singleton *projectGeneratorSingleton) addCrate(ctx android.SingletonContex
 		singleton.project.Crates = append(singleton.project.Crates, crate)
 	}
 	singleton.knownCrates[module.Name()] = crateInfo{Idx: idx, Deps: deps, Device: commonInfo.Target.Os.Class == android.Device}
-	outputfiles := android.OutputFilesForModule(ctx, module, "")
-	// Count the number of output files that should be used for mapping
-	numberValidOutputFiles := 0
-	validOutputIndex := 0
-	for ix, item := range outputfiles {
-		if !(strings.HasSuffix(item.String(), ".rs") || strings.HasSuffix(item.String(), ".c") || strings.HasSuffix(item.String(), ".d")) {
-			validOutputIndex = ix
-			numberValidOutputFiles += 1
-		}
-	}
-
-	buildVariant := "user"
-	if ctx.Config().Eng() {
-		buildVariant = "eng"
-	} else if ctx.Config().Debuggable() {
-		buildVariant = "userdebug"
-	}
-	if numberValidOutputFiles == 1 {
-		outputFileName := outputfiles[validOutputIndex].String()
+	if rustInfo.CompilerInfo.BuildTarget != nil {
 		mapping := rustTargetMappingJson{
-			Name:               module.Name(),
-			BuildTarget:        outputFileName,
-			CheckTarget:        outputFileName + ".checkJson",
-			SourceDir:          ctx.ModuleDir(module),
-			TargetProduct:      ctx.Config().DeviceProduct(),
-			TargetRelease:      "trunk_staging",
-			TargetBuildVariant: buildVariant,
+			Name:        module.Name(),
+			BuildTarget: rustInfo.CompilerInfo.BuildTarget.String(),
+			CheckTarget: rustInfo.CompilerInfo.CheckTarget.String(),
+			SourceDir:   ctx.ModuleDir(module),
 		}
 		singleton.targetMappings = append(singleton.targetMappings, mapping)
-	} else if numberValidOutputFiles > 1 {
-		ctx.ModuleErrorf(module, "%s", "More than one file for an output in the module")
 	}
 	return idx, true
 }

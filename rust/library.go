@@ -707,6 +707,8 @@ func (library *libraryDecorator) compile(ctx ModuleContext, flags Flags, deps Pa
 		library.strippedOutputFile = android.OptionalPathForPath(strippedOutputFile)
 	}
 	library.unstrippedOutputFile = outputFile
+	checkJsonFile := android.PathForModuleOut(ctx, outputFile.Base()+".checkJson")
+	library.checkJsonFile = android.OptionalPathForPath(checkJsonFile)
 
 	flags.RustFlags = append(flags.RustFlags, deps.depFlags...)
 	flags.LinkFlags = append(flags.LinkFlags, deps.depLinkFlags...)
@@ -763,13 +765,13 @@ func (library *libraryDecorator) compile(ctx ModuleContext, flags Flags, deps Pa
 		stubObjs := library.compileModuleLibApiStubs(ctx, ccFlags)
 		cc.BuildRustStubs(ctx, outputFile, stubObjs, ccFlags)
 	} else if library.rlib() {
-		ret.kytheFile = TransformSrctoRlib(ctx, crateRootPath, deps, flags, outputFile).kytheFile
+		ret.kytheFile = TransformSrctoRlib(ctx, crateRootPath, deps, flags, outputFile, checkJsonFile).kytheFile
 	} else if library.dylib() {
-		ret.kytheFile = TransformSrctoDylib(ctx, crateRootPath, deps, flags, outputFile).kytheFile
+		ret.kytheFile = TransformSrctoDylib(ctx, crateRootPath, deps, flags, outputFile, checkJsonFile).kytheFile
 	} else if library.static() {
-		ret.kytheFile = TransformSrctoStatic(ctx, crateRootPath, deps, flags, outputFile).kytheFile
+		ret.kytheFile = TransformSrctoStatic(ctx, crateRootPath, deps, flags, outputFile, checkJsonFile).kytheFile
 	} else if library.shared() {
-		ret.kytheFile = TransformSrctoShared(ctx, crateRootPath, deps, flags, outputFile).kytheFile
+		ret.kytheFile = TransformSrctoShared(ctx, crateRootPath, deps, flags, outputFile, checkJsonFile).kytheFile
 	}
 
 	// rlibs and dylibs propagate their shared, whole static, and rustlib dependencies

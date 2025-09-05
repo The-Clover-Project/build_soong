@@ -95,6 +95,7 @@ type compiler interface {
 
 	unstrippedOutputFilePath() android.Path
 	strippedOutputFilePath() android.OptionalPath
+	checkJsonFilePath() android.OptionalPath
 
 	crateRootPath(ctx ModuleContext) android.Path
 	crateSources(ctx ModuleContext) android.Paths
@@ -291,9 +292,10 @@ type baseCompiler struct {
 
 	// unstripped output file.
 	unstrippedOutputFile android.Path
-
 	// stripped output file.
 	strippedOutputFile android.OptionalPath
+	// checkJson output file.
+	checkJsonFile android.OptionalPath
 }
 
 func (compiler *baseCompiler) begin(ctx BaseModuleContext) {}
@@ -528,6 +530,10 @@ func (compiler *baseCompiler) unstrippedOutputFilePath() android.Path {
 
 func (compiler *baseCompiler) strippedOutputFilePath() android.OptionalPath {
 	return compiler.strippedOutputFile
+}
+
+func (compiler *baseCompiler) checkJsonFilePath() android.OptionalPath {
+	return compiler.checkJsonFile
 }
 
 func (compiler *baseCompiler) compilerDeps(ctx DepsContext, deps Deps) Deps {

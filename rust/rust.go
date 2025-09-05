@@ -51,6 +51,8 @@ type CompilerInfo struct {
 	Features               []string
 	CrateRootPath          android.Path
 	LibraryInfo            *LibraryInfo
+	BuildTarget            android.Path
+	CheckTarget            android.OptionalPath
 }
 
 type ProtobufDecoratorInfo struct{}
@@ -765,6 +767,13 @@ func (mod *Module) UnstrippedOutputFile() android.Path {
 	return nil
 }
 
+func (mod *Module) CheckJsonFilePath() android.OptionalPath {
+	if mod.compiler != nil {
+		return mod.compiler.checkJsonFilePath()
+	}
+	return android.OptionalPath{}
+}
+
 func (mod *Module) SetStatic() {
 	if mod.compiler != nil {
 		if library, ok := mod.compiler.(libraryInterface); ok {
@@ -1230,6 +1239,8 @@ func (mod *Module) GenerateAndroidBuildActions(actx android.ModuleContext) {
 			CrateRootPath:          mod.compiler.crateRootPath(ctx),
 			StdLinkageForDevice:    mod.compiler.stdLinkage(true),
 			StdLinkageForNonDevice: mod.compiler.stdLinkage(false),
+			BuildTarget:            mod.compiler.unstrippedOutputFilePath(),
+			CheckTarget:            mod.compiler.checkJsonFilePath(),
 		}
 		if lib, ok := mod.compiler.(libraryInterface); ok {
 			rustInfo.CompilerInfo.LibraryInfo = &LibraryInfo{

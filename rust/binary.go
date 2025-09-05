@@ -188,8 +188,10 @@ func (binary *binaryDecorator) compile(ctx ModuleContext, flags Flags, deps Path
 		binary.strippedOutputFile = android.OptionalPathForPath(strippedOutputFile)
 	}
 	binary.unstrippedOutputFile = outputFile
+	checkJsonFile := android.PathForModuleOut(ctx, outputFile.Base()+".checkJson")
+	binary.checkJsonFile = android.OptionalPathForPath(checkJsonFile)
 
-	ret.kytheFile = TransformSrcToBinary(ctx, crateRootPath, deps, flags, outputFile).kytheFile
+	ret.kytheFile = TransformSrcToBinary(ctx, crateRootPath, deps, flags, outputFile, checkJsonFile).kytheFile
 	return ret
 }
 

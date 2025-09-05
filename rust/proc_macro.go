@@ -79,9 +79,10 @@ func (procMacro *procMacroDecorator) compile(ctx ModuleContext, flags Flags, dep
 	deps.SrcFiles = append(deps.SrcFiles, srcPath)
 	deps.SrcFiles = append(deps.SrcFiles, procMacro.crateSources(ctx)...)
 
-	ret := TransformSrctoProcMacro(ctx, srcPath, deps, flags, outputFile)
+	checkJsonFile := android.PathForModuleOut(ctx, outputFile.Base()+".checkJson")
+	procMacro.baseCompiler.checkJsonFile = android.OptionalPathForPath(checkJsonFile)
+	ret := TransformSrctoProcMacro(ctx, srcPath, deps, flags, outputFile, checkJsonFile)
 	procMacro.baseCompiler.unstrippedOutputFile = outputFile
-
 	return ret
 }
 

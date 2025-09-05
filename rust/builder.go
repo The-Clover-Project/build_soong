@@ -161,24 +161,24 @@ func getTransformProperties(ctx ModuleContext, crateType string) transformProper
 }
 
 func TransformSrcToBinary(ctx ModuleContext, mainSrc android.Path, deps PathDeps, flags Flags,
-	outputFile android.WritablePath) buildOutput {
+	outputFile, checkJsonFile android.WritablePath) buildOutput {
 	if ctx.RustModule().compiler.Thinlto() {
 		flags.GlobalRustFlags = append(flags.GlobalRustFlags, "-C lto=thin")
 	}
 
-	return transformSrctoCrate(ctx, mainSrc, deps, flags, outputFile, getTransformProperties(ctx, "bin"))
+	return transformSrctoCrate(ctx, mainSrc, deps, flags, outputFile, checkJsonFile, getTransformProperties(ctx, "bin"))
 }
 
 func TransformSrcToObject(ctx ModuleContext, mainSrc android.Path, deps PathDeps, flags Flags,
-	outputFile android.WritablePath) buildOutput {
+	outputFile, checkJsonFile android.WritablePath) buildOutput {
 
 	// There's no "obj" crate-type since it doesn't get linked, so don't define one.
-	return transformSrctoCrate(ctx, mainSrc, deps, flags, outputFile, getTransformProperties(ctx, ""))
+	return transformSrctoCrate(ctx, mainSrc, deps, flags, outputFile, checkJsonFile, getTransformProperties(ctx, ""))
 }
 
 func TransformSrctoRlib(ctx ModuleContext, mainSrc android.Path, deps PathDeps, flags Flags,
-	outputFile android.WritablePath) buildOutput {
-	return transformSrctoCrate(ctx, mainSrc, deps, flags, outputFile, getTransformProperties(ctx, "rlib"))
+	outputFile, checkJsonFile android.WritablePath) buildOutput {
+	return transformSrctoCrate(ctx, mainSrc, deps, flags, outputFile, checkJsonFile, getTransformProperties(ctx, "rlib"))
 }
 
 // TransformRlibstoStaticlib is assumed to be callable from the cc module, and
@@ -224,39 +224,39 @@ func TransformRlibstoStaticlib(ctx android.ModuleContext, mainSrc android.Path, 
 
 	rustFlags.EmitXrefs = false
 
-	return transformSrctoCrate(ctx, mainSrc, rustPathDeps, rustFlags, outputFile, t).outputFile
+	return transformSrctoCrate(ctx, mainSrc, rustPathDeps, rustFlags, outputFile, nil, t).outputFile
 }
 
 func TransformSrctoDylib(ctx ModuleContext, mainSrc android.Path, deps PathDeps, flags Flags,
-	outputFile android.WritablePath) buildOutput {
+	outputFile, checkJsonFile android.WritablePath) buildOutput {
 	if ctx.RustModule().compiler.Thinlto() {
 		flags.GlobalRustFlags = append(flags.GlobalRustFlags, "-C lto=thin")
 	}
 
-	return transformSrctoCrate(ctx, mainSrc, deps, flags, outputFile, getTransformProperties(ctx, "dylib"))
+	return transformSrctoCrate(ctx, mainSrc, deps, flags, outputFile, checkJsonFile, getTransformProperties(ctx, "dylib"))
 }
 
 func TransformSrctoStatic(ctx ModuleContext, mainSrc android.Path, deps PathDeps, flags Flags,
-	outputFile android.WritablePath) buildOutput {
+	outputFile, checkJsonFile android.WritablePath) buildOutput {
 	if ctx.RustModule().compiler.Thinlto() {
 		flags.GlobalRustFlags = append(flags.GlobalRustFlags, "-C lto=thin")
 	}
 
-	return transformSrctoCrate(ctx, mainSrc, deps, flags, outputFile, getTransformProperties(ctx, "staticlib"))
+	return transformSrctoCrate(ctx, mainSrc, deps, flags, outputFile, checkJsonFile, getTransformProperties(ctx, "staticlib"))
 }
 
 func TransformSrctoShared(ctx ModuleContext, mainSrc android.Path, deps PathDeps, flags Flags,
-	outputFile android.WritablePath) buildOutput {
+	outputFile, checkJsonFile android.WritablePath) buildOutput {
 	if ctx.RustModule().compiler.Thinlto() {
 		flags.GlobalRustFlags = append(flags.GlobalRustFlags, "-C lto=thin")
 	}
 
-	return transformSrctoCrate(ctx, mainSrc, deps, flags, outputFile, getTransformProperties(ctx, "cdylib"))
+	return transformSrctoCrate(ctx, mainSrc, deps, flags, outputFile, checkJsonFile, getTransformProperties(ctx, "cdylib"))
 }
 
 func TransformSrctoProcMacro(ctx ModuleContext, mainSrc android.Path, deps PathDeps,
-	flags Flags, outputFile android.WritablePath) buildOutput {
-	return transformSrctoCrate(ctx, mainSrc, deps, flags, outputFile, getTransformProperties(ctx, "proc-macro"))
+	flags Flags, outputFile, checkJsonFile android.WritablePath) buildOutput {
+	return transformSrctoCrate(ctx, mainSrc, deps, flags, outputFile, checkJsonFile, getTransformProperties(ctx, "proc-macro"))
 }
 
 func rustLibsToPaths(libs RustLibraries) android.Paths {
@@ -355,7 +355,7 @@ func rustEnvVars(ctx android.ModuleContext, deps PathDeps, crateName string, car
 }
 
 func transformSrctoCrate(ctx android.ModuleContext, main android.Path, deps PathDeps, flags Flags,
-	outputFile android.WritablePath, t transformProperties) buildOutput {
+	outputFile, checkJsonFile android.WritablePath, t transformProperties) buildOutput {
 
 	var inputs android.Paths
 	var implicits android.Paths
@@ -489,8 +489,6 @@ func transformSrctoCrate(ctx android.ModuleContext, main android.Path, deps Path
 	if !t.synthetic {
 		// Only worry about clippy for actual Rust modules.
 		// Libraries built from cc use generated source, and don't need to run clippy.
-		checkJsonFile := android.PathForModuleOut(ctx, outputFile.Base()+".checkJson")
-
 		args := map[string]string{
 			"rustcFlags":  strings.Join(rustcFlags, " "),
 			"libFlags":    strings.Join(libFlags, " "),
