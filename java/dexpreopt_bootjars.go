@@ -1572,6 +1572,7 @@ func dumpOatRules(ctx android.ModuleContext, image *bootImageConfig) {
 			FlagWithArg("--image=", strings.Join(imageLocationsOnHost, ":")).Implicits(image.imagesDeps.Paths()).
 			FlagWithOutput("--output=", output).
 			FlagWithArg("--instruction-set=", arch.String())
+		cmd.Text("$(cat").Input(globalSoong.ProfileCodeFlag).Text(")")
 		if image.target.Os == android.Android {
 			cmd.Text("$(cat").Input(globalSoong.UffdGcFlag).Text(")")
 		}
