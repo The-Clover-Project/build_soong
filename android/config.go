@@ -1145,6 +1145,12 @@ func (c *config) BuildFingerprintFile(ctx PathContext) Path {
 	return PathForArbitraryOutput(ctx, "target", "product", *c.deviceNameToInstall, String(c.productVariables.BuildFingerprintFile))
 }
 
+// BuildSystemFingerprintFile returns the path to a text file containing
+// metadata representing the current build's fingerprint for the system image.
+func (c *config) BuildSystemFingerprintFile(ctx PathContext) Path {
+	return PathForArbitraryOutput(ctx, "target", "product", *c.deviceNameToInstall, String(c.productVariables.BuildSystemFingerprintFile))
+}
+
 // BuildNumberFile returns the path to a text file containing metadata
 // representing the current build's number.
 //

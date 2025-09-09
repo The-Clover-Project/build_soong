@@ -85,10 +85,10 @@ func testForDanglingRules(ctx Context, config Config) {
 	// before running soong and ninja.
 	releaseConfigDir := filepath.Join(outDir, "soong", "release-config")
 
-	// out/target/product/<xxxxx>/build_fingerprint.txt is a source file created in sysprop.mk
-	// ^out/target/product/[^/]+/build_fingerprint.txt$
+	// out/target/product/<xxxxx>/build_fingerprint.txt is a source file created in config.mk
+	// ^out/target/product/[^/]+/build_(system_)?fingerprint-[^-/]*.txt$
 
-	buildFingerprintFilePattern := regexp.MustCompile("^" + filepath.Join(outDir, "target", "product") + "/[^/]+/build_(fingerprint|thumbprint)-[^-/]*\\.txt$")
+	buildFingerprintFilePattern := regexp.MustCompile("^" + filepath.Join(outDir, "target", "product") + "/[^/]+/build_((system_)?fingerprint|thumbprint)-[^-/]*\\.txt$")
 
 	danglingRules := make(map[string]bool)
 
