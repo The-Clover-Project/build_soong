@@ -452,6 +452,7 @@ func (ctx *loadContext) infoHandler() {
 			rcc.FlagValues[*info.value.Value.proto.Name] = info.value.Value
 		} else {
 			ctx.errorsChan <- fmt.Errorf("Unparsable read result: %v", *info)
+			continue
 		}
 	}
 }
@@ -704,6 +705,7 @@ func ReadReleaseConfigMaps(releaseConfigMapPaths StringList, targetRelease, vari
 		m, err := configs.LoadReleaseConfigMap(ctx, releaseConfigMapPath, idx, declarationsOnly)
 		if err != nil {
 			ctx.errorsChan <- err
+			continue
 		}
 		configs.ReleaseConfigMaps = append(configs.ReleaseConfigMaps, m)
 		configs.releaseConfigMapsMap[configDir] = m
@@ -790,6 +792,7 @@ func (configs *ReleaseConfigs) Finalize(ctx *loadContext, targetRelease string) 
 				if _, err := os.Stat(rcPath); err != nil {
 					ctx.errorsChan <- fmt.Errorf("%s exists but %s does not contribute to %s",
 						filepath.Join(dirName, k, rcName), dirName, rcName)
+					continue
 				}
 			}
 		}
@@ -804,10 +807,12 @@ func (configs *ReleaseConfigs) Finalize(ctx *loadContext, targetRelease string) 
 	for aliasName, aliasTarget := range configs.Aliases {
 		if _, ok := configs.ReleaseConfigs[aliasName]; ok {
 			ctx.errorsChan <- fmt.Errorf("Alias %s is a declared release config", aliasName)
+			continue
 		}
 		if _, ok := configs.ReleaseConfigs[*aliasTarget]; !ok {
 			if _, ok2 := configs.Aliases[*aliasTarget]; !ok2 {
 				ctx.errorsChan <- fmt.Errorf("Alias %s points to non-existing config %s", aliasName, *aliasTarget)
+				continue
 			}
 		}
 		otherNames[*aliasTarget] = append(otherNames[*aliasTarget], aliasName)
