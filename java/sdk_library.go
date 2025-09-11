@@ -1587,25 +1587,32 @@ func (module *SdkLibrary) GenerateAndroidBuildActions(ctx android.ModuleContext)
 	android.SetProvider(ctx, android.ExportedComponentsInfoProvider, exportedComponentInfo)
 
 	// Provide additional information for inclusion in an sdk's generated .info file.
-	additionalSdkInfo := map[string]interface{}{}
-	additionalSdkInfo["dist_stem"] = module.distStem()
+	additionalSdkInfo := android.AdditionalSdkInfoProperties{
+		Nested:     make(map[string]android.AdditionalSdkInfoProperties),
+		Properties: make(map[string]string),
+	}
+	additionalSdkInfo.Properties["dist_stem"] = module.distStem()
 	baseModuleName := module.distStem()
-	scopes := map[string]interface{}{}
-	additionalSdkInfo["scopes"] = scopes
+	scopes := android.AdditionalSdkInfoProperties{
+		Nested: make(map[string]android.AdditionalSdkInfoProperties),
+	}
+	additionalSdkInfo.Nested["scopes"] = scopes
 	for scope, scopePaths := range module.scopePaths {
-		scopeInfo := map[string]interface{}{}
-		scopes[scope.name] = scopeInfo
-		scopeInfo["current_api"] = scope.snapshotRelativeCurrentApiTxtPath(baseModuleName)
-		scopeInfo["removed_api"] = scope.snapshotRelativeRemovedApiTxtPath(baseModuleName)
+		scopeInfo := android.AdditionalSdkInfoProperties{
+			Properties: make(map[string]string),
+		}
+		scopes.Nested[scope.name] = scopeInfo
+		scopeInfo.Properties["current_api"] = scope.snapshotRelativeCurrentApiTxtPath(baseModuleName)
+		scopeInfo.Properties["removed_api"] = scope.snapshotRelativeRemovedApiTxtPath(baseModuleName)
 		if p := scopePaths.latestApiPaths; len(p) > 0 {
 			// The last path in the list is the one that applies to this scope, the
 			// preceding ones, if any, are for the scope(s) that it extends.
-			scopeInfo["latest_api"] = p[len(p)-1].String()
+			scopeInfo.Properties["latest_api"] = p[len(p)-1].String()
 		}
 		if p := scopePaths.latestRemovedApiPaths; len(p) > 0 {
 			// The last path in the list is the one that applies to this scope, the
 			// preceding ones, if any, are for the scope(s) that it extends.
-			scopeInfo["latest_removed_api"] = p[len(p)-1].String()
+			scopeInfo.Properties["latest_removed_api"] = p[len(p)-1].String()
 		}
 	}
 	android.SetProvider(ctx, android.AdditionalSdkInfoProvider, android.AdditionalSdkInfo{additionalSdkInfo})

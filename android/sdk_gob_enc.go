@@ -10,6 +10,8 @@ import (
 func init() {
 	SdkMemberTraitBaseGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(SdkMemberTraitBase) })
 	SdkMemberTypeBaseGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(SdkMemberTypeBase) })
+	AdditionalSdkInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(AdditionalSdkInfo) })
+	AdditionalSdkInfoPropertiesGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(AdditionalSdkInfoProperties) })
 }
 
 func (r SdkMemberTraitBase) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
@@ -242,4 +244,125 @@ var SdkMemberTypeBaseGobRegId int16
 
 func (r SdkMemberTypeBase) GetTypeId() int16 {
 	return SdkMemberTypeBaseGobRegId
+}
+
+func (r AdditionalSdkInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = r.Properties.Encode(ctx, buf); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r *AdditionalSdkInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	if err = r.Properties.Decode(ctx, buf); err != nil {
+		return err
+	}
+
+	return err
+}
+
+var AdditionalSdkInfoGobRegId int16
+
+func (r AdditionalSdkInfo) GetTypeId() int16 {
+	return AdditionalSdkInfoGobRegId
+}
+
+func (r AdditionalSdkInfoProperties) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if r.Nested == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.Nested))); err != nil {
+			return err
+		}
+		for k, v := range r.Nested {
+			if err = gobtools.EncodeString(buf, k); err != nil {
+				return err
+			}
+			if err = v.Encode(ctx, buf); err != nil {
+				return err
+			}
+		}
+	}
+
+	if r.Properties == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.Properties))); err != nil {
+			return err
+		}
+		for k, v := range r.Properties {
+			if err = gobtools.EncodeString(buf, k); err != nil {
+				return err
+			}
+			if err = gobtools.EncodeString(buf, v); err != nil {
+				return err
+			}
+		}
+	}
+	return err
+}
+
+func (r *AdditionalSdkInfoProperties) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	var val1 int32
+	err = gobtools.DecodeSimple[int32](buf, &val1)
+	if err != nil {
+		return err
+	}
+	if val1 != -1 {
+		r.Nested = make(map[string]AdditionalSdkInfoProperties, val1)
+		for val2 := 0; val2 < int(val1); val2++ {
+			var k string
+			var v AdditionalSdkInfoProperties
+			err = gobtools.DecodeString(buf, &k)
+			if err != nil {
+				return err
+			}
+			if err = v.Decode(ctx, buf); err != nil {
+				return err
+			}
+			r.Nested[k] = v
+		}
+	}
+
+	var val5 int32
+	err = gobtools.DecodeSimple[int32](buf, &val5)
+	if err != nil {
+		return err
+	}
+	if val5 != -1 {
+		r.Properties = make(map[string]string, val5)
+		for val6 := 0; val6 < int(val5); val6++ {
+			var k string
+			var v string
+			err = gobtools.DecodeString(buf, &k)
+			if err != nil {
+				return err
+			}
+			err = gobtools.DecodeString(buf, &v)
+			if err != nil {
+				return err
+			}
+			r.Properties[k] = v
+		}
+	}
+
+	return err
+}
+
+var AdditionalSdkInfoPropertiesGobRegId int16
+
+func (r AdditionalSdkInfoProperties) GetTypeId() int16 {
+	return AdditionalSdkInfoPropertiesGobRegId
 }
