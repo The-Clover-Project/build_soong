@@ -246,7 +246,7 @@ func (a *AndroidApp) IsInstallable() bool {
 	return Bool(a.properties.Installable)
 }
 
-func (a *AndroidApp) ResourcesNodeDepSet() depset.DepSet[*resourcesNode] {
+func (a *AndroidApp) ResourcesNodeDepSet() depset.DepSet[resourcesNodePtr] {
 	return a.aapt.resourcesNodesDepSet
 }
 

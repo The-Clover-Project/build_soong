@@ -29,6 +29,7 @@ bootstrap_go_package {
     srcs: [
         "aapt2.go",
         "aar.go",
+        "aar_gob_enc.go",
         "android_manifest.go",
         "android_resources.go",
         "androidmk.go",
