@@ -24,6 +24,8 @@ import (
 	"github.com/google/blueprint"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 var (
 	// This is the sdk version when APEX was first introduced
 	SdkVersion_Android10 = UncheckedFinalApiLevel(29)
@@ -34,6 +36,7 @@ var (
 // when multiple apex variants are merged for deduping (see mergeApexVariations), this holds the
 // information about the apexBundles that are merged together.
 // Accessible via `ctx.Provider(android.ApexInfoProvider).(android.ApexInfo)`
+// @auto-generate: gob
 type ApexInfo struct {
 	// Name of the apex variation that this module (i.e. the apex variant of the module) is
 	// mutated into, or "" for a platform (i.e. non-APEX) variant.
@@ -609,6 +612,7 @@ type ApexModuleDepInfo struct {
 // A map of a dependency name to its ApexModuleDepInfo
 type DepNameToDepInfoMap map[string]ApexModuleDepInfo
 
+// @auto-generate: gob
 type ApexBundleDepsInfo struct {
 	flatListPath Path
 	fullListPath Path
@@ -620,6 +624,7 @@ type ApexBundleDepsInfoIntf interface {
 	FullListPath() Path
 }
 
+// @auto-generate: gob
 type ApexBundleDepsData struct {
 	Updatable    bool
 	FlatListPath Path
@@ -628,6 +633,7 @@ type ApexBundleDepsData struct {
 var ApexBundleDepsDataProvider = blueprint.NewProvider[ApexBundleDepsData]()
 
 // ApexBundleTypeInfo is used to identify the module is a apexBundle module.
+// @auto-generate: gob
 type ApexBundleTypeInfo struct {
 	Pem Path
 	Key Path
@@ -792,6 +798,7 @@ type ApexExportsInfo struct {
 var PrebuiltJsonInfoProvider = blueprint.NewProvider[PrebuiltJsonInfo]()
 
 // contents of prebuilt_info.json
+// @auto-generate: gob
 type PrebuiltJsonInfo struct {
 	// Name of the apex, without the prebuilt_ prefix
 	Name string

@@ -2086,6 +2086,7 @@ type HostToolProviderInfo struct {
 
 var HostToolProviderInfoProvider = blueprint.NewProvider[HostToolProviderInfo]()
 
+// @auto-generate: gob
 type DistInfo struct {
 	Dists []dist
 }
@@ -3510,6 +3511,7 @@ type IDEInfo interface {
 }
 
 // Collect information for opening IDE project files in java/jdeps.go.
+// @auto-generate: gob
 type IdeInfo struct {
 	BaseModuleName    string   `json:"-"`
 	Deps              []string `json:"dependencies,omitempty"`

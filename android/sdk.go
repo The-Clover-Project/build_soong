@@ -868,6 +868,7 @@ type SdkMemberContext interface {
 // it as that would result in duplicate modules when attempting to use the snapshot. e.g. a snapshot
 // that included the java_sdk_library_import "foo" and also a java_import "foo.stubs" would fail
 // as there would be two modules called "foo.stubs".
+// @auto-generate: gob
 type ExportedComponentsInfo struct {
 	// The names of the exported components.
 	Components []string

@@ -33,6 +33,8 @@ import (
 	"android/soong/dexpreopt"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 // A tag to associated a dependency with a specific api scope.
 type scopeDependencyTag struct {
 	blueprint.BaseDependencyTag
@@ -1223,6 +1225,7 @@ func (e *EmbeddableSdkLibraryComponent) setComponentDependencyInfoProvider(ctx a
 	})
 }
 
+// @auto-generate: gob
 type ApiScopePathsInfo struct {
 	StubsImplPath      android.Paths
 	CurrentApiFilePath android.OptionalPath
@@ -1231,10 +1234,12 @@ type ApiScopePathsInfo struct {
 	AnnotationsZip     android.OptionalPath
 }
 
+// @auto-generate: gob
 type ApiScopePropsInfo struct {
 	SdkVersion *string
 }
 
+// @auto-generate: gob
 type SdkLibraryInfo struct {
 	// GeneratingLibs is the names of the library modules that this sdk library
 	// generates. Note that this only includes the name of the modules that other modules can

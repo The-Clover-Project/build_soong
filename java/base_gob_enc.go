@@ -8,8 +8,43 @@ import (
 )
 
 func init() {
+	OptionalDexJarPathGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(OptionalDexJarPath) })
 	JarJarProviderDataGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(JarJarProviderData) })
 	BaseJarJarProviderDataGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(BaseJarJarProviderData) })
+}
+
+func (r OptionalDexJarPath) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = gobtools.EncodeSimple(buf, r.isSet); err != nil {
+		return err
+	}
+
+	if err = r.path.Encode(ctx, buf); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r *OptionalDexJarPath) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	err = gobtools.DecodeSimple[bool](buf, &r.isSet)
+	if err != nil {
+		return err
+	}
+
+	if err = r.path.Decode(ctx, buf); err != nil {
+		return err
+	}
+
+	return err
+}
+
+var OptionalDexJarPathGobRegId int16
+
+func (r OptionalDexJarPath) GetTypeId() int16 {
+	return OptionalDexJarPathGobRegId
 }
 
 func (r JarJarProviderData) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {

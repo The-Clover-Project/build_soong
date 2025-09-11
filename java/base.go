@@ -417,6 +417,7 @@ func depIsInSameApex(tag blueprint.DependencyTag) bool {
 // E.g. it is invalid with a reason message if there is a prebuilt APEX that
 // could produce the dex jar through a deapexer module, but the APEX isn't
 // installable so doing so wouldn't be safe.
+// @auto-generate: gob
 type OptionalDexJarPath struct {
 	isSet bool
 	path  android.OptionalPath

@@ -29,6 +29,8 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 func init() {
 	RegisterMakeVarsProvider(pctx, androidMakeVarsProvider)
 }
@@ -207,6 +209,7 @@ type phony struct {
 	deps []string
 }
 
+// @auto-generate: gob
 type dist struct {
 	goals []string
 	paths distCopies

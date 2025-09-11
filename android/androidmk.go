@@ -324,6 +324,7 @@ func (d *copiesForGoals) addCopyInstruction(from Path, dest string) {
 }
 
 // Instruction on a path that must be copied into the dist.
+// @auto-generate: gob
 type distCopy struct {
 	// The path to copy from.
 	from Path

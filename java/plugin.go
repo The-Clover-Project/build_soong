@@ -19,6 +19,9 @@ import (
 	"github.com/google/blueprint"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
+// @auto-generate: gob
 type JavaPluginInfo struct {
 	ProcessorClass *string
 	GeneratesApi   bool
@@ -26,6 +29,7 @@ type JavaPluginInfo struct {
 
 var JavaPluginInfoProvider = blueprint.NewProvider[JavaPluginInfo]()
 
+// @auto-generate: gob
 type KotlinPluginInfo struct {
 }
 

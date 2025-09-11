@@ -24,6 +24,8 @@ import (
 	"github.com/google/blueprint"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 // Contains support for processing hiddenAPI in a modular fashion.
 
 // HiddenAPIScope encapsulates all the information that the hidden API processing needs about API
@@ -745,6 +747,7 @@ func (s StubDexJarsByModule) StubDexJarsForScope(scope *HiddenAPIScope) android.
 	return stubDexJars
 }
 
+// @auto-generate: gob
 type HiddenAPIPropertyInfo struct {
 	// FlagFilesByCategory contains the flag files that override the initial flags that are derived
 	// from the stub dex files.

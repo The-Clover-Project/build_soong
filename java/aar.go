@@ -987,6 +987,7 @@ func aaptLibs(ctx android.ModuleContext, sdkContext android.SdkContext,
 	return staticResourcesNodes, sharedResourcesNodes, staticRRODirs, staticManifests, sharedLibs, flags
 }
 
+// @auto-generate: gob
 type AndroidLibraryInfo struct {
 	// Empty for now
 }
@@ -1347,6 +1348,7 @@ func (a *AARImport) DepsMutator(ctx android.BottomUpMutatorContext) {
 	a.EmbeddableSdkLibraryComponent.setComponentDependencyInfoProvider(ctx)
 }
 
+// @auto-generate: gob
 type JniPackageInfo struct {
 	// List of zip files containing JNI libraries
 	// Zip files should have directory structure jni/<arch>/*.so
@@ -1771,6 +1773,7 @@ func (a *AARImport) IDEInfo(ctx android.BaseModuleContext, dpInfo *android.IdeIn
 	dpInfo.Static_libs = append(dpInfo.Static_libs, a.properties.Static_libs.GetOrDefault(ctx, nil)...)
 }
 
+// @auto-generate: gob
 type AARInfo struct {
 	Aar android.Path
 }

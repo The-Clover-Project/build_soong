@@ -27,6 +27,8 @@ import (
 	"android/soong/remoteexec"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 func init() {
 	pctx.HostBinToolVariable("symbols_map", "symbols_map")
 }
@@ -1066,6 +1068,7 @@ func BuildProguardZips(ctx android.ModuleContext, modules []android.ModuleProxy)
 	}
 }
 
+// @auto-generate: gob
 type ProguardInfo struct {
 	ModuleName         string
 	Class              string

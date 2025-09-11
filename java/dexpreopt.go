@@ -25,6 +25,8 @@ import (
 	"android/soong/dexpreopt"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 type DexpreopterInterface interface {
 	// True if the java module is to be dexed and installed on devices.
 	// Structs that embed dexpreopter must implement this.
@@ -45,6 +47,7 @@ type DexpreopterInterface interface {
 	OutputProfilePathOnHost() android.Path
 }
 
+// @auto-generate: gob
 type DexpreopterInstall struct {
 	// The path to the dexpreopt output on host.
 	OutputPathOnHost android.Path
