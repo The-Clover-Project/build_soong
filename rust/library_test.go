@@ -857,8 +857,19 @@ func TestNoStdLib(t *testing.T) {
 
 func TestNoStdVariant(t *testing.T) {
 	ctx := testRust(t, `
+	rust_defaults {
+		name: "no_std_override",
+		arch: {
+			arm64: {
+				no_std: {
+					flags: ["-C target-feature=-sve2"],
+				}
+			},
+		},
+	}
 	rust_library_rlib {
 		name: "libmaybe_std",
+		defaults: ["no_std_override"],
 		srcs: ["foo.rs"],
 		crate_name: "maybe_std",
 		no_std: {
@@ -897,6 +908,11 @@ func TestNoStdVariant(t *testing.T) {
 	maybe_std_core := ctx.ModuleForTests(t, "libmaybe_std", "android_arm64_armv8-a_rlib_rlib-core").Module().(*Module)
 	if android.InList("libstd", maybe_std_core.Properties.AndroidMkRlibs) {
 		t.Errorf("unexpected dependency on libstd")
+	}
+
+	maybe_std_core_rustc := ctx.ModuleForTests(t, "libmaybe_std", "android_arm64_armv8-a_rlib_rlib-core").Rule("rustc")
+	if !strings.Contains(maybe_std_core_rustc.Args["rustcFlags"], "-C target-feature=-sve2") {
+		t.Errorf("Defaults did not correctly apply to no_std variant: %v", maybe_std_core_rustc.Args["rustcFlags"])
 	}
 
 	// The nostd library should select the nostd variant

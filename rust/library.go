@@ -56,6 +56,7 @@ type VariantLibraryProperties struct {
 	Features proptools.Configurable[[]string] `android:"arch_variant"`
 	Rustlibs proptools.Configurable[[]string] `android:"arch_variant"`
 	Cfgs     proptools.Configurable[[]string] `android:"arch_variant"`
+	Flags    []string                         `android:"arch_variant"`
 }
 
 type LibraryCompilerProperties struct {
