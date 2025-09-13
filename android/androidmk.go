@@ -979,17 +979,26 @@ func translateAndroidMkModule(ctx SingletonContext, w io.Writer, moduleInfoJSONs
 		}
 	}()
 
+	commonInfo := OtherModulePointerProviderOrDefault(ctx, mod, CommonModuleInfoProvider)
+	if commonInfo.SkipAndroidMkProcessing {
+		return nil
+	}
+
+	if moduleInfoJSON, ok := OtherModuleProvider(ctx, mod, ModuleInfoJSONProvider); ok {
+		*moduleInfoJSONs = append(*moduleInfoJSONs, moduleInfoJSON.Data...)
+	}
+
 	// Additional cases here require review for correct license propagation to make.
 	var err error
 
 	if info, ok := OtherModuleProvider(ctx, mod, AndroidMkInfoProvider); ok {
-		err = translateAndroidMkEntriesInfoModule(ctx, w, moduleInfoJSONs, mod, info)
+		err = translateAndroidMkEntriesInfoModule(ctx, w, mod, info, commonInfo)
 	} else {
 		switch x := mod.(type) {
 		case AndroidMkDataProvider:
-			err = translateAndroidModule(ctx, w, moduleInfoJSONs, mod.(Module), x)
+			err = translateAndroidModule(ctx, w, mod.(Module), x)
 		case AndroidMkEntriesProvider:
-			err = translateAndroidMkEntriesModule(ctx, w, moduleInfoJSONs, mod.(Module), x)
+			err = translateAndroidMkEntriesModule(ctx, w, mod.(Module), x)
 		default:
 			// Not exported to make so no make variables to set.
 		}
@@ -1023,13 +1032,10 @@ func (data *AndroidMkData) fillInData(ctx fillInEntriesContext, mod Module) {
 
 // A support func for the deprecated AndroidMkDataProvider interface. Use AndroidMkEntryProvider
 // instead.
-func translateAndroidModule(ctx SingletonContext, w io.Writer, moduleInfoJSONs *[]*ModuleInfoJSON,
+func translateAndroidModule(ctx SingletonContext, w io.Writer,
 	mod Module, provider AndroidMkDataProvider) error {
 
 	amod := mod.base()
-	if shouldSkipAndroidMkProcessing(ctx, amod) {
-		return nil
-	}
 
 	data := provider.AndroidMk()
 
@@ -1091,12 +1097,6 @@ func translateAndroidModule(ctx SingletonContext, w io.Writer, moduleInfoJSONs *
 		WriteAndroidMkData(w, data)
 	}
 
-	if !data.Entries.disabled() {
-		if moduleInfoJSON, ok := OtherModuleProvider(ctx, mod, ModuleInfoJSONProvider); ok {
-			*moduleInfoJSONs = append(*moduleInfoJSONs, moduleInfoJSON.Data...)
-		}
-	}
-
 	return nil
 }
 
@@ -1118,30 +1118,16 @@ func WriteAndroidMkData(w io.Writer, data AndroidMkData) {
 	fmt.Fprintln(w, "include "+data.Include)
 }
 
-func translateAndroidMkEntriesModule(ctx SingletonContext, w io.Writer, moduleInfoJSONs *[]*ModuleInfoJSON,
+func translateAndroidMkEntriesModule(ctx SingletonContext, w io.Writer,
 	mod Module, provider AndroidMkEntriesProvider) error {
-	if shouldSkipAndroidMkProcessing(ctx, mod.base()) {
-		return nil
-	}
 
 	entriesList := provider.AndroidMkEntries()
 	aconfigUpdateAndroidMkEntries(ctx, mod, &entriesList)
-
-	moduleInfoJSON, providesModuleInfoJSON := OtherModuleProvider(ctx, mod, ModuleInfoJSONProvider)
 
 	// Any new or special cases here need review to verify correct propagation of license information.
 	for _, entries := range entriesList {
 		entries.fillInEntries(ctx, mod)
 		entries.write(w)
-
-		if providesModuleInfoJSON && !entries.disabled() {
-			// append only the name matching moduleInfoJSON entry
-			for _, m := range moduleInfoJSON.Data {
-				if m.RegisterNameOverride == entries.OverrideName && m.SubName == entries.SubName {
-					*moduleInfoJSONs = append(*moduleInfoJSONs, m)
-				}
-			}
-		}
 	}
 
 	return nil
@@ -1287,12 +1273,8 @@ var AndroidMkInfoProvider = blueprint.NewProvider[*AndroidMkProviderInfo]()
 
 // TODO(b/397766191): Change the signature to take ModuleProxy
 // Please only access the module's internal data through providers.
-func translateAndroidMkEntriesInfoModule(ctx SingletonContext, w io.Writer, moduleInfoJSONs *[]*ModuleInfoJSON,
-	mod ModuleOrProxy, providerInfo *AndroidMkProviderInfo) error {
-	commonInfo := OtherModulePointerProviderOrDefault(ctx, mod, CommonModuleInfoProvider)
-	if commonInfo.SkipAndroidMkProcessing {
-		return nil
-	}
+func translateAndroidMkEntriesInfoModule(ctx SingletonContext, w io.Writer,
+	mod ModuleOrProxy, providerInfo *AndroidMkProviderInfo, commonInfo *CommonModuleInfo) error {
 
 	// Deep copy the provider info since we need to modify the info later
 	info := deepCopyAndroidMkProviderInfo(providerInfo)
@@ -1306,12 +1288,6 @@ func translateAndroidMkEntriesInfoModule(ctx SingletonContext, w io.Writer, modu
 		for _, ei := range info.ExtraInfo {
 			ei.fillInEntries(ctx, mod, commonInfo)
 			ei.write(w)
-		}
-	}
-
-	if !info.PrimaryInfo.disabled() {
-		if moduleInfoJSON, ok := OtherModuleProvider(ctx, mod, ModuleInfoJSONProvider); ok {
-			*moduleInfoJSONs = append(*moduleInfoJSONs, moduleInfoJSON.Data...)
 		}
 	}
 
