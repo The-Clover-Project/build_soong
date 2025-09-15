@@ -15,6 +15,10 @@
 package filesystem
 
 import (
+	"fmt"
+	"io"
+	"strings"
+
 	"github.com/google/blueprint"
 	"github.com/google/blueprint/proptools"
 
@@ -51,6 +55,8 @@ type rawBinary struct {
 
 	output     android.Path
 	installDir android.InstallPath
+
+	symbolsInfo android.SymbolicOutputInfos
 }
 
 type rawBinaryProperties struct {
@@ -98,18 +104,17 @@ func (r *rawBinary) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 
 	setCommonFilesystemInfo(ctx, r)
 
-	var symbolsInfo android.SymbolicOutputInfos
 	ctx.VisitDirectDepsProxy(func(proxy android.ModuleProxy) {
 		// Find the src module
 		if android.IsSourceDepTagWithOutputTag(ctx.OtherModuleDependencyTag(proxy), "") {
 			if info, ok := android.OtherModuleProvider(ctx, proxy, android.SymbolInfosProvider); ok {
-				symbolsInfo = append(symbolsInfo, info...)
+				r.symbolsInfo = append(r.symbolsInfo, info...)
 			}
 		}
 	})
 
 	android.SetProvider(ctx, RawBinaryInfoProvider, RawBinaryInfo{
-		SrcSymbolInfos: symbolsInfo,
+		SrcSymbolInfos: r.symbolsInfo,
 	})
 }
 
@@ -120,7 +125,15 @@ func (r *rawBinary) AndroidMkEntries() []android.AndroidMkEntries {
 	return []android.AndroidMkEntries{{
 		Class:      "ETC",
 		OutputFile: android.OptionalPathForPath(r.output),
-	}}
+		ExtraFooters: []android.AndroidMkExtraFootersFunc{
+			func(w io.Writer, name, prefix, moduleDir string) {
+				if r.symbolsInfo != nil {
+					fmt.Fprintf(w, "ALL_MODULES.$(my_register_name).SYMBOLIC_OUTPUT_PATH := %s\n", strings.Join(r.symbolsInfo.SortedUniqueSymbolicOutputPaths().Strings(), " "))
+					fmt.Fprintf(w, "ALL_MODULES.$(my_register_name).ELF_SYMBOL_MAPPING_PATH := %s\n", strings.Join(r.symbolsInfo.SortedUniqueElfMappingProtoPaths().Strings(), " "))
+				}
+			},
+		}},
+	}
 }
 
 var _ Filesystem = (*rawBinary)(nil)
