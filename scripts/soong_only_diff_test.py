@@ -348,6 +348,7 @@ def compare_installed_img_sha_maps(product: Product, soong_only_map: dict[str, s
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("products", nargs='+', help="one or more target product names")
+    parser.add_argument("--release", "-r", default="trunk_staging", help="the release to build for")
     return parser.parse_args()
 
 def main():
@@ -358,7 +359,7 @@ def main():
     products = [
         Product(
           p,
-          'trunk_staging',
+          args.release,
           'userdebug',
         ) for p in args.products
     ]
