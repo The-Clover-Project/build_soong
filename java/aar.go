@@ -312,6 +312,17 @@ func (a *aapt) aapt2Flags(ctx android.ModuleContext, sdkContext android.SdkConte
 		rroDirs = append(rroDirs, resRRODirs...)
 	}
 
+	var allOverlays android.Paths
+	for _, overlayDir := range overlayDirs {
+		allOverlays = append(allOverlays, overlayDir.dir)
+	}
+	for _, rro := range rroDirs {
+		allOverlays = append(allOverlays, rro.path)
+	}
+	android.SetProvider(ctx, android.RROInfoProvider, android.RROInfo{
+		Paths: allOverlays,
+	})
+
 	assetDirsHasher := sha256.New()
 	var assetDeps android.Paths
 	for _, dir := range assetDirs {

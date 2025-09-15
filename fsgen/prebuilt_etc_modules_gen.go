@@ -29,6 +29,7 @@ import (
 type srcBaseFileInstallBaseFileTuple struct {
 	srcBaseFile     string
 	installBaseFile string
+	destOwner       string
 }
 
 // prebuilt src files grouped by the install partitions.
@@ -63,7 +64,7 @@ func isSubdirectory(parent, child string) bool {
 	return !strings.HasPrefix(rel, "..")
 }
 
-func appendIfCorrectInstallPartition(partitionToInstallPathList []partitionToInstallPath, destPath, srcPath string, srcGroup *prebuiltSrcGroupByInstallPartition) {
+func appendIfCorrectInstallPartition(partitionToInstallPathList []partitionToInstallPath, destPath, srcPath, destOwner string, srcGroup *prebuiltSrcGroupByInstallPartition) {
 	for _, part := range partitionToInstallPathList {
 		partition := part.name
 		installPath := part.installPath
@@ -91,6 +92,7 @@ func appendIfCorrectInstallPartition(partitionToInstallPathList []partitionToIns
 				srcMap[installDir] = append(srcMap[installDir], srcBaseFileInstallBaseFileTuple{
 					srcBaseFile:     filepath.Base(srcPath),
 					installBaseFile: filepath.Base(destPath),
+					destOwner:       destOwner,
 				})
 			}
 			return
@@ -98,21 +100,33 @@ func appendIfCorrectInstallPartition(partitionToInstallPathList []partitionToIns
 	}
 }
 
+// CopyFileTarget holds the destination path and the owner of the copied file.
+type DestInfo struct {
+	DestPath string
+	Owner    string
+}
+
 // Create a map of source files to the list of destination files from PRODUCT_COPY_FILES entries.
 // Note that the value of the map is a list of string, given that a single source file can be
 // copied to multiple files.
 // This function also checks the existence of the source files, and validates that there is no
 // multiple source files copying to the same dest file.
-func uniqueExistingProductCopyFileMap(ctx android.LoadHookContext) map[string][]string {
+func uniqueExistingProductCopyFileMap(ctx android.LoadHookContext) map[string][]DestInfo {
 	seen := make(map[string]bool)
-	filtered := make(map[string][]string)
+	filtered := make(map[string][]DestInfo)
 
 	for _, copyFilePair := range ctx.Config().ProductVariables().PartitionVarsForSoongMigrationOnlyDoNotUse.ProductCopyFiles {
+		// PRODUCT_COPY_FILES format: 'src:dest:owner'.
+		// Ensure we have at least 'src:dest'. The 'owner' is optional or defaults.
 		srcDestList := strings.Split(copyFilePair, ":")
 		if len(srcDestList) < 2 {
 			ctx.ModuleErrorf("PRODUCT_COPY_FILES must follow the format \"src:dest\", got: %s", copyFilePair)
 		}
 		src, dest := srcDestList[0], srcDestList[1]
+		owner := ""
+		if len(srcDestList) >= 3 {
+			owner = srcDestList[2]
+		}
 
 		// Some downstream branches use absolute path as entries in PRODUCT_COPY_FILES.
 		// Convert them to relative path from top and check if they do not escape the tree root.
@@ -121,7 +135,11 @@ func uniqueExistingProductCopyFileMap(ctx android.LoadHookContext) map[string][]
 		if _, ok := seen[dest]; !ok {
 			if optionalPath := android.ExistentPathForSource(ctx, relSrc); optionalPath.Valid() {
 				seen[dest] = true
-				filtered[relSrc] = append(filtered[relSrc], dest)
+				target := DestInfo{
+					DestPath: dest,
+					Owner:    owner, // Include the parsed owner
+				}
+				filtered[relSrc] = append(filtered[relSrc], target)
 			}
 		}
 	}
@@ -157,13 +175,13 @@ func processProductCopyFiles(ctx android.LoadHookContext) map[string]*prebuiltSr
 
 	groupedSources := map[string]*prebuiltSrcGroupByInstallPartition{}
 	for _, src := range android.SortedKeys(productCopyFileMap) {
-		destFiles := productCopyFileMap[src]
+		destInfos := productCopyFileMap[src]
 		srcFileDir := filepath.Dir(src)
 		if _, ok := groupedSources[srcFileDir]; !ok {
 			groupedSources[srcFileDir] = newPrebuiltSrcGroupByInstallPartition()
 		}
-		for _, dest := range destFiles {
-			appendIfCorrectInstallPartition(getPartitionToInstallPathList(ctx), dest, filepath.Base(src), groupedSources[srcFileDir])
+		for _, dest := range destInfos {
+			appendIfCorrectInstallPartition(getPartitionToInstallPathList(ctx), dest.DestPath, filepath.Base(src), dest.Owner, groupedSources[srcFileDir])
 		}
 	}
 
@@ -192,6 +210,8 @@ type prebuiltModuleProperties struct {
 	NamespaceExportedToMake bool
 
 	Visibility []string
+
+	Owner *string
 }
 
 // Split relative_install_path to a separate struct, because it is not supported for every
@@ -284,7 +304,7 @@ func groupDestFilesBySrc(destFiles []srcBaseFileInstallBaseFileTuple) (ret map[s
 	return ret, maxLen
 }
 
-func prebuiltEtcModuleProps(ctx android.LoadHookContext, moduleName, partition, destDir string) prebuiltModuleProperties {
+func prebuiltEtcModuleProps(ctx android.LoadHookContext, moduleName, partition, destDir, destOwner string) prebuiltModuleProperties {
 	moduleProps := prebuiltModuleProperties{}
 	moduleProps.Name = proptools.StringPtr(moduleName)
 
@@ -316,6 +336,7 @@ func prebuiltEtcModuleProps(ctx android.LoadHookContext, moduleName, partition, 
 	moduleProps.No_full_install = proptools.BoolPtr(true)
 	moduleProps.NamespaceExportedToMake = true
 	moduleProps.Visibility = []string{"//visibility:public"}
+	moduleProps.Owner = proptools.StringPtr(destOwner)
 
 	return moduleProps
 }
@@ -355,7 +376,12 @@ func createPrebuiltEtcModulesInDirectory(ctx android.LoadHookContext, partition,
 		moduleFactory := etcInstallPathToFactoryList[etcInstallPathKey]
 		relDestDirFromInstallDirBase, _ := filepath.Rel(etcInstallPathKey, destDir)
 
-		moduleProps := prebuiltEtcModuleProps(ctx, moduleName, partition, destDir)
+		// Extract owner data from the first tuple in the current group
+		var destOwner string
+		if len(srcTuple) > 0 {
+			destOwner = srcTuple[0].destOwner // Use the owner from the first file in the group
+		}
+		moduleProps := prebuiltEtcModuleProps(ctx, moduleName, partition, destDir, destOwner)
 		modulePropsPtr := &moduleProps
 		propsList := []interface{}{modulePropsPtr}
 
@@ -493,7 +519,7 @@ func getPrebuiltKernelPath(ctx android.LoadHookContext) string {
 	for _, srcPath := range android.SortedKeys(processedProductCopyFilesMap) {
 		destPaths := processedProductCopyFilesMap[srcPath]
 		for _, destPath := range destPaths {
-			if destPath == "kernel" {
+			if destPath.DestPath == "kernel" {
 				return srcPath
 			}
 		}
@@ -503,14 +529,16 @@ func getPrebuiltKernelPath(ctx android.LoadHookContext) string {
 
 func getstageDeviceFileProps(ctx android.LoadHookContext) []filesystem.StageDeviceFilePairProp {
 	stageDeviceFileProps := []filesystem.StageDeviceFilePairProp{}
-	for src, dsts := range uniqueExistingProductCopyFileMap(ctx) {
-		for _, dst := range dsts {
+	processedProductCopyFilesMap := uniqueExistingProductCopyFileMap(ctx)
+	for _, src := range android.SortedKeys(processedProductCopyFilesMap) {
+		dstInfos := processedProductCopyFilesMap[src]
+		for _, dst := range dstInfos {
 			// Only collect entries that are installed at the root directory, i.e. entries where
 			// the dst does not contain any directories
-			if filepath.Base(dst) == dst {
+			if filepath.Base(dst.DestPath) == dst.DestPath {
 				stageDeviceFileProps = append(stageDeviceFileProps, filesystem.StageDeviceFilePairProp{
 					Src: proptools.StringPtr(src),
-					Dst: proptools.StringPtr(dst),
+					Dst: proptools.StringPtr(dst.DestPath),
 				})
 			}
 		}

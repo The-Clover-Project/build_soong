@@ -10,6 +10,7 @@ import (
 
 func init() {
 	PackagingSpecGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(PackagingSpec) })
+	RROInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(RROInfo) })
 }
 
 func (r PackagingSpec) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
@@ -250,4 +251,54 @@ var PackagingSpecGobRegId int16
 
 func (r PackagingSpec) GetTypeId() int16 {
 	return PackagingSpecGobRegId
+}
+
+func (r RROInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if r.Paths == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.Paths))); err != nil {
+			return err
+		}
+		for val1 := 0; val1 < len(r.Paths); val1++ {
+			if err = gobtools.EncodeInterface(ctx, buf, r.Paths[val1]); err != nil {
+				return err
+			}
+		}
+	}
+	return err
+}
+
+func (r *RROInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	var val3 int32
+	err = gobtools.DecodeSimple[int32](buf, &val3)
+	if err != nil {
+		return err
+	}
+	if val3 != -1 {
+		r.Paths = make([]Path, val3)
+		for val4 := 0; val4 < int(val3); val4++ {
+			if val6, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+				return err
+			} else if val6 == nil {
+				r.Paths[val4] = nil
+			} else {
+				r.Paths[val4] = val6.(Path)
+			}
+		}
+	}
+
+	return err
+}
+
+var RROInfoGobRegId int16
+
+func (r RROInfo) GetTypeId() int16 {
+	return RROInfoGobRegId
 }

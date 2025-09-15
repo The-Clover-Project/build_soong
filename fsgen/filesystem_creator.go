@@ -614,20 +614,24 @@ func (f *filesystemCreator) createDeviceModule(
 	partitionProps.Vbmeta_partitions = vbmetaPartitions
 
 	deviceProps := &filesystem.DeviceProperties{
-		Main_device:                         proptools.BoolPtr(true),
-		Ab_ota_updater:                      proptools.BoolPtr(partitionVars.AbOtaUpdater),
-		Ab_ota_partitions:                   partitionVars.AbOtaPartitions,
-		Ab_ota_postinstall_config:           partitionVars.AbOtaPostInstallConfig,
-		Android_info:                        proptools.StringPtr(generatedModuleName(ctx.Config(), "android_info.prop")),
-		Kernel_version:                      ctx.Config().ProductVariables().BoardKernelVersion,
-		Partial_ota_update_partitions:       partitionVars.BoardPartialOtaUpdatePartitionsList,
-		Flash_block_size:                    proptools.StringPtr(partitionVars.BoardFlashBlockSize),
-		Bootloader_in_update_package:        proptools.BoolPtr(partitionVars.BootloaderInUpdatePackage),
-		Precompiled_sepolicy_without_vendor: proptools.StringPtr(":precompiled_sepolicy_without_vendor"),
-		Vendor_blobs_license:                vendorBlobsLicenseProp,
-		InfoPartitionProps:                  *infoPartitionProps,
-		Minimal_font_footprint:              proptools.BoolPtr(partitionVars.MinimalFontFootprint),
-		Stage_device_files:                  getstageDeviceFileProps(ctx),
+		Main_device:                          proptools.BoolPtr(true),
+		Ab_ota_updater:                       proptools.BoolPtr(partitionVars.AbOtaUpdater),
+		Ab_ota_partitions:                    partitionVars.AbOtaPartitions,
+		Ab_ota_postinstall_config:            partitionVars.AbOtaPostInstallConfig,
+		Android_info:                         proptools.StringPtr(generatedModuleName(ctx.Config(), "android_info.prop")),
+		Kernel_version:                       ctx.Config().ProductVariables().BoardKernelVersion,
+		Partial_ota_update_partitions:        partitionVars.BoardPartialOtaUpdatePartitionsList,
+		Flash_block_size:                     proptools.StringPtr(partitionVars.BoardFlashBlockSize),
+		Bootloader_in_update_package:         proptools.BoolPtr(partitionVars.BootloaderInUpdatePackage),
+		Precompiled_sepolicy_without_vendor:  proptools.StringPtr(":precompiled_sepolicy_without_vendor"),
+		Vendor_blobs_license:                 vendorBlobsLicenseProp,
+		InfoPartitionProps:                   *infoPartitionProps,
+		Minimal_font_footprint:               proptools.BoolPtr(partitionVars.MinimalFontFootprint),
+		Stage_device_files:                   getstageDeviceFileProps(ctx),
+		Product_restrict_vendor_files:        proptools.StringPtr(partitionVars.ProductRestrictVendorFiles),
+		Vendor_product_restrict_vendor_files: proptools.StringPtr(partitionVars.VendorProductRestrictVendorFiles),
+		Vendor_exception_paths:               partitionVars.VendorExceptionPaths,
+		Vendor_exception_modules:             partitionVars.VendorExceptionModules,
 	}
 
 	if buildingInitBootImage(partitionVars) {
