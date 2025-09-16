@@ -16,9 +16,12 @@ package build
 
 import (
 	"bufio"
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"io"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"syscall"
 	"time"
@@ -218,4 +221,79 @@ func (c *Cmd) RunAndStreamOrFatal() {
 	err = c.Wait()
 	st.Finish()
 	c.reportError(err)
+}
+
+type credRefresher struct {
+	path    string
+	args    string
+	expires time.Time
+}
+
+type credHelperResp struct {
+	Expiry string `json:"expiry"` // UnixDate
+}
+
+func credRefresh(ctx Context, args, path string) (time.Time, error) {
+	cmd := exec.Command(path, strings.Split(args, " ")...)
+	var stdout, stderr bytes.Buffer
+	cmd.Stdin = strings.NewReader("")
+	cmd.Stdout = &stdout
+	cmd.Stderr = &stderr
+	err := cmd.Run()
+	if err != nil {
+		return time.Time{}, err
+	}
+	var resp credHelperResp
+	err = json.Unmarshal(stdout.Bytes(), &resp)
+	if err != nil {
+		return time.Time{}, err
+	}
+	return time.Parse(time.UnixDate, resp.Expiry)
+}
+
+func newCredRefresher(ctx Context, config Config) (*credRefresher, error) {
+	path, ok := config.Environment().Get("RBE_credentials_helper")
+	if !ok {
+		path = "execrel://"
+	}
+	if strings.HasPrefix(path, "execrel://") {
+		relpath, _ := strings.CutPrefix(path, "execrel://")
+		dir, ok := config.Environment().Get("RBE_DIR")
+		if !ok {
+			dir = "prebuilts/remoteexecution-client/live"
+		}
+		// Use the one from RBE_DIR.
+		path = filepath.Join(dir, relpath, "credshelper")
+	}
+	args, ok := config.Environment().Get("RBE_credentials_helper_args")
+	expires, err := credRefresh(ctx, args, path)
+	if err != nil {
+		return nil, err
+	}
+	return &credRefresher{
+		path:    path,
+		args:    args,
+		expires: expires,
+	}, nil
+}
+
+func (cr *credRefresher) run(ctx Context, quit <-chan bool) {
+	for {
+		wait := time.Until(cr.expires)
+		ctx.Printf("cred expires %s - valid for %s", cr.expires, wait)
+		// Wait until 30 seconds before our credentials expire.
+		if wait.Seconds() > 30 {
+			wait -= time.Duration(30 * 1000000000)
+		}
+		select {
+		case <-time.After(wait):
+			expires, err := credRefresh(ctx, cr.args, cr.path)
+			if err != nil {
+				return
+			}
+			cr.expires = expires
+		case <-quit:
+			return
+		}
+	}
 }

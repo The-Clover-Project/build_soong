@@ -626,6 +626,7 @@ func runSoong(ctx Context, config Config, enforceNoSoongOutput bool) {
 		nr := status.NewNinjaReader(ctx, ctx.Status.StartTool(), fifo)
 		func() {
 			defer nr.Close()
+			var ninjaEnv Environment
 			var ninjaCmd string
 			var ninjaArgs []string
 			switch config.ninjaCommand {
@@ -658,11 +659,27 @@ func runSoong(ctx Context, config Config, enforceNoSoongOutput bool) {
 					//"-w", "outputdir=err",
 					//"-w", "missingoutfile=err",
 					"-v",
-					"-j", strconv.Itoa(config.Parallel()),
-					//"--frontend-file", fifo,
-					"--log_dir", config.SoongOutDir(),
+					"--local_jobs", strconv.Itoa(config.Parallel()),
+					//"--remote_jobs", strconv.Itoa(config.RemoteParallel()),
+					"--frontend_file", fifo,
 					"-f", filepath.Join(config.SoongOutDir(), "bootstrap.ninja"),
 				}
+				if value := config.SisoConfigDir(); value != "" {
+					ninjaArgs = append(ninjaArgs, fmt.Sprintf("--config_repo_dir=%s", value))
+				}
+				sisoExperiments := []string{
+					"ignore-missing-out-in-depfile",
+					"fallback-on-exec-error",
+				}
+				if exps, ok := ninjaEnv.Get("SISO_EXPERIMENTS"); ok {
+					sisoExperiments = append(sisoExperiments, exps)
+				}
+				ninjaEnv.Set("SISO_EXPERIMENTS", strings.Join(sisoExperiments, ","))
+
+				// Output `siso version`.
+				vcmd := Command(ctx, config, nil, "siso version",
+					config.SisoBin(), "version")
+				vcmd.RunAndStreamOrFatal()
 			default:
 				// NINJA_NINJA is the default.
 				ninjaCmd = config.NinjaBin()
@@ -689,8 +706,6 @@ func runSoong(ctx Context, config Config, enforceNoSoongOutput bool) {
 
 			cmd := Command(ctx, config, e, "soong bootstrap",
 				ninjaCmd, ninjaArgs...)
-
-			var ninjaEnv Environment
 
 			// This is currently how the command line to invoke soong_build finds the
 			// root of the source tree and the output root
