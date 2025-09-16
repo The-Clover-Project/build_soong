@@ -28,7 +28,7 @@ var (
 		"-Werror=implicit-function-declaration",
 		// This is already the driver's Android default, but duplicated here (and
 		// below) for ease of experimentation with additional extensions.
-		"-march=rv64gcv_zba_zbb_zbs",
+		"-march=rv64gcv_zacas_zba_zbb_zbs",
 		// TODO: remove when qemu V works (https://gitlab.com/qemu-project/qemu/-/issues/1976)
 		// (Note that we'll probably want to wait for berberis to be good enough
 		// that most people don't care about qemu's V performance either!)
@@ -40,7 +40,7 @@ var (
 	riscv64Ldflags = []string{
 		// This is already the driver's Android default, but duplicated here (and
 		// above) for ease of experimentation with additional extensions.
-		"-march=rv64gcv_zba_zbb_zbs",
+		"-march=rv64gcv_zacas_zba_zbb_zbs",
 		"-Wl,-z,max-page-size=4096",
 	}
 
