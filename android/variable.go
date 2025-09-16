@@ -200,12 +200,13 @@ type ProductVariables struct {
 	// Suffix to add to generated Makefiles
 	Make_suffix *string `json:",omitempty"`
 
-	BuildId              *string `json:",omitempty"`
-	BuildFingerprintFile *string `json:",omitempty"`
-	BuildNumberFile      *string `json:",omitempty"`
-	BuildHostnameFile    *string `json:",omitempty"`
-	BuildThumbprintFile  *string `json:",omitempty"`
-	DisplayBuildNumber   *bool   `json:",omitempty"`
+	BuildId                    *string `json:",omitempty"`
+	BuildFingerprintFile       *string `json:",omitempty"`
+	BuildNumberFile            *string `json:",omitempty"`
+	BuildHostnameFile          *string `json:",omitempty"`
+	BuildSystemFingerprintFile *string `json:",omitempty"`
+	BuildThumbprintFile        *string `json:",omitempty"`
+	DisplayBuildNumber         *bool   `json:",omitempty"`
 
 	Platform_display_version_name          *string  `json:",omitempty"`
 	Platform_version_name                  *string  `json:",omitempty"`
