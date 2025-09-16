@@ -331,10 +331,6 @@ func (c *Cmd) wrapSandbox() {
 			c.ctx.Printf("AllowBuildBrokenUsesNetwork: %v", c.Sandbox.AllowBuildBrokenUsesNetwork)
 			c.ctx.Printf("BuildBrokenUsesNetwork: %v", c.config.BuildBrokenUsesNetwork())
 			sandboxArgs = append(sandboxArgs, "-N")
-		} else if c.config.ninjaCommand == NINJA_SISO && !c.config.UseRewrapper() {
-			// TODO(b/439871372): proxy this access through a unix domain socket.
-			c.ctx.Printf("Siso requires network access (b/439871372)")
-			sandboxArgs = append(sandboxArgs, "-N")
 		}
 	} else if dlv, _ := c.config.Environment().Get("SOONG_DELVE"); dlv != "" {
 		// The debugger is enabled and soong_build will pause until a remote delve process connects, allow

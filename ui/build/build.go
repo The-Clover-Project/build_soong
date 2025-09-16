@@ -336,7 +336,18 @@ func Build(ctx Context, config Config) {
 				rbePanic = recover()
 				close(rbeCh)
 			}()
-			startRBE(ctx, config)
+			startReproxy(ctx, config)
+		}()
+		defer DumpRBEMetrics(ctx, config, filepath.Join(config.LogsDir(), "rbe_metrics.pb"))
+	} else if config.StartRBEproxy() {
+		cleanupRBELogsDir(ctx, config)
+		checkRBERequirements(ctx, config)
+		go func() {
+			defer func() {
+				rbePanic = recover()
+				close(rbeCh)
+			}()
+			startRBEproxy(ctx, config)
 		}()
 		defer DumpRBEMetrics(ctx, config, filepath.Join(config.LogsDir(), "rbe_metrics.pb"))
 	} else {
@@ -411,7 +422,7 @@ func Build(ctx Context, config Config) {
 
 	<-rbeCh
 	if rbePanic != nil {
-		// If there was a ctx.Fatal in startRBE, rethrow it.
+		// If there was a ctx.Fatal in startReproxy, rethrow it.
 		panic(rbePanic)
 	}
 

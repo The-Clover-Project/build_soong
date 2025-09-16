@@ -41,6 +41,15 @@ func runNinjaForBuild(ctx Context, config Config) {
 	runNinja(ctx, config, config.NinjaArgs())
 }
 
+// Create a script for siso to use to refresh credentials.
+func createSisoCredsHelper(ctx Context, config Config, cmd *Cmd, cr *credRefresher) error {
+	cmd.Environment.Set("SISO_CREDENTIAL_HELPER", "build/soong/scripts/siso-creds-helper.py")
+	cacheDir := config.rbeCacheDir()
+	args := []string{cr.path, cr.args, "--cache_dir", cacheDir}
+	cmdFile := filepath.Join(cacheDir, "soong-convert-command")
+	return os.WriteFile(cmdFile, []byte(strings.Join(args, " ")), 0666)
+}
+
 // Constructs and runs the Ninja command line with a restricted set of
 // environment variables. It's important to restrict the environment Ninja runs
 // for hermeticity reasons, and to avoid spurious rebuilds.
@@ -64,6 +73,7 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 		parallel = config.Parallel()
 	}
 
+	var cr *credRefresher
 	sisoExperiments := []string{}
 	switch config.ninjaCommand {
 	case NINJA_N2:
@@ -89,6 +99,16 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 			"--frontend_file", fifo,
 			"--local_jobs", strconv.Itoa(config.Parallel()),
 		}
+		if service, ok := config.environ.Get("RBE_service"); ok {
+			if config.UseRBEproxy() {
+				args = append(args, "--reapi_insecure")
+				service = getRBEproxySocket(ctx, config)
+			}
+			args = append(args, "--reapi_address", service)
+		}
+		if instance, ok := config.environ.Get("RBE_instance"); ok {
+			args = append(args, "--reapi_instance", instance)
+		}
 		if value := config.SisoConfigDir(); value != "" {
 			args = append(args, fmt.Sprintf("--config_repo_dir=%s", value))
 		}
@@ -109,23 +129,17 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 				args = append(args, "--remote_jobs", strconv.Itoa(config.RemoteParallel()))
 			}
 		case config.UseRBE():
-			// TODO: forward RBE requests through a unix domain socket to escape the sandbox.
+			ctx.Printf("with rbeproxy\n")
 			if config.RemoteParallel() != 0 {
 				args = append(args, "--remote_jobs", strconv.Itoa(config.RemoteParallel()))
 			}
-			project, found := config.environ.Get("RBE_project")
-			if !found {
-				// If RBE_project is not set, try RBE_metrics_project.
-				project, _ = config.environ.Get("RBE_metrics_project")
-			}
-			if project != "" {
+			if project := getRBEProject(ctx, config); project != "" {
 				args = append(args, "--project", project)
-			} else {
-				ctx.Printf("No RBE project found\n")
 			}
 			// TODO(b/431872600): make remote exec work under sandbox
 			// note: can use RBE by `luci-auth context -- m`
-			cr, err := newCredRefresher(ctx, config)
+			var err error
+			cr, err = newCredRefresher(ctx, config)
 			if err != nil {
 				ctx.Printf("Failed to find credential helper: %v\n", err)
 				return
@@ -196,6 +210,12 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 			sisoExperiments = append(sisoExperiments, expsValue)
 		}
 		cmd.Environment.Set("SISO_EXPERIMENTS", strings.Join(sisoExperiments, ","))
+		if cr != nil {
+			if err := createSisoCredsHelper(ctx, config, cmd, cr); err != nil {
+				ctx.Printf("Failed to create credential helper script: %v\n", err)
+				return
+			}
+		}
 	}
 
 	// Allow both NINJA_ARGS and NINJA_EXTRA_ARGS, since both have been
@@ -322,8 +342,7 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 
 			// Siso
 			"SISO_PROJECT",
-			"SISO_REAPI_INSTANCE",
-			"SISO_REAPI_ADDRESS",
+			"SISO_CREDENTIAL_HELPER",
 			"SISO_LIMITS",
 		}, config.BuildBrokenNinjaUsesEnvVars()...)...)
 	}

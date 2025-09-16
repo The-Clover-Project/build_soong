@@ -44,6 +44,8 @@ type ContextImpl struct {
 	Tracer tracer.Tracer
 
 	CriticalPath *status.CriticalPath
+
+	RBEProxyCmd *Cmd
 }
 
 // BeginTrace starts a new Duration Event.  Call End on the returned TraceEvent

@@ -59,6 +59,13 @@ func Command(ctx Context, config Config, event *TraceEvent, name string, executa
 	return ret
 }
 
+func (c *Cmd) Kill() error {
+	if c.Cmd.Process != nil {
+		return c.Cmd.Process.Kill()
+	}
+	return nil
+}
+
 func (c *Cmd) prepare() {
 	if c.Env == nil {
 		c.Env = c.Environment.Environ()

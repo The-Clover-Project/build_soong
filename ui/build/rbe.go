@@ -115,13 +115,60 @@ func checkRBERequirements(ctx Context, config Config) {
 	}
 }
 
-func startRBE(ctx Context, config Config) {
+func startRBEproxy(ctx Context, config Config) {
 	e := ctx.BeginTrace(metrics.RunSetupTool, "rbe_bootstrap")
 	defer e.End()
 
 	ctx.Status.Status("Starting rbe...")
+	executable := config.SisoBin()
+	args := []string{
+		"proxy",
+		"--addr", getRBEproxySocket(ctx, config),
+	}
+	if project := getRBEProject(ctx, config); project != "" {
+		args = append(args, "--project", project)
+	}
 
-	cmd := Command(ctx, config, e, "startRBE bootstrap", rbeCommand(ctx, config, bootstrapCmd))
+	cmd := Command(ctx, config, e, "startRbeproxy bootstrap", executable, args...)
+
+	if err := cmd.Start(); err != nil {
+		ctx.Fatalf("Unable to start siso proxy\nFAILED: siso proxy failed with: %v\n%s\n", err)
+	}
+	ctx.RBEProxyCmd = cmd
+}
+
+func getRBEproxySocket(ctx Context, config Config) string {
+	service, ok := config.environ.Get("RBE_service")
+	if !ok {
+		ctx.Fatalf("RBE_service is not set")
+	}
+	config.environ.Set("RBE_actual_service", service)
+	rel_socket := filepath.Join(config.OutDir(), "rbeproxy.socket")
+	abs_socket, err := filepath.Abs(rel_socket)
+	if err != nil {
+		ctx.Fatalf("Could not resolve %s to an absolute path: %v\n", rel_socket, err)
+	}
+	return fmt.Sprintf("unix://%s", abs_socket)
+}
+
+func getRBEProject(ctx Context, config Config) string {
+	project, found := config.environ.Get("RBE_project")
+	if !found {
+		// If RBE_project is not set, try RBE_metrics_project.
+		project, _ = config.environ.Get("RBE_metrics_project")
+	}
+	if project == "" {
+		ctx.Printf("No RBE project found\n")
+	}
+	return project
+}
+
+func startReproxy(ctx Context, config Config) {
+	e := ctx.BeginTrace(metrics.RunSetupTool, "rbe_bootstrap")
+	defer e.End()
+
+	ctx.Status.Status("Starting rbe...")
+	cmd := Command(ctx, config, e, "startReproxy bootstrap", rbeCommand(ctx, config, bootstrapCmd))
 
 	if output, err := cmd.CombinedOutput(); err != nil {
 		ctx.Fatalf("Unable to start RBE reproxy\nFAILED: RBE bootstrap failed with: %v\n%s\n", err, output)
@@ -129,10 +176,16 @@ func startRBE(ctx Context, config Config) {
 }
 
 func stopRBE(ctx Context, config Config) {
-	cmd := Command(ctx, config, nil, "stopRBE bootstrap", rbeCommand(ctx, config, bootstrapCmd), "-shutdown")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		ctx.Fatalf("rbe bootstrap with shutdown failed with: %v\n%s\n", err, output)
+	var output []byte
+	var err error
+	if ctx.RBEProxyCmd != nil {
+		ctx.RBEProxyCmd.Kill()
+	} else {
+		cmd := Command(ctx, config, nil, "stopRBE bootstrap", rbeCommand(ctx, config, bootstrapCmd), "-shutdown")
+		output, err = cmd.CombinedOutput()
+		if err != nil {
+			ctx.Fatalf("rbe bootstrap with shutdown failed with: %v\n%s\n", err, output)
+		}
 	}
 
 	if !config.Environment().IsEnvTrue("ANDROID_QUIET_BUILD") && len(output) > 0 {

@@ -1545,9 +1545,27 @@ func (c *configImpl) UseRewrapper() bool {
 	}
 }
 
+func (c *configImpl) UseRBEproxy() bool {
+	return c.UseRBE() && !c.UseRewrapper()
+}
+
 func (c *configImpl) StartReproxy() bool {
 	// Only start reproxy if we are using rewrapper.
 	if !c.UseRewrapper() {
+		return false
+	}
+
+	if v, ok := c.environ.Get("NOSTART_RBE"); ok {
+		v = strings.TrimSpace(v)
+		if v != "" && v != "false" {
+			return false
+		}
+	}
+	return true
+}
+
+func (c *configImpl) StartRBEproxy() bool {
+	if !c.UseRBEproxy() {
 		return false
 	}
 
