@@ -603,6 +603,7 @@ func (a *androidDevice) buildSymbolsZip(ctx android.ModuleContext, allInstalledM
 		ctx, allInstalledModules, a.getExtraSymbols(ctx), a.symbolsZipFile, a.symbolsMappingFile)
 
 	if !ctx.Config().KatiEnabled() {
+		ctx.Phony("symbols-zip", a.symbolsZipFile, a.symbolsMappingFile)
 		ctx.Phony("symbols-files", allInstalledSymbolsPaths...)
 		ctx.Phony("symbols-mappings", allInstalledSymbolsMappingPaths...)
 		ctx.Phony("droidcore-unbundled", android.PathForPhony(ctx, "symbols-files"), android.PathForPhony(ctx, "symbols-mappings"))
