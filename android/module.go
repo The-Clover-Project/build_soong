@@ -2086,6 +2086,7 @@ type HostToolProviderInfo struct {
 
 var HostToolProviderInfoProvider = blueprint.NewProvider[HostToolProviderInfo]()
 
+// @auto-generate: gob
 type DistInfo struct {
 	Dists []dist
 }

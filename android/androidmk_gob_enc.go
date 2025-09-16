@@ -8,8 +8,47 @@ import (
 )
 
 func init() {
+	distCopyGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(distCopy) })
 	AndroidMkProviderInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(AndroidMkProviderInfo) })
 	AndroidMkInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(AndroidMkInfo) })
+}
+
+func (r distCopy) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = gobtools.EncodeInterface(ctx, buf, r.from); err != nil {
+		return err
+	}
+
+	if err = gobtools.EncodeString(buf, r.dest); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r *distCopy) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	if val2, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+		return err
+	} else if val2 == nil {
+		r.from = nil
+	} else {
+		r.from = val2.(Path)
+	}
+
+	err = gobtools.DecodeString(buf, &r.dest)
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
+var distCopyGobRegId int16
+
+func (r distCopy) GetTypeId() int16 {
+	return distCopyGobRegId
 }
 
 func (r AndroidMkProviderInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {

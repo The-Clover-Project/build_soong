@@ -324,6 +324,7 @@ func (d *copiesForGoals) addCopyInstruction(from Path, dest string) {
 }
 
 // Instruction on a path that must be copied into the dist.
+// @auto-generate: gob
 type distCopy struct {
 	// The path to copy from.
 	from Path
@@ -772,6 +773,10 @@ func (so *soongOnlyAndroidMkSingleton) GenerateBuildActions(ctx SingletonContext
 	}
 }
 
+func (p *soongOnlyAndroidMkSingleton) IncrementalSupported() bool {
+	return true
+}
+
 // In soong-only mode, we don't do most of the androidmk stuff. But disted files are still largely
 // defined through the androidmk mechanisms, so this function is an alternate implementation of
 // the androidmk singleton that just focuses on getting the dist contributions
@@ -795,12 +800,15 @@ func (so *soongOnlyAndroidMkSingleton) soongOnlyBuildActions(ctx SingletonContex
 		}
 	}
 
-	singletonDists := getSingletonDists(ctx.Config())
-	singletonDists.lock.Lock()
-	if contribution := distsToDistContributions(singletonDists.dists); contribution != nil {
+	var singletonDists []dist
+	ctx.VisitAllSingletons(func(s blueprint.SingletonProxy) {
+		if info, ok := OtherSingletonProvider(ctx, s, SingletonDistInfoProvider); ok {
+			singletonDists = append(singletonDists, info.Dists...)
+		}
+	})
+	if contribution := distsToDistContributions(singletonDists); contribution != nil {
 		allDistContributions = append(allDistContributions, *contribution)
 	}
-	singletonDists.lock.Unlock()
 
 	// Build dist.mk for the packaging step to read and generate dist targets
 	distMkFile := absolutePath(filepath.Join(ctx.Config().katiPackageMkDir(), "dist.mk"))

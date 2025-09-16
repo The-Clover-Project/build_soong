@@ -29,6 +29,8 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 func init() {
 	RegisterMakeVarsProvider(pctx, androidMakeVarsProvider)
 }
@@ -207,10 +209,13 @@ type phony struct {
 	deps []string
 }
 
+// @auto-generate: gob
 type dist struct {
 	goals []string
 	paths distCopies
 }
+
+var SingletonDistInfoProvider = blueprint.NewSingletonProvider[DistInfo]()
 
 func (s *makeVarsSingleton) GenerateBuildActions(ctx SingletonContext) {
 	if !ctx.Config().KatiEnabled() {
@@ -253,10 +258,11 @@ func (s *makeVarsSingleton) GenerateBuildActions(ctx SingletonContext) {
 		phonies = append(phonies, mctx.phonies...)
 	}
 
-	singletonDists := getSingletonDists(ctx.Config())
-	singletonDists.lock.Lock()
-	dists = append(dists, singletonDists.dists...)
-	singletonDists.lock.Unlock()
+	ctx.VisitAllSingletons(func(s blueprint.SingletonProxy) {
+		if info, ok := OtherSingletonProvider(ctx, s, SingletonDistInfoProvider); ok {
+			dists = append(dists, info.Dists...)
+		}
+	})
 
 	ctx.VisitAllModuleProxies(func(m ModuleProxy) {
 		commonInfo := OtherModulePointerProviderOrDefault(ctx, m, CommonModuleInfoProvider)
