@@ -1381,6 +1381,17 @@ type selectsMockModuleDefaults struct {
 func (d *selectsMockModuleDefaults) GenerateAndroidBuildActions(ctx ModuleContext) {
 }
 
+type addToElementsPostProcessor struct {
+	s string
+}
+
+func (p addToElementsPostProcessor) PostProcess(x []string) []string {
+	for i := range x {
+		x[i] = x[i] + p.s
+	}
+	return x
+}
+
 func newSelectsMockModuleDefaults() Module {
 	module := &selectsMockModuleDefaults{}
 
@@ -1393,12 +1404,8 @@ func newSelectsMockModuleDefaults() Module {
 
 	AddLoadHook(module, func(lhc LoadHookContext) {
 		if module.defaultsProperties.String_list_postprocessor_add_to_elements != "" {
-			module.myProperties.My_string_list.AddPostProcessor(func(x []string) []string {
-				for i := range x {
-					x[i] = x[i] + module.defaultsProperties.String_list_postprocessor_add_to_elements
-				}
-				return x
-			})
+			module.myProperties.My_string_list.AddPostProcessor(
+				addToElementsPostProcessor{module.defaultsProperties.String_list_postprocessor_add_to_elements})
 		}
 	})
 
