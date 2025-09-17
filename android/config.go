@@ -448,6 +448,8 @@ type config struct {
 	// modulesForTests stores the list of modules that exist during Soong tests.  It is nil
 	// when not running Soong tests.
 	modulesForTests *modulesForTests
+
+	buildUUIDFile string
 }
 
 type partialCompileFlags struct {
@@ -779,6 +781,7 @@ func initConfig(cmdArgs CmdArgs, availableEnv map[string]string) (*config, error
 
 		katiEnabled: cmdArgs.KatiEnabled,
 	}
+
 	variant, ok := os.LookupEnv("TARGET_BUILD_VARIANT")
 	isEngBuild := !ok || variant == "eng"
 
@@ -875,6 +878,13 @@ func initConfig(cmdArgs CmdArgs, availableEnv map[string]string) (*config, error
 	newConfig.productVariables.Build_from_text_stub = boolPtr(newConfig.BuildFromTextStub())
 
 	newConfig.deviceNameToInstall = newConfig.productVariables.DeviceName
+
+	targetProduct := String(newConfig.productVariables.DeviceProduct)
+	buildUUIDFileSuffix := ""
+	if targetProduct != "" {
+		buildUUIDFileSuffix = "-" + targetProduct
+	}
+	newConfig.buildUUIDFile = "build_uuid" + buildUUIDFileSuffix + ".txt"
 
 	return newConfig, err
 }
@@ -1160,6 +1170,12 @@ func (c *config) BuildSystemFingerprintFile(ctx PathContext) Path {
 // rebuild on every incremental build when the build number changes.
 func (c *config) BuildNumberFile(ctx PathContext) Path {
 	return PathForOutput(ctx, String(c.productVariables.BuildNumberFile))
+}
+
+// BuildUUIDFile returns the path to a text file containing metadata
+// representing the current build's UUID.
+func (c *config) BuildUUIDFile(ctx PathContext) Path {
+	return PathForOutput(ctx, c.buildUUIDFile)
 }
 
 // BuildHostnameFile returns the path to a text file containing metadata

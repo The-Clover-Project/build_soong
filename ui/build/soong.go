@@ -752,22 +752,22 @@ func runSoong(ctx Context, config Config, enforceNoSoongOutput bool) {
 	loadSoongBuildMetrics(ctx, config, beforeSoongTimestamp)
 
 	soongNinjaFile := config.SoongNinjaFile()
-	distGzipFile(ctx, config, soongNinjaFile, "soong")
+	distGzipFile(ctx, config, soongNinjaFile, "soong_ui/soong")
 	for _, file := range blueprint.GetNinjaShardFiles(soongNinjaFile) {
 		if ok, _ := fileExists(file); ok {
-			distGzipFile(ctx, config, file, "soong")
+			distGzipFile(ctx, config, file, "soong_ui/soong")
 		}
 	}
-	distFile(ctx, config, config.SoongVarsFile(), "soong")
-	distFile(ctx, config, config.SoongExtraVarsFile(), "soong")
+	distFile(ctx, config, config.SoongVarsFile(), "soong_ui/soong")
+	distFile(ctx, config, config.SoongExtraVarsFile(), "soong_ui/soong")
 
 	if !config.SkipKati() {
-		distGzipFile(ctx, config, config.SoongAndroidMk(), "soong")
-		distGzipFile(ctx, config, config.SoongMakeVarsMk(), "soong")
+		distGzipFile(ctx, config, config.SoongAndroidMk(), "soong_ui/soong")
+		distGzipFile(ctx, config, config.SoongMakeVarsMk(), "soong_ui/soong")
 	}
 
 	if config.JsonModuleGraph() {
-		distGzipFile(ctx, config, config.ModuleGraphFile(), "soong")
+		distGzipFile(ctx, config, config.ModuleGraphFile(), "soong_ui/soong")
 	}
 }
 
