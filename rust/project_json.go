@@ -17,8 +17,8 @@ package rust
 import (
 	"encoding/json"
 	"fmt"
-
 	"github.com/google/blueprint/proptools"
+	"strings"
 
 	"android/soong/android"
 	"android/soong/rust/config"
@@ -166,9 +166,15 @@ func (singleton *projectGeneratorSingleton) addCrate(ctx android.SingletonContex
 		procMacroDylib = proptools.StringPtr(procMacro.Dylib.String())
 	}
 
+	var rootmodule = rustInfo.CompilerInfo.CrateRootPath.String()
+	include_dir := []string{ctx.ModuleDir(module)}
+	// Aidl generates rust files so we include those files in the include_dir parameter.
+	if strings.Contains(rootmodule, "aidl") {
+		include_dir = append(include_dir, rootmodule)
+	}
 	crate := rustProjectCrate{
 		DisplayName:    module.Name(),
-		RootModule:     rustInfo.CompilerInfo.CrateRootPath.String(),
+		RootModule:     rootmodule,
 		Edition:        rustInfo.CompilerInfo.Edition,
 		Deps:           make([]rustProjectDep, 0),
 		Cfg:            make([]string, 0),
@@ -176,7 +182,7 @@ func (singleton *projectGeneratorSingleton) addCrate(ctx android.SingletonContex
 		ProcMacro:      procMacroDylib != nil,
 		ProcMacroDylib: procMacroDylib,
 		Source: rustProjectIncludeDirs{
-			Include_dirs: []string{ctx.ModuleDir(module)},
+			Include_dirs: include_dir,
 			Exclude_dirs: []string{},
 		}, // TODO: What should this value be?
 	}
