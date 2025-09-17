@@ -662,6 +662,7 @@ func (a *androidDevice) distFiles(ctx android.ModuleContext) {
 			ctx.DistForGoalWithFilenameTag("droidcore-unbundled", a.targetFilesZip, namePrefix+a.targetFilesZip.Base())
 		}
 		if a.updatePackage != nil {
+			ctx.Phony("updatepackage", a.updatePackage)
 			ctx.DistForGoalWithFilenameTag("updatepackage", a.updatePackage, namePrefix+a.updatePackage.Base())
 			ctx.DistForGoalWithFilenameTag("droidcore-unbundled", a.updatePackage, namePrefix+a.updatePackage.Base())
 		}
