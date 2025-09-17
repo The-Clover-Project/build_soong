@@ -360,7 +360,6 @@ var (
 		"-Wno-unused-but-set-variable",
 		"-Wno-deprecated",
 		"-Wno-tautological-constant-compare",
-		"-Wno-error=range-loop-construct", // http://b/153747076
 	}
 
 	// This is similar to noOverrideGlobalCflags, but applies only to third-party
