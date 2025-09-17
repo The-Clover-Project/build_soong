@@ -27,6 +27,8 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 const (
 	hostString   = "host"
 	targetString = "target"
@@ -51,6 +53,7 @@ type JavaFuzzTest struct {
 	jniFilePaths       android.Paths
 }
 
+// @auto-generate: gob
 type JavaFuzzTestInfo struct {
 	JniFilePaths android.Paths
 }

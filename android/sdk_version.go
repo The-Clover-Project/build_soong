@@ -21,6 +21,8 @@ import (
 	"strings"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 type SdkContext interface {
 	// SdkVersion returns SdkSpec that corresponds to the sdk_version property of the current module
 	SdkVersion(ctx ConfigContext) SdkSpec
@@ -160,6 +162,7 @@ func (k SdkKind) DefaultExportableJavaLibraryName() string {
 }
 
 // SdkSpec represents the kind and the version of an SDK for a module to build against
+// @auto-generate: gob
 type SdkSpec struct {
 	Kind     SdkKind
 	ApiLevel ApiLevel

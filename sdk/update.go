@@ -637,7 +637,7 @@ func (s *sdk) generateInfoData(ctx android.ModuleContext, memberVariantDeps []sd
 			}
 
 			additionalSdkInfo, _ := android.OtherModuleProvider(ctx, module, android.AdditionalSdkInfoProvider)
-			info.memberSpecific = additionalSdkInfo.Properties
+			info.memberSpecific = additionalSdkInfo.Properties.ToMap()
 
 			name2Info[name] = info
 		}

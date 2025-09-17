@@ -255,13 +255,15 @@ type ProguardSpecInfo struct {
 
 var ProguardSpecInfoProvider = blueprint.NewProvider[ProguardSpecInfo]()
 
+// @auto-generate: gob
 type AndroidLibraryDependencyInfo struct {
 	ExportPackage       android.Path
-	ResourcesNodeDepSet depset.DepSet[*resourcesNode]
+	ResourcesNodeDepSet depset.DepSet[resourcesNodePtr]
 	RRODirsDepSet       depset.DepSet[rroDir]
 	ManifestsDepSet     depset.DepSet[android.Path]
 }
 
+// @auto-generate: gob
 type UsesLibraryDependencyInfo struct {
 	DexJarInstallPath   android.Path
 	ClassLoaderContexts dexpreopt.ClassLoaderContextMap
@@ -272,19 +274,18 @@ func (u *UsesLibraryDependencyInfo) GetClassLoaderContexts() dexpreopt.ClassLoad
 	return u.ClassLoaderContexts.DeepCopy()
 }
 
+// @auto-generate: gob
 type ProvidesUsesLibInfo struct {
 	ProvidesUsesLib *string
 }
 
-type ModuleWithUsesLibraryInfo struct {
-	UsesLibrary *usesLibrary
-}
-
+// @auto-generate: gob
 type ModuleWithSdkDepInfo struct {
 	SdkLinkType sdkLinkType
 	Stubs       bool
 }
 
+// @auto-generate: gob
 type ApexDependencyInfo struct {
 	// These fields can be different from the ones in JavaInfo, for example, for sdk_library
 	// the following fields are set since sdk_library inherits the implementations of
@@ -294,6 +295,7 @@ type ApexDependencyInfo struct {
 }
 
 // JavaInfo contains information about a java module for use by modules that depend on it.
+// @auto-generate: gob
 type JavaInfo struct {
 	// HeaderJars is a list of jars that can be passed as the javac classpath in order to link
 	// against this module.  If empty, ImplementationJars should be used instead.
@@ -471,6 +473,7 @@ type JavaInfo struct {
 
 var JavaInfoProvider = blueprint.NewProvider[*JavaInfo]()
 
+// @auto-generate: gob
 type DexpreopterInfo struct {
 	// The path to the profile on host that dexpreopter generates. This is used as the input for
 	// dex2oat.
@@ -484,6 +487,7 @@ type DexpreopterInfo struct {
 	ApexSystemServerDexJars android.Paths
 }
 
+// @auto-generate: gob
 type JavaLibraryInfo struct {
 	Prebuilt          bool
 	PermittedPackages []string
@@ -491,12 +495,14 @@ type JavaLibraryInfo struct {
 
 var JavaLibraryInfoProvider = blueprint.NewProvider[JavaLibraryInfo]()
 
+// @auto-generate: gob
 type JavaDexImportInfo struct{}
 
 var JavaDexImportInfoProvider = blueprint.NewProvider[JavaDexImportInfo]()
 
 // SyspropPublicStubInfo contains info about the sysprop public stub library that corresponds to
 // the sysprop implementation library.
+// @auto-generate: gob
 type SyspropPublicStubInfo struct {
 	// JavaInfo is the JavaInfoProvider of the sysprop public stub library that corresponds to
 	// the sysprop implementation library.
@@ -711,6 +717,7 @@ func (s sdkDep) hasFrameworkLibs() bool {
 	return !s.noStandardLibs && !s.noFrameworksLibs
 }
 
+// @auto-generate: gob
 type jniLib struct {
 	name           string
 	path           android.Path
@@ -1744,6 +1751,7 @@ type JavaTestImport struct {
 	dexJarFile android.Path
 }
 
+// @auto-generate: gob
 type JavaTestInfo struct {
 	TestConfig android.Path
 }

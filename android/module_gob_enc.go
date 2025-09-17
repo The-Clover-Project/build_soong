@@ -18,6 +18,7 @@ func init() {
 	katiInstallGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(katiInstall) })
 	extraFilesZipGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(extraFilesZip) })
 	OutputFilesInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(OutputFilesInfo) })
+	IdeInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(IdeInfo) })
 }
 
 func (r Dist) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
@@ -1719,4 +1720,420 @@ var OutputFilesInfoGobRegId int16
 
 func (r OutputFilesInfo) GetTypeId() int16 {
 	return OutputFilesInfoGobRegId
+}
+
+func (r IdeInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = gobtools.EncodeString(buf, r.BaseModuleName); err != nil {
+		return err
+	}
+
+	if r.Deps == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.Deps))); err != nil {
+			return err
+		}
+		for val1 := 0; val1 < len(r.Deps); val1++ {
+			if err = gobtools.EncodeString(buf, r.Deps[val1]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if r.Srcs == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.Srcs))); err != nil {
+			return err
+		}
+		for val2 := 0; val2 < len(r.Srcs); val2++ {
+			if err = gobtools.EncodeString(buf, r.Srcs[val2]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if r.Aidl_include_dirs == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.Aidl_include_dirs))); err != nil {
+			return err
+		}
+		for val3 := 0; val3 < len(r.Aidl_include_dirs); val3++ {
+			if err = gobtools.EncodeString(buf, r.Aidl_include_dirs[val3]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if r.Jarjar_rules == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.Jarjar_rules))); err != nil {
+			return err
+		}
+		for val4 := 0; val4 < len(r.Jarjar_rules); val4++ {
+			if err = gobtools.EncodeString(buf, r.Jarjar_rules[val4]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if r.Jars == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.Jars))); err != nil {
+			return err
+		}
+		for val5 := 0; val5 < len(r.Jars); val5++ {
+			if err = gobtools.EncodeString(buf, r.Jars[val5]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if r.Classes == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.Classes))); err != nil {
+			return err
+		}
+		for val6 := 0; val6 < len(r.Classes); val6++ {
+			if err = gobtools.EncodeString(buf, r.Classes[val6]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if r.Installed_paths == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.Installed_paths))); err != nil {
+			return err
+		}
+		for val7 := 0; val7 < len(r.Installed_paths); val7++ {
+			if err = gobtools.EncodeString(buf, r.Installed_paths[val7]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if r.SrcJars == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.SrcJars))); err != nil {
+			return err
+		}
+		for val8 := 0; val8 < len(r.SrcJars); val8++ {
+			if err = gobtools.EncodeString(buf, r.SrcJars[val8]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if r.Paths == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.Paths))); err != nil {
+			return err
+		}
+		for val9 := 0; val9 < len(r.Paths); val9++ {
+			if err = gobtools.EncodeString(buf, r.Paths[val9]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if r.Static_libs == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.Static_libs))); err != nil {
+			return err
+		}
+		for val10 := 0; val10 < len(r.Static_libs); val10++ {
+			if err = gobtools.EncodeString(buf, r.Static_libs[val10]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if r.Libs == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.Libs))); err != nil {
+			return err
+		}
+		for val11 := 0; val11 < len(r.Libs); val11++ {
+			if err = gobtools.EncodeString(buf, r.Libs[val11]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if r.Asset_dirs == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.Asset_dirs))); err != nil {
+			return err
+		}
+		for val12 := 0; val12 < len(r.Asset_dirs); val12++ {
+			if err = gobtools.EncodeString(buf, r.Asset_dirs[val12]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if r.Resource_dirs == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.Resource_dirs))); err != nil {
+			return err
+		}
+		for val13 := 0; val13 < len(r.Resource_dirs); val13++ {
+			if err = gobtools.EncodeString(buf, r.Resource_dirs[val13]); err != nil {
+				return err
+			}
+		}
+	}
+	return err
+}
+
+func (r *IdeInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	err = gobtools.DecodeString(buf, &r.BaseModuleName)
+	if err != nil {
+		return err
+	}
+
+	var val3 int32
+	err = gobtools.DecodeSimple[int32](buf, &val3)
+	if err != nil {
+		return err
+	}
+	if val3 != -1 {
+		r.Deps = make([]string, val3)
+		for val4 := 0; val4 < int(val3); val4++ {
+			err = gobtools.DecodeString(buf, &r.Deps[val4])
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	var val7 int32
+	err = gobtools.DecodeSimple[int32](buf, &val7)
+	if err != nil {
+		return err
+	}
+	if val7 != -1 {
+		r.Srcs = make([]string, val7)
+		for val8 := 0; val8 < int(val7); val8++ {
+			err = gobtools.DecodeString(buf, &r.Srcs[val8])
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	var val11 int32
+	err = gobtools.DecodeSimple[int32](buf, &val11)
+	if err != nil {
+		return err
+	}
+	if val11 != -1 {
+		r.Aidl_include_dirs = make([]string, val11)
+		for val12 := 0; val12 < int(val11); val12++ {
+			err = gobtools.DecodeString(buf, &r.Aidl_include_dirs[val12])
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	var val15 int32
+	err = gobtools.DecodeSimple[int32](buf, &val15)
+	if err != nil {
+		return err
+	}
+	if val15 != -1 {
+		r.Jarjar_rules = make([]string, val15)
+		for val16 := 0; val16 < int(val15); val16++ {
+			err = gobtools.DecodeString(buf, &r.Jarjar_rules[val16])
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	var val19 int32
+	err = gobtools.DecodeSimple[int32](buf, &val19)
+	if err != nil {
+		return err
+	}
+	if val19 != -1 {
+		r.Jars = make([]string, val19)
+		for val20 := 0; val20 < int(val19); val20++ {
+			err = gobtools.DecodeString(buf, &r.Jars[val20])
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	var val23 int32
+	err = gobtools.DecodeSimple[int32](buf, &val23)
+	if err != nil {
+		return err
+	}
+	if val23 != -1 {
+		r.Classes = make([]string, val23)
+		for val24 := 0; val24 < int(val23); val24++ {
+			err = gobtools.DecodeString(buf, &r.Classes[val24])
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	var val27 int32
+	err = gobtools.DecodeSimple[int32](buf, &val27)
+	if err != nil {
+		return err
+	}
+	if val27 != -1 {
+		r.Installed_paths = make([]string, val27)
+		for val28 := 0; val28 < int(val27); val28++ {
+			err = gobtools.DecodeString(buf, &r.Installed_paths[val28])
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	var val31 int32
+	err = gobtools.DecodeSimple[int32](buf, &val31)
+	if err != nil {
+		return err
+	}
+	if val31 != -1 {
+		r.SrcJars = make([]string, val31)
+		for val32 := 0; val32 < int(val31); val32++ {
+			err = gobtools.DecodeString(buf, &r.SrcJars[val32])
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	var val35 int32
+	err = gobtools.DecodeSimple[int32](buf, &val35)
+	if err != nil {
+		return err
+	}
+	if val35 != -1 {
+		r.Paths = make([]string, val35)
+		for val36 := 0; val36 < int(val35); val36++ {
+			err = gobtools.DecodeString(buf, &r.Paths[val36])
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	var val39 int32
+	err = gobtools.DecodeSimple[int32](buf, &val39)
+	if err != nil {
+		return err
+	}
+	if val39 != -1 {
+		r.Static_libs = make([]string, val39)
+		for val40 := 0; val40 < int(val39); val40++ {
+			err = gobtools.DecodeString(buf, &r.Static_libs[val40])
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	var val43 int32
+	err = gobtools.DecodeSimple[int32](buf, &val43)
+	if err != nil {
+		return err
+	}
+	if val43 != -1 {
+		r.Libs = make([]string, val43)
+		for val44 := 0; val44 < int(val43); val44++ {
+			err = gobtools.DecodeString(buf, &r.Libs[val44])
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	var val47 int32
+	err = gobtools.DecodeSimple[int32](buf, &val47)
+	if err != nil {
+		return err
+	}
+	if val47 != -1 {
+		r.Asset_dirs = make([]string, val47)
+		for val48 := 0; val48 < int(val47); val48++ {
+			err = gobtools.DecodeString(buf, &r.Asset_dirs[val48])
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	var val51 int32
+	err = gobtools.DecodeSimple[int32](buf, &val51)
+	if err != nil {
+		return err
+	}
+	if val51 != -1 {
+		r.Resource_dirs = make([]string, val51)
+		for val52 := 0; val52 < int(val51); val52++ {
+			err = gobtools.DecodeString(buf, &r.Resource_dirs[val52])
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return err
+}
+
+var IdeInfoGobRegId int16
+
+func (r IdeInfo) GetTypeId() int16 {
+	return IdeInfoGobRegId
 }

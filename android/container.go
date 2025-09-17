@@ -236,6 +236,7 @@ type InstallableModule interface {
 	DynamicDependencyTags() []blueprint.DependencyTag
 }
 
+// @auto-generate: gob
 type restriction struct {
 	// container of the dependency
 	dependency *container
@@ -248,6 +249,8 @@ type restriction struct {
 	// considered allowed and an error will not be thrown.
 	allowedExceptions []exceptionHandleFuncLabel
 }
+
+// @auto-generate: gob
 type container struct {
 	// The name of the container i.e. partition, api domain
 	name string
@@ -373,6 +376,7 @@ func initializeApexContainer() *container {
 	return apexContainer
 }
 
+// @auto-generate: gob
 type ContainersInfo struct {
 	belongingContainers []*container
 

@@ -3,12 +3,26 @@
 package java
 
 import (
+	"android/soong/android"
+	"android/soong/dexpreopt"
 	"bytes"
 	"github.com/google/blueprint/gobtools"
 )
 
 func init() {
 	ProguardSpecInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ProguardSpecInfo) })
+	AndroidLibraryDependencyInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(AndroidLibraryDependencyInfo) })
+	UsesLibraryDependencyInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(UsesLibraryDependencyInfo) })
+	ProvidesUsesLibInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ProvidesUsesLibInfo) })
+	ModuleWithSdkDepInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ModuleWithSdkDepInfo) })
+	ApexDependencyInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ApexDependencyInfo) })
+	JavaInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(JavaInfo) })
+	DexpreopterInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(DexpreopterInfo) })
+	JavaLibraryInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(JavaLibraryInfo) })
+	JavaDexImportInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(JavaDexImportInfo) })
+	SyspropPublicStubInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(SyspropPublicStubInfo) })
+	jniLibGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(jniLib) })
+	JavaTestInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(JavaTestInfo) })
 }
 
 func (r ProguardSpecInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
@@ -51,4 +65,1856 @@ var ProguardSpecInfoGobRegId int16
 
 func (r ProguardSpecInfo) GetTypeId() int16 {
 	return ProguardSpecInfoGobRegId
+}
+
+func (r AndroidLibraryDependencyInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = gobtools.EncodeInterface(ctx, buf, r.ExportPackage); err != nil {
+		return err
+	}
+
+	if err = r.ResourcesNodeDepSet.Encode(ctx, buf); err != nil {
+		return err
+	}
+
+	if err = r.RRODirsDepSet.Encode(ctx, buf); err != nil {
+		return err
+	}
+
+	if err = r.ManifestsDepSet.EncodeInterface(ctx, buf); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r *AndroidLibraryDependencyInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	if val2, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+		return err
+	} else if val2 == nil {
+		r.ExportPackage = nil
+	} else {
+		r.ExportPackage = val2.(android.Path)
+	}
+
+	if err = r.ResourcesNodeDepSet.Decode(ctx, buf); err != nil {
+		return err
+	}
+
+	if err = r.RRODirsDepSet.Decode(ctx, buf); err != nil {
+		return err
+	}
+
+	if err = r.ManifestsDepSet.DecodeInterface(ctx, buf); err != nil {
+		return err
+	}
+
+	return err
+}
+
+var AndroidLibraryDependencyInfoGobRegId int16
+
+func (r AndroidLibraryDependencyInfo) GetTypeId() int16 {
+	return AndroidLibraryDependencyInfoGobRegId
+}
+
+func (r UsesLibraryDependencyInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = gobtools.EncodeInterface(ctx, buf, r.DexJarInstallPath); err != nil {
+		return err
+	}
+
+	if r.ClassLoaderContexts == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.ClassLoaderContexts))); err != nil {
+			return err
+		}
+		for k, v := range r.ClassLoaderContexts {
+			if err = gobtools.EncodeSimple(buf, int64(k)); err != nil {
+				return err
+			}
+			if v == nil {
+				if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+					return err
+				}
+			} else {
+				if err = gobtools.EncodeSimple(buf, int32(len(v))); err != nil {
+					return err
+				}
+				for val1 := 0; val1 < len(v); val1++ {
+					val2 := v[val1] == nil
+					if err = gobtools.EncodeSimple(buf, val2); err != nil {
+						return err
+					}
+					if !val2 {
+						if err = (*v[val1]).Encode(ctx, buf); err != nil {
+							return err
+						}
+					}
+				}
+			}
+		}
+	}
+	return err
+}
+
+func (r *UsesLibraryDependencyInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	if val2, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+		return err
+	} else if val2 == nil {
+		r.DexJarInstallPath = nil
+	} else {
+		r.DexJarInstallPath = val2.(android.Path)
+	}
+
+	var val4 int32
+	err = gobtools.DecodeSimple[int32](buf, &val4)
+	if err != nil {
+		return err
+	}
+	if val4 != -1 {
+		r.ClassLoaderContexts = make(map[int][]*dexpreopt.ClassLoaderContext, val4)
+		for val5 := 0; val5 < int(val4); val5++ {
+			var k int
+			var v []*dexpreopt.ClassLoaderContext
+			var val6 int64
+			err = gobtools.DecodeSimple[int64](buf, &val6)
+			if err != nil {
+				return err
+			}
+			k = int(val6)
+			var val8 int32
+			err = gobtools.DecodeSimple[int32](buf, &val8)
+			if err != nil {
+				return err
+			}
+			if val8 != -1 {
+				v = make([]*dexpreopt.ClassLoaderContext, val8)
+				for val9 := 0; val9 < int(val8); val9++ {
+					var val11 bool
+					if err = gobtools.DecodeSimple(buf, &val11); err != nil {
+						return err
+					}
+					if !val11 {
+						var val10 dexpreopt.ClassLoaderContext
+						if err = val10.Decode(ctx, buf); err != nil {
+							return err
+						}
+						v[val9] = &val10
+					}
+				}
+			}
+			r.ClassLoaderContexts[k] = v
+		}
+	}
+
+	return err
+}
+
+var UsesLibraryDependencyInfoGobRegId int16
+
+func (r UsesLibraryDependencyInfo) GetTypeId() int16 {
+	return UsesLibraryDependencyInfoGobRegId
+}
+
+func (r ProvidesUsesLibInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	val1 := r.ProvidesUsesLib == nil
+	if err = gobtools.EncodeSimple(buf, val1); err != nil {
+		return err
+	}
+	if !val1 {
+		if err = gobtools.EncodeString(buf, (*r.ProvidesUsesLib)); err != nil {
+			return err
+		}
+	}
+	return err
+}
+
+func (r *ProvidesUsesLibInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	var val2 bool
+	if err = gobtools.DecodeSimple(buf, &val2); err != nil {
+		return err
+	}
+	if !val2 {
+		var val1 string
+		err = gobtools.DecodeString(buf, &val1)
+		if err != nil {
+			return err
+		}
+		r.ProvidesUsesLib = &val1
+	}
+
+	return err
+}
+
+var ProvidesUsesLibInfoGobRegId int16
+
+func (r ProvidesUsesLibInfo) GetTypeId() int16 {
+	return ProvidesUsesLibInfoGobRegId
+}
+
+func (r ModuleWithSdkDepInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = gobtools.EncodeSimple(buf, int64(int(r.SdkLinkType))); err != nil {
+		return err
+	}
+
+	if err = gobtools.EncodeSimple(buf, r.Stubs); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r *ModuleWithSdkDepInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	var val2 int
+	var val3 int64
+	err = gobtools.DecodeSimple[int64](buf, &val3)
+	if err != nil {
+		return err
+	}
+	val2 = int(val3)
+	r.SdkLinkType = sdkLinkType(val2)
+
+	err = gobtools.DecodeSimple[bool](buf, &r.Stubs)
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
+var ModuleWithSdkDepInfoGobRegId int16
+
+func (r ModuleWithSdkDepInfo) GetTypeId() int16 {
+	return ModuleWithSdkDepInfoGobRegId
+}
+
+func (r ApexDependencyInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if r.HeaderJars == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.HeaderJars))); err != nil {
+			return err
+		}
+		for val1 := 0; val1 < len(r.HeaderJars); val1++ {
+			if err = gobtools.EncodeInterface(ctx, buf, r.HeaderJars[val1]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if r.ImplementationAndResourcesJars == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.ImplementationAndResourcesJars))); err != nil {
+			return err
+		}
+		for val2 := 0; val2 < len(r.ImplementationAndResourcesJars); val2++ {
+			if err = gobtools.EncodeInterface(ctx, buf, r.ImplementationAndResourcesJars[val2]); err != nil {
+				return err
+			}
+		}
+	}
+	return err
+}
+
+func (r *ApexDependencyInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	var val3 int32
+	err = gobtools.DecodeSimple[int32](buf, &val3)
+	if err != nil {
+		return err
+	}
+	if val3 != -1 {
+		r.HeaderJars = make([]android.Path, val3)
+		for val4 := 0; val4 < int(val3); val4++ {
+			if val6, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+				return err
+			} else if val6 == nil {
+				r.HeaderJars[val4] = nil
+			} else {
+				r.HeaderJars[val4] = val6.(android.Path)
+			}
+		}
+	}
+
+	var val9 int32
+	err = gobtools.DecodeSimple[int32](buf, &val9)
+	if err != nil {
+		return err
+	}
+	if val9 != -1 {
+		r.ImplementationAndResourcesJars = make([]android.Path, val9)
+		for val10 := 0; val10 < int(val9); val10++ {
+			if val12, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+				return err
+			} else if val12 == nil {
+				r.ImplementationAndResourcesJars[val10] = nil
+			} else {
+				r.ImplementationAndResourcesJars[val10] = val12.(android.Path)
+			}
+		}
+	}
+
+	return err
+}
+
+var ApexDependencyInfoGobRegId int16
+
+func (r ApexDependencyInfo) GetTypeId() int16 {
+	return ApexDependencyInfoGobRegId
+}
+
+func (r JavaInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if r.HeaderJars == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.HeaderJars))); err != nil {
+			return err
+		}
+		for val1 := 0; val1 < len(r.HeaderJars); val1++ {
+			if err = gobtools.EncodeInterface(ctx, buf, r.HeaderJars[val1]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if r.RepackagedHeaderJars == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.RepackagedHeaderJars))); err != nil {
+			return err
+		}
+		for val2 := 0; val2 < len(r.RepackagedHeaderJars); val2++ {
+			if err = gobtools.EncodeInterface(ctx, buf, r.RepackagedHeaderJars[val2]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if r.LocalHeaderJarsPreJarjar == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.LocalHeaderJarsPreJarjar))); err != nil {
+			return err
+		}
+		for val3 := 0; val3 < len(r.LocalHeaderJarsPreJarjar); val3++ {
+			if err = gobtools.EncodeInterface(ctx, buf, r.LocalHeaderJarsPreJarjar[val3]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if err = r.TransitiveLibsHeaderJarsForR8.EncodeInterface(ctx, buf); err != nil {
+		return err
+	}
+
+	if err = r.TransitiveStaticLibsHeaderJarsForR8.EncodeInterface(ctx, buf); err != nil {
+		return err
+	}
+
+	if err = r.TransitiveStaticLibsHeaderJars.EncodeInterface(ctx, buf); err != nil {
+		return err
+	}
+
+	if err = r.TransitiveStaticLibsImplementationJars.EncodeInterface(ctx, buf); err != nil {
+		return err
+	}
+
+	if err = r.TransitiveStaticLibsResourceJars.EncodeInterface(ctx, buf); err != nil {
+		return err
+	}
+
+	if r.ImplementationAndResourcesJars == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.ImplementationAndResourcesJars))); err != nil {
+			return err
+		}
+		for val4 := 0; val4 < len(r.ImplementationAndResourcesJars); val4++ {
+			if err = gobtools.EncodeInterface(ctx, buf, r.ImplementationAndResourcesJars[val4]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if r.ImplementationJars == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.ImplementationJars))); err != nil {
+			return err
+		}
+		for val5 := 0; val5 < len(r.ImplementationJars); val5++ {
+			if err = gobtools.EncodeInterface(ctx, buf, r.ImplementationJars[val5]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if r.ResourceJars == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.ResourceJars))); err != nil {
+			return err
+		}
+		for val6 := 0; val6 < len(r.ResourceJars); val6++ {
+			if err = gobtools.EncodeInterface(ctx, buf, r.ResourceJars[val6]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if r.LocalHeaderJars == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.LocalHeaderJars))); err != nil {
+			return err
+		}
+		for val7 := 0; val7 < len(r.LocalHeaderJars); val7++ {
+			if err = gobtools.EncodeInterface(ctx, buf, r.LocalHeaderJars[val7]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if r.KotlinHeaderJars == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.KotlinHeaderJars))); err != nil {
+			return err
+		}
+		for val8 := 0; val8 < len(r.KotlinHeaderJars); val8++ {
+			if err = gobtools.EncodeInterface(ctx, buf, r.KotlinHeaderJars[val8]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if r.AidlIncludeDirs == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.AidlIncludeDirs))); err != nil {
+			return err
+		}
+		for val9 := 0; val9 < len(r.AidlIncludeDirs); val9++ {
+			if err = gobtools.EncodeInterface(ctx, buf, r.AidlIncludeDirs[val9]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if r.SrcJarArgs == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.SrcJarArgs))); err != nil {
+			return err
+		}
+		for val10 := 0; val10 < len(r.SrcJarArgs); val10++ {
+			if err = gobtools.EncodeString(buf, r.SrcJarArgs[val10]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if r.SrcJarDeps == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.SrcJarDeps))); err != nil {
+			return err
+		}
+		for val11 := 0; val11 < len(r.SrcJarDeps); val11++ {
+			if err = gobtools.EncodeInterface(ctx, buf, r.SrcJarDeps[val11]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if r.KSnapshotFiles == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.KSnapshotFiles))); err != nil {
+			return err
+		}
+		for k, v := range r.KSnapshotFiles {
+			if err = gobtools.EncodeString(buf, k); err != nil {
+				return err
+			}
+			if err = gobtools.EncodeInterface(ctx, buf, v); err != nil {
+				return err
+			}
+		}
+	}
+
+	if err = r.TransitiveSrcFiles.EncodeInterface(ctx, buf); err != nil {
+		return err
+	}
+
+	if r.ExportedPlugins == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.ExportedPlugins))); err != nil {
+			return err
+		}
+		for val12 := 0; val12 < len(r.ExportedPlugins); val12++ {
+			if err = gobtools.EncodeInterface(ctx, buf, r.ExportedPlugins[val12]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if r.ExportedPluginClasses == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.ExportedPluginClasses))); err != nil {
+			return err
+		}
+		for val13 := 0; val13 < len(r.ExportedPluginClasses); val13++ {
+			if err = gobtools.EncodeString(buf, r.ExportedPluginClasses[val13]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if err = gobtools.EncodeSimple(buf, r.ExportedPluginDisableTurbine); err != nil {
+		return err
+	}
+
+	if err = r.JacocoInfo.Encode(ctx, buf); err != nil {
+		return err
+	}
+
+	if err = gobtools.EncodeSimple(buf, int64(int(r.StubsLinkType))); err != nil {
+		return err
+	}
+
+	if r.AconfigIntermediateCacheOutputPaths == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.AconfigIntermediateCacheOutputPaths))); err != nil {
+			return err
+		}
+		for val14 := 0; val14 < len(r.AconfigIntermediateCacheOutputPaths); val14++ {
+			if err = gobtools.EncodeInterface(ctx, buf, r.AconfigIntermediateCacheOutputPaths[val14]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if err = r.SdkVersion.Encode(ctx, buf); err != nil {
+		return err
+	}
+
+	if err = gobtools.EncodeInterface(ctx, buf, r.OutputFile); err != nil {
+		return err
+	}
+
+	if r.ExtraOutputFiles == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.ExtraOutputFiles))); err != nil {
+			return err
+		}
+		for val15 := 0; val15 < len(r.ExtraOutputFiles); val15++ {
+			if err = gobtools.EncodeInterface(ctx, buf, r.ExtraOutputFiles[val15]); err != nil {
+				return err
+			}
+		}
+	}
+
+	val16 := r.AndroidLibraryDependencyInfo == nil
+	if err = gobtools.EncodeSimple(buf, val16); err != nil {
+		return err
+	}
+	if !val16 {
+		if err = (*r.AndroidLibraryDependencyInfo).Encode(ctx, buf); err != nil {
+			return err
+		}
+	}
+
+	val17 := r.UsesLibraryDependencyInfo == nil
+	if err = gobtools.EncodeSimple(buf, val17); err != nil {
+		return err
+	}
+	if !val17 {
+		if err = (*r.UsesLibraryDependencyInfo).Encode(ctx, buf); err != nil {
+			return err
+		}
+	}
+
+	val18 := r.ProvidesUsesLibInfo == nil
+	if err = gobtools.EncodeSimple(buf, val18); err != nil {
+		return err
+	}
+	if !val18 {
+		if err = (*r.ProvidesUsesLibInfo).Encode(ctx, buf); err != nil {
+			return err
+		}
+	}
+
+	if r.MissingOptionalUsesLibs == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.MissingOptionalUsesLibs))); err != nil {
+			return err
+		}
+		for val19 := 0; val19 < len(r.MissingOptionalUsesLibs); val19++ {
+			if err = gobtools.EncodeString(buf, r.MissingOptionalUsesLibs[val19]); err != nil {
+				return err
+			}
+		}
+	}
+
+	val20 := r.ModuleWithSdkDepInfo == nil
+	if err = gobtools.EncodeSimple(buf, val20); err != nil {
+		return err
+	}
+	if !val20 {
+		if err = (*r.ModuleWithSdkDepInfo).Encode(ctx, buf); err != nil {
+			return err
+		}
+	}
+
+	if err = r.DexJarFile.Encode(ctx, buf); err != nil {
+		return err
+	}
+
+	if err = gobtools.EncodeInterface(ctx, buf, r.InstallFile); err != nil {
+		return err
+	}
+
+	if err = r.BootDexJarPath.Encode(ctx, buf); err != nil {
+		return err
+	}
+
+	if r.HiddenapiClassesJarPaths == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.HiddenapiClassesJarPaths))); err != nil {
+			return err
+		}
+		for val21 := 0; val21 < len(r.HiddenapiClassesJarPaths); val21++ {
+			if err = gobtools.EncodeInterface(ctx, buf, r.HiddenapiClassesJarPaths[val21]); err != nil {
+				return err
+			}
+		}
+	}
+
+	val22 := r.UncompressDexState == nil
+	if err = gobtools.EncodeSimple(buf, val22); err != nil {
+		return err
+	}
+	if !val22 {
+		if err = gobtools.EncodeSimple(buf, (*r.UncompressDexState)); err != nil {
+			return err
+		}
+	}
+
+	if err = gobtools.EncodeSimple(buf, r.Active); err != nil {
+		return err
+	}
+
+	if err = gobtools.EncodeString(buf, r.BuiltInstalled); err != nil {
+		return err
+	}
+
+	if err = gobtools.EncodeInterface(ctx, buf, r.ConfigPath); err != nil {
+		return err
+	}
+
+	if r.LogtagsSrcs == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.LogtagsSrcs))); err != nil {
+			return err
+		}
+		for val23 := 0; val23 < len(r.LogtagsSrcs); val23++ {
+			if err = gobtools.EncodeInterface(ctx, buf, r.LogtagsSrcs[val23]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if err = r.ProguardDictionary.Encode(ctx, buf); err != nil {
+		return err
+	}
+
+	if err = r.ProguardUsageZip.Encode(ctx, buf); err != nil {
+		return err
+	}
+
+	if r.LinterReports == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.LinterReports))); err != nil {
+			return err
+		}
+		for val24 := 0; val24 < len(r.LinterReports); val24++ {
+			if err = gobtools.EncodeInterface(ctx, buf, r.LinterReports[val24]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if err = r.HostdexInstallFile.Encode(ctx, buf); err != nil {
+		return err
+	}
+
+	if r.GeneratedSrcjars == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.GeneratedSrcjars))); err != nil {
+			return err
+		}
+		for val25 := 0; val25 < len(r.GeneratedSrcjars); val25++ {
+			if err = gobtools.EncodeInterface(ctx, buf, r.GeneratedSrcjars[val25]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if err = gobtools.EncodeSimple(buf, r.ProfileGuided); err != nil {
+		return err
+	}
+
+	if err = gobtools.EncodeString(buf, r.Stem); err != nil {
+		return err
+	}
+
+	if err = r.DexJarBuildPath.Encode(ctx, buf); err != nil {
+		return err
+	}
+
+	val26 := r.DexpreopterInfo == nil
+	if err = gobtools.EncodeSimple(buf, val26); err != nil {
+		return err
+	}
+	if !val26 {
+		if err = (*r.DexpreopterInfo).Encode(ctx, buf); err != nil {
+			return err
+		}
+	}
+
+	if r.XrefJavaFiles == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.XrefJavaFiles))); err != nil {
+			return err
+		}
+		for val27 := 0; val27 < len(r.XrefJavaFiles); val27++ {
+			if err = gobtools.EncodeInterface(ctx, buf, r.XrefJavaFiles[val27]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if r.XrefKotlinFiles == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.XrefKotlinFiles))); err != nil {
+			return err
+		}
+		for val28 := 0; val28 < len(r.XrefKotlinFiles); val28++ {
+			if err = gobtools.EncodeInterface(ctx, buf, r.XrefKotlinFiles[val28]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if err = gobtools.EncodeSimple(buf, r.HasOverrideMinSdkVersion); err != nil {
+		return err
+	}
+
+	val29 := r.CompileDex == nil
+	if err = gobtools.EncodeSimple(buf, val29); err != nil {
+		return err
+	}
+	if !val29 {
+		if err = gobtools.EncodeSimple(buf, (*r.CompileDex)); err != nil {
+			return err
+		}
+	}
+
+	if err = gobtools.EncodeString(buf, r.SystemModules); err != nil {
+		return err
+	}
+
+	if err = gobtools.EncodeSimple(buf, r.Installable); err != nil {
+		return err
+	}
+
+	val30 := r.ApexDependencyInfo == nil
+	if err = gobtools.EncodeSimple(buf, val30); err != nil {
+		return err
+	}
+	if !val30 {
+		if err = (*r.ApexDependencyInfo).Encode(ctx, buf); err != nil {
+			return err
+		}
+	}
+
+	if err = r.MaxSdkVersion.Encode(ctx, buf); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r *JavaInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	var val3 int32
+	err = gobtools.DecodeSimple[int32](buf, &val3)
+	if err != nil {
+		return err
+	}
+	if val3 != -1 {
+		r.HeaderJars = make([]android.Path, val3)
+		for val4 := 0; val4 < int(val3); val4++ {
+			if val6, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+				return err
+			} else if val6 == nil {
+				r.HeaderJars[val4] = nil
+			} else {
+				r.HeaderJars[val4] = val6.(android.Path)
+			}
+		}
+	}
+
+	var val9 int32
+	err = gobtools.DecodeSimple[int32](buf, &val9)
+	if err != nil {
+		return err
+	}
+	if val9 != -1 {
+		r.RepackagedHeaderJars = make([]android.Path, val9)
+		for val10 := 0; val10 < int(val9); val10++ {
+			if val12, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+				return err
+			} else if val12 == nil {
+				r.RepackagedHeaderJars[val10] = nil
+			} else {
+				r.RepackagedHeaderJars[val10] = val12.(android.Path)
+			}
+		}
+	}
+
+	var val15 int32
+	err = gobtools.DecodeSimple[int32](buf, &val15)
+	if err != nil {
+		return err
+	}
+	if val15 != -1 {
+		r.LocalHeaderJarsPreJarjar = make([]android.Path, val15)
+		for val16 := 0; val16 < int(val15); val16++ {
+			if val18, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+				return err
+			} else if val18 == nil {
+				r.LocalHeaderJarsPreJarjar[val16] = nil
+			} else {
+				r.LocalHeaderJarsPreJarjar[val16] = val18.(android.Path)
+			}
+		}
+	}
+
+	if err = r.TransitiveLibsHeaderJarsForR8.DecodeInterface(ctx, buf); err != nil {
+		return err
+	}
+
+	if err = r.TransitiveStaticLibsHeaderJarsForR8.DecodeInterface(ctx, buf); err != nil {
+		return err
+	}
+
+	if err = r.TransitiveStaticLibsHeaderJars.DecodeInterface(ctx, buf); err != nil {
+		return err
+	}
+
+	if err = r.TransitiveStaticLibsImplementationJars.DecodeInterface(ctx, buf); err != nil {
+		return err
+	}
+
+	if err = r.TransitiveStaticLibsResourceJars.DecodeInterface(ctx, buf); err != nil {
+		return err
+	}
+
+	var val26 int32
+	err = gobtools.DecodeSimple[int32](buf, &val26)
+	if err != nil {
+		return err
+	}
+	if val26 != -1 {
+		r.ImplementationAndResourcesJars = make([]android.Path, val26)
+		for val27 := 0; val27 < int(val26); val27++ {
+			if val29, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+				return err
+			} else if val29 == nil {
+				r.ImplementationAndResourcesJars[val27] = nil
+			} else {
+				r.ImplementationAndResourcesJars[val27] = val29.(android.Path)
+			}
+		}
+	}
+
+	var val32 int32
+	err = gobtools.DecodeSimple[int32](buf, &val32)
+	if err != nil {
+		return err
+	}
+	if val32 != -1 {
+		r.ImplementationJars = make([]android.Path, val32)
+		for val33 := 0; val33 < int(val32); val33++ {
+			if val35, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+				return err
+			} else if val35 == nil {
+				r.ImplementationJars[val33] = nil
+			} else {
+				r.ImplementationJars[val33] = val35.(android.Path)
+			}
+		}
+	}
+
+	var val38 int32
+	err = gobtools.DecodeSimple[int32](buf, &val38)
+	if err != nil {
+		return err
+	}
+	if val38 != -1 {
+		r.ResourceJars = make([]android.Path, val38)
+		for val39 := 0; val39 < int(val38); val39++ {
+			if val41, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+				return err
+			} else if val41 == nil {
+				r.ResourceJars[val39] = nil
+			} else {
+				r.ResourceJars[val39] = val41.(android.Path)
+			}
+		}
+	}
+
+	var val44 int32
+	err = gobtools.DecodeSimple[int32](buf, &val44)
+	if err != nil {
+		return err
+	}
+	if val44 != -1 {
+		r.LocalHeaderJars = make([]android.Path, val44)
+		for val45 := 0; val45 < int(val44); val45++ {
+			if val47, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+				return err
+			} else if val47 == nil {
+				r.LocalHeaderJars[val45] = nil
+			} else {
+				r.LocalHeaderJars[val45] = val47.(android.Path)
+			}
+		}
+	}
+
+	var val50 int32
+	err = gobtools.DecodeSimple[int32](buf, &val50)
+	if err != nil {
+		return err
+	}
+	if val50 != -1 {
+		r.KotlinHeaderJars = make([]android.Path, val50)
+		for val51 := 0; val51 < int(val50); val51++ {
+			if val53, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+				return err
+			} else if val53 == nil {
+				r.KotlinHeaderJars[val51] = nil
+			} else {
+				r.KotlinHeaderJars[val51] = val53.(android.Path)
+			}
+		}
+	}
+
+	var val56 int32
+	err = gobtools.DecodeSimple[int32](buf, &val56)
+	if err != nil {
+		return err
+	}
+	if val56 != -1 {
+		r.AidlIncludeDirs = make([]android.Path, val56)
+		for val57 := 0; val57 < int(val56); val57++ {
+			if val59, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+				return err
+			} else if val59 == nil {
+				r.AidlIncludeDirs[val57] = nil
+			} else {
+				r.AidlIncludeDirs[val57] = val59.(android.Path)
+			}
+		}
+	}
+
+	var val61 int32
+	err = gobtools.DecodeSimple[int32](buf, &val61)
+	if err != nil {
+		return err
+	}
+	if val61 != -1 {
+		r.SrcJarArgs = make([]string, val61)
+		for val62 := 0; val62 < int(val61); val62++ {
+			err = gobtools.DecodeString(buf, &r.SrcJarArgs[val62])
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	var val66 int32
+	err = gobtools.DecodeSimple[int32](buf, &val66)
+	if err != nil {
+		return err
+	}
+	if val66 != -1 {
+		r.SrcJarDeps = make([]android.Path, val66)
+		for val67 := 0; val67 < int(val66); val67++ {
+			if val69, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+				return err
+			} else if val69 == nil {
+				r.SrcJarDeps[val67] = nil
+			} else {
+				r.SrcJarDeps[val67] = val69.(android.Path)
+			}
+		}
+	}
+
+	var val70 int32
+	err = gobtools.DecodeSimple[int32](buf, &val70)
+	if err != nil {
+		return err
+	}
+	if val70 != -1 {
+		r.KSnapshotFiles = make(map[string]android.Path, val70)
+		for val71 := 0; val71 < int(val70); val71++ {
+			var k string
+			var v android.Path
+			err = gobtools.DecodeString(buf, &k)
+			if err != nil {
+				return err
+			}
+			if val74, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+				return err
+			} else if val74 == nil {
+				v = nil
+			} else {
+				v = val74.(android.Path)
+			}
+			r.KSnapshotFiles[k] = v
+		}
+	}
+
+	if err = r.TransitiveSrcFiles.DecodeInterface(ctx, buf); err != nil {
+		return err
+	}
+
+	var val78 int32
+	err = gobtools.DecodeSimple[int32](buf, &val78)
+	if err != nil {
+		return err
+	}
+	if val78 != -1 {
+		r.ExportedPlugins = make([]android.Path, val78)
+		for val79 := 0; val79 < int(val78); val79++ {
+			if val81, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+				return err
+			} else if val81 == nil {
+				r.ExportedPlugins[val79] = nil
+			} else {
+				r.ExportedPlugins[val79] = val81.(android.Path)
+			}
+		}
+	}
+
+	var val83 int32
+	err = gobtools.DecodeSimple[int32](buf, &val83)
+	if err != nil {
+		return err
+	}
+	if val83 != -1 {
+		r.ExportedPluginClasses = make([]string, val83)
+		for val84 := 0; val84 < int(val83); val84++ {
+			err = gobtools.DecodeString(buf, &r.ExportedPluginClasses[val84])
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	err = gobtools.DecodeSimple[bool](buf, &r.ExportedPluginDisableTurbine)
+	if err != nil {
+		return err
+	}
+
+	if err = r.JacocoInfo.Decode(ctx, buf); err != nil {
+		return err
+	}
+
+	var val89 int
+	var val90 int64
+	err = gobtools.DecodeSimple[int64](buf, &val90)
+	if err != nil {
+		return err
+	}
+	val89 = int(val90)
+	r.StubsLinkType = StubsLinkType(val89)
+
+	var val93 int32
+	err = gobtools.DecodeSimple[int32](buf, &val93)
+	if err != nil {
+		return err
+	}
+	if val93 != -1 {
+		r.AconfigIntermediateCacheOutputPaths = make([]android.Path, val93)
+		for val94 := 0; val94 < int(val93); val94++ {
+			if val96, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+				return err
+			} else if val96 == nil {
+				r.AconfigIntermediateCacheOutputPaths[val94] = nil
+			} else {
+				r.AconfigIntermediateCacheOutputPaths[val94] = val96.(android.Path)
+			}
+		}
+	}
+
+	if err = r.SdkVersion.Decode(ctx, buf); err != nil {
+		return err
+	}
+
+	if val99, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+		return err
+	} else if val99 == nil {
+		r.OutputFile = nil
+	} else {
+		r.OutputFile = val99.(android.Path)
+	}
+
+	var val102 int32
+	err = gobtools.DecodeSimple[int32](buf, &val102)
+	if err != nil {
+		return err
+	}
+	if val102 != -1 {
+		r.ExtraOutputFiles = make([]android.Path, val102)
+		for val103 := 0; val103 < int(val102); val103++ {
+			if val105, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+				return err
+			} else if val105 == nil {
+				r.ExtraOutputFiles[val103] = nil
+			} else {
+				r.ExtraOutputFiles[val103] = val105.(android.Path)
+			}
+		}
+	}
+
+	var val107 bool
+	if err = gobtools.DecodeSimple(buf, &val107); err != nil {
+		return err
+	}
+	if !val107 {
+		var val106 AndroidLibraryDependencyInfo
+		if err = val106.Decode(ctx, buf); err != nil {
+			return err
+		}
+		r.AndroidLibraryDependencyInfo = &val106
+	}
+
+	var val110 bool
+	if err = gobtools.DecodeSimple(buf, &val110); err != nil {
+		return err
+	}
+	if !val110 {
+		var val109 UsesLibraryDependencyInfo
+		if err = val109.Decode(ctx, buf); err != nil {
+			return err
+		}
+		r.UsesLibraryDependencyInfo = &val109
+	}
+
+	var val113 bool
+	if err = gobtools.DecodeSimple(buf, &val113); err != nil {
+		return err
+	}
+	if !val113 {
+		var val112 ProvidesUsesLibInfo
+		if err = val112.Decode(ctx, buf); err != nil {
+			return err
+		}
+		r.ProvidesUsesLibInfo = &val112
+	}
+
+	var val116 int32
+	err = gobtools.DecodeSimple[int32](buf, &val116)
+	if err != nil {
+		return err
+	}
+	if val116 != -1 {
+		r.MissingOptionalUsesLibs = make([]string, val116)
+		for val117 := 0; val117 < int(val116); val117++ {
+			err = gobtools.DecodeString(buf, &r.MissingOptionalUsesLibs[val117])
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	var val120 bool
+	if err = gobtools.DecodeSimple(buf, &val120); err != nil {
+		return err
+	}
+	if !val120 {
+		var val119 ModuleWithSdkDepInfo
+		if err = val119.Decode(ctx, buf); err != nil {
+			return err
+		}
+		r.ModuleWithSdkDepInfo = &val119
+	}
+
+	if err = r.DexJarFile.Decode(ctx, buf); err != nil {
+		return err
+	}
+
+	if val124, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+		return err
+	} else if val124 == nil {
+		r.InstallFile = nil
+	} else {
+		r.InstallFile = val124.(android.Path)
+	}
+
+	if err = r.BootDexJarPath.Decode(ctx, buf); err != nil {
+		return err
+	}
+
+	var val128 int32
+	err = gobtools.DecodeSimple[int32](buf, &val128)
+	if err != nil {
+		return err
+	}
+	if val128 != -1 {
+		r.HiddenapiClassesJarPaths = make([]android.Path, val128)
+		for val129 := 0; val129 < int(val128); val129++ {
+			if val131, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+				return err
+			} else if val131 == nil {
+				r.HiddenapiClassesJarPaths[val129] = nil
+			} else {
+				r.HiddenapiClassesJarPaths[val129] = val131.(android.Path)
+			}
+		}
+	}
+
+	var val133 bool
+	if err = gobtools.DecodeSimple(buf, &val133); err != nil {
+		return err
+	}
+	if !val133 {
+		var val132 bool
+		err = gobtools.DecodeSimple[bool](buf, &val132)
+		if err != nil {
+			return err
+		}
+		r.UncompressDexState = &val132
+	}
+
+	err = gobtools.DecodeSimple[bool](buf, &r.Active)
+	if err != nil {
+		return err
+	}
+
+	err = gobtools.DecodeString(buf, &r.BuiltInstalled)
+	if err != nil {
+		return err
+	}
+
+	if val138, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+		return err
+	} else if val138 == nil {
+		r.ConfigPath = nil
+	} else {
+		r.ConfigPath = val138.(android.WritablePath)
+	}
+
+	var val141 int32
+	err = gobtools.DecodeSimple[int32](buf, &val141)
+	if err != nil {
+		return err
+	}
+	if val141 != -1 {
+		r.LogtagsSrcs = make([]android.Path, val141)
+		for val142 := 0; val142 < int(val141); val142++ {
+			if val144, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+				return err
+			} else if val144 == nil {
+				r.LogtagsSrcs[val142] = nil
+			} else {
+				r.LogtagsSrcs[val142] = val144.(android.Path)
+			}
+		}
+	}
+
+	if err = r.ProguardDictionary.Decode(ctx, buf); err != nil {
+		return err
+	}
+
+	if err = r.ProguardUsageZip.Decode(ctx, buf); err != nil {
+		return err
+	}
+
+	var val149 int32
+	err = gobtools.DecodeSimple[int32](buf, &val149)
+	if err != nil {
+		return err
+	}
+	if val149 != -1 {
+		r.LinterReports = make([]android.Path, val149)
+		for val150 := 0; val150 < int(val149); val150++ {
+			if val152, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+				return err
+			} else if val152 == nil {
+				r.LinterReports[val150] = nil
+			} else {
+				r.LinterReports[val150] = val152.(android.Path)
+			}
+		}
+	}
+
+	if err = r.HostdexInstallFile.Decode(ctx, buf); err != nil {
+		return err
+	}
+
+	var val155 int32
+	err = gobtools.DecodeSimple[int32](buf, &val155)
+	if err != nil {
+		return err
+	}
+	if val155 != -1 {
+		r.GeneratedSrcjars = make([]android.Path, val155)
+		for val156 := 0; val156 < int(val155); val156++ {
+			if val158, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+				return err
+			} else if val158 == nil {
+				r.GeneratedSrcjars[val156] = nil
+			} else {
+				r.GeneratedSrcjars[val156] = val158.(android.Path)
+			}
+		}
+	}
+
+	err = gobtools.DecodeSimple[bool](buf, &r.ProfileGuided)
+	if err != nil {
+		return err
+	}
+
+	err = gobtools.DecodeString(buf, &r.Stem)
+	if err != nil {
+		return err
+	}
+
+	if err = r.DexJarBuildPath.Decode(ctx, buf); err != nil {
+		return err
+	}
+
+	var val163 bool
+	if err = gobtools.DecodeSimple(buf, &val163); err != nil {
+		return err
+	}
+	if !val163 {
+		var val162 DexpreopterInfo
+		if err = val162.Decode(ctx, buf); err != nil {
+			return err
+		}
+		r.DexpreopterInfo = &val162
+	}
+
+	var val167 int32
+	err = gobtools.DecodeSimple[int32](buf, &val167)
+	if err != nil {
+		return err
+	}
+	if val167 != -1 {
+		r.XrefJavaFiles = make([]android.Path, val167)
+		for val168 := 0; val168 < int(val167); val168++ {
+			if val170, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+				return err
+			} else if val170 == nil {
+				r.XrefJavaFiles[val168] = nil
+			} else {
+				r.XrefJavaFiles[val168] = val170.(android.Path)
+			}
+		}
+	}
+
+	var val173 int32
+	err = gobtools.DecodeSimple[int32](buf, &val173)
+	if err != nil {
+		return err
+	}
+	if val173 != -1 {
+		r.XrefKotlinFiles = make([]android.Path, val173)
+		for val174 := 0; val174 < int(val173); val174++ {
+			if val176, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+				return err
+			} else if val176 == nil {
+				r.XrefKotlinFiles[val174] = nil
+			} else {
+				r.XrefKotlinFiles[val174] = val176.(android.Path)
+			}
+		}
+	}
+
+	err = gobtools.DecodeSimple[bool](buf, &r.HasOverrideMinSdkVersion)
+	if err != nil {
+		return err
+	}
+
+	var val179 bool
+	if err = gobtools.DecodeSimple(buf, &val179); err != nil {
+		return err
+	}
+	if !val179 {
+		var val178 bool
+		err = gobtools.DecodeSimple[bool](buf, &val178)
+		if err != nil {
+			return err
+		}
+		r.CompileDex = &val178
+	}
+
+	err = gobtools.DecodeString(buf, &r.SystemModules)
+	if err != nil {
+		return err
+	}
+
+	err = gobtools.DecodeSimple[bool](buf, &r.Installable)
+	if err != nil {
+		return err
+	}
+
+	var val184 bool
+	if err = gobtools.DecodeSimple(buf, &val184); err != nil {
+		return err
+	}
+	if !val184 {
+		var val183 ApexDependencyInfo
+		if err = val183.Decode(ctx, buf); err != nil {
+			return err
+		}
+		r.ApexDependencyInfo = &val183
+	}
+
+	if err = r.MaxSdkVersion.Decode(ctx, buf); err != nil {
+		return err
+	}
+
+	return err
+}
+
+var JavaInfoGobRegId int16
+
+func (r JavaInfo) GetTypeId() int16 {
+	return JavaInfoGobRegId
+}
+
+func (r DexpreopterInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = gobtools.EncodeInterface(ctx, buf, r.OutputProfilePathOnHost); err != nil {
+		return err
+	}
+
+	if r.ApexSystemServerDexpreoptInstalls == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.ApexSystemServerDexpreoptInstalls))); err != nil {
+			return err
+		}
+		for val1 := 0; val1 < len(r.ApexSystemServerDexpreoptInstalls); val1++ {
+			if err = r.ApexSystemServerDexpreoptInstalls[val1].Encode(ctx, buf); err != nil {
+				return err
+			}
+		}
+	}
+
+	if r.ApexSystemServerDexJars == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.ApexSystemServerDexJars))); err != nil {
+			return err
+		}
+		for val2 := 0; val2 < len(r.ApexSystemServerDexJars); val2++ {
+			if err = gobtools.EncodeInterface(ctx, buf, r.ApexSystemServerDexJars[val2]); err != nil {
+				return err
+			}
+		}
+	}
+	return err
+}
+
+func (r *DexpreopterInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	if val2, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+		return err
+	} else if val2 == nil {
+		r.OutputProfilePathOnHost = nil
+	} else {
+		r.OutputProfilePathOnHost = val2.(android.Path)
+	}
+
+	var val4 int32
+	err = gobtools.DecodeSimple[int32](buf, &val4)
+	if err != nil {
+		return err
+	}
+	if val4 != -1 {
+		r.ApexSystemServerDexpreoptInstalls = make([]DexpreopterInstall, val4)
+		for val5 := 0; val5 < int(val4); val5++ {
+			if err = r.ApexSystemServerDexpreoptInstalls[val5].Decode(ctx, buf); err != nil {
+				return err
+			}
+		}
+	}
+
+	var val9 int32
+	err = gobtools.DecodeSimple[int32](buf, &val9)
+	if err != nil {
+		return err
+	}
+	if val9 != -1 {
+		r.ApexSystemServerDexJars = make([]android.Path, val9)
+		for val10 := 0; val10 < int(val9); val10++ {
+			if val12, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+				return err
+			} else if val12 == nil {
+				r.ApexSystemServerDexJars[val10] = nil
+			} else {
+				r.ApexSystemServerDexJars[val10] = val12.(android.Path)
+			}
+		}
+	}
+
+	return err
+}
+
+var DexpreopterInfoGobRegId int16
+
+func (r DexpreopterInfo) GetTypeId() int16 {
+	return DexpreopterInfoGobRegId
+}
+
+func (r JavaLibraryInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = gobtools.EncodeSimple(buf, r.Prebuilt); err != nil {
+		return err
+	}
+
+	if r.PermittedPackages == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.PermittedPackages))); err != nil {
+			return err
+		}
+		for val1 := 0; val1 < len(r.PermittedPackages); val1++ {
+			if err = gobtools.EncodeString(buf, r.PermittedPackages[val1]); err != nil {
+				return err
+			}
+		}
+	}
+	return err
+}
+
+func (r *JavaLibraryInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	err = gobtools.DecodeSimple[bool](buf, &r.Prebuilt)
+	if err != nil {
+		return err
+	}
+
+	var val3 int32
+	err = gobtools.DecodeSimple[int32](buf, &val3)
+	if err != nil {
+		return err
+	}
+	if val3 != -1 {
+		r.PermittedPackages = make([]string, val3)
+		for val4 := 0; val4 < int(val3); val4++ {
+			err = gobtools.DecodeString(buf, &r.PermittedPackages[val4])
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return err
+}
+
+var JavaLibraryInfoGobRegId int16
+
+func (r JavaLibraryInfo) GetTypeId() int16 {
+	return JavaLibraryInfoGobRegId
+}
+
+func (r JavaDexImportInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+	return err
+}
+
+func (r *JavaDexImportInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	return err
+}
+
+var JavaDexImportInfoGobRegId int16
+
+func (r JavaDexImportInfo) GetTypeId() int16 {
+	return JavaDexImportInfoGobRegId
+}
+
+func (r SyspropPublicStubInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	val1 := r.JavaInfo == nil
+	if err = gobtools.EncodeSimple(buf, val1); err != nil {
+		return err
+	}
+	if !val1 {
+		if err = (*r.JavaInfo).Encode(ctx, buf); err != nil {
+			return err
+		}
+	}
+	return err
+}
+
+func (r *SyspropPublicStubInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	var val2 bool
+	if err = gobtools.DecodeSimple(buf, &val2); err != nil {
+		return err
+	}
+	if !val2 {
+		var val1 JavaInfo
+		if err = val1.Decode(ctx, buf); err != nil {
+			return err
+		}
+		r.JavaInfo = &val1
+	}
+
+	return err
+}
+
+var SyspropPublicStubInfoGobRegId int16
+
+func (r SyspropPublicStubInfo) GetTypeId() int16 {
+	return SyspropPublicStubInfoGobRegId
+}
+
+func (r jniLib) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = gobtools.EncodeString(buf, r.name); err != nil {
+		return err
+	}
+
+	if err = gobtools.EncodeInterface(ctx, buf, r.path); err != nil {
+		return err
+	}
+
+	if err = r.target.Encode(ctx, buf); err != nil {
+		return err
+	}
+
+	if err = r.coverageFile.Encode(ctx, buf); err != nil {
+		return err
+	}
+
+	if err = gobtools.EncodeInterface(ctx, buf, r.unstrippedFile); err != nil {
+		return err
+	}
+
+	if err = gobtools.EncodeString(buf, r.partition); err != nil {
+		return err
+	}
+
+	if r.installPaths == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.installPaths))); err != nil {
+			return err
+		}
+		for val1 := 0; val1 < len(r.installPaths); val1++ {
+			if err = r.installPaths[val1].Encode(ctx, buf); err != nil {
+				return err
+			}
+		}
+	}
+	return err
+}
+
+func (r *jniLib) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	err = gobtools.DecodeString(buf, &r.name)
+	if err != nil {
+		return err
+	}
+
+	if val3, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+		return err
+	} else if val3 == nil {
+		r.path = nil
+	} else {
+		r.path = val3.(android.Path)
+	}
+
+	if err = r.target.Decode(ctx, buf); err != nil {
+		return err
+	}
+
+	if err = r.coverageFile.Decode(ctx, buf); err != nil {
+		return err
+	}
+
+	if val7, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+		return err
+	} else if val7 == nil {
+		r.unstrippedFile = nil
+	} else {
+		r.unstrippedFile = val7.(android.Path)
+	}
+
+	err = gobtools.DecodeString(buf, &r.partition)
+	if err != nil {
+		return err
+	}
+
+	var val11 int32
+	err = gobtools.DecodeSimple[int32](buf, &val11)
+	if err != nil {
+		return err
+	}
+	if val11 != -1 {
+		r.installPaths = make([]android.InstallPath, val11)
+		for val12 := 0; val12 < int(val11); val12++ {
+			if err = r.installPaths[val12].Decode(ctx, buf); err != nil {
+				return err
+			}
+		}
+	}
+
+	return err
+}
+
+var jniLibGobRegId int16
+
+func (r jniLib) GetTypeId() int16 {
+	return jniLibGobRegId
+}
+
+func (r JavaTestInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = gobtools.EncodeInterface(ctx, buf, r.TestConfig); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r *JavaTestInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	if val2, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+		return err
+	} else if val2 == nil {
+		r.TestConfig = nil
+	} else {
+		r.TestConfig = val2.(android.Path)
+	}
+
+	return err
+}
+
+var JavaTestInfoGobRegId int16
+
+func (r JavaTestInfo) GetTypeId() int16 {
+	return JavaTestInfoGobRegId
 }

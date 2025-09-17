@@ -24,6 +24,8 @@ import (
 	"github.com/google/blueprint"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 func init() {
 	android.InitRegistrationContext.RegisterParallelSingletonType("apkcerts_singleton", apkCertsSingletonFactory)
 }
@@ -31,6 +33,7 @@ func init() {
 // Info that should be included into the apkcerts.txt file.
 // The info can be provided as either a text file containing a subset of the final apkcerts.txt,
 // or as a certificate and name. The text file will be preferred if it exists
+// @auto-generate: gob
 type ApkCertInfo struct {
 	ApkCertsFile android.Path
 

@@ -9,6 +9,9 @@ import (
 
 func init() {
 	unstableInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(unstableInfo) })
+	restrictionGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(restriction) })
+	containerGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(container) })
+	ContainersInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ContainersInfo) })
 }
 
 func (r unstableInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
@@ -35,4 +38,230 @@ var unstableInfoGobRegId int16
 
 func (r unstableInfo) GetTypeId() int16 {
 	return unstableInfoGobRegId
+}
+
+func (r restriction) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	val1 := r.dependency == nil
+	if err = gobtools.EncodeSimple(buf, val1); err != nil {
+		return err
+	}
+	if !val1 {
+		if err = (*r.dependency).Encode(ctx, buf); err != nil {
+			return err
+		}
+	}
+
+	if err = gobtools.EncodeString(buf, r.errorMessage); err != nil {
+		return err
+	}
+
+	if r.allowedExceptions == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.allowedExceptions))); err != nil {
+			return err
+		}
+		for val2 := 0; val2 < len(r.allowedExceptions); val2++ {
+			if err = gobtools.EncodeSimple(buf, int64(int(r.allowedExceptions[val2]))); err != nil {
+				return err
+			}
+		}
+	}
+	return err
+}
+
+func (r *restriction) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	var val2 bool
+	if err = gobtools.DecodeSimple(buf, &val2); err != nil {
+		return err
+	}
+	if !val2 {
+		var val1 container
+		if err = val1.Decode(ctx, buf); err != nil {
+			return err
+		}
+		r.dependency = &val1
+	}
+
+	err = gobtools.DecodeString(buf, &r.errorMessage)
+	if err != nil {
+		return err
+	}
+
+	var val6 int32
+	err = gobtools.DecodeSimple[int32](buf, &val6)
+	if err != nil {
+		return err
+	}
+	if val6 != -1 {
+		r.allowedExceptions = make([]exceptionHandleFuncLabel, val6)
+		for val7 := 0; val7 < int(val6); val7++ {
+			var val9 int
+			var val10 int64
+			err = gobtools.DecodeSimple[int64](buf, &val10)
+			if err != nil {
+				return err
+			}
+			val9 = int(val10)
+			r.allowedExceptions[val7] = exceptionHandleFuncLabel(val9)
+		}
+	}
+
+	return err
+}
+
+var restrictionGobRegId int16
+
+func (r restriction) GetTypeId() int16 {
+	return restrictionGobRegId
+}
+
+func (r container) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = gobtools.EncodeString(buf, r.name); err != nil {
+		return err
+	}
+
+	if r.restricted == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.restricted))); err != nil {
+			return err
+		}
+		for val1 := 0; val1 < len(r.restricted); val1++ {
+			if err = r.restricted[val1].Encode(ctx, buf); err != nil {
+				return err
+			}
+		}
+	}
+	return err
+}
+
+func (r *container) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	err = gobtools.DecodeString(buf, &r.name)
+	if err != nil {
+		return err
+	}
+
+	var val3 int32
+	err = gobtools.DecodeSimple[int32](buf, &val3)
+	if err != nil {
+		return err
+	}
+	if val3 != -1 {
+		r.restricted = make([]restriction, val3)
+		for val4 := 0; val4 < int(val3); val4++ {
+			if err = r.restricted[val4].Decode(ctx, buf); err != nil {
+				return err
+			}
+		}
+	}
+
+	return err
+}
+
+var containerGobRegId int16
+
+func (r container) GetTypeId() int16 {
+	return containerGobRegId
+}
+
+func (r ContainersInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if r.belongingContainers == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.belongingContainers))); err != nil {
+			return err
+		}
+		for val1 := 0; val1 < len(r.belongingContainers); val1++ {
+			val2 := r.belongingContainers[val1] == nil
+			if err = gobtools.EncodeSimple(buf, val2); err != nil {
+				return err
+			}
+			if !val2 {
+				if err = (*r.belongingContainers[val1]).Encode(ctx, buf); err != nil {
+					return err
+				}
+			}
+		}
+	}
+
+	if r.belongingApexes == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.belongingApexes))); err != nil {
+			return err
+		}
+		for val3 := 0; val3 < len(r.belongingApexes); val3++ {
+			if err = r.belongingApexes[val3].Encode(ctx, buf); err != nil {
+				return err
+			}
+		}
+	}
+	return err
+}
+
+func (r *ContainersInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	var val2 int32
+	err = gobtools.DecodeSimple[int32](buf, &val2)
+	if err != nil {
+		return err
+	}
+	if val2 != -1 {
+		r.belongingContainers = make([]*container, val2)
+		for val3 := 0; val3 < int(val2); val3++ {
+			var val5 bool
+			if err = gobtools.DecodeSimple(buf, &val5); err != nil {
+				return err
+			}
+			if !val5 {
+				var val4 container
+				if err = val4.Decode(ctx, buf); err != nil {
+					return err
+				}
+				r.belongingContainers[val3] = &val4
+			}
+		}
+	}
+
+	var val8 int32
+	err = gobtools.DecodeSimple[int32](buf, &val8)
+	if err != nil {
+		return err
+	}
+	if val8 != -1 {
+		r.belongingApexes = make([]ApexInfo, val8)
+		for val9 := 0; val9 < int(val8); val9++ {
+			if err = r.belongingApexes[val9].Decode(ctx, buf); err != nil {
+				return err
+			}
+		}
+	}
+
+	return err
+}
+
+var ContainersInfoGobRegId int16
+
+func (r ContainersInfo) GetTypeId() int16 {
+	return ContainersInfoGobRegId
 }

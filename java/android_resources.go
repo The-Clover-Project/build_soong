@@ -21,6 +21,8 @@ import (
 	"android/soong/android"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 var androidResourceIgnoreFilenames = []string{
 	".svn",
 	".git",
@@ -46,6 +48,7 @@ const (
 	product
 )
 
+// @auto-generate: gob
 type rroDir struct {
 	path        android.Path
 	overlayType overlayType
