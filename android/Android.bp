@@ -85,6 +85,7 @@ bootstrap_go_package {
         "logtags.go",
         "logtags_gob_enc.go",
         "makevars.go",
+        "makevars_gob_enc.go",
         "metrics.go",
         "module.go",
         "module_context.go",

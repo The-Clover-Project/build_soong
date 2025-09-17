@@ -18,7 +18,6 @@ import (
 	"path/filepath"
 	"slices"
 	"strings"
-	"sync"
 
 	"github.com/google/blueprint"
 )
@@ -189,10 +188,9 @@ func (s *singletonAdaptor) GenerateBuildActions(ctx blueprint.SingletonContext) 
 	s.ruleParams = sctx.ruleParams
 
 	if len(sctx.dists) > 0 {
-		dists := getSingletonDists(sctx.Config())
-		dists.lock.Lock()
-		defer dists.lock.Unlock()
-		dists.dists = append(dists.dists, sctx.dists...)
+		SetSingletonProvider(sctx, SingletonDistInfoProvider, DistInfo{
+			Dists: sctx.dists,
+		})
 	}
 
 	if len(sctx.phonies) > 0 {
@@ -206,19 +204,6 @@ func (s *singletonAdaptor) BuildParamsForTests() []BuildParams {
 
 func (s *singletonAdaptor) RuleParamsForTests() map[blueprint.Rule]blueprint.RuleParams {
 	return s.ruleParams
-}
-
-var singletonDistsKey = NewOnceKey("singletonDistsKey")
-
-type singletonDistsAndLock struct {
-	dists []dist
-	lock  sync.Mutex
-}
-
-func getSingletonDists(config Config) *singletonDistsAndLock {
-	return config.Once(singletonDistsKey, func() interface{} {
-		return &singletonDistsAndLock{}
-	}).(*singletonDistsAndLock)
 }
 
 type Singleton interface {

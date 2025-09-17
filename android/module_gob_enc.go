@@ -14,6 +14,7 @@ func init() {
 	CommonModuleInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(CommonModuleInfo) })
 	ApiLevelOrPlatformGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ApiLevelOrPlatform) })
 	HostToolProviderInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(HostToolProviderInfo) })
+	DistInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(DistInfo) })
 	katiInstallGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(katiInstall) })
 	extraFilesZipGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(extraFilesZip) })
 	OutputFilesInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(OutputFilesInfo) })
@@ -1378,6 +1379,52 @@ var HostToolProviderInfoGobRegId int16
 
 func (r HostToolProviderInfo) GetTypeId() int16 {
 	return HostToolProviderInfoGobRegId
+}
+
+func (r DistInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if r.Dists == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.Dists))); err != nil {
+			return err
+		}
+		for val1 := 0; val1 < len(r.Dists); val1++ {
+			if err = r.Dists[val1].Encode(ctx, buf); err != nil {
+				return err
+			}
+		}
+	}
+	return err
+}
+
+func (r *DistInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	var val2 int32
+	err = gobtools.DecodeSimple[int32](buf, &val2)
+	if err != nil {
+		return err
+	}
+	if val2 != -1 {
+		r.Dists = make([]dist, val2)
+		for val3 := 0; val3 < int(val2); val3++ {
+			if err = r.Dists[val3].Decode(ctx, buf); err != nil {
+				return err
+			}
+		}
+	}
+
+	return err
+}
+
+var DistInfoGobRegId int16
+
+func (r DistInfo) GetTypeId() int16 {
+	return DistInfoGobRegId
 }
 
 func (r katiInstall) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
