@@ -49,6 +49,7 @@ const (
 	envVariableGenerateCompdb          = "SOONG_GEN_COMPDB"
 	envVariableGenerateCompdbDebugInfo = "SOONG_GEN_COMPDB_DEBUG"
 	envVariableCompdbLink              = "SOONG_LINK_COMPDB_TO"
+	envVariableCompdbModules           = "SOONG_GEN_COMPDB_MODULES"
 )
 
 // A compdb entry. The compile_commands.json file is a list of these.
@@ -67,11 +68,24 @@ func (c *compdbGeneratorSingleton) GenerateBuildActions(ctx android.SingletonCon
 	// Instruct the generator to indent the json file for easier debugging.
 	outputCompdbDebugInfo := ctx.Config().IsEnvTrue(envVariableGenerateCompdbDebugInfo)
 
+	modules := ctx.Config().Getenv(envVariableCompdbModules)
+	var moduleMap map[string]bool
+	if modules != "" {
+		moduleMap = make(map[string]bool)
+		for _, target := range strings.Fields(modules) {
+			moduleMap[target] = true
+		}
+	}
+
 	// We only want one entry per file. We don't care what module/isa it's from
 	m := make(map[string]compDbEntry)
 	ctx.VisitAllModuleProxies(func(module android.ModuleProxy) {
 		if ccModule, ok := android.OtherModuleProvider(ctx, module, CcInfoProvider); ok {
 			if ccModule.CompilerInfo != nil {
+				// Empty map matches any
+				if len(moduleMap) > 0 && !moduleMap[module.Name()] {
+					return
+				}
 				generateCompdbProject(ctx, module, ccModule, m)
 			}
 		}
