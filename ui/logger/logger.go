@@ -30,10 +30,10 @@ package logger
 
 import (
 	"android/soong/ui/metrics"
+	"bytes"
 	"errors"
 	"fmt"
 	"io"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -139,10 +139,11 @@ type stdLogger struct {
 	stderr  *log.Logger
 	verbose bool
 
-	fileLogger *log.Logger
-	mutex      sync.Mutex
-	file       *os.File
-	metrics    *metrics.Metrics
+	bufferedOutput *bytes.Buffer
+	fileLogger     *log.Logger
+	mutex          sync.Mutex
+	file           *os.File
+	metrics        *metrics.Metrics
 }
 
 var _ Logger = &stdLogger{}
@@ -155,10 +156,13 @@ func New(out io.Writer) *stdLogger {
 }
 
 func NewWithMetrics(out io.Writer, m *metrics.Metrics) *stdLogger {
+	// Buffer verbose output until the output file is set.
+	bufferedOutput := new(bytes.Buffer)
 	return &stdLogger{
-		stderr:     log.New(out, "", log.Ltime),
-		fileLogger: log.New(ioutil.Discard, "", log.Ldate|log.Lmicroseconds|log.Llongfile),
-		metrics:    m,
+		stderr:         log.New(out, "", log.Ltime),
+		bufferedOutput: bufferedOutput,
+		fileLogger:     log.New(bufferedOutput, "", log.Ldate|log.Lmicroseconds|log.Llongfile),
+		metrics:        m,
 	}
 }
 
@@ -180,6 +184,12 @@ func (s *stdLogger) SetOutput(path string) *stdLogger {
 			s.file.Close()
 		}
 		s.file = f
+		// Copy any buffered output to the new file.
+		_, err := io.Copy(f, s.bufferedOutput)
+		if err != nil {
+			panic(err)
+		}
+		s.bufferedOutput.Reset()
 		s.fileLogger.SetOutput(f)
 	} else {
 		s.Fatal(err.Error())
