@@ -812,6 +812,8 @@ type PartitionVariables struct {
 	VendorBlobsLicense string `json:",omitempty"`
 
 	MinimalFontFootprint bool `json:",omitempty"`
+
+	CustomImagesPartitions []string `json:",omitempty"`
 }
 
 func boolPtr(v bool) *bool {

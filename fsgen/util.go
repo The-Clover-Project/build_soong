@@ -197,3 +197,31 @@ func setRecoveryFstabSrcs(ctx android.BottomUpMutatorContext) {
 		)
 	}
 }
+
+// This is a workaround to set only the valid filesystem modules as the custom_partitions entry
+// of the android_device module, as invalid entry will lead to missing dependency error.
+//
+// TODO(jihoonkang): Remove this workaround and set the property in the load hook context once
+// all BOARD_CUSTOMIMAGES_PARTITION_LIST entries have been converted to android_filesystem
+// modules.
+func setAndroidDeviceCustomPartitionProp(ctx android.BottomUpMutatorContext) {
+	if !ctx.Module().UseGenericConfig() && ctx.ModuleName() == generatedModuleName(ctx.Config(), "device") {
+		customPartitions := ctx.Config().ProductVariables().PartitionVarsForSoongMigrationOnlyDoNotUse.CustomImagesPartitions
+		if len(customPartitions) > 0 {
+			var customPartitionNames []string
+			for _, customPartition := range customPartitions {
+				if ctx.OtherModuleExists(customPartition) {
+					customPartitionNames = append(customPartitionNames, customPartition)
+				}
+
+			}
+			proptools.AppendMatchingProperties(
+				ctx.Module().GetProperties(),
+				&filesystem.PartitionNameProperties{
+					Custom_partitions: customPartitionNames,
+				},
+				nil,
+			)
+		}
+	}
+}

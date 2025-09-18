@@ -75,6 +75,8 @@ type PartitionNameProperties struct {
 	Ramdisk_partition_name *string
 	// Name of the vendor kernel ramdisk partition filesystem module
 	Vendor_kernel_ramdisk_partition_name *string
+	// Names of the custom partition filesystem modules
+	Custom_partitions []string
 }
 
 type DeviceProperties struct {
@@ -174,6 +176,8 @@ type androidDevice struct {
 	withLicenseDistName string
 
 	fastbootInfoFile android.Path
+
+	customPartitionFilesystemInfos []FilesystemInfo
 }
 
 func AndroidDeviceFactory() android.Module {
@@ -221,6 +225,10 @@ type pvmfwRawBinaryDepTagType struct {
 	blueprint.BaseDependencyTag
 }
 
+type customPartitionDepTagType struct {
+	blueprint.BaseDependencyTag
+}
+
 var superPartitionDepTag superPartitionDepTagType
 var filesystemDepTag partitionDepTagType
 var targetFilesMetadataDepTag targetFilesMetadataDepTagType
@@ -232,6 +240,7 @@ var radioDepTag radioDepTagType
 var ramdisk16kDepTag ramdisk16kDepTagType
 var androidInfoDepTag androidInfoDepTagType
 var pvmfwRawBinaryDepTag pvmfwRawBinaryDepTagType
+var customPartitionDepTag customPartitionDepTagType
 
 func (a *androidDevice) DepsMutator(ctx android.BottomUpMutatorContext) {
 	addDependencyIfDefined := func(dep *string) {
@@ -298,6 +307,10 @@ func (a *androidDevice) DepsMutator(ctx android.BottomUpMutatorContext) {
 	addDependencyIfDefined(a.deviceProps.InfoPartitionProps.System_partition_name)
 	addDependencyIfDefined(a.deviceProps.InfoPartitionProps.System_ext_partition_name)
 
+	for _, customPartition := range a.partitionProps.Custom_partitions {
+		ctx.AddDependency(ctx.Module(), customPartitionDepTag, customPartition)
+	}
+
 	a.hostInitVerifierCheckDepsMutator(ctx)
 }
 
@@ -322,6 +335,19 @@ func (a *androidDevice) getAndroidInfoProvider(ctx android.ModuleContext) {
 	}
 }
 
+func (a *androidDevice) getCustomPartitionFilesystemInfos(ctx android.ModuleContext) []FilesystemInfo {
+	var fsInfos []FilesystemInfo
+	for _, customPartition := range a.partitionProps.Custom_partitions {
+		customPartitionModule := ctx.GetDirectDepProxyWithTag(customPartition, customPartitionDepTag)
+		if info, ok := android.OtherModuleProvider(ctx, customPartitionModule, FilesystemProvider); ok {
+			fsInfos = append(fsInfos, info)
+		} else {
+			ctx.PropertyErrorf("custom_partitions", "custom partition %s does not set FilesystemProvider", customPartition)
+		}
+	}
+	return fsInfos
+}
+
 func (a *androidDevice) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	if proptools.Bool(a.deviceProps.Main_device) {
 		numMainAndroidDevices := ctx.Config().Once(numMainAndroidDevicesOnceKey, func() interface{} {
@@ -341,6 +367,7 @@ func (a *androidDevice) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	// Normal allInstalledModules which only include modules in those partitions which will be create images for this product.
 	allInstalledModules := a.allInstalledModules(ctx, false)
 
+	a.customPartitionFilesystemInfos = a.getCustomPartitionFilesystemInfos(ctx)
 	a.getAndroidInfoProvider(ctx)
 	a.apkCertsInfo = a.buildApkCertsInfo(ctx)
 	a.kernelVersion, a.kernelConfig = a.extractKernelVersionAndConfigs(ctx)
@@ -1041,6 +1068,14 @@ func (a *androidDevice) copyPrebuiltImages(ctx android.ModuleContext, builder *a
 		// add_img_to_target_files.py does not support dtbo_16k
 		builder.Command().Text("cp").Input(img).Textf(" %s/IMAGES/", targetFilesDir)
 	}
+	// Copy custom partition images.
+	for _, partitionInfo := range a.customPartitionFilesystemInfos {
+		if img := partitionInfo.Output; img != nil {
+			// Copy to PREBUILT_IMAGES/
+			// add_img_to_target_files.py will create another copy in IMAGES/
+			builder.Command().Textf("mkdir -p %s/PREBUILT_IMAGES &&	cp ", targetFilesDir).Input(img).Textf(" %s/PREBUILT_IMAGES/%s", targetFilesDir, img.Base())
+		}
+	}
 }
 
 // partial implementation of vendor ramdisk fragments in target_files.zip
@@ -1317,6 +1352,11 @@ func (a *androidDevice) createFastbootInfo(ctx android.ModuleContext) android.Pa
 			fastbootInfoString.WriteString(fmt.Sprintf("flash vbmeta_%s\n", chainedVbmetaPartitionType))
 		}
 	}
+	for _, customPartition := range a.customPartitionFilesystemInfos {
+		if !customPartition.NoFlashall {
+			fastbootInfoString.WriteString(fmt.Sprintf("flash %s\n", customPartition.ModuleName))
+		}
+	}
 
 	fastbootInfoString.WriteString("reboot fastboot\n")
 	fastbootInfoString.WriteString("update-super\n")
@@ -1550,6 +1590,26 @@ func (a *androidDevice) addMiscInfo(ctx android.ModuleContext) android.Path {
 		}
 		fingerprintFile := ctx.Config().BuildFingerprintFile(ctx)
 		builder.Command().Textf("echo avb_pvmfw_add_hash_footer_args=--prop com.android.build.pvmfw.fingerprint:$(cat %s) >> %s", fingerprintFile.String(), miscInfo).Implicit(fingerprintFile)
+	}
+	var avbSignedCustomPartitionNames, unsignedCustomPartitionNames []string
+	for _, customPartition := range a.customPartitionFilesystemInfos {
+		partitionName := customPartition.PartitionName
+		if customPartition.SignedOutputPath != nil {
+			avbSignedCustomPartitionNames = append(avbSignedCustomPartitionNames, partitionName)
+			if customPartition.PropFileForMiscInfo != nil {
+				builder.Command().Text("cat").Input(customPartition.PropFileForMiscInfo).Textf(" >> %s", miscInfo)
+			}
+			builder.Command().Textf("echo avb_%s_image_list=%s >> %s", partitionName, customPartition.SignedOutputPath.Base(), miscInfo).Implicit(customPartition.SignedOutputPath)
+		} else {
+			unsignedCustomPartitionNames = append(unsignedCustomPartitionNames, partitionName)
+			builder.Command().Textf("echo %s_image_list=%s >> %s", partitionName, customPartition.Output.Base(), miscInfo).Implicit(customPartition.Output)
+		}
+	}
+	if len(avbSignedCustomPartitionNames) > 0 {
+		builder.Command().Textf("echo avb_custom_images_partition_list=%s >> %s", strings.Join(avbSignedCustomPartitionNames, " "), miscInfo)
+	}
+	if len(unsignedCustomPartitionNames) > 0 {
+		builder.Command().Textf("echo custom_images_partition_list=%s >> %s", strings.Join(unsignedCustomPartitionNames, " "), miscInfo)
 	}
 
 	// Sort and dedup

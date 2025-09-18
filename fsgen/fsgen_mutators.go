@@ -34,6 +34,7 @@ func RegisterCollectFileSystemDepsMutators(ctx android.RegisterMutatorsContext) 
 	ctx.BottomUp("fs_remove_deps", removeDepsMutator).MutatesGlobalState()
 	ctx.BottomUp("fs_cross_partition_required_deps", crossPartitionRequiredMutator).MutatesGlobalState()
 	ctx.BottomUp("fs_set_deps", setDepsMutator)
+	ctx.BottomUp("fs_set_device_custom_partitions", setAndroidDeviceCustomPartitionProp)
 }
 
 var fsGenStateOnceKey = android.NewOnceKey("FsGenState")

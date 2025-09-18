@@ -1868,6 +1868,7 @@ func (f *filesystem) AndroidMkEntries() []android.AndroidMkEntries {
 					entries.SetString("LOCAL_FILESYSTEM_AVB_KEY_PATH", f.avbKey.String())
 				}
 				entries.SetString("LOCAL_FILESYSTEM_AVB_ALGORITHM", proptools.StringDefault(f.properties.Avb_algorithm, "SHA256_RSA4096"))
+				entries.SetBoolIfTrue(fmt.Sprintf("BOARD_%s_IMAGE_NO_FLASHALL", strings.ToUpper(f.Name())), proptools.Bool(f.properties.No_flashall))
 			},
 		},
 	}}
