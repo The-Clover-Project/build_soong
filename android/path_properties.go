@@ -135,9 +135,24 @@ func addPathDepsForProps(ctx BottomUpMutatorContext, props []interface{}) {
 	if len(pathHostSecondProperties) > 0 {
 		var targets []Target
 		targets, _ = decodeMultilibTargets("32", ctx.Config().Targets[ctx.Config().BuildOS], false)
-		if len(targets) == 0 {
-			ctx.ModuleErrorf("Could not find a 32 bit host target")
-		} else {
+		// If a 32-bit host target exists, add the dependencies. Otherwise, do nothing.
+		// This is necessary to support host OSes like Darwin (macOS) that do not
+		// have a 32-bit multilib target.
+		//
+		// A critical example is the `darwin_mac` build for `git_main-build_tools` (see b/445329758),
+		// which is invoked with the `--skip-config` flag. This flag prevents Soong from loading
+		// build configurations, making it impossible to use `select()` with `soong_config_variable()`
+		// to conditionally disable properties for these builds (e.g., based on HOST_CROSS_OS).
+		//
+		// Without the configuration, a `select()` statement falls back to its default branch, which
+		// may incorrectly attempt to resolve a second-architecture dependency. This triggers a build
+		// failure because no such target exists in this environment, resulting in an error like:
+		//   'module "art_common_host_test_libs_zip": Could not find a 32 bit host target'
+		//
+		// To prevent this failure, this logic explicitly checks for the availability of a second
+		// host architecture. If it is not available, we ignore the `host_second_srcs` property,
+		// allowing these essential builds to proceed.
+		if len(targets) > 0 {
 			for _, s := range pathHostSecondProperties {
 				if m, t := SrcIsModuleWithTag(s); m != "" {
 					ctx.AddVariationDependencies(targets[0].Variations(), sourceOrOutputDepTag(m, t), m)
@@ -145,7 +160,6 @@ func addPathDepsForProps(ctx BottomUpMutatorContext, props []interface{}) {
 			}
 		}
 	}
-
 	// properties tagged "path_common_os" get the CommonOs variant
 	for _, s := range pathCommonOsProperties {
 		if m, t := SrcIsModuleWithTag(s); m != "" {
