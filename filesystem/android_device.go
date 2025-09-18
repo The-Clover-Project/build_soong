@@ -719,6 +719,7 @@ func (a *androidDevice) distFiles(ctx android.ModuleContext) {
 		if a.deviceProps.Bootloader != nil {
 			bootloader := ctx.GetDirectDepProxyWithTag(*a.deviceProps.Bootloader, bootloaderDepTag)
 			files := android.OutputFilesForModule(ctx, bootloader, "")
+			files = append(files, android.OutputFilesForModule(ctx, bootloader, "bootloader_partitions")...)
 			for _, file := range files {
 				// The bootloader files are disted stanadlone, outside img.zip
 				ctx.DistForGoal("droidcore-unbundled", file)
@@ -748,7 +749,7 @@ func (a *androidDevice) distFiles(ctx android.ModuleContext) {
 		// tzsw
 		if a.deviceProps.Tzsw != nil {
 			tzswImg := ctx.GetDirectDepProxyWithTag(proptools.String(a.deviceProps.Tzsw), tzswDepTag)
-			files := android.OutputFilesForModule(ctx, tzswImg, "")
+			files := android.OutputFilesForModule(ctx, tzswImg, "bootloader_partitions")
 			ctx.DistForGoal("droidcore-unbundled", files...)
 		}
 
@@ -924,6 +925,7 @@ func (a *androidDevice) buildTargetFilesZip(ctx android.ModuleContext, allInstal
 			// Bootloader with AB ota partitions are copied to RADIO/ subdirectory.
 			// This matches the make implementation.
 			files := android.OutputFilesForModule(ctx, bootloader, "")
+			files = append(files, android.OutputFilesForModule(ctx, bootloader, "bootloader_partitions")...)
 			builder.Command().
 				Textf("mkdir -p %s/RADIO && cp -t %s/RADIO ", targetFilesDir, targetFilesDir).
 				Inputs(files)
@@ -937,7 +939,7 @@ func (a *androidDevice) buildTargetFilesZip(ctx android.ModuleContext, allInstal
 	}
 	if a.deviceProps.Tzsw != nil {
 		tzswImg := ctx.GetDirectDepProxyWithTag(*a.deviceProps.Tzsw, tzswDepTag)
-		files := android.OutputFilesForModule(ctx, tzswImg, "")
+		files := android.OutputFilesForModule(ctx, tzswImg, "bootloader_partitions")
 		builder.Command().
 			Textf("mkdir -p %s/RADIO && cp -t %s/RADIO ", targetFilesDir, targetFilesDir).
 			Inputs(files)

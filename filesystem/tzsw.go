@@ -43,7 +43,7 @@ func (p *prebuiltTzsw) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	}
 	src := android.PathForModuleSrc(ctx, proptools.String(p.properties.Src))
 	srcWithAvb := p.avbAddHash(ctx, src)
-	ctx.SetOutputFiles([]android.Path{src, srcWithAvb}, "")
+	ctx.SetOutputFiles([]android.Path{src, srcWithAvb}, "bootloader_partitions")
 	android.SetProvider(ctx, vbmetaPartitionProvider, vbmetaPartitionInfo{
 		Name:   "tzsw",
 		Output: srcWithAvb,
