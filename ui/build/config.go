@@ -425,6 +425,9 @@ func newConfig(ctx Context, isDumpVar bool, args ...string) Config {
 			parsedVal, err := strconv.ParseBool(value)
 			if err == nil {
 				ret.runCIPDProxyServer = parsedVal
+				if !ret.runCIPDProxyServer {
+					ctx.Verbosef("SOONG_RUN_CIPD_PROXY_SERVER=%q, disabling proxy", value)
+				}
 			} else {
 				ctx.Verbosef("SOONG_RUN_CIPD_PROXY_SERVER (%q) is not a valid boolean", value)
 			}
@@ -1082,6 +1085,7 @@ func (c *configImpl) parseArgs(ctx Context, args []string) {
 		} else if arg == "--no-run-cipd-proxy-server" {
 			c.runCIPDProxyServer = false
 			c.runCIPDProxyServerControlledByFlags = true
+			ctx.Verbosef("Disabling CIPD proxy due to --no-run-cipd-proxy-server")
 		} else if len(arg) > 0 && arg[0] == '-' {
 			parseArgNum := func(def int) int {
 				if len(arg) > 2 {

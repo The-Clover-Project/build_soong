@@ -45,15 +45,20 @@ func cipdPath(config Config) string {
 	return filepath.Join("prebuilts/cipd", config.HostPrebuiltTag(), "cipd")
 }
 
-func shouldRunCIPDProxy(config Config) bool {
+func shouldRunCIPDProxy(ctx Context, config Config) bool {
 	if runtime.GOOS == "darwin" {
 		// Disable CIPD proxy on Mac until we have it working, see b/425932171.
+		ctx.Verbosef("Disabling CIPD proxy server on Mac for b/425932171")
 		return false
 	}
 
 	cipdPath := cipdPath(config)
 	_, err := os.Stat(cipdPath)
-	return err == nil
+	if err != nil {
+		ctx.Verbosef("cipd binary not found at %v, disabling proxy", cipdPath)
+		return false
+	}
+	return true
 }
 
 func startCIPDProxyServer(ctx Context, config Config) *cipdProxy {
