@@ -167,6 +167,7 @@ type installationProperties struct {
 	Partition           string
 	Namespace           string
 	ArchType            android.ArchType
+	AvbEnabled          bool
 }
 
 func defaultDepCandidateProps(config android.Config) *depCandidateProps {
@@ -478,6 +479,13 @@ func collectDepsMutator(mctx android.BottomUpMutatorContext) {
 			}
 		}
 
+		isAvbEnabledFilesystemModule := func() bool {
+			if avbFilesystemModule, ok := m.(interface{ IsAvbEnabled() bool }); ok && avbFilesystemModule.IsAvbEnabled() {
+				return true
+			}
+			return false
+		}
+
 		fsGenState.moduleToInstallationProps.AddToMap(mctx, &installationProperties{
 			Required:            m.RequiredModuleNames(mctx),
 			CcAndRustSharedLibs: ccAndRustSharedLibs,
@@ -485,6 +493,7 @@ func collectDepsMutator(mctx android.BottomUpMutatorContext) {
 			Partition:           m.PartitionTag(mctx.DeviceConfig()),
 			Namespace:           mctx.Namespace().Path,
 			ArchType:            mctx.Target().Arch.ArchType,
+			AvbEnabled:          isAvbEnabledFilesystemModule(),
 		})
 	}
 

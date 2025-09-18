@@ -205,23 +205,46 @@ func setRecoveryFstabSrcs(ctx android.BottomUpMutatorContext) {
 // all BOARD_CUSTOMIMAGES_PARTITION_LIST entries have been converted to android_filesystem
 // modules.
 func setAndroidDeviceCustomPartitionProp(ctx android.BottomUpMutatorContext) {
-	if !ctx.Module().UseGenericConfig() && ctx.ModuleName() == generatedModuleName(ctx.Config(), "device") {
-		customPartitions := ctx.Config().ProductVariables().PartitionVarsForSoongMigrationOnlyDoNotUse.CustomImagesPartitions
-		if len(customPartitions) > 0 {
-			var customPartitionNames []string
-			for _, customPartition := range customPartitions {
-				if ctx.OtherModuleExists(customPartition) {
-					customPartitionNames = append(customPartitionNames, customPartition)
-				}
-
+	getValidCustomPartitionNames := func() []string {
+		var customPartitionNames []string
+		for _, customPartition := range ctx.Config().ProductVariables().PartitionVarsForSoongMigrationOnlyDoNotUse.CustomImagesPartitions {
+			if ctx.OtherModuleExists(customPartition) {
+				customPartitionNames = append(customPartitionNames, customPartition)
 			}
-			proptools.AppendMatchingProperties(
-				ctx.Module().GetProperties(),
-				&filesystem.PartitionNameProperties{
-					Custom_partitions: customPartitionNames,
-				},
-				nil,
-			)
+		}
+		return customPartitionNames
+	}
+
+	if !ctx.Module().UseGenericConfig() {
+		switch ctx.ModuleName() {
+		case generatedModuleName(ctx.Config(), "device"):
+			if customPartitionNames := getValidCustomPartitionNames(); len(customPartitionNames) > 0 {
+				proptools.AppendMatchingProperties(
+					ctx.Module().GetProperties(),
+					&filesystem.PartitionNameProperties{
+						Custom_partitions: customPartitionNames,
+					},
+					nil,
+				)
+			}
+		case generatedModuleNameForPartition(ctx.Config(), "vbmeta"):
+			fsGenState := ctx.Config().Get(fsGenStateOnceKey).(*FsGenState)
+			var avbEnabledCustomPartitions []string
+			for _, customPartition := range getValidCustomPartitionNames() {
+				if _, info, ok := fsGenState.moduleToInstallationProps.GetFromModuleName(customPartition); ok && info.AvbEnabled {
+					avbEnabledCustomPartitions = append(avbEnabledCustomPartitions, customPartition)
+				}
+			}
+
+			if len(avbEnabledCustomPartitions) > 0 {
+				proptools.AppendMatchingProperties(
+					ctx.Module().GetProperties(),
+					&filesystem.VbmetaProperties{
+						Chained_partitions: avbEnabledCustomPartitions,
+					},
+					nil,
+				)
+			}
 		}
 	}
 }

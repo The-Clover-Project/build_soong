@@ -1086,3 +1086,55 @@ func TestRemoveOverriddenTransitiveDeps(t *testing.T) {
 		android.AssertBoolEquals(t, "foo should be in deps", true, fooInDeps)
 	})
 }
+
+func TestVbmetaGenerationWithCustomPartitions(t *testing.T) {
+	result := android.GroupFixturePreparers(
+		android.PrepareForIntegrationTestWithAndroid,
+		android.PrepareForTestWithAndroidBuildComponents,
+		android.PrepareForTestWithAllowMissingDependencies,
+		prepareForTestWithFsgenBuildComponents,
+		cc.PrepareForTestWithCcBuildComponents,
+		java.PrepareForTestWithJavaBuildComponents,
+		prepareMockRamdiksNodeList,
+		filesystem.PrepareForTestWithFilesystemBuildComponents,
+		android.FixtureMergeMockFs(android.MockFS{
+			"external/avb/test/data/testkey_rsa4096.pem": nil,
+			"build/soong/fsgen/Android.bp": []byte(`
+			soong_filesystem_creator {
+				name: "foo",
+			}
+		`),
+		}),
+		android.FixtureModifyConfig(func(config android.Config) {
+			config.TestProductVariables.PartitionVarsForSoongMigrationOnlyDoNotUse.CustomImagesPartitions = []string{"custom1", "custom2", "custom3"}
+			config.TestProductVariables.PartitionVarsForSoongMigrationOnlyDoNotUse.BuildingVbmetaImage = true
+			config.TestProductVariables.PartitionVarsForSoongMigrationOnlyDoNotUse.PartitionQualifiedVariables =
+				map[string]android.PartitionQualifiedVariablesType{
+					"system": {
+						BoardFileSystemType:           "ext4",
+						BuildingImage:                 true,
+						BoardAvbKeyPath:               "external/avb/test/data/testkey_rsa4096.pem",
+						BoardAvbRollbackIndexLocation: "1",
+					},
+				}
+			config.TestProductVariables.PartitionVarsForSoongMigrationOnlyDoNotUse.BoardAvbEnable = true
+		}),
+	).RunTestWithBp(t, `
+		android_filesystem {
+			name: "custom1",
+			use_avb: true,
+			avb_private_key: "external/avb/test/data/testkey_rsa4096.pem",
+			rollback_index_location: 5,
+		}
+		android_filesystem {
+			name: "custom2",
+		}
+	`)
+
+	generatedVbmetaImage := result.ModuleForTests(t, "test_product_generated_vbmeta_image", "android_common").Output("vbmeta.img")
+	vbmetaImageCommand := generatedVbmetaImage.RuleParams.Command
+
+	android.AssertStringDoesContain(t, "system chained partition must exist with property appending", vbmetaImageCommand, "--chain_partition system:1:out/soong/.intermediates/build/soong/fsgen/test_product_generated_system_image/android_common/system.avbpubke")
+	android.AssertStringDoesContain(t, "avb enabled custom partition must be included as chained partition", vbmetaImageCommand, "--chain_partition custom1:5:out/soong/.intermediates/custom1/android_common/custom1.avbpubkey")
+	android.AssertStringDoesNotContain(t, "avb disabled custom partition must not be included as chained partition", vbmetaImageCommand, "--chain_partition custom2:")
+}

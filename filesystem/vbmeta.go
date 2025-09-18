@@ -91,6 +91,10 @@ type VbmetaProperties struct {
 
 	// List of key-value pair of avb properties
 	Avb_properties []avbProperty
+
+	// Determines if the module is auto-generated from Soong or not. If the module is
+	// auto-generated, it does not use generic config.
+	Is_auto_generated *bool
 }
 
 type avbProperty struct {
@@ -167,6 +171,10 @@ type chainedPartitionDep struct {
 
 var vbmetaPartitionDep = vbmetaDep{}
 var vbmetaChainedPartitionDep = chainedPartitionDep{}
+
+func (f *vbmeta) UseGenericConfig() bool {
+	return !proptools.Bool(f.properties.Is_auto_generated)
+}
 
 func (v *vbmeta) DepsMutator(ctx android.BottomUpMutatorContext) {
 	ctx.AddVariationDependencies(ctx.Config().AndroidFirstDeviceTarget.Variations(), vbmetaPartitionDep, v.properties.Partitions.GetOrDefault(ctx, nil)...)
