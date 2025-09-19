@@ -72,28 +72,19 @@ func (tidy *tidyFeature) flags(ctx ModuleContext, flags Flags) Flags {
 	CheckBadTidyFlags(ctx, "tidy_flags", tidy.Properties.Tidy_flags)
 	CheckBadTidyChecks(ctx, "tidy_checks", tidy.Properties.Tidy_checks)
 
-	// Check if tidy is explicitly disabled for this module
-	if tidy.Properties.Tidy != nil && !*tidy.Properties.Tidy {
+	// Check if tidy is explicitly enabled for this module
+	if !proptools.Bool(tidy.Properties.Tidy) {
 		return flags
 	}
-	// Some projects like external/* and vendor/* have clang-tidy disabled by default,
-	// unless they are enabled explicitly with the "tidy:true" property or
-	// when TIDY_EXTERNAL_VENDOR is set to true.
-	if !proptools.Bool(tidy.Properties.Tidy) &&
-		config.NoClangTidyForDir(
-			ctx.Config().IsEnvTrue("TIDY_EXTERNAL_VENDOR"),
-			ctx.ModuleDir()) {
-		return flags
-	}
-	// If not explicitly disabled, set flags.Tidy to generate .tidy rules.
+
+	// If explicitly enabled, set flags.Tidy to generate .tidy rules.
 	// Note that libraries and binaries will depend on .tidy files ONLY if
-	// the global WITH_TIDY or module 'tidy' property is true.
+	// the global WITH_TIDY or ALLOW_LOCAL_TIDY_TRUE is set to true.
 	flags.Tidy = true
 
-	// If explicitly enabled, by global WITH_TIDY or local tidy:true property,
+	// If explicitly enabled, by global WITH_TIDY or ALLOW_LOCAL_TIDY_TRUE,
 	// set flags.NeedTidyFiles to make this module depend on .tidy files.
-	// Note that locally set tidy:true is ignored if ALLOW_LOCAL_TIDY_TRUE is not set to true.
-	if ctx.Config().IsEnvTrue("WITH_TIDY") || (ctx.Config().IsEnvTrue("ALLOW_LOCAL_TIDY_TRUE") && Bool(tidy.Properties.Tidy)) {
+	if ctx.Config().IsEnvTrue("WITH_TIDY") || ctx.Config().IsEnvTrue("ALLOW_LOCAL_TIDY_TRUE") {
 		flags.NeedTidyFiles = true
 	}
 
