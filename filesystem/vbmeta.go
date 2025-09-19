@@ -172,10 +172,6 @@ type chainedPartitionDep struct {
 var vbmetaPartitionDep = vbmetaDep{}
 var vbmetaChainedPartitionDep = chainedPartitionDep{}
 
-func (f *vbmeta) UseGenericConfig() bool {
-	return !proptools.Bool(f.properties.Is_auto_generated)
-}
-
 func (v *vbmeta) DepsMutator(ctx android.BottomUpMutatorContext) {
 	ctx.AddVariationDependencies(ctx.Config().AndroidFirstDeviceTarget.Variations(), vbmetaPartitionDep, v.properties.Partitions.GetOrDefault(ctx, nil)...)
 	ctx.AddVariationDependencies(ctx.Config().AndroidFirstDeviceTarget.Variations(), vbmetaChainedPartitionDep, v.properties.Chained_partitions...)

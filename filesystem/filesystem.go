@@ -606,10 +606,6 @@ func GetFsTypeFromString(ctx android.EarlyModuleContext, typeStr string) fsType 
 	}
 }
 
-func (f *filesystem) IsAvbEnabled() bool {
-	return proptools.BoolDefault(f.properties.Use_avb, false)
-}
-
 func (f *filesystem) fsType(ctx android.ModuleContext) fsType {
 	typeStr := proptools.StringDefault(f.properties.Type, "ext4")
 	fsType := GetFsTypeFromString(ctx, typeStr)
