@@ -163,11 +163,17 @@ func usePartialCompile() bool {
 // Returns whether to include all src Files in incremental src set
 func getUsages(usageMap map[string]UsageMap, modifiedFiles, deletedFiles, modifiedClasses, deletedClasses []string) ([]string, bool) {
 	usagesSet := make(map[string]bool)
+	delFileSet := make(map[string]bool)
 
 	// First add all the modified files in the output
 	for _, incInput := range modifiedFiles {
 		usagesSet[incInput] = true
 	}
+	// Create a set containing deletedFiles
+	for _, delFile := range deletedFiles {
+		delFileSet[delFile] = true
+	}
+
 	// Add all the usages of modified + deleted files
 	for _, modFile := range slices.Concat(modifiedFiles, deletedFiles, modifiedClasses, deletedClasses) {
 		if um, exists := usageMap[modFile]; exists {
@@ -175,7 +181,10 @@ func getUsages(usageMap map[string]UsageMap, modifiedFiles, deletedFiles, modifi
 				return nil, true
 			}
 			for _, usage := range um.Usages {
-				usagesSet[usage] = true
+				// If a usage was also being deleted, then should skip adding the same.
+				if !delFileSet[usage] {
+					usagesSet[usage] = true
+				}
 			}
 		}
 	}
