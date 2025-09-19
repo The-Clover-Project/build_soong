@@ -11,6 +11,7 @@ bootstrap_go_package {
         "blueprint-gobtools",
         "blueprint-pathtools",
         "blueprint-proptools",
+        "blueprint-uniquelist",
         "soong",
         "soong-aconfig",
         "soong-android",

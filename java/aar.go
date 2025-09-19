@@ -28,13 +28,14 @@ import (
 	"github.com/google/blueprint"
 	"github.com/google/blueprint/depset"
 	"github.com/google/blueprint/proptools"
+	"github.com/google/blueprint/uniquelist"
 )
 
 //go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
 
 type AndroidLibraryDependency interface {
 	ExportPackage() android.Path
-	ResourcesNodeDepSet() depset.DepSet[resourcesNodePtr]
+	ResourcesNodeDepSet() depset.DepSet[resourcesNode]
 	RRODirsDepSet() depset.DepSet[rroDir]
 	ManifestsDepSet() depset.DepSet[android.Path]
 	SetRROEnforcedForDependent(enforce bool)
@@ -144,7 +145,7 @@ type aapt struct {
 
 	aaptProperties aaptProperties
 
-	resourcesNodesDepSet depset.DepSet[resourcesNodePtr]
+	resourcesNodesDepSet depset.DepSet[resourcesNode]
 	rroDirsDepSet        depset.DepSet[rroDir]
 	manifestsDepSet      depset.DepSet[android.Path]
 
@@ -240,7 +241,7 @@ func (a *aapt) filterProduct() string {
 func (a *aapt) ExportPackage() android.Path {
 	return a.exportPackage
 }
-func (a *aapt) ResourcesNodeDepSet() depset.DepSet[resourcesNodePtr] {
+func (a *aapt) ResourcesNodeDepSet() depset.DepSet[resourcesNode] {
 	return a.resourcesNodesDepSet
 }
 
@@ -723,17 +724,17 @@ func (a *aapt) buildActions(ctx android.ModuleContext, opts aaptBuildActionOptio
 	a.extraAaptPackagesFile = extraPackages
 	a.rTxt = rTxt
 	a.splits = splits
-	a.resourcesNodesDepSet = depset.NewBuilder[resourcesNodePtr](depset.TOPOLOGICAL).
-		Direct(resourcesNodePtr{&resourcesNode{
+	a.resourcesNodesDepSet = depset.NewBuilder[resourcesNode](depset.TOPOLOGICAL).
+		Direct(resourcesNode{
 			resPackage:          a.exportPackage,
 			manifest:            a.manifestPath,
-			additionalManifests: additionalManifests,
+			additionalManifests: uniquelist.Make(additionalManifests),
 			rTxt:                a.rTxt,
 			rJar:                a.rJar,
 			assets:              a.assetPackage,
 
 			usedResourceProcessor: a.useResourceProcessorBusyBox(ctx),
-		}}).
+		}).
 		Transitive(staticResourcesNodesDepSet).Build()
 	a.manifestsDepSet = depset.NewBuilder[android.Path](depset.TOPOLOGICAL).
 		Direct(a.manifestPath).
@@ -851,7 +852,7 @@ func resourceProcessorBusyBoxGenerateBinaryR(ctx android.ModuleContext, rTxt, ma
 type resourcesNode struct {
 	resPackage          android.Path
 	manifest            android.Path
-	additionalManifests android.Paths
+	additionalManifests uniquelist.UniqueList[android.Path]
 	rTxt                android.Path
 	rJar                android.Path
 	assets              android.OptionalPath
@@ -859,13 +860,7 @@ type resourcesNode struct {
 	usedResourceProcessor bool
 }
 
-// resourcesNodePtr wraps a resourcesNode pointer so that DepSet.Decode can decode it.
-// @auto-generate: gob
-type resourcesNodePtr struct {
-	*resourcesNode
-}
-
-type transitiveAarDeps []resourcesNodePtr
+type transitiveAarDeps []resourcesNode
 
 func (t transitiveAarDeps) resPackages() android.Paths {
 	paths := make(android.Paths, 0, len(t))
@@ -879,7 +874,7 @@ func (t transitiveAarDeps) manifests() android.Paths {
 	paths := make(android.Paths, 0, len(t))
 	for _, dep := range t {
 		paths = append(paths, dep.manifest)
-		paths = append(paths, dep.additionalManifests...)
+		paths = dep.additionalManifests.AppendTo(paths)
 	}
 	return paths
 }
@@ -905,7 +900,7 @@ func (t transitiveAarDeps) assets() android.Paths {
 // aaptLibs collects libraries from dependencies and sdk_version and converts them into paths
 func aaptLibs(ctx android.ModuleContext, sdkContext android.SdkContext,
 	classLoaderContexts dexpreopt.ClassLoaderContextMap, usesLibrary *usesLibrary) (
-	staticResourcesNodes, sharedResourcesNodes depset.DepSet[resourcesNodePtr], staticRRODirs depset.DepSet[rroDir],
+	staticResourcesNodes, sharedResourcesNodes depset.DepSet[resourcesNode], staticRRODirs depset.DepSet[rroDir],
 	staticManifests depset.DepSet[android.Path], sharedLibs android.Paths, flags []string) {
 
 	if classLoaderContexts == nil {
@@ -919,8 +914,8 @@ func aaptLibs(ctx android.ModuleContext, sdkContext android.SdkContext,
 		sharedLibs = append(sharedLibs, sdkDep.jars...)
 	}
 
-	var staticResourcesNodeDepSets []depset.DepSet[resourcesNodePtr]
-	var sharedResourcesNodeDepSets []depset.DepSet[resourcesNodePtr]
+	var staticResourcesNodeDepSets []depset.DepSet[resourcesNode]
+	var sharedResourcesNodeDepSets []depset.DepSet[resourcesNode]
 	rroDirsDepSetBuilder := depset.NewBuilder[rroDir](depset.TOPOLOGICAL)
 	manifestsDepSetBuilder := depset.NewBuilder[android.Path](depset.TOPOLOGICAL)
 
@@ -1256,7 +1251,7 @@ type AARImport struct {
 	rJar                               android.Path
 	kSnapshotFiles                     map[string]android.Path
 
-	resourcesNodesDepSet depset.DepSet[resourcesNodePtr]
+	resourcesNodesDepSet depset.DepSet[resourcesNode]
 	manifestsDepSet      depset.DepSet[android.Path]
 
 	aarPath     android.Path
@@ -1302,7 +1297,7 @@ var _ AndroidLibraryDependency = (*AARImport)(nil)
 func (a *AARImport) ExportPackage() android.Path {
 	return a.exportPackage
 }
-func (a *AARImport) ResourcesNodeDepSet() depset.DepSet[resourcesNodePtr] {
+func (a *AARImport) ResourcesNodeDepSet() depset.DepSet[resourcesNode] {
 	return a.resourcesNodesDepSet
 }
 
@@ -1515,8 +1510,8 @@ func (a *AARImport) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	aapt2ExtractExtraPackages(ctx, extraAaptPackagesFile, a.rJar)
 	a.extraAaptPackagesFile = extraAaptPackagesFile
 
-	resourcesNodesDepSetBuilder := depset.NewBuilder[resourcesNodePtr](depset.TOPOLOGICAL)
-	resourcesNodesDepSetBuilder.Direct(resourcesNodePtr{&resourcesNode{
+	resourcesNodesDepSetBuilder := depset.NewBuilder[resourcesNode](depset.TOPOLOGICAL)
+	resourcesNodesDepSetBuilder.Direct(resourcesNode{
 		resPackage: a.exportPackage,
 		manifest:   a.manifest,
 		rTxt:       a.rTxt,
@@ -1524,7 +1519,7 @@ func (a *AARImport) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		assets:     android.OptionalPathForPath(a.assetsPackage),
 
 		usedResourceProcessor: true,
-	}})
+	})
 	resourcesNodesDepSetBuilder.Transitive(staticResourcesNodesDepSet)
 	a.resourcesNodesDepSet = resourcesNodesDepSetBuilder.Build()
 
