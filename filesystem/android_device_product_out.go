@@ -150,6 +150,18 @@ func (a *androidDevice) copyFilesToProductOutForSoongOnly(ctx android.ModuleCont
 			})
 			deps = append(deps, installPath)
 		}
+
+		// Copy the unpacked bootloader partitions to a location expected by incremental flashstation.
+		bootloaderPartitionFiles := android.OutputFilesForModule(ctx, child, "bootloader_partitions")
+		for _, file := range bootloaderPartitionFiles {
+			installPath := android.PathForModuleInPartitionInstall(ctx, "obj", "PACKAGING", "unpacked", file.Base())
+			ctx.Build(pctx, android.BuildParams{
+				Rule:   android.Cp,
+				Input:  file,
+				Output: installPath,
+			})
+			deps = append(deps, installPath)
+		}
 	})
 
 	copyBootImg := func(prop *string, type_ string) {

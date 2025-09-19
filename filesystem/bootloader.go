@@ -60,10 +60,10 @@ func (p *prebuiltBootloader) GenerateAndroidBuildActions(ctx android.ModuleConte
 		ctx.PropertyErrorf("src", "Source cannot be empty")
 	}
 	bootloader := android.PathForModuleSrc(ctx, proptools.String(p.properties.Src))
-	bootloaderFiles := append(android.Paths{}, bootloader)
-	bootloaderFiles = append(bootloaderFiles, p.partitionFilesBootloader(ctx)...)
+	ctx.SetOutputFiles([]android.Path{bootloader}, "")
+	bootloaderPartitionFiles := p.partitionFilesBootloader(ctx)
+	ctx.SetOutputFiles(bootloaderPartitionFiles, "bootloader_partitions")
 
-	ctx.SetOutputFiles(bootloaderFiles, "")
 	android.SetProvider(ctx, vbmetaPartitionsProvider, p.vbmetaPartitions)
 	android.SetProvider(ctx, bootloaderInfoProvider, bootloaderInfo{
 		bootloaderImg: bootloader,
