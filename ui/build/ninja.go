@@ -110,6 +110,7 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 			args = append(args, "--reapi_instance", instance)
 		}
 		if value := config.SisoConfigDir(); value != "" {
+			value = maybeCreateSisoConfigDir(ctx, config, value)
 			args = append(args, fmt.Sprintf("--config_repo_dir=%s", value))
 		}
 		// b/374179435

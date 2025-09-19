@@ -389,7 +389,7 @@ func newConfig(ctx Context, isDumpVar bool, args ...string) Config {
 		if value, ok := ret.environ.Get("SISO_CONFIG_DIR"); ok {
 			ret.sisoConfigDir = value
 		} else {
-			ret.sisoConfigDir = "build/soong/siso_config"
+			ret.sisoConfigDir = DEFAULT_SISO_CONFIG_DIR
 		}
 	}
 

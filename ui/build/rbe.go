@@ -115,6 +115,79 @@ func checkRBERequirements(ctx Context, config Config) {
 	}
 }
 
+var DEFAULT_SISO_CONFIG_DIR = "build/soong/siso_config"
+
+func ensureSymlink(ctx Context, dir, name, target string) {
+	if err := os.MkdirAll(dir, 0777); err != nil {
+		ctx.Fatalf("Could not ensure that directory %q exists: %w", dir, err)
+	}
+
+	relTarget := target
+	if !filepath.IsAbs(target) {
+		var err error
+		relTarget, err = filepath.Rel(dir, target)
+		if err != nil {
+			ctx.Fatalf("Could not create relative path for %s in %s: %w", dir, target, err)
+		}
+	}
+
+	// Remove any xisting symlink.
+	linkPath := filepath.Join(dir, name)
+	currentTarget, err := os.Readlink(linkPath)
+	if err == nil {
+		if relTarget == currentTarget {
+			return
+		}
+		if err := os.Remove(linkPath); err != nil {
+			ctx.Fatalf("Failed to remove existing symlink %q: %w", linkPath, err)
+		}
+	} else if !os.IsNotExist(err) {
+		if err := os.Remove(linkPath); err != nil {
+			ctx.Fatalf("Failed to remove existing symlink %q: %w", linkPath, err)
+		}
+	}
+
+	// Create the new one.
+	if err := os.Symlink(relTarget, linkPath); err != nil {
+		ctx.Fatalf("Failed to create symlink %q => %q: %w", linkPath, relTarget, err)
+	}
+}
+
+const combinedSisoConfigText = `
+load("@builtin//struct.star", "module")
+load("main/main.star", "main")
+load("extension/main.star", "extension")
+
+imports = [main, extension]
+
+def init(ctx):
+    return main.generate(ctx, imports)
+`
+
+func maybeCreateSisoConfigDir(ctx Context, config Config, value string) string {
+	// We need to fabricate a working directory.
+	confDir := filepath.Join(config.OutDir(), "siso_config")
+	if value == DEFAULT_SISO_CONFIG_DIR {
+		return value
+	}
+	if value == confDir {
+		_, err := os.Stat(filepath.Join(confDir, "main.star"))
+		if err != nil {
+			ctx.Fatalf("${SISO_CONFIG_DIR}/main.star is missing: %w", err)
+		}
+		return value
+	}
+	ensureSymlink(ctx, confDir, "main", DEFAULT_SISO_CONFIG_DIR)
+	ensureSymlink(ctx, confDir, "extension", value)
+
+	confFile := filepath.Join(confDir, "main.star")
+	err := os.WriteFile(confFile, []byte(combinedSisoConfigText), 0666)
+	if err != nil {
+		ctx.Fatalf("Failed to create %q: %w", confFile, err)
+	}
+	return confDir
+}
+
 func startRBEproxy(ctx Context, config Config) {
 	e := ctx.BeginTrace(metrics.RunSetupTool, "rbe_bootstrap")
 	defer e.End()
@@ -130,6 +203,7 @@ func startRBEproxy(ctx Context, config Config) {
 	}
 
 	cmd := Command(ctx, config, e, "startRbeproxy bootstrap", executable, args...)
+	ctx.Printf("Starting RBE proxy: %s\n", cmd)
 
 	if err := cmd.Start(); err != nil {
 		ctx.Fatalf("Unable to start siso proxy\nFAILED: siso proxy failed with: %v\n%s\n", err)
