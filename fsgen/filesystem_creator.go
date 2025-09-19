@@ -604,6 +604,13 @@ func (f *filesystemCreator) createDeviceModule(
 		partitionProps.Vendor_kernel_ramdisk_partition_name = proptools.StringPtr(modName)
 	}
 
+	// This property is only set in Soong-only builds as not all custom partitions has been
+	// converted to Soong. Unconditionally setting this property will lead to missing
+	// dependencies error.
+	if !ctx.Config().KatiEnabled() {
+		partitionProps.Custom_partitions = partitionVars.CustomImagesPartitions
+	}
+
 	partitionProps.Vbmeta_partitions = vbmetaPartitions
 
 	deviceProps := &filesystem.DeviceProperties{

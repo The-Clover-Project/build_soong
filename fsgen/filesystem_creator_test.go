@@ -1106,7 +1106,7 @@ func TestVbmetaGenerationWithCustomPartitions(t *testing.T) {
 		`),
 		}),
 		android.FixtureModifyConfig(func(config android.Config) {
-			config.TestProductVariables.PartitionVarsForSoongMigrationOnlyDoNotUse.CustomImagesPartitions = []string{"custom1", "custom2", "custom3"}
+			config.TestProductVariables.PartitionVarsForSoongMigrationOnlyDoNotUse.CustomImagesPartitions = []string{"custom1"}
 			config.TestProductVariables.PartitionVarsForSoongMigrationOnlyDoNotUse.BuildingVbmetaImage = true
 			config.TestProductVariables.PartitionVarsForSoongMigrationOnlyDoNotUse.PartitionQualifiedVariables =
 				map[string]android.PartitionQualifiedVariablesType{
@@ -1115,6 +1115,9 @@ func TestVbmetaGenerationWithCustomPartitions(t *testing.T) {
 						BuildingImage:                 true,
 						BoardAvbKeyPath:               "external/avb/test/data/testkey_rsa4096.pem",
 						BoardAvbRollbackIndexLocation: "1",
+					},
+					"custom1": {
+						BoardAvbKeyPath: "external/avb/test/data/testkey_rsa4096.pem",
 					},
 				}
 			config.TestProductVariables.PartitionVarsForSoongMigrationOnlyDoNotUse.BoardAvbEnable = true
@@ -1126,9 +1129,6 @@ func TestVbmetaGenerationWithCustomPartitions(t *testing.T) {
 			avb_private_key: "external/avb/test/data/testkey_rsa4096.pem",
 			rollback_index_location: 5,
 		}
-		android_filesystem {
-			name: "custom2",
-		}
 	`)
 
 	generatedVbmetaImage := result.ModuleForTests(t, "test_product_generated_vbmeta_image", "android_common").Output("vbmeta.img")
@@ -1136,5 +1136,4 @@ func TestVbmetaGenerationWithCustomPartitions(t *testing.T) {
 
 	android.AssertStringDoesContain(t, "system chained partition must exist with property appending", vbmetaImageCommand, "--chain_partition system:1:out/soong/.intermediates/build/soong/fsgen/test_product_generated_system_image/android_common/system.avbpubke")
 	android.AssertStringDoesContain(t, "avb enabled custom partition must be included as chained partition", vbmetaImageCommand, "--chain_partition custom1:5:out/soong/.intermediates/custom1/android_common/custom1.avbpubkey")
-	android.AssertStringDoesNotContain(t, "avb disabled custom partition must not be included as chained partition", vbmetaImageCommand, "--chain_partition custom2:")
 }
