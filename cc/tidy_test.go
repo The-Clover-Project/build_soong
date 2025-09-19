@@ -37,6 +37,7 @@ func TestTidyFlagsWarningsAsErrors(t *testing.T) {
 			`cc_library_shared { // no warnings-as-errors, good tidy_flags
 			  name: "libfoo1",
 			  srcs: ["foo.c"],
+			  tidy: true,
               tidy_flags: ["-header-filter=dir1/"],
 		    }`,
 			"",
@@ -48,6 +49,7 @@ func TestTidyFlagsWarningsAsErrors(t *testing.T) {
 			`cc_library_shared { // good use of tidy_checks_as_errors
 			  name: "libfoo2",
 			  srcs: ["foo.c"],
+			  tidy: true,
 			  tidy_checks_as_errors: ["xyz-*", "abc"],
 		    }`,
 			"",
@@ -64,6 +66,7 @@ func TestTidyFlagsWarningsAsErrors(t *testing.T) {
 			`cc_library_shared { // bad use of -warnings-as-errors in tidy_flags
 					  name: "libfoo3",
 					  srcs: ["foo.c"],
+					  tidy: true,
 		              tidy_flags: [
 		                "-header-filters=.*",
 					    "-warnings-as-errors=xyz-*",
@@ -106,20 +109,24 @@ func TestTidyChecks(t *testing.T) {
 		cc_library_shared { // has global checks + extraGlobalChecks
 			name: "libfoo_1",
 			srcs: ["foo.c"],
+			tidy: true,
 		}
 		cc_library_shared { // has only local checks + extraGlobalChecks
 			name: "libfoo_2",
 			srcs: ["foo.c"],
+			tidy: true,
 			tidy_checks: ["-*", "xyz-*"],
 		}
 		cc_library_shared { // has global checks + local checks + extraGlobalChecks
 			name: "libfoo_3",
 			srcs: ["foo.c"],
+			tidy: true,
 			tidy_checks: ["-abc*", "xyz-*", "mycheck"],
 		}
 		cc_library_shared { // has only local checks after "-*" + extraGlobalChecks
 			name: "libfoo_4",
 			srcs: ["foo.c"],
+			tidy: true,
 			tidy_checks: ["-abc*", "xyz-*", "mycheck", "-*", "xyz-*"],
 		}`
 	ctx := testCc(t, bp)
@@ -170,7 +177,7 @@ func TestTidyChecks(t *testing.T) {
 }
 
 func TestWithTidy(t *testing.T) {
-	// When WITH_TIDY=1 or (ALLOW_LOCAL_TIDY_TRUE=1 and local tidy:true)
+	// When WITH_TIDY=1 or ALLOW_LOCAL_TIDY_TRUE=1 and local tidy:true
 	// a C++ library should depend on .tidy files.
 	testCases := []struct {
 		withTidy, allowLocalTidyTrue string // "_" means undefined
@@ -182,14 +189,14 @@ func TestWithTidy(t *testing.T) {
 		{"_", "true", []bool{false, true, false}},
 		{"0", "_", []bool{false, false, false}},
 		{"0", "1", []bool{false, true, false}},
-		{"1", "_", []bool{true, true, false}},
-		{"1", "false", []bool{true, true, false}},
-		{"1", "1", []bool{true, true, false}},
-		{"true", "_", []bool{true, true, false}},
+		{"1", "_", []bool{false, true, false}},
+		{"1", "false", []bool{false, true, false}},
+		{"1", "1", []bool{false, true, false}},
+		{"true", "_", []bool{false, true, false}},
 	}
 	bp := `
 		cc_library_shared {
-			name: "libfoo_0", // depends on .tidy if WITH_TIDY=1
+			name: "libfoo_0", // no .tidy
 			srcs: ["foo.c"],
 		}
 		cc_library_shared { // depends on .tidy if WITH_TIDY=1 or ALLOW_LOCAL_TIDY_TRUE=1
@@ -203,7 +210,7 @@ func TestWithTidy(t *testing.T) {
 			tidy: false,
 		}
 		cc_library_static {
-			name: "libbar_0", // depends on .tidy if WITH_TIDY=1
+			name: "libbar_0", // no .tidy
 			srcs: ["bar.c"],
 		}
 		cc_library_static { // depends on .tidy if WITH_TIDY=1 or ALLOW_LOCAL_TIDY_TRUE=1
