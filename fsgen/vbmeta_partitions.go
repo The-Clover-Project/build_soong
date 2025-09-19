@@ -134,6 +134,7 @@ func (f *filesystemCreator) createVbmetaPartitions(ctx android.LoadHookContext, 
 				Rollback_index:            rollbackIndex,
 				Rollback_index_location:   &ril,
 				Partitions:                proptools.NewSimpleConfigurable(partitionModules),
+				Is_auto_generated:         proptools.BoolPtr(true),
 			}, &struct {
 				Name *string
 			}{
@@ -280,6 +281,7 @@ func (f *filesystemCreator) createVbmetaPartitions(ctx android.LoadHookContext, 
 			Chained_partitions: chainedPartitionModules,
 			Partitions:         proptools.NewSimpleConfigurable(includePartitionModules),
 			Partition_name:     proptools.StringPtr("vbmeta"),
+			Is_auto_generated:  proptools.BoolPtr(true),
 		}, &struct {
 			Name *string
 		}{
