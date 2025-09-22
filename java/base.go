@@ -628,6 +628,12 @@ type Module struct {
 
 var _ android.InstallableModule = (*Module)(nil)
 
+func (j *Module) IncrementalSupported() bool {
+	return true
+}
+
+var _ blueprint.Incremental = (*Module)(nil)
+
 // To satisfy the InstallableModule interface
 func (j *Module) StaticDependencyTags() []blueprint.DependencyTag {
 	return []blueprint.DependencyTag{staticLibTag}
