@@ -99,16 +99,6 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 			"--frontend_file", fifo,
 			"--local_jobs", strconv.Itoa(config.Parallel()),
 		}
-		if service, ok := config.environ.Get("RBE_service"); ok {
-			if config.UseRBEproxy() {
-				args = append(args, "--reapi_insecure")
-				service = getRBEproxySocket(ctx, config)
-			}
-			args = append(args, "--reapi_address", service)
-		}
-		if instance, ok := config.environ.Get("RBE_instance"); ok {
-			args = append(args, "--reapi_instance", instance)
-		}
 		if value := config.SisoConfigDir(); value != "" {
 			value = maybeCreateSisoConfigDir(ctx, config, value)
 			args = append(args, fmt.Sprintf("--config_repo_dir=%s", value))
@@ -129,7 +119,9 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 			if config.RemoteParallel() != 0 {
 				args = append(args, "--remote_jobs", strconv.Itoa(config.RemoteParallel()))
 			}
-		case config.UseRBE():
+			// Explicitly turn off reapi in Siso.
+			args = append(args, "--project=", "--reapi_address=", "--reapi_instance=")
+		case config.UseRBEproxy():
 			ctx.Printf("with rbeproxy\n")
 			if config.RemoteParallel() != 0 {
 				args = append(args, "--remote_jobs", strconv.Itoa(config.RemoteParallel()))
@@ -137,6 +129,14 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 			if project := getRBEProject(ctx, config); project != "" {
 				args = append(args, "--project", project)
 			}
+			if instance, ok := config.environ.Get("RBE_instance"); ok {
+				args = append(args, "--reapi_instance", instance)
+			}
+			if service, ok := config.environ.Get("RBE_service"); ok {
+				service = getRBEproxySocket(ctx, config)
+				args = append(args, "--reapi_address", service)
+			}
+			args = append(args, "--reapi_insecure")
 			// TODO(b/431872600): make remote exec work under sandbox
 			// note: can use RBE by `luci-auth context -- m`
 			var err error
