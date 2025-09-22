@@ -3439,6 +3439,10 @@ func (c *buildTargetSingleton) GenerateBuildActions(ctx SingletonContext) {
 		}
 	})
 
+	if !ctx.Config().UnbundledBuildImage() {
+		checkbuildDeps = append(checkbuildDeps, PathForPhony(ctx, "blueprint_tests"))
+	}
+
 	suffix := ""
 	if ctx.Config().KatiEnabled() {
 		suffix = "-soong"

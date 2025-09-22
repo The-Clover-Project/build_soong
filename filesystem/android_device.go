@@ -505,6 +505,7 @@ func (a *androidDevice) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		for _, hostTool := range ctx.Config().ProductVariables().ProductHostPackages {
 			ctx.Phony("droid", android.PathForPhony(ctx, hostTool+"-host"))
 		}
+		ctx.Phony("droid_targets", android.PathForPhony(ctx, "blueprint_tools"))
 	}
 
 	a.checkVintf(ctx)
