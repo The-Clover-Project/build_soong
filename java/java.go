@@ -258,7 +258,7 @@ var ProguardSpecInfoProvider = blueprint.NewProvider[ProguardSpecInfo]()
 // @auto-generate: gob
 type AndroidLibraryDependencyInfo struct {
 	ExportPackage       android.Path
-	ResourcesNodeDepSet depset.DepSet[resourcesNodePtr]
+	ResourcesNodeDepSet depset.DepSet[resourcesNode]
 	RRODirsDepSet       depset.DepSet[rroDir]
 	ManifestsDepSet     depset.DepSet[android.Path]
 }

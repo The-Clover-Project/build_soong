@@ -6,11 +6,11 @@ import (
 	"android/soong/android"
 	"bytes"
 	"github.com/google/blueprint/gobtools"
+	"github.com/google/blueprint/uniquelist"
 )
 
 func init() {
 	resourcesNodeGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(resourcesNode) })
-	resourcesNodePtrGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(resourcesNodePtr) })
 	AndroidLibraryInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(AndroidLibraryInfo) })
 	JniPackageInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(JniPackageInfo) })
 	AARInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(AARInfo) })
@@ -27,16 +27,17 @@ func (r resourcesNode) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error 
 		return err
 	}
 
-	if r.additionalManifests == nil {
+	val1 := r.additionalManifests.ToSlice()
+	if val1 == nil {
 		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.additionalManifests))); err != nil {
+		if err = gobtools.EncodeSimple(buf, int32(len(val1))); err != nil {
 			return err
 		}
-		for val1 := 0; val1 < len(r.additionalManifests); val1++ {
-			if err = gobtools.EncodeInterface(ctx, buf, r.additionalManifests[val1]); err != nil {
+		for val2 := 0; val2 < len(val1); val2++ {
+			if err = gobtools.EncodeInterface(ctx, buf, val1[val2]); err != nil {
 				return err
 			}
 		}
@@ -79,23 +80,25 @@ func (r *resourcesNode) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error
 		r.manifest = val4.(android.Path)
 	}
 
+	var val6 []android.Path
 	var val7 int32
 	err = gobtools.DecodeSimple[int32](buf, &val7)
 	if err != nil {
 		return err
 	}
 	if val7 != -1 {
-		r.additionalManifests = make([]android.Path, val7)
+		val6 = make([]android.Path, val7)
 		for val8 := 0; val8 < int(val7); val8++ {
 			if val10, err := gobtools.DecodeInterface(ctx, buf); err != nil {
 				return err
 			} else if val10 == nil {
-				r.additionalManifests[val8] = nil
+				val6[val8] = nil
 			} else {
-				r.additionalManifests[val8] = val10.(android.Path)
+				val6[val8] = val10.(android.Path)
 			}
 		}
 	}
+	r.additionalManifests = uniquelist.Make(val6)
 
 	if val12, err := gobtools.DecodeInterface(ctx, buf); err != nil {
 		return err
@@ -129,45 +132,6 @@ var resourcesNodeGobRegId int16
 
 func (r resourcesNode) GetTypeId() int16 {
 	return resourcesNodeGobRegId
-}
-
-func (r resourcesNodePtr) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
-	var err error
-
-	val1 := r.resourcesNode == nil
-	if err = gobtools.EncodeSimple(buf, val1); err != nil {
-		return err
-	}
-	if !val1 {
-		if err = (*r.resourcesNode).Encode(ctx, buf); err != nil {
-			return err
-		}
-	}
-	return err
-}
-
-func (r *resourcesNodePtr) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
-	var err error
-
-	var val2 bool
-	if err = gobtools.DecodeSimple(buf, &val2); err != nil {
-		return err
-	}
-	if !val2 {
-		var val1 resourcesNode
-		if err = val1.Decode(ctx, buf); err != nil {
-			return err
-		}
-		r.resourcesNode = &val1
-	}
-
-	return err
-}
-
-var resourcesNodePtrGobRegId int16
-
-func (r resourcesNodePtr) GetTypeId() int16 {
-	return resourcesNodePtrGobRegId
 }
 
 func (r AndroidLibraryInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
