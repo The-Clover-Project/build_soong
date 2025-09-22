@@ -209,13 +209,20 @@ func collectTidyObjModuleTargets(ctx android.SingletonContext, module android.Mo
 	subsetObjFileGroups := make(map[string]android.Paths)  // subset group name => obj file Paths
 	subsetTidyFileGroups := make(map[string]android.Paths) // subset group name => tidy file Paths
 
+	hasTidy := false
 	// (1) Collect all obj/tidy files into OS-specific groups.
 	ctx.VisitAllModuleVariantProxies(module, func(variant android.ModuleProxy) {
 		osName := android.OtherModulePointerProviderOrDefault(ctx, variant, android.CommonModuleInfoProvider).Target.Os.Name
 		info := android.OtherModuleProviderOrDefault(ctx, variant, CcObjectInfoProvider)
-		addToOSGroup(osName, info.ObjFiles, allObjFileGroups, subsetObjFileGroups)
-		addToOSGroup(osName, info.TidyFiles, allTidyFileGroups, subsetTidyFileGroups)
+		if len(info.TidyFiles) > 0 {
+			addToOSGroup(osName, info.ObjFiles, allObjFileGroups, subsetObjFileGroups)
+			addToOSGroup(osName, info.TidyFiles, allTidyFileGroups, subsetTidyFileGroups)
+			hasTidy = true
+		}
 	})
+	if !hasTidy {
+		return
+	}
 
 	// (2) Add an all-OS group, with "" or "subset" name, to include all os-specific phony targets.
 	addAllOSGroup(ctx, module, allObjFileGroups, "", "obj")

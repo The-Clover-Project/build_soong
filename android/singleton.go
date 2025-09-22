@@ -170,7 +170,7 @@ func (s *singletonAdaptor) IncrementalSupported() bool {
 	if im, ok := s.Singleton.(blueprint.Incremental); ok {
 		return im.IncrementalSupported()
 	}
-	return false
+	return true
 }
 
 func (s *singletonAdaptor) GenerateBuildActions(ctx blueprint.SingletonContext) {
