@@ -30,6 +30,7 @@ import (
 	"reflect"
 	"runtime"
 	"sort"
+	"strconv"
 	"strings"
 
 	"github.com/google/blueprint"
@@ -748,7 +749,9 @@ func (c *androidMkSingleton) GenerateBuildActions(ctx SingletonContext) {
 		return
 	}
 
-	err := translateAndroidMk(ctx, absolutePath(transMk.String()), allModulesSorted(ctx))
+	moduleInfoJSON := PathForOutput(ctx, "module-info"+String(ctx.Config().productVariables.Make_suffix)+".json")
+
+	err := translateAndroidMk(ctx, absolutePath(transMk.String()), moduleInfoJSON, allModulesSorted(ctx))
 	if err != nil {
 		ctx.Errorf(err.Error())
 	}
@@ -783,22 +786,7 @@ func (p *soongOnlyAndroidMkSingleton) IncrementalSupported() bool {
 // TODO(b/397766191): Change the signature to take ModuleProxy
 // Please only access the module's internal data through providers.
 func (so *soongOnlyAndroidMkSingleton) soongOnlyBuildActions(ctx SingletonContext, mods []ModuleOrProxy) {
-	var allDistContributions []distContributions
-	for _, mod := range mods {
-		if distInfo, ok := OtherModuleProvider(ctx, mod, DistProvider); ok {
-			if contribution := distsToDistContributions(distInfo.Dists); contribution != nil {
-				allDistContributions = append(allDistContributions, *contribution)
-			}
-		}
-
-		commonInfo := OtherModulePointerProviderOrDefault(ctx, mod, CommonModuleInfoProvider)
-		if commonInfo.SkipAndroidMkProcessing {
-			continue
-		}
-		if contribution := getDistContributions(ctx, mod); contribution != nil {
-			allDistContributions = append(allDistContributions, *contribution)
-		}
-	}
+	allDistContributions, moduleInfoJSONs := getSoongOnlyDataFromMods(ctx, mods)
 
 	var singletonDists []dist
 	ctx.VisitAllSingletons(func(s blueprint.SingletonProxy) {
@@ -808,6 +796,33 @@ func (so *soongOnlyAndroidMkSingleton) soongOnlyBuildActions(ctx SingletonContex
 	})
 	if contribution := distsToDistContributions(singletonDists); contribution != nil {
 		allDistContributions = append(allDistContributions, *contribution)
+	}
+
+	// Build module-info.json. Only in builds with HasDeviceProduct(), as we need a named
+	// device to have a TARGET_OUT folder.
+	if ctx.Config().HasDeviceProduct() {
+		preMergePath := PathForOutput(ctx, "module_info_pre_merging.json")
+		moduleInfoJSONPath := pathForInstall(ctx, Android, X86_64, "", "module-info.json")
+		if err := writeModuleInfoJSON(ctx, moduleInfoJSONs, preMergePath); err != nil {
+			ctx.Errorf("%s", err)
+		}
+		builder := NewRuleBuilder(pctx, ctx)
+		builder.Command().
+			BuiltTool("merge_module_info_json").
+			FlagWithOutput("-o ", moduleInfoJSONPath).
+			Input(preMergePath)
+		builder.Build("merge_module_info_json", "merge module info json")
+		ctx.Phony("module-info", moduleInfoJSONPath)
+		ctx.Phony("droidcore-unbundled", moduleInfoJSONPath)
+		allDistContributions = append(allDistContributions, distContributions{
+			copiesForGoals: []*copiesForGoals{{
+				goals: []string{"general-tests", "droidcore-unbundled", "haiku", "module-info"},
+				copies: []distCopy{{
+					from: moduleInfoJSONPath,
+					dest: "module-info.json",
+				}},
+			}},
+		})
 	}
 
 	// Build dist.mk for the packaging step to read and generate dist targets
@@ -878,14 +893,42 @@ func distsToDistContributions(dists []dist) *distContributions {
 	}
 }
 
-func translateAndroidMk(ctx SingletonContext, absMkFile string, mods []ModuleOrProxy) error {
+// getSoongOnlyDataFromMods gathers data from the given modules needed in soong-only builds.
+// Currently, this is the dist contributions, and the module-info.json contents.
+func getSoongOnlyDataFromMods(ctx fillInEntriesContext, mods []ModuleOrProxy) ([]distContributions, []*ModuleInfoJSON) {
+	var allDistContributions []distContributions
+	var moduleInfoJSONs []*ModuleInfoJSON
+	for _, mod := range mods {
+		if distInfo, ok := OtherModuleProvider(ctx, mod, DistProvider); ok {
+			if contribution := distsToDistContributions(distInfo.Dists); contribution != nil {
+				allDistContributions = append(allDistContributions, *contribution)
+			}
+		}
+
+		commonInfo := OtherModulePointerProviderOrDefault(ctx, mod, CommonModuleInfoProvider)
+		if commonInfo.SkipAndroidMkProcessing {
+			continue
+		}
+		if moduleInfoJSON, ok := OtherModuleProvider(ctx, mod, ModuleInfoJSONProvider); ok {
+			moduleInfoJSONs = append(moduleInfoJSONs, moduleInfoJSON.Data...)
+		}
+		if contribution := getDistContributions(ctx, mod); contribution != nil {
+			allDistContributions = append(allDistContributions, *contribution)
+		}
+	}
+	return allDistContributions, moduleInfoJSONs
+}
+
+func translateAndroidMk(ctx SingletonContext, absMkFile string, moduleInfoJSONPath WritablePath, mods []ModuleOrProxy) error {
 	buf := &bytes.Buffer{}
+
+	var moduleInfoJSONs []*ModuleInfoJSON
 
 	fmt.Fprintln(buf, "LOCAL_MODULE_MAKEFILE := $(lastword $(MAKEFILE_LIST))")
 
 	typeStats := make(map[string]int)
 	for _, mod := range mods {
-		err := translateAndroidMkModule(ctx, buf, mod)
+		err := translateAndroidMkModule(ctx, buf, &moduleInfoJSONs, mod)
 		if err != nil {
 			os.Remove(absMkFile)
 			return err
@@ -912,10 +955,31 @@ func translateAndroidMk(ctx SingletonContext, absMkFile string, mods []ModuleOrP
 		return err
 	}
 
+	return writeModuleInfoJSON(ctx, moduleInfoJSONs, moduleInfoJSONPath)
+}
+
+func writeModuleInfoJSON(ctx SingletonContext, moduleInfoJSONs []*ModuleInfoJSON, moduleInfoJSONPath WritablePath) error {
+	moduleInfoJSONBuf := &strings.Builder{}
+	moduleInfoJSONBuf.WriteString("[")
+	for i, moduleInfoJSON := range moduleInfoJSONs {
+		if i != 0 {
+			moduleInfoJSONBuf.WriteString(",\n")
+		}
+		moduleInfoJSONBuf.WriteString("{")
+		moduleInfoJSONBuf.WriteString(strconv.Quote(moduleInfoJSON.core.RegisterName))
+		moduleInfoJSONBuf.WriteString(":")
+		err := encodeModuleInfoJSON(moduleInfoJSONBuf, moduleInfoJSON)
+		moduleInfoJSONBuf.WriteString("}")
+		if err != nil {
+			return err
+		}
+	}
+	moduleInfoJSONBuf.WriteString("]")
+	WriteFileRule(ctx, moduleInfoJSONPath, moduleInfoJSONBuf.String())
 	return nil
 }
 
-func translateAndroidMkModule(ctx SingletonContext, w io.Writer, mod ModuleOrProxy) error {
+func translateAndroidMkModule(ctx SingletonContext, w io.Writer, moduleInfoJSONs *[]*ModuleInfoJSON, mod ModuleOrProxy) error {
 	defer func() {
 		if r := recover(); r != nil {
 			panic(fmt.Errorf("%s in translateAndroidMkModule for module %s variant %s",
@@ -926,6 +990,10 @@ func translateAndroidMkModule(ctx SingletonContext, w io.Writer, mod ModuleOrPro
 	commonInfo := OtherModulePointerProviderOrDefault(ctx, mod, CommonModuleInfoProvider)
 	if commonInfo.SkipAndroidMkProcessing {
 		return nil
+	}
+
+	if moduleInfoJSON, ok := OtherModuleProvider(ctx, mod, ModuleInfoJSONProvider); ok {
+		*moduleInfoJSONs = append(*moduleInfoJSONs, moduleInfoJSON.Data...)
 	}
 
 	// Additional cases here require review for correct license propagation to make.
