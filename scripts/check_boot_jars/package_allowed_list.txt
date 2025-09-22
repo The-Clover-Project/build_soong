@@ -77,6 +77,7 @@ jdk\.internal
 jdk\.internal\.access
 jdk\.internal\.event
 jdk\.internal\.foreign
+jdk\.internal\.foreign\.layout
 jdk\.internal\.invoke
 jdk\.internal\.math
 jdk\.internal\.misc
