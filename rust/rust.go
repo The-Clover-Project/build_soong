@@ -34,13 +34,17 @@ import (
 	"android/soong/rust/config"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 var pctx = android.NewPackageContext("android/soong/rust")
 
+// @auto-generate: gob
 type LibraryInfo struct {
 	Rlib  bool
 	Dylib bool
 }
 
+// @auto-generate: gob
 type CompilerInfo struct {
 	StdLinkageForDevice    StdLinkage
 	StdLinkageForNonDevice StdLinkage
@@ -55,17 +59,21 @@ type CompilerInfo struct {
 	CheckTarget            android.OptionalPath
 }
 
+// @auto-generate: gob
 type ProtobufDecoratorInfo struct{}
 
+// @auto-generate: gob
 type SourceProviderInfo struct {
 	Srcs                  android.Paths
 	ProtobufDecoratorInfo *ProtobufDecoratorInfo
 }
 
+// @auto-generate: gob
 type ProcMacroInfo struct {
 	Dylib android.Path
 }
 
+// @auto-generate: gob
 type RustInfo struct {
 	AndroidMkSuffix               string
 	RustSubName                   string
@@ -260,6 +268,10 @@ type Module struct {
 
 	// Shared flags among stubs build rules of this module
 	sharedFlags cc.SharedFlags
+}
+
+func (c *Module) IncrementalSupported() bool {
+	return true
 }
 
 func (mod *Module) Header() bool {
@@ -623,6 +635,7 @@ func NewFlagExporter() *flagExporter {
 	return &flagExporter{}
 }
 
+// @auto-generate: gob
 type RustFlagExporterInfo struct {
 	Flags                 []string
 	LinkDirs              []string
@@ -2443,6 +2456,7 @@ func (c *Module) Partition() string {
 	return ""
 }
 
+// @auto-generate: gob
 type RustImplementationDepInfo struct {
 	NonApexImplementationDeps depset.DepSet[android.Path]
 }

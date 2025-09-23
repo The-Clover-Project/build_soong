@@ -8,6 +8,7 @@ bootstrap_go_package {
     deps: [
         "blueprint",
         "blueprint-depset",
+        "blueprint-gobtools",
         "blueprint-pathtools",
         "blueprint-proptools",
         "soong",
@@ -42,6 +43,7 @@ bootstrap_go_package {
         "project_json.go",
         "protobuf.go",
         "rust.go",
+        "rust_gob_enc.go",
         "sanitize.go",
         "source_provider.go",
         "strip.go",
