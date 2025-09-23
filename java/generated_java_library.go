@@ -67,7 +67,7 @@ func (module *GeneratedJavaLibraryModule) AddSharedLibrary(name string) {
 	if module.depsMutatorDone {
 		panic("GeneratedJavaLibraryModule.AddLibrary called after DepsMutator")
 	}
-	module.Library.properties.Libs = append(module.Library.properties.Libs, name)
+	module.Library.properties.Libs.AppendSimpleValue([]string{name})
 }
 
 func (module *GeneratedJavaLibraryModule) DepsMutator(ctx android.BottomUpMutatorContext) {
