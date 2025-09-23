@@ -1672,6 +1672,12 @@ type artBootImages struct {
 
 	// A non-empty file that will be written as `LOCAL_SOONG_INSTALLED_MODULE` in out/soong/Android-*.mk
 	outputFile android.OptionalPath
+
+	// The list of installed files.
+	installedFiles android.Paths
+
+	// The path to the zip file containing the installed files.
+	zipFile android.WritablePath
 }
 
 func artBootImagesFactory() android.Module {
@@ -1689,6 +1695,8 @@ func (dbj *artBootImages) DepsMutator(ctx android.BottomUpMutatorContext) {
 }
 
 func (d *artBootImages) GenerateAndroidBuildActions(ctx android.ModuleContext) {
+	d.zipFile = android.PathForModuleOut(ctx, "art_boot_images.zip")
+
 	ctx.VisitDirectDepsProxy(func(m android.ModuleProxy) {
 		tag := ctx.OtherModuleDependencyTag(m)
 		if bcpTag, ok := tag.(bootclasspathDependencyTag); ok && bcpTag.typ == dexpreoptBootJar {
@@ -1700,17 +1708,54 @@ func (d *artBootImages) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 				ctx.ModuleErrorf("Could not find information about the host variant of ART boot image")
 			}
 			installs := d.installFile(ctx, hostInstallsInfo.installs)
-			if len(installs) > 0 {
+			d.installedFiles = installs
+
+			var filesToZip android.Paths
+			for _, install := range hostInstallsInfo.installs {
+				filesToZip = append(filesToZip, install.From)
+			}
+
+			if len(hostInstallsInfo.installs) > 0 {
 				d.outputFile = android.OptionalPathForPath(installs[0])
 				// Create a phony target that can ART run-tests can depend on.
 				ctx.Phony(d.Name(), installs...)
+
+				rule := android.NewRuleBuilder(pctx, ctx)
+				cmd := rule.Command().
+					Tool(ctx.Config().HostToolPath(ctx, "soong_zip")).
+					FlagWithOutput("-o ", d.zipFile)
+
+				for _, install := range hostInstallsInfo.installs {
+					// The `To` path is the path inside the zip. It usually starts with a '/', which we need to remove.
+					// We also need to prepend a specific directory structure for the test environment.
+					prefix := "host/testcases/art_common/out/host/linux-x86"
+					basePath := strings.TrimPrefix(install.To, "/")
+					pathInZip := filepath.Join(prefix, basePath)
+					// The `From` path is the source file on disk.
+					pathOnDisk := install.From
+					cmd.Flag("-e")
+					cmd.Text(pathInZip)
+					cmd.Flag("-f")
+					cmd.Input(pathOnDisk)
+				}
+
+				rule.Build("zip_art_boot_images", "zipping art boot images for "+ctx.Arch().String())
 			} else {
 				// this might be true e.g. when building with `WITH_DEXPREOPT=false`
 				// create an empty file so that the `art_boot_images` is known to the packaging system.
 				d.outputFile = android.OptionalPathForPath(android.PathForModuleOut(ctx, "undefined_art_boot_images"))
+				// Create a valid, empty zip file.
+				rule := android.NewRuleBuilder(pctx, ctx)
+				rule.Command().
+					Tool(ctx.Config().HostToolPath(ctx, "soong_zip")).
+					FlagWithOutput("-o ", d.zipFile)
+				rule.Build("create_empty_art_boot_images_zip", "creating empty art boot images zip for "+ctx.Arch().String())
 			}
 		}
 	})
+
+	ctx.SetOutputFiles(d.installedFiles, "")
+	ctx.SetOutputFiles(android.Paths{d.zipFile}, ".zip")
 }
 
 // Creates an installation rule for host variant of ART boot image files.
