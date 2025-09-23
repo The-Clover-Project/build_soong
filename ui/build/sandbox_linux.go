@@ -49,6 +49,7 @@ var (
 
 const (
 	nsjailPath = "prebuilts/build-tools/linux-x86/bin/nsjail"
+	abfsSrcDir = "/src"
 )
 
 var sandboxConfig struct {
@@ -59,6 +60,19 @@ var sandboxConfig struct {
 	srcDir  string
 	outDir  string
 	distDir string
+}
+
+func (c *Cmd) envForSandbox(env *Environment) []string {
+	if !c.config.UseABFS() {
+		return env.Environ()
+	}
+
+	replaced := env.Copy().Environ()
+	for i, val := range replaced {
+		replaced[i] = strings.ReplaceAll(val, sandboxConfig.srcDir, abfsSrcDir)
+	}
+
+	return replaced
 }
 
 func (c *Cmd) sandboxSupported() bool {
@@ -119,7 +133,7 @@ func (c *Cmd) sandboxSupported() bool {
 
 		cmd := exec.CommandContext(c.ctx.Context, nsjailPath, sandboxArgs...)
 
-		cmd.Env = c.config.Environment().Environ()
+		cmd.Env = c.envForSandbox(c.config.Environment())
 
 		c.ctx.Verboseln(cmd.Args)
 		data, err := cmd.CombinedOutput()
@@ -348,5 +362,5 @@ func (c *Cmd) wrapSandbox() {
 	if _, hasUser := env.Get("USER"); hasUser {
 		env.Set("USER", "nobody")
 	}
-	c.Env = []string(env)
+	c.Env = c.envForSandbox(&env)
 }
