@@ -1137,3 +1137,60 @@ func TestVbmetaGenerationWithCustomPartitions(t *testing.T) {
 	android.AssertStringDoesContain(t, "system chained partition must exist with property appending", vbmetaImageCommand, "--chain_partition system:1:out/soong/.intermediates/build/soong/fsgen/test_product_generated_system_image/android_common/system.avbpubke")
 	android.AssertStringDoesContain(t, "avb enabled custom partition must be included as chained partition", vbmetaImageCommand, "--chain_partition custom1:5:out/soong/.intermediates/custom1/android_common/custom1.avbpubkey")
 }
+
+func TestStageDeviceFiles(t *testing.T) {
+	result := android.GroupFixturePreparers(
+		android.PrepareForIntegrationTestWithAndroid,
+		android.PrepareForTestWithAndroidBuildComponents,
+		android.PrepareForTestWithAllowMissingDependencies,
+		filesystem.PrepareForTestWithFilesystemBuildComponents,
+		filesystem.PrepareForTestWithAndroidDeviceComponents,
+		prepareForTestWithFsgenBuildComponents,
+		android.FixtureModifyConfig(func(config android.Config) {
+			config.TestProductVariables.PartitionVarsForSoongMigrationOnlyDoNotUse.ProductCopyFiles = []string{
+				"source/dir/my_staged_file:my_staged_file",
+				"source/another_file:another_file",
+				"source/file3:system/etc/file3", // This should not be staged
+			}
+		}),
+		android.FixtureMergeMockFs(android.MockFS{
+			"source/dir/my_staged_file": nil,
+			"source/another_file":       nil,
+			"source/file3":              nil,
+			"build/soong/fsgen/Android.bp": []byte(`
+			soong_filesystem_creator {
+				name: "foo",
+			}
+			`),
+		}),
+	).RunTest(t)
+
+	deviceModule := result.ModuleForTests(t, "test_product_generated_device", "android_arm64_armv8-a").Module()
+
+	var deviceProps *filesystem.DeviceProperties
+	for _, prop := range deviceModule.GetProperties() {
+		if p, ok := prop.(*filesystem.DeviceProperties); ok {
+			deviceProps = p
+			break
+		}
+	}
+
+	if deviceProps == nil {
+		t.Fatal("Could not find DeviceProperties on generated android_device module")
+	}
+
+	expected := []filesystem.StageDeviceFilePairProp{
+		{Src: proptools.StringPtr("source/another_file"), Dst: proptools.StringPtr("another_file")},
+		{Src: proptools.StringPtr("source/dir/my_staged_file"), Dst: proptools.StringPtr("my_staged_file")},
+	}
+
+	android.AssertDeepEquals(t, "Stage_device_files", expected, deviceProps.Stage_device_files)
+
+	// Verify that the files are copied to the staging dir
+	allOutputs := result.ModuleForTests(t, "test_product_generated_device", "android_arm64_armv8-a").AllOutputs()
+	allOutputsString := strings.Join(allOutputs, " ")
+
+	android.AssertStringDoesContain(t, "staging dir contains expected files", allOutputsString, "my_staged_file")
+	android.AssertStringDoesContain(t, "staging dir contains expected files", allOutputsString, "another_file")
+	android.AssertStringDoesNotContain(t, "staging dir does not contain arbitrary subdir file", allOutputsString, "file3")
+}

@@ -79,6 +79,14 @@ type PartitionNameProperties struct {
 	Custom_partitions []string
 }
 
+type StageDeviceFilePairProp struct {
+	// Path to the source file to be installed. Note that this is the relative path from the
+	// root of the Android tree, not the relative path from the module definition
+	Src *string `android:"path"`
+	// Name of the file to be installed as
+	Dst *string
+}
+
 type DeviceProperties struct {
 	// Prebuilt bootloader module that would be copied to PRODUCT_OUT
 	Bootloader *string
@@ -134,6 +142,10 @@ type DeviceProperties struct {
 
 	// Name of the prebuilt tzsw partition.
 	Tzsw *string
+
+	// List of src:dst mapping of files to be installed in the root directory of $PRODUCT_OUT,
+	// instead of being installed in any partition subdirectories.
+	Stage_device_files []StageDeviceFilePairProp
 }
 
 type PvmfwProperties struct {
@@ -178,6 +190,8 @@ type androidDevice struct {
 	fastbootInfoFile android.Path
 
 	customPartitionFilesystemInfos []FilesystemInfo
+
+	stageDeviceFiles []stageDeviceFilePair
 }
 
 func AndroidDeviceFactory() android.Module {
@@ -348,6 +362,29 @@ func (a *androidDevice) getCustomPartitionFilesystemInfos(ctx android.ModuleCont
 	return fsInfos
 }
 
+type stageDeviceFilePair struct {
+	src android.Path
+	dst string
+}
+
+func (a *androidDevice) processStageDeviceFiles(ctx android.ModuleContext) []stageDeviceFilePair {
+	var ret []stageDeviceFilePair
+	for _, pair := range a.deviceProps.Stage_device_files {
+		if pair.Src == nil || pair.Dst == nil {
+			ctx.PropertyErrorf("stage_device_files", "src and dst are required for each entry")
+		} else {
+			if srcPath := android.ExistentPathForSource(ctx, *pair.Src); !srcPath.Valid() {
+				ctx.PropertyErrorf("stage_device_files", "src %q is not a valid path", *pair.Src)
+			} else if filepath.Base(*pair.Dst) != *pair.Dst { // If the destination path contains a directory, it's an error.
+				ctx.PropertyErrorf("stage_device_files", "dst %q must be a filename, not a path with directories", *pair.Dst)
+			} else {
+				ret = append(ret, stageDeviceFilePair{srcPath.Path(), *pair.Dst})
+			}
+		}
+	}
+	return ret
+}
+
 func (a *androidDevice) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	if proptools.Bool(a.deviceProps.Main_device) {
 		numMainAndroidDevices := ctx.Config().Once(numMainAndroidDevicesOnceKey, func() interface{} {
@@ -372,6 +409,7 @@ func (a *androidDevice) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	a.apkCertsInfo = a.buildApkCertsInfo(ctx)
 	a.kernelVersion, a.kernelConfig = a.extractKernelVersionAndConfigs(ctx)
 	a.miscInfo = a.addMiscInfo(ctx)
+	a.stageDeviceFiles = a.processStageDeviceFiles(ctx)
 	// Use the allInstalledModules which included modules which is installed under system or sysem_ext.
 	// Because target file's apexkeys.txt collect those apex under system or system_ext even they don't build these 2 images.
 	a.buildTargetFilesZip(ctx, a.allInstalledModules(ctx, true))

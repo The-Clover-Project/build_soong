@@ -42,7 +42,7 @@ var fixture = android.GroupFixturePreparers(
 	java.PrepareForTestWithJavaDefaultModules,
 	phony.PrepareForTestWithPhony,
 	PrepareForTestWithFilesystemBuildComponents,
-	prepareForTestWithAndroidDeviceComponents,
+	PrepareForTestWithAndroidDeviceComponents,
 )
 
 func TestFileSystemDeps(t *testing.T) {

@@ -22,7 +22,7 @@ import (
 )
 
 var PrepareForTestWithFilesystemBuildComponents = android.FixtureRegisterWithContext(registerBuildComponents)
-var prepareForTestWithAndroidDeviceComponents = android.GroupFixturePreparers(
+var PrepareForTestWithAndroidDeviceComponents = android.GroupFixturePreparers(
 	android.FixtureRegisterWithContext(func(ctx android.RegistrationContext) {
 		ctx.RegisterModuleType("android_device", AndroidDeviceFactory)
 		ctx.RegisterModuleType("build_prop", android.BuildPropFactory)
@@ -73,6 +73,9 @@ var prepareForTestWithAndroidDeviceComponents = android.GroupFixturePreparers(
 				stl: "none",
 				system_shared_libs: [],
 			}
+			phony {
+				name: "precompiled_sepolicy_without_vendor",
+			}
 		`),
 		"prop/Android.bp": []byte(`
             build_prop {
@@ -80,5 +83,6 @@ var prepareForTestWithAndroidDeviceComponents = android.GroupFixturePreparers(
                 stem: "build.prop",
             }
 		`),
+		"build/make/target/product/security/test_key": nil,
 	}),
 )

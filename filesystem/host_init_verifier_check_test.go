@@ -24,7 +24,7 @@ var prepareForHostInitVerifierCheckTest = android.GroupFixturePreparers(
 	android.PrepareForIntegrationTestWithAndroid,
 	android.PrepareForTestWithAndroidBuildComponents,
 	PrepareForTestWithFilesystemBuildComponents,
-	prepareForTestWithAndroidDeviceComponents,
+	PrepareForTestWithAndroidDeviceComponents,
 )
 
 func TestHostInitVerifierCheck(t *testing.T) {

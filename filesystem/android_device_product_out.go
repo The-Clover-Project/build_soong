@@ -21,17 +21,6 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
-var (
-	copyStagingDirRule = pctx.AndroidStaticRule("copy_staging_dir", blueprint.RuleParams{
-		Command: "rsync -a --checksum $dir/ $dest && touch $out",
-	}, "dir", "dest")
-)
-
-func (a *androidDevice) copyToProductOut(ctx android.ModuleContext, builder *android.RuleBuilder, src android.Path, dest string) {
-	destPath := android.PathForModuleInPartitionInstall(ctx, "").Join(ctx, dest)
-	builder.Command().Text("rsync").Flag("-a").Flag("--checksum").Input(src).Text(destPath.String())
-}
-
 func (a *androidDevice) copyFilesToProductOutForSoongOnly(ctx android.ModuleContext) android.Path {
 	filesystemInfos := a.getFsInfos(ctx)
 
@@ -288,6 +277,16 @@ func (a *androidDevice) copyFilesToProductOutForSoongOnly(ctx android.ModuleCont
 			Input:       a.androidInfoTxt,
 			Output:      installPath,
 			Validations: validations,
+		})
+		deps = append(deps, installPath)
+	}
+
+	for _, pair := range a.stageDeviceFiles {
+		installPath := android.PathForModuleInPartitionInstall(ctx, "", pair.dst)
+		ctx.Build(pctx, android.BuildParams{
+			Rule:   android.Cp,
+			Input:  pair.src,
+			Output: installPath,
 		})
 		deps = append(deps, installPath)
 	}

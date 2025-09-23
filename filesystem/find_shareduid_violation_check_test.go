@@ -25,7 +25,7 @@ var prepareForFindSharedUIDViolationCheckTest = android.GroupFixturePreparers(
 	android.PrepareForIntegrationTestWithAndroid,
 	android.PrepareForTestWithAndroidBuildComponents,
 	PrepareForTestWithFilesystemBuildComponents,
-	prepareForTestWithAndroidDeviceComponents,
+	PrepareForTestWithAndroidDeviceComponents,
 	etc.PrepareForTestWithPrebuiltEtc,
 )
 

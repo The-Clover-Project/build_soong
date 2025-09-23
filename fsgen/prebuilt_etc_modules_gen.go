@@ -17,8 +17,10 @@ package fsgen
 import (
 	"android/soong/android"
 	"android/soong/etc"
+	"android/soong/filesystem"
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/google/blueprint/proptools"
@@ -497,4 +499,25 @@ func getPrebuiltKernelPath(ctx android.LoadHookContext) string {
 		}
 	}
 	return ""
+}
+
+func getstageDeviceFileProps(ctx android.LoadHookContext) []filesystem.StageDeviceFilePairProp {
+	stageDeviceFileProps := []filesystem.StageDeviceFilePairProp{}
+	for src, dsts := range uniqueExistingProductCopyFileMap(ctx) {
+		for _, dst := range dsts {
+			// Only collect entries that are installed at the root directory, i.e. entries where
+			// the dst does not contain any directories
+			if filepath.Base(dst) == dst {
+				stageDeviceFileProps = append(stageDeviceFileProps, filesystem.StageDeviceFilePairProp{
+					Src: proptools.StringPtr(src),
+					Dst: proptools.StringPtr(dst),
+				})
+			}
+		}
+	}
+	slices.SortFunc(stageDeviceFileProps, func(a, b filesystem.StageDeviceFilePairProp) int {
+		return strings.Compare(*a.Src, *b.Src)
+	})
+
+	return stageDeviceFileProps
 }
