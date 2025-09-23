@@ -207,6 +207,8 @@ func collateGloballyRegisteredSingletons() sortableComponents {
 		// Ninja file dependencies stored in the config.
 		singleton{parallel: false, name: "rawfiles", factory: rawFilesSingletonFactory},
 		singleton{parallel: false, name: "ninjadeps", factory: ninjaDepsSingletonFactory},
+
+		singleton{parallel: false, name: "soong_metrics", factory: soongMetricsSingletonFactory},
 	)
 
 	return allSingletons
