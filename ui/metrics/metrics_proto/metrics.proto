@@ -202,6 +202,9 @@ message SoongEnvVars {
 
   // BUILD_TRIGGER_TYPE - How the build was triggered.
   optional string build_trigger = 4;
+
+  // SOONG_INCREMENTAL_ANALYSIS
+  optional string soong_incremental_analysis = 5;
 }
 
 message SystemResourceInfo {
@@ -368,12 +371,44 @@ message SoongBuildMetrics {
   // Performance during for soong_build execution.
   repeated PerfCounters perf_counters = 8;
 
-  // The number of modules that supports incremental build.
-  optional uint32 incremental_supported = 9;
+  reserved 9;
+  reserved 10;
 
-  // The number of modules that are restored from cache during incremental
-  // build.
-  optional uint32 incremental_restored = 10;
+  // Incremental related metrics.
+  optional IncrementalInfo incremental_info = 11;
+}
+
+message IncrementalInfo {
+  // The metrics for modules.
+  optional IncrementalMetrics module_metrics = 1;
+
+  // The metrics for modules.
+  optional IncrementalMetrics singleton_metrics = 2;
+}
+
+message IncrementalMetrics {
+  // The number of instances that supports incremental build.
+  optional uint32 supported = 1;
+
+  // The number of instances that have cache hit during incremental build.
+  optional uint32 cache_hit = 2;
+
+  // The info about providers cached and restored.
+  map<string, ProviderMetrics> providers = 3;
+
+  // The number of the provider cached in total.
+  optional uint32 total_providers_cached = 4;
+
+  // The number of the provider restored in total.
+  optional uint32 total_providers_restored = 5;
+}
+
+message ProviderMetrics {
+  // The number of instances that have provider cached.
+  optional uint32 providers_cached = 1;
+
+  // The number of instances that have provider restored.
+  optional uint32 providers_restored = 2;
 }
 
 message ExpConfigFetcher {

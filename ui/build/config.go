@@ -773,6 +773,9 @@ func buildConfig(config Config) *smpb.BuildConfig {
 	if value, ok := config.environ.Get("METRICS_BUILD_TRIGGER"); ok {
 		ensure().BuildTrigger = proto.String(value)
 	}
+	if value, ok := config.environ.Get("SOONG_INCREMENTAL_ANALYSIS"); ok {
+		ensure().SoongIncrementalAnalysis = proto.String(value)
+	}
 	c := &smpb.BuildConfig{
 		UseRbe:                proto.Bool(config.UseRBE()),
 		NinjaWeightListSource: getNinjaWeightListSourceInMetric(config.NinjaWeightListSource()),
