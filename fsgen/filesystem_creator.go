@@ -627,6 +627,7 @@ func (f *filesystemCreator) createDeviceModule(
 		Vendor_blobs_license:                vendorBlobsLicenseProp,
 		InfoPartitionProps:                  *infoPartitionProps,
 		Minimal_font_footprint:              proptools.BoolPtr(partitionVars.MinimalFontFootprint),
+		Stage_device_files:                  getstageDeviceFileProps(ctx),
 	}
 
 	if buildingInitBootImage(partitionVars) {
