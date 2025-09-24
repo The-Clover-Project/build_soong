@@ -1942,7 +1942,7 @@ func (j *Test) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 func (j *Test) generateAndroidBuildActionsWithConfig(ctx android.ModuleContext, configs []tradefed.Config) {
 	if j.testProperties.Test_options.Unit_test == nil && ctx.Host() {
 		// TODO(b/): Clean temporary heuristic to avoid unexpected onboarding.
-		defaultUnitTest := !inList("tradefed", j.properties.Libs) && !inList("cts", j.testProperties.Test_suites)
+		defaultUnitTest := !inList("tradefed", j.properties.Libs.GetOrDefault(ctx, nil)) && !inList("cts", j.testProperties.Test_suites)
 		j.testProperties.Test_options.Unit_test = proptools.BoolPtr(defaultUnitTest)
 	}
 	j.testConfig = tradefed.AutoGenTestConfig(ctx, tradefed.AutoGenTestConfigOptions{
@@ -3039,7 +3039,7 @@ type ImportProperties struct {
 	Permitted_packages []string
 
 	// List of shared java libs that this module has dependencies to
-	Libs []string
+	Libs proptools.Configurable[[]string]
 
 	// List of static java libs that this module has dependencies to
 	Static_libs proptools.Configurable[[]string]
@@ -3168,7 +3168,7 @@ func (j *Import) CreatedByJavaSdkLibraryName() *string {
 }
 
 func (j *Import) DepsMutator(ctx android.BottomUpMutatorContext) {
-	ctx.AddVariationDependencies(nil, libTag, j.properties.Libs...)
+	ctx.AddVariationDependencies(nil, libTag, j.properties.Libs.GetOrDefault(ctx, nil)...)
 	ctx.AddVariationDependencies(nil, staticLibTag, j.properties.Static_libs.GetOrDefault(ctx, nil)...)
 
 	if ctx.Device() && Bool(j.dexProperties.Compile_dex) {

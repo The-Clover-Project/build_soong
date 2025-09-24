@@ -100,7 +100,7 @@ type CommonProperties struct {
 	Kotlin_incremental *bool
 
 	// list of java libraries that will be in the classpath
-	Libs []string `android:"arch_variant"`
+	Libs proptools.Configurable[[]string] `android:"arch_variant"`
 
 	// list of java libraries that will be compiled into the resulting jar
 	Static_libs proptools.Configurable[[]string] `android:"arch_variant"`
@@ -898,6 +898,10 @@ func (j *Module) ApexAvailableFor() []string {
 	return android.FirstUniqueStrings(list)
 }
 
+func (j *Module) libs(ctx android.BaseModuleContext) []string {
+	return j.properties.Libs.GetOrDefault(ctx, nil)
+}
+
 func (j *Module) staticLibs(ctx android.BaseModuleContext) []string {
 	return j.properties.Static_libs.GetOrDefault(ctx, nil)
 }
@@ -927,7 +931,7 @@ func (j *Module) deps(ctx android.BottomUpMutatorContext) {
 		}
 	}
 
-	libDeps := ctx.AddVariationDependencies(nil, libTag, j.properties.Libs...)
+	libDeps := ctx.AddVariationDependencies(nil, libTag, j.libs(ctx)...)
 
 	ctx.AddVariationDependencies(nil, staticLibTag, j.staticLibs(ctx)...)
 
@@ -2490,7 +2494,7 @@ func (j *Module) IDEInfo(ctx android.BaseModuleContext, dpInfo *android.IdeInfo)
 	dpInfo.Deps = append(dpInfo.Deps, j.CompilerDeps()...)
 	dpInfo.Aidl_include_dirs = append(dpInfo.Aidl_include_dirs, j.deviceProperties.Aidl.Include_dirs...)
 	dpInfo.Static_libs = append(dpInfo.Static_libs, j.staticLibs(ctx)...)
-	dpInfo.Libs = append(dpInfo.Libs, j.properties.Libs...)
+	dpInfo.Libs = append(dpInfo.Libs, j.libs(ctx)...)
 }
 
 func (j *Module) CompilerDeps() []string {

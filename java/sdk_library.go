@@ -1489,7 +1489,7 @@ func (module *SdkLibrary) DepsMutator(ctx android.BottomUpMutatorContext) {
 	module.usesLibrary.deps(ctx, false)
 
 	module.EmbeddableSdkLibraryComponent.setComponentDependencyInfoProvider(ctx)
-	libDeps := ctx.AddVariationDependencies(nil, usesLibStagingTag, module.properties.Libs...)
+	libDeps := ctx.AddVariationDependencies(nil, usesLibStagingTag, module.properties.Libs.GetOrDefault(ctx, nil)...)
 	libDeps = append(libDeps, ctx.AddVariationDependencies(nil, usesLibStagingTag, module.sdkLibraryProperties.Impl_only_libs...)...)
 	module.usesLibrary.depsFromLibs(ctx, libDeps)
 }
@@ -1969,7 +1969,7 @@ func (module *SdkLibrary) CreateInternalModules(mctx android.DefaultableHookCont
 	}
 
 	// Add the impl_only_libs and impl_only_static_libs *after* we're done using them in submodules.
-	module.properties.Libs = append(module.properties.Libs, module.sdkLibraryProperties.Impl_only_libs...)
+	module.properties.Libs.AppendSimpleValue(module.sdkLibraryProperties.Impl_only_libs)
 	module.properties.Static_libs.AppendSimpleValue(module.sdkLibraryProperties.Impl_only_static_libs)
 }
 
