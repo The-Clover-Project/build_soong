@@ -241,6 +241,10 @@ type credHelperResp struct {
 }
 
 func credRefresh(ctx Context, args, path string) (time.Time, error) {
+	if path == "" {
+		// No helper is needed.  Say that the credentials expire in a year.
+		return time.Now().AddDate(1, 0, 0), nil
+	}
 	cmd := exec.Command(path, strings.Split(args, " ")...)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdin = strings.NewReader("")
@@ -248,7 +252,7 @@ func credRefresh(ctx Context, args, path string) (time.Time, error) {
 	cmd.Stderr = &stderr
 	err := cmd.Run()
 	if err != nil {
-		return time.Time{}, err
+		return time.Time{}, fmt.Errorf("%q failed with %q.  stderr:\n%s", cmd, err, stderr.String())
 	}
 	var resp credHelperResp
 	err = json.Unmarshal(stdout.Bytes(), &resp)
@@ -259,26 +263,56 @@ func credRefresh(ctx Context, args, path string) (time.Time, error) {
 }
 
 func newCredRefresher(ctx Context, config Config) (*credRefresher, error) {
-	path, ok := config.Environment().Get("RBE_credentials_helper")
-	if !ok {
-		path = "execrel://"
-	}
-	if strings.HasPrefix(path, "execrel://") {
-		relpath, _ := strings.CutPrefix(path, "execrel://")
-		dir, ok := config.Environment().Get("RBE_DIR")
-		if !ok {
-			dir = "prebuilts/remoteexecution-client/live"
+	var helperPath string
+	var args string
+
+	// Determine RBE authentication mechanism and propagate to CIPD flags.
+	// Some build configurations like ABFS may disable RBE for compilation while
+	// still relying on RBE auth config being present.
+	authType, _ := config.rbeAuth()
+	switch authType {
+	case "RBE_credentials_helper":
+		// RBE_credentials_helper_args contains space-separated arguments for the helper
+		if envArgs, ok := config.environ.Get("RBE_credentials_helper_args"); ok && envArgs != "" {
+			args = envArgs
 		}
-		// Use the one from RBE_DIR.
-		path = filepath.Join(dir, relpath, "credshelper")
+		var ok bool
+		if helperPath, ok = config.Environment().Get("RBE_credentials_helper"); !ok {
+			helperPath = "execrel://"
+		}
+		if strings.HasPrefix(helperPath, "execrel://") {
+			relpath, _ := strings.CutPrefix(helperPath, "execrel://")
+			dir, ok := config.Environment().Get("RBE_DIR")
+			if !ok {
+				dir = "prebuilts/remoteexecution-client/live"
+			}
+			// Use the one from RBE_DIR.
+			helperPath = filepath.Join(dir, relpath, "credshelper")
+		}
+
+		if authType == "RBE_credentials_helper" {
+			if args == "" {
+				args = "--auth_source=automaticAuth --gcert_refresh_timeout=20"
+			}
+		} else {
+			args = "--auth_source=googleProd --gcert_refresh_timeout=20"
+		}
+	default:
 	}
-	args, ok := config.Environment().Get("RBE_credentials_helper_args")
-	expires, err := credRefresh(ctx, args, path)
+
+	if helperPath == "" {
+		ctx.Printf("No RBE credentials helper needed.\n")
+	} else {
+		ctx.Printf("Using '%s %s' for RBE credentials helper\n", helperPath, args)
+	}
+	args = strings.TrimSpace(args)
+
+	expires, err := credRefresh(ctx, args, helperPath)
 	if err != nil {
 		return nil, err
 	}
 	return &credRefresher{
-		path:    path,
+		path:    helperPath,
 		args:    args,
 		expires: expires,
 	}, nil
@@ -290,7 +324,7 @@ func (cr *credRefresher) run(ctx Context, quit <-chan bool) {
 		ctx.Printf("cred expires %s - valid for %s", cr.expires, wait)
 		// Wait until 30 seconds before our credentials expire.
 		if wait.Seconds() > 30 {
-			wait -= time.Duration(30 * 1000000000)
+			wait -= 30 * time.Second
 		}
 		select {
 		case <-time.After(wait):

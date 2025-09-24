@@ -1,30 +1,30 @@
 load("@builtin//struct.star", "module")
-load("./config.star", "config")
 
-def __filegroups(ctx):
-    if config.use_reclient(ctx):
+def __filegroups(ctx, vars):
+    if vars.use_reclient:
         return {}
+    version = vars.RELEASE_BUILD_CLANG_VERSION
     fg = {
-        "prebuilts/clang/host/linux-x86/clang-r563880/bin:bin": {
+        "prebuilts/clang/host/linux-x86/"+version+"/bin:bin": {
             "type": "glob",
             "includes": [
                 "clang*",  # clang, clang++, clang-<ver> clang-real, clang++-real, clang++.real etc.
             ],
         },
-        "prebuilts/clang/host/linux-x86/clang-r563880/include:include": {
+        "prebuilts/clang/host/linux-x86/"+version+"/include:include": {
             "type": "glob",
             "includes": [
                 "*",
             ],
         },
-        "prebuilts/clang/host/linux-x86/clang-r563880/lib:headers": {
+        "prebuilts/clang/host/linux-x86/"+version+"/lib:headers": {
             "type": "glob",
             "includes": [
                 "*.h",
                 "*_ignorelist.txt",
             ],
         },
-        "prebuilts/clang/host/linux-x86/clang-r563880/android_libc++/ndk:headers": {
+        "prebuilts/clang/host/linux-x86/"+version+"/android_libc++/ndk:headers": {
             "type": "glob",
             "includes": [
                 "*.h",
@@ -88,8 +88,8 @@ def __filegroups(ctx):
 
 __handlers = {}
 
-def __step_config(ctx, step_config):
-    if config.use_reclient(ctx):
+def __step_config(ctx, vars, step_config):
+    if vars.use_reclient:
         step_config["rules"].extend([
             {
                 "name": "g.cc.cc",
@@ -101,6 +101,7 @@ def __step_config(ctx, step_config):
         ])
         return step_config
 
+    version = vars.RELEASE_BUILD_CLANG_VERSION
     step_config["rules"].extend([
         {
             "name": "g.cc.cc",
@@ -112,11 +113,11 @@ def __step_config(ctx, step_config):
         },
     ])
     step_config["input_deps"].update({
-        "prebuilts/clang/host/linux-x86/clang-r563880:headers": [
-            "prebuilts/clang/host/linux-x86/clang-r563880/android_libc++/ndk:headers",
-            "prebuilts/clang/host/linux-x86/clang-r563880/bin:bin",
-            "prebuilts/clang/host/linux-x86/clang-r563880/include:include",
-            "prebuilts/clang/host/linux-x86/clang-r563880/lib:headers",
+        "prebuilts/clang/host/linux-x86/"+version+":headers": [
+            "prebuilts/clang/host/linux-x86/"+version+"/android_libc++/ndk:headers",
+            "prebuilts/clang/host/linux-x86/"+version+"/bin:bin",
+            "prebuilts/clang/host/linux-x86/"+version+"/include:include",
+            "prebuilts/clang/host/linux-x86/"+version+"/lib:headers",
         ],
         "prebuilts/gcc/linux-x86/host/x86_64-linux-glibc2.17-4.8/sysroot:headers": [
             "prebuilts/gcc/linux-x86/host/x86_64-linux-glibc2.17-4.8/sysroot/usr/include:include",

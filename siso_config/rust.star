@@ -1,13 +1,12 @@
 load("@builtin//struct.star", "module")
-load("./config.star", "config")
 
-def __filegroups(ctx):
+def __filegroups(ctx, vars):
     return {}
 
 __handlers = {}
 
-def __step_config(ctx, step_config):
-    if config.use_reclient(ctx):
+def __step_config(ctx, vars, step_config):
+    if vars.use_reclient:
         step_config["rules"].extend([
             {
                 "name": "g.rust.rustc",

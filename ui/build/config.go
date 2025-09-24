@@ -171,6 +171,10 @@ type configImpl struct {
 	// The directory where Siso config can be found.
 	sisoConfigDir string
 
+	// Variables for Siso RBE config.
+	SisoStringVars map[string]string
+	SisoBoolVars   map[string]bool
+
 	// cached value to avoid process spawning
 	useABFSMu sync.Mutex
 	useABFS   *bool

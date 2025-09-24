@@ -244,7 +244,13 @@ func runMakeProductConfig(ctx Context, config Config) {
 		"TOOLCHAIN_RUSAGE_OUTPUT",
 	}
 
-	allVars := append(append([]string{
+	// These are needed to configure Siso's RBE rules.
+	sisoStringVars := []string{
+		"RBE_container_image",
+		"RELEASE_BUILD_CLANG_VERSION",
+	}
+
+	allVars := append(append(append([]string{
 		// Used to execute Kati and Ninja
 		"NINJA_GOALS",
 		"KATI_GOALS",
@@ -312,7 +318,7 @@ func runMakeProductConfig(ctx Context, config Config) {
 		"RELEASE_SRC_DIR_IS_READ_ONLY",
 		"RELEASE_USE_RKATI",
 		"RELEASE_BUILD_WITH_JDK_25",
-	}, exportEnvVars...), BannerVars...)
+	}, exportEnvVars...), BannerVars...), sisoStringVars...)
 
 	makeVars, err := dumpMakeVars(ctx, config, config.Arguments(), allVars, true, "")
 	if err != nil {
@@ -340,6 +346,14 @@ func runMakeProductConfig(ctx Context, config Config) {
 	config.SetTargetDeviceDir(makeVars["TARGET_DEVICE_DIR"])
 	config.useRkati = makeVars["RELEASE_USE_RKATI"] == "true" || os.Getenv("SOONG_USE_RKATI") == "true"
 	config.setupSandboxConfig(ctx, makeVars)
+
+	config.SisoStringVars = make(map[string]string)
+	for _, k := range sisoStringVars {
+		config.SisoStringVars[k] = makeVars[k]
+	}
+	config.SisoBoolVars = map[string]bool{
+		"use_reclient": config.UseRewrapper(),
+	}
 
 	config.SetBuildBrokenDupRules(makeVars["BUILD_BROKEN_DUP_RULES"] == "true")
 	config.SetBuildBrokenUsesNetwork(makeVars["BUILD_BROKEN_USES_NETWORK"] == "true")

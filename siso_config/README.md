@@ -1,12 +1,10 @@
 # Siso config
 
-This directory tells Siso how to handle RBE for the various Ninja rules.  As a
-standalone directory, it provides the configuration needed for supported
-projects in AOSP to use RBE, either via `rewrapper` or using Siso's native RBE
-support.
+This directory tells Siso how to handle RBE for the various Ninja rules.
+It provides the configuration needed for supported projects in AOSP to use RBE,
+ either via `rewrapper` or using Siso's native RBE support.
 
 If `SISO_CONFIG_DIR` is set to:
-- `build/soong/siso_config`, this directory is used as-is.
 - `${OUT_DIR}/siso_config`, that directory is used as-is.
 - any other directory, `${OUT_DIR}/siso_config` is constructed with:
   - `${OUT_DIR}/siso_config/main` is a symlink to this directory.
