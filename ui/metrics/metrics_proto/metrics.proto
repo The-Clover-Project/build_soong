@@ -202,6 +202,9 @@ message SoongEnvVars {
 
   // BUILD_TRIGGER_TYPE - How the build was triggered.
   optional string build_trigger = 4;
+
+  // SOONG_INCREMENTAL_ANALYSIS
+  optional string soong_incremental_analysis = 5;
 }
 
 message SystemResourceInfo {
