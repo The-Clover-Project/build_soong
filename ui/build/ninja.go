@@ -42,6 +42,8 @@ func runNinjaForBuild(ctx Context, config Config) {
 }
 
 // Create a script for siso to use to refresh credentials.
+// Siso will invoke ${SISO_CREDENTIAL_HELPER} with no args, so put the actual credhelper command
+// invocation in `soong-convert-command`.
 func createSisoCredsHelper(ctx Context, config Config, cmd *Cmd, cr *credRefresher) error {
 	cmd.Environment.Set("SISO_CREDENTIAL_HELPER", "build/soong/scripts/siso-creds-helper.py")
 	cacheDir := config.rbeCacheDir()
@@ -142,8 +144,7 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 			var err error
 			cr, err = newCredRefresher(ctx, config)
 			if err != nil {
-				ctx.Printf("Failed to find credential helper: %v\n", err)
-				return
+				ctx.Fatalf("Failed to find credential helper: %v\n", err)
 			}
 			quit := make(chan bool)
 			defer close(quit)
@@ -213,8 +214,7 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 		cmd.Environment.Set("SISO_EXPERIMENTS", strings.Join(sisoExperiments, ","))
 		if cr != nil {
 			if err := createSisoCredsHelper(ctx, config, cmd, cr); err != nil {
-				ctx.Printf("Failed to create credential helper script: %v\n", err)
-				return
+				ctx.Fatalf("Failed to create credential helper script: %v\n", err)
 			}
 		}
 	}
