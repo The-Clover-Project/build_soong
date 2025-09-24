@@ -788,7 +788,8 @@ func (a *aapt) compileResInDir(ctx android.ModuleContext, dirs android.Paths, co
 
 var resourceProcessorBusyBox = pctx.AndroidStaticRule("resourceProcessorBusyBox",
 	blueprint.RuleParams{
-		Command: "${config.JavaCmd} -cp ${config.ResourceProcessorBusyBox} " +
+		Command: "${config.JavaCmd} ${config.ResourceProcessorBusyBoxSuppressJDKWarnings} " +
+			"-cp ${config.ResourceProcessorBusyBox} " +
 			"com.google.devtools.build.android.ResourceProcessorBusyBox --tool=GENERATE_BINARY_R -- @${out}.args && " +
 			"if cmp -s ${out}.tmp ${out} ; then rm ${out}.tmp ; else mv ${out}.tmp ${out}; fi",
 		CommandDeps:    []string{"${config.ResourceProcessorBusyBox}"},
