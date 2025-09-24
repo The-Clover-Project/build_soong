@@ -117,9 +117,9 @@ func (p *phonySingleton) GenerateBuildActions(ctx SingletonContext) {
 		// create a makefile that defines the phonies that will be included in the packaging step.
 		// Make will dedup the phonies there.
 		phonyFileSize := 0
-		for _, phony := range p.phonyList {
+		for phony, deps := range p.phonyMap {
 			phonyFileSize += 2*len(phony) + 11
-			for _, dep := range p.phonyMap[phony] {
+			for _, dep := range deps {
 				phonyFileSize += len(dep.String()) + 1
 			}
 		}
