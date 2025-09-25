@@ -162,6 +162,19 @@ abstract class StringArgument<O : Options> : SingleArgument<String, O>() {
     }
 }
 
+abstract class ReadableDirectoryArgument<O : Options> : StringArgument<O>() {
+    override fun setOption(option: String, opts: O) {
+        val e = isValidDirectoryForReading(option)
+        if (e != null) {
+            error = "Invalid $argumentName option specified: $e"
+        } else {
+            setDirectory(File(option), opts)
+        }
+    }
+
+    abstract fun setDirectory(dir: File, opts: O)
+}
+
 abstract class WritableDirectoryArgument<O : Options> : StringArgument<O>() {
     override fun setOption(option: String, opts: O) {
         val e = isValidDirectoryForWriting(option)
@@ -199,15 +212,15 @@ abstract class SubdirectoryArgument<O : Options> : StringArgument<O>() {
     abstract fun setSubDirectory(dir: String, opts: O)
 }
 
-fun isValidDirectoryForWriting(filePath: String): String? {
+fun isValidDirectoryForReading(filePath: String): String? {
     try {
         val file = File(filePath)
         if (file.exists()) {
             if (!file.isDirectory) {
                 return "Path exists but is not a directory"
             }
-            if (!file.canWrite()) {
-                return "Directory exists but is not writable"
+            if (!file.canRead()) {
+                return "Directory exists but is not readable"
             }
         } else if (!file.mkdirs()) {
             return "Unable to create directory"
@@ -220,31 +233,18 @@ fun isValidDirectoryForWriting(filePath: String): String? {
     }
 }
 
-fun isValidFilePathForWriting(filePath: String): String? {
-    if (filePath.isBlank()) {
-        return "Empty log-file path"
-    }
-
+fun isValidDirectoryForWriting(filePath: String): String? {
     try {
         val file = File(filePath)
-        val parentDir = file.parentFile ?: return "Invalid parent directory"
-
-        if (!parentDir.exists()) {
-            if (!parentDir.mkdirs()) {
-                return "Unable to create parent directory"
-            }
-        } else if (!parentDir.isDirectory) {
-            return "Parent directory is not a directory"
-        } else if (!parentDir.canWrite()) {
-            return "Parent directory is not writable"
-        }
-
         if (file.exists()) {
-            if (file.isDirectory) {
-                return "File is a directory"
-            } else if (!file.canWrite()) {
-                return "File exists but is not writable"
+            if (!file.isDirectory) {
+                return "Path exists but is not a directory"
             }
+            if (!file.canWrite()) {
+                return "Directory exists but is not writable"
+            }
+        } else if (!file.mkdirs()) {
+            return "Unable to create directory"
         }
 
         return null // All checks passed!

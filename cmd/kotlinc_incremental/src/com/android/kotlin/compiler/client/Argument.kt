@@ -18,6 +18,7 @@ package com.android.kotlin.compiler.client
 
 import com.android.kotlin.compiler.cli.Argument
 import com.android.kotlin.compiler.cli.NoArgument
+import com.android.kotlin.compiler.cli.ReadableDirectoryArgument
 import com.android.kotlin.compiler.cli.StringArgument
 import com.android.kotlin.compiler.cli.SubdirectoryArgument
 import com.android.kotlin.compiler.cli.WritableDirectoryArgument
@@ -157,6 +158,23 @@ class RootDirArgument : WritableDirectoryArgument<ClientOptions>() {
 
     override fun setDirectory(dir: File, opts: ClientOptions) {
         opts.rootDir = dir
+    }
+}
+
+class SrcJarsDirArgument : ReadableDirectoryArgument<ClientOptions>() {
+    override val argumentName = "src-jars-dir"
+    override val helpText =
+        """
+        Directory where src jars were unzipped into _before_ this client was invoked.
+        Any entries in the source-delta argument that are listed as being part of the
+        contents of another file should be located inside of here.
+        This option is REQUIRED.
+        """
+            .trimIndent()
+    override val default = null
+
+    override fun setDirectory(dir: File, opts: ClientOptions) {
+        opts.srcJarsDir = dir
     }
 }
 

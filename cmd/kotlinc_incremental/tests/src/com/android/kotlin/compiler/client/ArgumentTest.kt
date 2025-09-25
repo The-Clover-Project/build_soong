@@ -254,6 +254,27 @@ class ArgumentTest {
     }
 
     @Test
+    fun testSrcJarsDirArgument() {
+        val sjda = SrcJarsDirArgument()
+        val srcJarsDirLocation = tFolder.newFolder("FOOBAR").absolutePath
+        val arg = "-src-jars-dir=$srcJarsDirLocation"
+        assertThat(sjda.matches(arg)).isTrue()
+        sjda.parse(arg, emptyList<String>().iterator(), opts)
+
+        assertThat(opts.srcJarsDirLocation).isEqualTo(srcJarsDirLocation)
+        assertThat(sjda.error).isNull()
+    }
+
+    @Test
+    fun testSrcJarsDirArgument_NoArgument() {
+        val sjda = SrcJarsDirArgument()
+        val arg = "-src-jars-dir="
+        sjda.parse(arg, emptyList<String>().iterator(), opts)
+
+        assertThat(sjda.error).isNotEmpty()
+    }
+
+    @Test
     fun testWorkingDirArgument() {
         val wda = WorkingDirArgument()
         val arg = "-working-dir=FOOBAR"

@@ -80,6 +80,29 @@ class ClientOptions : Options {
             return File(rootDir, outputDirName)
         }
 
+    private var _srcJarsDir: File? = null
+    var srcJarsDir: File
+        get() {
+            return _srcJarsDir
+                ?: throw IllegalStateException("Can not read srcJarsDir before it is set")
+        }
+        set(value) {
+            _srcJarsDir = value
+        }
+
+    var srcJarsDirLocation: String
+        get() {
+            return _srcJarsDir?.absolutePath
+                ?: throw IllegalStateException("Can not read srcJarsDirLocation before it is set")
+        }
+        set(value) {
+            if (value == "") {
+                _srcJarsDir = null
+            } else {
+                _srcJarsDir = File(value)
+            }
+        }
+
     var workingDirName: String = "work"
     val workingDir: File
         get() {
