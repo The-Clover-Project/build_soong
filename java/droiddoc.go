@@ -16,7 +16,6 @@ package java
 
 import (
 	"fmt"
-	"path"
 	"path/filepath"
 	"strings"
 
@@ -166,9 +165,6 @@ type DroiddocProperties struct {
 
 	// Compat config XML. Generates compat change documentation if set.
 	Compat_config *string `android:"path"`
-
-	// The directory name to publish the generated documentation under out/target/common/docs.
-	Publish_dir *string
 }
 
 // Common flags passed down to build rule
@@ -865,12 +861,6 @@ func (d *Droiddoc) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		FlagWithOutput("-o ", d.docZip).
 		FlagWithArg("-C ", outDir.String()).
 		FlagWithArg("-D ", outDir.String())
-
-	if String(d.properties.Publish_dir) != "" {
-		publishDir := path.Join("out/target/common/docs", String(d.properties.Publish_dir))
-		rule.Command().Text("mkdir -p").Text(publishDir)
-		rule.Command().Text("unzip -qo").Input(d.docZip).Text("-d").Text(publishDir)
-	}
 
 	rule.Restat()
 
