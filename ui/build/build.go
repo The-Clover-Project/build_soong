@@ -90,8 +90,8 @@ func SetupOutDir(ctx Context, config Config) {
 	writeValueIfChanged(ctx, filepath.Join(config.SoongOutDir(), "build_hostname.txt"), hostname)
 
 	buildTargetName, ok := config.environ.Get("BUILD_TARGET_NAME")
-	if !ok {
-		buildTargetName = config.TargetProduct()
+	if targetProduct, err := config.TargetProductOrErr(); !ok && err == nil {
+		buildTargetName = targetProduct
 	}
 
 	buildUUID := buildUUID(buildTargetName, buildNumber)
