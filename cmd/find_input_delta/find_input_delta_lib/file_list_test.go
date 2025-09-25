@@ -16,7 +16,6 @@ package find_input_delta_lib
 
 import (
 	"bytes"
-	"slices"
 	"testing"
 
 	// For Assert*.
@@ -27,20 +26,28 @@ func (fl *FileList) Equal(other *FileList) bool {
 	if fl.Name != other.Name {
 		return false
 	}
-	if !slices.Equal(fl.Additions, other.Additions) {
+	if !compareFileListSlices(fl.Additions, other.Additions) {
 		return false
 	}
-	if !slices.Equal(fl.Deletions, other.Deletions) {
+	if !compareFileListSlices(fl.Deletions, other.Deletions) {
 		return false
 	}
-	if len(fl.Changes) != len(other.Changes) {
+	if !compareFileListSlices(fl.Changes, other.Changes) {
 		return false
 	}
-	for idx, ch := range fl.Changes {
-		if !ch.Equal(&other.Changes[idx]) {
+	return true
+}
+
+func compareFileListSlices(a, b []FileList) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for idx, ch := range a {
+		if !ch.Equal(&b[idx]) {
 			return false
 		}
 	}
+
 	return true
 }
 
@@ -56,9 +63,15 @@ func TestFormat(t *testing.T) {
 			Name:     "no contents",
 			Template: DefaultTemplate,
 			Input: FileList{
-				Name:      "target",
-				Additions: []string{"add1", "add2"},
-				Deletions: []string{"del1", "del2"},
+				Name: "target",
+				Additions: []FileList{
+					FileList{Name: "add1"},
+					FileList{Name: "add2"},
+				},
+				Deletions: []FileList{
+					FileList{Name: "del1"},
+					FileList{Name: "del2"},
+				},
 				Changes: []FileList{
 					FileList{Name: "mod1"},
 					FileList{Name: "mod2"},
@@ -71,8 +84,11 @@ func TestFormat(t *testing.T) {
 			Name:     "adds",
 			Template: DefaultTemplate,
 			Input: FileList{
-				Name:      "target",
-				Additions: []string{"add1", "add2"},
+				Name: "target",
+				Additions: []FileList{
+					FileList{Name: "add1"},
+					FileList{Name: "add2"},
+				},
 			},
 			Expected: "+add1 +add2 ",
 			Err:      nil,
@@ -81,8 +97,11 @@ func TestFormat(t *testing.T) {
 			Name:     "deletes",
 			Template: DefaultTemplate,
 			Input: FileList{
-				Name:      "target",
-				Deletions: []string{"del1", "del2"},
+				Name: "target",
+				Deletions: []FileList{
+					FileList{Name: "del1"},
+					FileList{Name: "del2"},
+				},
 			},
 			Expected: "-del1 -del2 ",
 			Err:      nil,
@@ -104,21 +123,41 @@ func TestFormat(t *testing.T) {
 			Name:     "with contents",
 			Template: DefaultTemplate,
 			Input: FileList{
-				Name:      "target",
-				Additions: []string{"add1", "add2"},
-				Deletions: []string{"del1", "del2"},
+				Name: "target",
+				Additions: []FileList{
+					FileList{
+						Name: "add1",
+						Additions: []FileList{
+							FileList{Name: "a1a1"},
+						},
+					},
+					FileList{Name: "add2"},
+				},
+				Deletions: []FileList{
+					FileList{Name: "del1"},
+					FileList{
+						Name: "del2",
+						Deletions: []FileList{
+							FileList{Name: "d2d1"},
+						},
+					},
+				},
 				Changes: []FileList{
 					FileList{
 						Name: "mod1",
 					},
 					FileList{
-						Name:      "mod2",
-						Additions: []string{"a1"},
-						Deletions: []string{"d1"},
+						Name: "mod2",
+						Additions: []FileList{
+							FileList{Name: "m2a1"},
+						},
+						Deletions: []FileList{
+							FileList{Name: "m2d1"},
+						},
 					},
 				},
 			},
-			Expected: "-del1 -del2 +add1 +add2 +mod1 +mod2 --file mod2 -d1 +a1 --endfile ",
+			Expected: "-del1 -del2 +add1 +add2 +mod1 +mod2 --file del2 -d2d1 --endfile --file add1 +a1a1 --endfile --file mod2 -m2d1 +m2a1 --endfile ",
 			Err:      nil,
 		},
 	}

@@ -30,9 +30,15 @@ import (
 
 var DefaultTemplate = `
 	{{- define "contents"}}
-		{{- range .Deletions}}-{{.}} {{end}}
-		{{- range .Additions}}+{{.}} {{end}}
+		{{- range .Deletions}}-{{- .Name}} {{end}}
+		{{- range .Additions}}+{{- .Name}} {{end}}
 		{{- range .Changes}}+{{- .Name}} {{end}}
+		{{- range .Deletions}}
+		  {{- if .Deletions}}--file {{.Name}} {{template "contents" .}}--endfile {{end}}
+		{{- end}}
+		{{- range .Additions}}
+		  {{- if .Additions}}--file {{.Name}} {{template "contents" .}}--endfile {{end}}
+		{{- end}}
 		{{- range .Changes}}
 		  {{- if or .Additions .Deletions .Changes}}--file {{.Name}} {{template "contents" .}}--endfile {{end}}
 		{{- end}}
@@ -46,10 +52,10 @@ type FileList struct {
 	Name string
 
 	// The added files
-	Additions []string
+	Additions []FileList
 
 	// The deleted files
-	Deletions []string
+	Deletions []FileList
 
 	// The modified files
 	Changes []FileList
@@ -77,30 +83,30 @@ func FileListFactory(name string) *FileList {
 	}
 }
 
-func (fl *FileList) addFile(name string) {
-	fl.Additions = append(fl.Additions, name)
+func (fl *FileList) addFile(ch *FileList) {
+	fl.Additions = append(fl.Additions, *ch)
 	fl.TotalDelta += 1
-	ext := filepath.Ext(name)
+	ext := filepath.Ext(ch.Name)
 	if _, ok := fl.ExtCountMap[ext]; !ok {
 		fl.ExtCountMap[ext] = &FileCounts{}
 	}
 	fl.ExtCountMap[ext].Additions += 1
 }
 
-func (fl *FileList) deleteFile(name string) {
-	fl.Deletions = append(fl.Deletions, name)
+func (fl *FileList) deleteFile(ch *FileList) {
+	fl.Deletions = append(fl.Deletions, *ch)
 	fl.TotalDelta += 1
-	ext := filepath.Ext(name)
+	ext := filepath.Ext(ch.Name)
 	if _, ok := fl.ExtCountMap[ext]; !ok {
 		fl.ExtCountMap[ext] = &FileCounts{}
 	}
 	fl.ExtCountMap[ext].Deletions += 1
 }
 
-func (fl *FileList) changeFile(name string, ch *FileList) {
+func (fl *FileList) changeFile(ch *FileList) {
 	fl.Changes = append(fl.Changes, *ch)
 	fl.TotalDelta += 1
-	ext := filepath.Ext(name)
+	ext := filepath.Ext(ch.Name)
 	if _, ok := fl.ExtCountMap[ext]; !ok {
 		fl.ExtCountMap[ext] = &FileCounts{}
 	}
@@ -132,10 +138,10 @@ func (fl *FileList) WriteMetrics(dir, pruneDir string) (err error) {
 
 	var msg = &fid_exp.FileList{Name: proto.String(fl.Name)}
 	for _, a := range fl.Additions {
-		if strings.HasPrefix(a, pruneDir) {
+		if strings.HasPrefix(a.Name, pruneDir) {
 			continue
 		}
-		msg.Additions = append(msg.Additions, a)
+		msg.Additions = append(msg.Additions, a.Name)
 		needed = true
 	}
 	for _, ch := range fl.Changes {
@@ -146,10 +152,10 @@ func (fl *FileList) WriteMetrics(dir, pruneDir string) (err error) {
 		needed = true
 	}
 	for _, d := range fl.Deletions {
-		if strings.HasPrefix(d, pruneDir) {
+		if strings.HasPrefix(d.Name, pruneDir) {
 			continue
 		}
-		msg.Deletions = append(msg.Deletions, d)
+		msg.Deletions = append(msg.Deletions, d.Name)
 		needed = true
 	}
 	if !needed {

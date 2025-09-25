@@ -163,6 +163,7 @@ func compareInternalState(prior, other *fid_proto.PartialCompileInputs, target s
 
 func compareInputFiles(prior, other []*fid_proto.PartialCompileInput, name string) *FileList {
 	fl := FileListFactory(name)
+	nilInputs := []*fid_proto.PartialCompileInput{}
 	PriorMap := make(map[string]*fid_proto.PartialCompileInput, len(prior))
 	for _, v := range prior {
 		PriorMap[v.GetName()] = v
@@ -173,17 +174,17 @@ func compareInputFiles(prior, other []*fid_proto.PartialCompileInput, name strin
 		otherMap[name] = v
 		if _, ok := PriorMap[name]; !ok {
 			// Added file
-			fl.addFile(name)
+			fl.addFile(compareInputFiles(nilInputs, v.GetContents(), name))
 		} else if !proto.Equal(PriorMap[name], v) {
 			// Changed file
-			fl.changeFile(name, compareInputFiles(PriorMap[name].GetContents(), v.GetContents(), name))
+			fl.changeFile(compareInputFiles(PriorMap[name].GetContents(), v.GetContents(), name))
 		}
 	}
 	for _, v := range prior {
 		name := v.GetName()
 		if _, ok := otherMap[name]; !ok {
 			// Deleted file
-			fl.deleteFile(name)
+			fl.deleteFile(compareInputFiles(PriorMap[name].GetContents(), nilInputs, name))
 		}
 	}
 	return fl

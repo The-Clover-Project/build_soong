@@ -267,8 +267,11 @@ func TestReadRspFile(t *testing.T) {
 
 func TestFlattenChanges(t *testing.T) {
 	fileList := &fid_lib.FileList{
-		Additions: []string{"add1.java", "add2.java"},
-		Deletions: []string{"del1.java"},
+		Additions: []fid_lib.FileList{
+			fid_lib.FileList{Name: "add1.java"},
+			fid_lib.FileList{Name: "add2.java"},
+		},
+		Deletions: []fid_lib.FileList{fid_lib.FileList{Name: "del1.java"}},
 		Changes: []fid_lib.FileList{
 			{Name: "change1.java"},
 			{Name: "change2.java"},

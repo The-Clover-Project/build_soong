@@ -330,11 +330,15 @@ func flattenChanges(root *fid_lib.FileList) ([]string, []string, []string) {
 	var allChangedFiles []string
 
 	for _, addition := range root.Additions {
-		allAdditions = append(allAdditions, addition)
+		allAdditions = append(allAdditions, addition.Name)
+		recAdd, _, _ := flattenChanges(&addition)
+		allAdditions = append(allAdditions, recAdd...)
 	}
 
 	for _, del := range root.Deletions {
-		allDeletions = append(allDeletions, del)
+		allDeletions = append(allDeletions, del.Name)
+		_, recDel, _ := flattenChanges(&del)
+		allDeletions = append(allDeletions, recDel...)
 	}
 
 	for _, ch := range root.Changes {
