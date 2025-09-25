@@ -127,7 +127,9 @@ func main() {
 	}
 	// All of these artifacts require that we generate **ALL** release configs.
 	if allMake || inheritance || json || pb || textproto {
-		configs.GenerateAllReleaseConfigs(targetRelease)
+		if err := configs.GenerateAllReleaseConfigs(targetRelease); err != nil {
+			panic(err)
+		}
 		if allMake {
 			// Write one makefile per release config, using the canonical release name.
 			for _, c := range configs.GetSortedReleaseConfigs() {
