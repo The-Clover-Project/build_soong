@@ -43,7 +43,8 @@ class Debug : NoArgument<ClientOptions>() {
     override val helpText =
         """
         Outputs additional information during compilation.
-        """.trimIndent()
+        """
+            .trimIndent()
 
     override fun setOption(option: Boolean, opts: ClientOptions) {
         opts.debug = option
@@ -56,7 +57,8 @@ class SourcesArgument : Argument<String, ClientOptions>() {
     override val helpText =
         """
         Everything after this is treated as a source file.
-        """.trimIndent()
+        """
+            .trimIndent()
 
     override fun matches(arg: String) = arg == "--"
 
@@ -108,9 +110,11 @@ class XBuildFileArgument : StringArgument<ClientOptions>() {
     override val default = null
 
     override val argumentName = "Xbuild-file"
-    override val helpText = """
+    override val helpText =
+        """
         Deprecated: use -build-file
-        """.trimIndent()
+        """
+            .trimIndent()
 
     override fun setOption(option: String, opts: ClientOptions) {
         error = "Can not parse -Xbuild-file. Please use -build-file."
@@ -119,9 +123,11 @@ class XBuildFileArgument : StringArgument<ClientOptions>() {
 
 class LogDirArgument : WritableDirectoryArgument<ClientOptions>() {
     override val argumentName = "log-dir"
-    override val helpText = """
+    override val helpText =
+        """
         Directory to write log output to.
-        """.trimIndent()
+        """
+            .trimIndent()
     override val default = null
 
     override fun setDirectory(dir: File, opts: ClientOptions) {
@@ -229,10 +235,10 @@ class SourceDeltaArgument : StringArgument<ClientOptions>() {
     override val argumentName = "source-delta-file"
     override val helpText =
         """
-        Input file containing a list of added, modified, and deleted source files since the last
-        run. Additions and modifications should be the file name preceded by a +. Deletions should
-        be the file name preceded by a -. Files should be separated by white space.
-    """
+            Input file containing a list of added, modified, and deleted source files since the last
+            run. Additions and modifications should be the file name preceded by a +. Deletions should
+            be the file name preceded by a -. Files should be separated by white space.
+        """
             .trimIndent()
 
     override val default = null
@@ -284,8 +290,8 @@ class PluginArgument : StringArgument<ClientOptions>() {
     override val argumentName = "Xplugin"
     override val helpText =
         """
-        Compiler plugins passed to kotlin. See the `-Xplugin` argument of kotlinc.
-    """
+            Compiler plugins passed to kotlin. See the `-Xplugin` argument of kotlinc.
+        """
             .trimIndent()
     override val default = null
 
@@ -297,9 +303,11 @@ class PluginArgument : StringArgument<ClientOptions>() {
 
 class JvmArgument : Argument<String, ClientOptions>() {
     override val argumentName = "-J<option>"
-    override val helpText = """
+    override val helpText =
+        """
         Options passed through to the JVM.
-        """.trimIndent()
+        """
+            .trimIndent()
     override val default = null
 
     override fun matches(arg: String) = arg.startsWith("-J")

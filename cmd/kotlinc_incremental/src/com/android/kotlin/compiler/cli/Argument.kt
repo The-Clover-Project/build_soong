@@ -191,9 +191,11 @@ abstract class WritableDirectoryArgument<O : Options> : StringArgument<O>() {
 class HelpArgument<O : Options> : NoArgument<O>() {
     override val argumentName = "h"
 
-    override val helpText = """
+    override val helpText =
+        """
         Outputs this help text.
-        """.trimIndent()
+        """
+            .trimIndent()
 
     override fun setOption(option: Boolean, opts: O) {}
 }
