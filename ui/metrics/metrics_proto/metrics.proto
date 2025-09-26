@@ -188,6 +188,9 @@ message BuildConfig {
 
   // Whether the build used rewrapper.
   optional bool use_rewrapper = 11;
+
+  // If this was the first build in a cartfs workspace with a copied out/ dir.
+  optional bool cartfs_first_build_copied_out_dir = 12;
 }
 
 message SoongEnvVars {

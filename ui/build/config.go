@@ -752,6 +752,43 @@ func getNinjaWeightListSourceInMetric(s NinjaWeightListSource) *smpb.BuildConfig
 	}
 }
 
+// getCartfsCopiedOutDir returns true if .cartfs-copied file exists in the out
+// directory.
+func getCartfsFirstBuildCopiedOutDir(ourDir string) bool {
+	cartfsCopiedFile := filepath.Join(ourDir, ".cartfs-copied")
+	_, statErr := os.Stat(cartfsCopiedFile)
+
+	if errors.Is(statErr, os.ErrNotExist) {
+		return false
+	}
+
+	if statErr != nil {
+		bugLink := fmt.Sprintf("http://go/dx-source-bug?title=Error+statting+.cartfs-copied+file&assignee=samclewis@google.com&cc=samclewis@google.com&cc=ajp@google.com&description=%s", statErr.Error())
+		fmt.Fprintf(os.Stderr, `
+Error statting .cartfs-copied file. Please do two things:
+1) manually delete out/.cartfs-copied and retry the build.
+2) click this link to submit a prefilled bug report: %s
+`, bugLink)
+		os.Exit(1)
+	}
+
+	// If we reach here, statErr was nil, meaning the file exists.
+	// Attempt to remove it before returning true.
+	if removeErr := os.Remove(cartfsCopiedFile); removeErr != nil {
+		// It's unlikely we will ever hit this, but if we do, let's make it clear
+		// how to fix it and make it easy to report the bug.
+		bugLink := fmt.Sprintf("http://go/dx-source-bug?title=Error+removing+.cartfs-copied+file&assignee=samclewis@google.com&cc=samclewis@google.com&cc=ajp@google.com&description=%s", removeErr.Error())
+		fmt.Fprintf(os.Stderr, `
+Error removing .cartfs-copied file. Please do two things:
+1) manually delete out/.cartfs-copied and retry the build.
+2) click this link to submit a prefilled bug report: %s
+`, bugLink)
+		os.Exit(1)
+	}
+
+	return true
+}
+
 func buildConfig(config Config) *smpb.BuildConfig {
 	var soongEnvVars *smpb.SoongEnvVars
 	ensure := func() *smpb.SoongEnvVars {
@@ -777,10 +814,11 @@ func buildConfig(config Config) *smpb.BuildConfig {
 		ensure().SoongIncrementalAnalysis = proto.String(value)
 	}
 	c := &smpb.BuildConfig{
-		UseRbe:                proto.Bool(config.UseRBE()),
-		NinjaWeightListSource: getNinjaWeightListSourceInMetric(config.NinjaWeightListSource()),
-		SoongEnvVars:          soongEnvVars,
-		SoongOnly:             proto.Bool(config.soongOnlyRequested),
+		UseRbe:                       proto.Bool(config.UseRBE()),
+		NinjaWeightListSource:        getNinjaWeightListSourceInMetric(config.NinjaWeightListSource()),
+		SoongEnvVars:                 soongEnvVars,
+		SoongOnly:                    proto.Bool(config.soongOnlyRequested),
+		CartfsFirstBuildCopiedOutDir: proto.Bool(getCartfsFirstBuildCopiedOutDir(config.OutDir())),
 	}
 	c.Targets = append(c.Targets, config.arguments...)
 
