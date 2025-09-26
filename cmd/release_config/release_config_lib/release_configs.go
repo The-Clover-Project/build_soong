@@ -761,14 +761,35 @@ func (configs *ReleaseConfigs) Finalize(ctx *loadContext, targetRelease string) 
 			}
 		}
 
+		// Look for flag values for release configs that are not declared in `release_configs/`.
+		for k, names := range m.FlagValueDirs {
+			for _, rcName := range names {
+				if strings.HasSuffix(rcName, "_ro_snapshot") {
+					continue
+				}
+				rcc, ok := m.ReleaseConfigContributions[rcName]
+				if !ok || rcc.path == "" {
+					rcPath := filepath.Join(dirName, "release_configs", fmt.Sprintf("%s.textproto", rcName))
+					ctx.errorsChan <- fmt.Errorf("%q exists but %q does not contribute to %q (create %q)",
+						filepath.Join(dirName, k, rcName), dirName, rcName, rcPath)
+					continue
+				}
+			}
+		}
+
 		for name, rcc := range m.ReleaseConfigContributions {
 			if _, ok := configs.ReleaseConfigs[name]; !ok {
 				configs.ReleaseConfigs[name] = ReleaseConfigFactory(name, m.DirIndex)
 				configs.ReleaseConfigs[name].ReleaseConfigType = rcc.proto.GetReleaseConfigType()
 			}
 			config := configs.ReleaseConfigs[name]
-			if config.ReleaseConfigType != *rcc.proto.ReleaseConfigType {
-				ctx.errorsChan <- fmt.Errorf("%s mismatching ReleaseConfigType value %s", rcc.path, *rcc.proto.ReleaseConfigType)
+			if rcc.path == "" {
+				// There is no `release_configs/{name}.textproto`, but we have flag value overrides.
+				// That error message was generated when we iterated over m.FlagValueDirs above.
+				continue
+			}
+			if config.ReleaseConfigType != rcc.proto.GetReleaseConfigType() {
+				ctx.errorsChan <- fmt.Errorf("%s mismatching ReleaseConfigType value %s", rcc.path, rcc.proto.GetReleaseConfigType())
 				continue
 			}
 
@@ -781,20 +802,6 @@ func (configs *ReleaseConfigs) Finalize(ctx *loadContext, targetRelease string) 
 			config.AconfigFlagsOnly = config.AconfigFlagsOnly || rcc.proto.GetAconfigFlagsOnly()
 			config.DisallowLunchUse = config.DisallowLunchUse || rcc.proto.GetDisallowLunchUse()
 			config.Contributions = append(config.Contributions, rcc)
-		}
-		// Look for flag values for release configs that are not declared in `release_configs/`.
-		for k, names := range m.FlagValueDirs {
-			for _, rcName := range names {
-				if strings.HasSuffix(rcName, "_ro_snapshot") {
-					continue
-				}
-				rcPath := filepath.Join(dirName, "release_configs", fmt.Sprintf("%s.textproto", rcName))
-				if _, err := os.Stat(rcPath); err != nil {
-					ctx.errorsChan <- fmt.Errorf("%s exists but %s does not contribute to %s",
-						filepath.Join(dirName, k, rcName), dirName, rcName)
-					continue
-				}
-			}
 		}
 	}
 	for k := range buildFlagContainersMap {
