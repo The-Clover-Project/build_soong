@@ -92,6 +92,7 @@ type compiler interface {
 
 	stdLinkage(device bool) StdLinkage
 	noStdlibs() bool
+	forceStdlibs()
 
 	unstrippedOutputFilePath() android.Path
 	strippedOutputFilePath() android.OptionalPath
@@ -315,6 +316,10 @@ func (compiler *baseCompiler) SetDisabled() {
 
 func (compiler *baseCompiler) noStdlibs() bool {
 	return Bool(compiler.Properties.No_stdlibs)
+}
+
+func (compiler *baseCompiler) forceStdlibs() {
+	compiler.Properties.No_stdlibs = proptools.BoolPtr(false)
 }
 
 func (compiler *baseCompiler) preferRlib() bool {

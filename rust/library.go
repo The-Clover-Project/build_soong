@@ -296,6 +296,8 @@ func (library *libraryDecorator) rlibStd() bool {
 }
 
 func (library *libraryDecorator) setRlibStd() {
+	library.forceStdlibs()
+	library.MutatedProperties.VariantIsNoStd = false
 	library.MutatedProperties.VariantIsStaticStd = true
 }
 
@@ -305,6 +307,8 @@ func (library *libraryDecorator) setNoStd() {
 }
 
 func (library *libraryDecorator) setDylibStd() {
+	library.forceStdlibs()
+	library.MutatedProperties.VariantIsNoStd = false
 	library.MutatedProperties.VariantIsStaticStd = false
 }
 
@@ -1091,8 +1095,13 @@ func (libstdTransitionMutator) Split(ctx android.BaseModuleContext) []string {
 	if m, ok := ctx.Module().(*Module); ok && m.compiler != nil && !m.compiler.Disabled() {
 		// Only create a variant if a library is actually being built.
 		if library, ok := m.compiler.(libraryInterface); ok {
+			if ctx.Host() {
+				// Host builds don't have libcore available today
+				library.setRlibStd()
+			}
 			if library.sysroot() {
 				// Sysroot libraries have a trivial stdlinkage
+				library.setNoStd()
 				return []string{""}
 			}
 			if m.compiler.noStdlibs() {
@@ -1183,6 +1192,7 @@ func (library *libraryDecorator) variantProperties() *VariantLibraryProperties {
 
 func (library *libraryDecorator) begin(ctx BaseModuleContext) {
 	library.baseCompiler.begin(ctx)
+
 	if overrides := library.variantProperties(); overrides != nil {
 		if err := proptools.ExtendMatchingProperties(ctx.Module().GetProperties(), overrides, nil, proptools.OrderReplace); err != nil {
 			panic(fmt.Errorf("unable to apply overrides: %v", err))
