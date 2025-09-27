@@ -744,7 +744,7 @@ func (a *AndroidApp) aaptBuildActions(ctx android.ModuleContext) {
 	}
 
 	// Use non final ids if we are doing optimized shrinking and are using R8.
-	nonFinalIds := a.dexProperties.optimizedResourceShrinkingEnabled(ctx) && a.dexer.effectiveOptimizeEnabled(ctx)
+	nonFinalIds := a.dexer.optimizedResourceShrinkingEnabled(ctx) && a.dexer.effectiveOptimizeEnabled(ctx)
 
 	aconfigTextFilePaths := getAconfigFilePaths(ctx)
 
@@ -782,7 +782,7 @@ func (a *AndroidApp) proguardBuildActions(ctx android.ModuleContext) {
 	staticLibProguardFlagFiles = android.FirstUniquePaths(staticLibProguardFlagFiles)
 
 	a.Module.extraProguardFlagsFiles = append(a.Module.extraProguardFlagsFiles, staticLibProguardFlagFiles...)
-	if !(a.dexProperties.optimizedResourceShrinkingEnabled(ctx)) {
+	if !(a.dexer.optimizedResourceShrinkingEnabled(ctx)) {
 		// When using the optimized shrinking the R8 enqueuer will traverse the xml files that become
 		// live for code references and (transitively) mark these as live.
 		// In this case we explicitly don't wan't the aapt2 generated keep files (which would keep the now
@@ -821,7 +821,7 @@ func (a *AndroidApp) dexBuildActions(ctx android.ModuleContext) (android.Path, a
 
 	javaInfo := &JavaInfo{}
 	if ctx.ModuleName() != "framework-res" {
-		if a.dexProperties.resourceShrinkingEnabled(ctx) {
+		if a.dexer.resourceShrinkingEnabled(ctx) {
 			protoFile := android.PathForModuleOut(ctx, packageResources.Base()+".proto.apk")
 			aapt2Convert(ctx, protoFile, packageResources, "proto")
 			a.dexer.resourcesInput = android.OptionalPathForPath(protoFile)
@@ -841,7 +841,7 @@ func (a *AndroidApp) dexBuildActions(ctx android.ModuleContext) (android.Path, a
 		}
 
 		javaInfo = a.Module.compile(ctx)
-		if a.dexProperties.resourceShrinkingEnabled(ctx) {
+		if a.dexer.resourceShrinkingEnabled(ctx) {
 			binaryResources := android.PathForModuleOut(ctx, packageResources.Base()+".binary.out.apk")
 			aapt2Convert(ctx, binaryResources, a.dexer.resourcesOutput.Path(), "binary")
 			packageResources = binaryResources
