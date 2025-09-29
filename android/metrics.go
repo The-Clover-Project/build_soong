@@ -24,8 +24,6 @@ import (
 
 	"github.com/google/blueprint"
 	"github.com/google/blueprint/metrics"
-	"github.com/google/blueprint/proptools"
-
 	"google.golang.org/protobuf/proto"
 
 	soong_metrics_proto "android/soong/ui/metrics/metrics_proto"
@@ -84,7 +82,7 @@ func (soongMetricsSingleton) GenerateBuildActions(ctx SingletonContext) {
 			metrics.incrementalModules.cacheHit++
 
 			for i, unRestored := range info.HasUnrestoredProvider {
-				if info.ProviderInitialValueHashes[i] != proptools.ZeroHash && blueprint.ProviderMutator(i) == "" {
+				if info.ProviderInitialValueHashes[i] != 0 && blueprint.ProviderMutator(i) == "" {
 					metrics.incrementalModules.providersCached[blueprint.ProviderType(i)]++
 					metrics.incrementalModules.totalProvidersCached++
 					if !unRestored {
