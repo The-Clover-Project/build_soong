@@ -203,8 +203,10 @@ func TestCompareInternalState(t *testing.T) {
 				},
 			},
 			Expected: &FileList{
-				Name:      "foo",
-				Additions: []string{"file1"},
+				Name: "foo",
+				Additions: []FileList{
+					FileList{Name: "file1"},
+				},
 			},
 		},
 		{
@@ -227,8 +229,12 @@ func TestCompareInternalState(t *testing.T) {
 				},
 			},
 			Expected: &FileList{
-				Name:      "foo",
-				Additions: []string{"file0", "file1", "file2"},
+				Name: "foo",
+				Additions: []FileList{
+					FileList{Name: "file0"},
+					FileList{Name: "file1"},
+					FileList{Name: "file2"},
+				},
 			},
 		},
 		{
@@ -257,8 +263,12 @@ func TestCompareInternalState(t *testing.T) {
 				},
 			},
 			Expected: &FileList{
-				Name:      "foo",
-				Additions: []string{"file0", "file1", "file2"},
+				Name: "foo",
+				Additions: []FileList{
+					FileList{Name: "file0"},
+					FileList{Name: "file1"},
+					FileList{Name: "file2"},
+				},
 			},
 		},
 		{
@@ -280,9 +290,9 @@ func TestCompareInternalState(t *testing.T) {
 			},
 			Expected: &FileList{
 				Name:      "foo",
-				Additions: []string{"file3"},
+				Additions: []FileList{FileList{Name: "file3"}},
 				Changes:   []FileList{FileList{Name: "file1"}},
-				Deletions: []string{"file2"},
+				Deletions: []FileList{FileList{Name: "file2"}},
 			},
 		},
 		{
@@ -308,9 +318,9 @@ func TestCompareInternalState(t *testing.T) {
 				Name: "bar",
 				Changes: []FileList{FileList{
 					Name:      "file1",
-					Additions: []string{"innerA"},
+					Additions: []FileList{FileList{Name: "innerA"}},
 					Changes:   []FileList{FileList{Name: "innerC"}},
-					Deletions: []string{"innerD"},
+					Deletions: []FileList{FileList{Name: "innerD"}},
 				}},
 			},
 		},

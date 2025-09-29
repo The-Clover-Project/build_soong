@@ -63,9 +63,14 @@ func TestFlattenChanges(t *testing.T) {
 	fileList := &fid_lib.FileList{
 		Changes: []fid_lib.FileList{
 			{
-				Name:      "out/soong/dummy/my/fav/code-target.jar",
-				Additions: []string{"foo/bar/added.class", "foo/bar/added$1.class"},
-				Deletions: []string{"foo/bar/deleted.class"},
+				Name: "out/soong/dummy/my/fav/code-target.jar",
+				Additions: []fid_lib.FileList{
+					fid_lib.FileList{Name: "foo/bar/added.class"},
+					fid_lib.FileList{Name: "foo/bar/added$1.class"},
+				},
+				Deletions: []fid_lib.FileList{
+					fid_lib.FileList{Name: "foo/bar/deleted.class"},
+				},
 				Changes: []fid_lib.FileList{
 					{Name: "foo/bar/changed.class"},
 					{Name: "foo/bar/changed$1.class"},
