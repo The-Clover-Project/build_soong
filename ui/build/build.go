@@ -436,12 +436,24 @@ func Build(ctx Context, config Config) {
 
 		runUpdateApi(ctx, config)
 		runUpdateAidlApi(ctx, config)
+		createCompDbSymlink(ctx, config)
 	}
 
 	if what&RunDistActions != 0 {
 		runDistActions(ctx, config)
 	}
 	done = true
+}
+
+func createCompDbSymlink(ctx Context, config Config) {
+	if finalLinkDir, ok := config.environ.Get("SOONG_LINK_COMPDB_TO"); ok && finalLinkDir != "" {
+		finalLinkPath := filepath.Join(finalLinkDir, "compile_commands.json")
+		os.Remove(finalLinkPath)
+		compDBFilePath := filepath.Join(config.SoongOutDir(), "development/ide/compdb/compile_commands.json")
+		if err := os.Symlink(compDBFilePath, finalLinkPath); err != nil {
+			ctx.Printf("Unable to symlink %s to %s: %s", compDBFilePath, finalLinkPath, err)
+		}
+	}
 }
 
 func updateBuildIdDir(ctx Context, config Config) {

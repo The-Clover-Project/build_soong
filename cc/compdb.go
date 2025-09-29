@@ -48,7 +48,6 @@ const (
 	// Environment variables used to modify behavior of this singleton.
 	envVariableGenerateCompdb          = "SOONG_GEN_COMPDB"
 	envVariableGenerateCompdbDebugInfo = "SOONG_GEN_COMPDB_DEBUG"
-	envVariableCompdbLink              = "SOONG_LINK_COMPDB_TO"
 	envVariableCompdbModules           = "SOONG_GEN_COMPDB_MODULES"
 )
 
@@ -116,14 +115,6 @@ func (c *compdbGeneratorSingleton) GenerateBuildActions(ctx android.SingletonCon
 	}
 	if err := w.Encode(v); err != nil {
 		log.Fatalf("Failed to encode: %s", err)
-	}
-
-	if finalLinkDir := ctx.Config().Getenv(envVariableCompdbLink); finalLinkDir != "" {
-		finalLinkPath := filepath.Join(finalLinkDir, compdbFilename)
-		os.Remove(finalLinkPath)
-		if err := os.Symlink(compDBFile.String(), finalLinkPath); err != nil {
-			log.Fatalf("Unable to symlink %s to %s: %s", compDBFile, finalLinkPath, err)
-		}
 	}
 }
 
