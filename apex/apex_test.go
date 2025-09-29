@@ -37,6 +37,7 @@ import (
 	prebuilt_etc "android/soong/etc"
 	"android/soong/filesystem"
 	"android/soong/java"
+	"android/soong/kernel"
 	"android/soong/rust"
 	"android/soong/sh"
 )
@@ -126,6 +127,7 @@ var prepareForApexTest = android.GroupFixturePreparers(
 	rust.PrepareForTestWithRustDefaultModules,
 	sh.PrepareForTestWithShBuildComponents,
 	codegen.PrepareForTestWithAconfigBuildComponents,
+	kernel.PrepareForTestWithPrebuiltKernelModules,
 
 	PrepareForTestWithApexBuildComponents,
 
@@ -3548,6 +3550,40 @@ func TestApex_withPrebuiltFirmware(t *testing.T) {
 			})
 		})
 	}
+}
+
+func TestApex_withPrebuiltKernelModules(t *testing.T) {
+	t.Parallel()
+	ctx := testApex(t, `
+		apex {
+			name: "myapex",
+			key: "myapex.key",
+			kernel_modules: ["mykernelmodules"],
+			updatable: false,
+			vendor: true,
+		}
+		apex_key {
+			name: "myapex.key",
+			public_key: "testkey.avbpubkey",
+			private_key: "testkey.pem",
+		}
+		prebuilt_kernel_modules {
+			name: "mykernelmodules",
+			srcs: ["*.ko"],
+		}
+	`,
+		withFiles(android.MockFS{
+			"mod1.ko": nil,
+			"mod2.ko": nil,
+		}))
+	ensureExactContents(t, ctx, "myapex", "android_common_myapex", []string{
+		"lib/modules/mod1.ko",
+		"lib/modules/mod2.ko",
+		"lib/modules/modules.alias",
+		"lib/modules/modules.dep",
+		"lib/modules/modules.load",
+		"lib/modules/modules.softdep",
+	})
 }
 
 func TestAndroidMk_VendorApexRequired(t *testing.T) {
