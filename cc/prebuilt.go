@@ -34,6 +34,7 @@ func RegisterPrebuiltBuildComponents(ctx android.RegistrationContext) {
 	ctx.RegisterModuleType("cc_prebuilt_test_library_shared", PrebuiltSharedTestLibraryFactory)
 	ctx.RegisterModuleType("cc_prebuilt_object", PrebuiltObjectFactory)
 	ctx.RegisterModuleType("cc_prebuilt_binary", PrebuiltBinaryFactory)
+	ctx.RegisterModuleType("cc_prebuilt_test_binary", PrebuiltTestBinaryFactory)
 }
 
 type prebuiltLinkerInterface interface {
@@ -516,6 +517,12 @@ func (p *prebuiltBinaryLinker) binary() bool {
 // device's directory, for both the host and device
 func PrebuiltBinaryFactory() android.Module {
 	module, _ := NewPrebuiltBinary(android.HostAndDeviceSupported)
+	return module.Init()
+}
+
+func PrebuiltTestBinaryFactory() android.Module {
+	module, binary := NewPrebuiltBinary(android.HostAndDeviceSupported)
+	binary.baseInstaller = NewTestInstaller()
 	return module.Init()
 }
 
