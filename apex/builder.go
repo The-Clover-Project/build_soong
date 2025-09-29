@@ -240,7 +240,7 @@ var (
 	apexAconfigFlagsPbRule = pctx.StaticRule("apexAconfigFlagsPbRule", blueprint.RuleParams{
 		Command: `${aconfig} dump-cache --dedup --format protobuf --out ${out} ` +
 			`--filter container:${container}+namespace:!${beta_namespace} ${cache_files}`,
-		CommandDeps: []string{"${aconfig}",},
+		CommandDeps: []string{"${aconfig}"},
 		Description: "create aconfig_flags.pb file",
 	}, "container", "beta_namespace", "cache_files")
 )
@@ -268,8 +268,8 @@ func (a *apexBundle) buildAconfigFiles(ctx android.ModuleContext) []apexFile {
 	if len(aconfigFiles) > 0 {
 		apexAconfigFile := android.PathForModuleOut(ctx, "aconfig_flags.pb")
 		if ctx.Config().ReleaseRemoveBetaFlagsFromAconfigFlagsPb() {
-			beta_namespace := "";
-			if a.overridableProperties.Beta_namespace  != nil {
+			beta_namespace := ""
+			if a.overridableProperties.Beta_namespace != nil {
 				beta_namespace = *(a.overridableProperties.Beta_namespace)
 			}
 			ctx.Build(pctx, android.BuildParams{
@@ -278,9 +278,9 @@ func (a *apexBundle) buildAconfigFiles(ctx android.ModuleContext) []apexFile {
 				Output:      apexAconfigFile,
 				Description: "aggregate all dependent aconfig caches",
 				Args: map[string]string{
-					"container": ctx.ModuleName(),
+					"container":      ctx.ModuleName(),
 					"beta_namespace": beta_namespace,
-					"cache_files": android.JoinPathsWithPrefix(aconfigFiles, "--cache "),
+					"cache_files":    android.JoinPathsWithPrefix(aconfigFiles, "--cache "),
 				},
 			})
 		} else {
