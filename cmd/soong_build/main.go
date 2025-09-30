@@ -53,7 +53,7 @@ var (
 const configCacheFile = "config.cache"
 
 type ConfigCache struct {
-	EnvDepsHash                  proptools.Hash
+	EnvDepsHash                  uint64
 	ProductVariableFileTimestamp int64
 	SoongBuildFileTimestamp      int64
 }
