@@ -1720,6 +1720,7 @@ func (f *filesystemCreator) GenerateAndroidBuildActions(ctx android.ModuleContex
 	for _, partitionType := range partitions.types() {
 		if android.InList(partitionType, []string{
 			"debug_ramdisk",
+			"test_harness_ramdisk",
 			"vendor_ramdisk-debug",
 			"vendor_ramdisk-test-harness",
 			"vendor_kernel_ramdisk",
