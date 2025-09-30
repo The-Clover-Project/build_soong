@@ -33,7 +33,7 @@ type KotlinCompileData struct {
 }
 
 const inputDeltaCmd = `${config.FindInputDeltaCmd} --target "$out" ` +
-	`--inputs_file "$out.rsp" --new_state "$newStateFile" --prior_state "$priorStateFile" > $sourceDeltaFile`
+	`--inputs_file "$out.rsp" --new_state "$newStateFile" --prior_state "$priorStateFile" --inspect $srcJars > $sourceDeltaFile`
 
 const nonIncKotlinCmd = `rm -rf "$classesDir" "$headerClassesDir" "$srcJarDir" "$kotlinBuildFile" "$emptyDir" && ` +
 	`mkdir -p "$classesDir" "$headerClassesDir" "$srcJarDir" "$emptyDir" && ` +
@@ -108,6 +108,7 @@ var kotlinIncremental = pctx.AndroidRemoteStaticRule("kotlin-incremental", andro
 			` -source-delta-file=$sourceDeltaFile` +
 			` -kotlin-home=$emptyDir ` +
 			` -root-dir=$incrementalRootDir` +
+			` -src-jars-dir=$srcJarDir` +
 			` -output-dir=$outputDir` +
 			` -build-dir=$buildDir ` +
 			` -working-dir=$workDir ` +
@@ -290,6 +291,7 @@ func (j *Module) kotlinCompile(ctx android.ModuleContext, outputFile, headerOutp
 	outputDir := "classes"
 	buildDir := "build"
 	workDir := "work"
+	srcJarDir := "srcJars"
 	args := map[string]string{
 		"classpath":          classpathRspFile.String(),
 		"friendPathsArg":     flags.kotlincFriendPathsArg,
@@ -300,7 +302,7 @@ func (j *Module) kotlinCompile(ctx android.ModuleContext, outputFile, headerOutp
 		"classesDir":         android.PathForModuleOut(ctx, "kotlinc", outputDir).String(),
 		"headerClassesDir":   android.PathForModuleOut(ctx, "kotlinc", "header_classes").String(),
 		"headerJar":          headerOutputFile.String(),
-		"srcJarDir":          android.PathForModuleOut(ctx, "kotlinc", "srcJars").String(),
+		"srcJarDir":          android.PathForModuleOut(ctx, "kotlinc", srcJarDir).String(),
 		"kotlinBuildFile":    android.PathForModuleOut(ctx, "kotlinc-build.xml").String(),
 		"emptyDir":           android.PathForModuleOut(ctx, "kotlinc", "empty").String(),
 		"kotlinJvmTarget":    flags.javaVersion.StringForKotlinc(),
