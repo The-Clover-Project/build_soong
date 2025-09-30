@@ -51,12 +51,15 @@ func init() {
 }
 
 type VariantLibraryProperties struct {
-	Enabled  *bool                            `android:"arch_variant"`
-	Srcs     proptools.Configurable[[]string] `android:"path,arch_variant"`
-	Features proptools.Configurable[[]string] `android:"arch_variant"`
-	Rustlibs proptools.Configurable[[]string] `android:"arch_variant"`
-	Cfgs     proptools.Configurable[[]string] `android:"arch_variant"`
-	Flags    []string                         `android:"arch_variant"`
+	Enabled           *bool                            `android:"arch_variant"`
+	Srcs              proptools.Configurable[[]string] `android:"path,arch_variant"`
+	Features          proptools.Configurable[[]string] `android:"arch_variant"`
+	Rustlibs          proptools.Configurable[[]string] `android:"arch_variant"`
+	Static_libs       proptools.Configurable[[]string] `android:"arch_variant"`
+	Whole_static_libs proptools.Configurable[[]string] `android:"arch_variant"`
+	Shared_libs       proptools.Configurable[[]string] `android:"arch_variant"`
+	Cfgs              proptools.Configurable[[]string] `android:"arch_variant"`
+	Flags             []string                         `android:"arch_variant"`
 }
 
 type LibraryCompilerProperties struct {
