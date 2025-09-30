@@ -639,6 +639,11 @@ func (library *libraryDecorator) cfgFlags(ctx ModuleContext, flags Flags) Flags 
 // Common flags applied to all libraries irrespective of properties or variant should be included here
 func CommonLibraryCompilerFlags(ctx android.ModuleContext, flags Flags) Flags {
 	flags.RustFlags = append(flags.RustFlags, "-C metadata="+ctx.ModuleName())
+	if mod, ok := ctx.Module().(*Module); ok {
+		if lib, ok := mod.compiler.(*libraryDecorator); ok {
+			flags.RustFlags = append(flags.RustFlags, "-C metadata="+lib.stdLinkage(ctx.Device()).variationName())
+		}
+	}
 
 	return flags
 }
