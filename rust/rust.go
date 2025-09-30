@@ -2116,6 +2116,14 @@ func (mod *Module) addVariantDep(ctx DepsContext, depTags []dependencyTag, lib s
 			}
 		}
 	}
+	// To allow migration of custom nostd modules to no_std variants, temporarily support
+	// stripping _nostd suffixes if the library is not present.
+	// This is made safe by the enforcement that no_std libraries can no longer depend on
+	// stdful libraries, which works transitively.
+	if strings.HasSuffix(lib, "_nostd") {
+		mod.addVariantDep(ctx, depTags, strings.TrimSuffix(lib, "_nostd"))
+		return
+	}
 	if !ctx.Config().AllowMissingDependencies() {
 		ctx.ModuleErrorf("unable to find allowed variation for lib %#v - stdLinkage %v depTags %v", lib, mod.stdLinkageOptions(ctx), depTags)
 	}

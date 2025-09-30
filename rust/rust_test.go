@@ -875,3 +875,22 @@ func TestRustLinkPropagation(t *testing.T) {
 			libdylib3.Args["linkFlags"])
 	}
 }
+
+func TestNoStdFallback(t *testing.T) {
+	ctx := testRust(t, `
+		rust_library {
+			name: "libfoo",
+			crate_name: "foo",
+			srcs: ["foo.rs"],
+		}
+		rust_binary {
+			name: "foobar",
+			srcs: ["foo.rs"],
+			rlibs: ["libfoo_nostd"],
+		}
+	`)
+	module := ctx.ModuleForTests(t, "foobar", "android_arm64_armv8-a").Module().(*Module)
+	if !android.InList("libfoo", module.Properties.AndroidMkRlibs) {
+		t.Errorf("nostd fallback dependency not detected (dependency missing from AndroidMkRlibs)")
+	}
+}
