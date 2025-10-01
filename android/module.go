@@ -3437,6 +3437,10 @@ func (c *buildTargetSingleton) GenerateBuildActions(ctx SingletonContext) {
 		if info.InstallTarget != nil {
 			modulesInDir[info.BlueprintDir] = append(modulesInDir[info.BlueprintDir], info.InstallTarget)
 		}
+
+		if info.ModulePhonyTarget != nil {
+			modulesInDir[info.BlueprintDir] = append(modulesInDir[info.BlueprintDir], info.ModulePhonyTarget)
+		}
 	})
 
 	if !ctx.Config().UnbundledBuildImage() {
