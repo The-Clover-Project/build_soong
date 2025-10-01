@@ -1155,10 +1155,9 @@ type Module struct {
 	sourceProperties android.SourceProperties
 
 	// initialize before calling Init
-	hod         android.HostOrDeviceSupported
-	multilib    android.Multilib
-	testModule  bool
-	incremental bool
+	hod        android.HostOrDeviceSupported
+	multilib   android.Multilib
+	testModule bool
 
 	// Allowable SdkMemberTypes of this module type.
 	sdkMemberTypes []android.SdkMemberType
@@ -1223,7 +1222,7 @@ type Module struct {
 }
 
 func (c *Module) IncrementalSupported() bool {
-	return c.incremental
+	return true
 }
 
 var _ blueprint.Incremental = (*Module)(nil)
@@ -2026,7 +2025,6 @@ func newModule(hod android.HostOrDeviceSupported, multilib android.Multilib) *Mo
 	module.lto = &lto{}
 	module.afdo = &afdo{}
 	module.orderfile = &orderfile{}
-	module.incremental = true
 	return module
 }
 
