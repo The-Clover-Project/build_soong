@@ -73,7 +73,7 @@ var PrepareForTestWithShBuildComponents = android.GroupFixturePreparers(
 
 type shBinaryProperties struct {
 	// Source file of this prebuilt.
-	Src *string `android:"path,arch_variant"`
+	Src proptools.Configurable[string] `android:"path,arch_variant"`
 
 	// optional subdirectory under which this file is installed into
 	Sub_dir *string `android:"arch_variant"`
@@ -300,11 +300,13 @@ func (s *ShBinary) InstallInRecovery() bool {
 }
 
 func (s *ShBinary) generateAndroidBuildActions(ctx android.ModuleContext) {
-	if s.properties.Src == nil {
+	src := s.properties.Src.Get(ctx)
+
+	if src.IsEmpty() {
 		ctx.PropertyErrorf("src", "missing prebuilt source file")
 	}
 
-	s.sourceFilePath = android.PathForModuleSrc(ctx, proptools.String(s.properties.Src))
+	s.sourceFilePath = android.PathForModuleSrc(ctx, src.Get())
 	filename := proptools.String(s.properties.Filename)
 	filenameFromSrc := proptools.Bool(s.properties.Filename_from_src)
 	if filename == "" {
