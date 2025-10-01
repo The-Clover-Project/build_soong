@@ -21,6 +21,7 @@ bootstrap_go_package {
         "soong-etc",
         "soong-filesystem",
         "soong-genrule",
+        "soong-kernel",
         "soong-java",
         "soong-provenance",
         "soong-python",

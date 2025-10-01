@@ -114,9 +114,6 @@ type apexBundleProperties struct {
 	// List of platform_compat_config files that are embedded inside this APEX bundle.
 	Compat_configs []string
 
-	// List of filesystem images that are embedded inside this APEX bundle.
-	Filesystems []string
-
 	// List of module names which we don't want to add as transitive deps. This can be used as
 	// a workaround when the current implementation collects more than necessary. For example,
 	// Rust binaries with prefer_rlib:true add unnecessary dependencies.
@@ -207,6 +204,9 @@ type ApexNativeDependencies struct {
 	// List of prebuilt_etcs that are embedded inside this APEX bundle.
 	Prebuilts proptools.Configurable[[]string]
 
+	// List of prebuilt_kernel_modules that are embedded inside this APEX bundle.
+	Kernel_modules []string
+
 	// List of native libraries to exclude from this APEX.
 	Exclude_native_shared_libs []string
 
@@ -227,6 +227,9 @@ type ApexNativeDependencies struct {
 
 	// List of prebuilt_etcs to exclude from this APEX bundle.
 	Exclude_prebuilts []string
+
+	// List of prebuilt_kernel_modules to exclude from this APEX bundle.
+	Exclude_kernel_modules []string
 }
 
 type ResolvedApexNativeDependencies struct {
@@ -251,6 +254,9 @@ type ResolvedApexNativeDependencies struct {
 	// List of prebuilt_etcs that are embedded inside this APEX bundle.
 	Prebuilts []string
 
+	// List of prebuilt_kernel_modules that are embedded inside this APEX bundle.
+	Kernel_modules []string
+
 	// List of native libraries to exclude from this APEX.
 	Exclude_native_shared_libs []string
 
@@ -271,6 +277,9 @@ type ResolvedApexNativeDependencies struct {
 
 	// List of prebuilt_etcs to exclude from this APEX bundle.
 	Exclude_prebuilts []string
+
+	// List of prebuilt_kernel_modules to exclude from this APEX bundle.
+	Exclude_kernel_modules []string
 }
 
 // Merge combines another ApexNativeDependencies into this one
@@ -282,6 +291,7 @@ func (a *ResolvedApexNativeDependencies) Merge(ctx android.BaseModuleContext, b 
 	a.Tests = append(a.Tests, b.Tests...)
 	a.Filesystems = append(a.Filesystems, b.Filesystems...)
 	a.Prebuilts = append(a.Prebuilts, b.Prebuilts.GetOrDefault(ctx, nil)...)
+	a.Kernel_modules = append(a.Kernel_modules, b.Kernel_modules...)
 
 	a.Exclude_native_shared_libs = append(a.Exclude_native_shared_libs, b.Exclude_native_shared_libs...)
 	a.Exclude_jni_libs = append(a.Exclude_jni_libs, b.Exclude_jni_libs...)
@@ -290,6 +300,7 @@ func (a *ResolvedApexNativeDependencies) Merge(ctx android.BaseModuleContext, b 
 	a.Exclude_tests = append(a.Exclude_tests, b.Exclude_tests...)
 	a.Exclude_filesystems = append(a.Exclude_filesystems, b.Exclude_filesystems...)
 	a.Exclude_prebuilts = append(a.Exclude_prebuilts, b.Exclude_prebuilts...)
+	a.Exclude_kernel_modules = append(a.Exclude_kernel_modules, b.Exclude_kernel_modules...)
 }
 
 type apexMultilibProperties struct {
@@ -772,16 +783,17 @@ var (
 	fsTag          = &dependencyTag{name: "filesystem", payload: true}
 	bcpfTag        = &dependencyTag{name: "bootclasspathFragment", payload: true, sourceOnly: true, memberType: java.BootclasspathFragmentSdkMemberType}
 	// The dexpreopt artifacts of apex system server jars are installed onto system image.
-	sscpfTag        = &dependencyTag{name: "systemserverclasspathFragment", payload: true, sourceOnly: true, memberType: java.SystemServerClasspathFragmentSdkMemberType, installable: true}
-	compatConfigTag = &dependencyTag{name: "compatConfig", payload: true, sourceOnly: true, memberType: java.CompatConfigSdkMemberType}
-	javaLibTag      = &dependencyTag{name: "javaLib", payload: true}
-	jniLibTag       = &dependencyTag{name: "jniLib", payload: true}
-	keyTag          = &dependencyTag{name: "key"}
-	prebuiltTag     = &dependencyTag{name: "prebuilt", payload: true}
-	rroTag          = &dependencyTag{name: "rro", payload: true}
-	sharedLibTag    = &dependencyTag{name: "sharedLib", payload: true}
-	testTag         = &dependencyTag{name: "test", payload: true}
-	shBinaryTag     = &dependencyTag{name: "shBinary", payload: true}
+	sscpfTag         = &dependencyTag{name: "systemserverclasspathFragment", payload: true, sourceOnly: true, memberType: java.SystemServerClasspathFragmentSdkMemberType, installable: true}
+	compatConfigTag  = &dependencyTag{name: "compatConfig", payload: true, sourceOnly: true, memberType: java.CompatConfigSdkMemberType}
+	javaLibTag       = &dependencyTag{name: "javaLib", payload: true}
+	jniLibTag        = &dependencyTag{name: "jniLib", payload: true}
+	keyTag           = &dependencyTag{name: "key"}
+	prebuiltTag      = &dependencyTag{name: "prebuilt", payload: true}
+	rroTag           = &dependencyTag{name: "rro", payload: true}
+	sharedLibTag     = &dependencyTag{name: "sharedLib", payload: true}
+	testTag          = &dependencyTag{name: "test", payload: true}
+	shBinaryTag      = &dependencyTag{name: "shBinary", payload: true}
+	kernelModulesTag = &dependencyTag{name: "kernelModule", payload: true}
 )
 
 type fragmentInApexDepTag struct {
@@ -827,6 +839,8 @@ func addDependenciesForNativeModules(ctx android.BottomUpMutatorContext, nativeM
 		android.RemoveListFromList(nativeModules.Filesystems, nativeModules.Exclude_filesystems)...)
 	ctx.AddFarVariationDependencies(target.Variations(), prebuiltTag,
 		android.RemoveListFromList(nativeModules.Prebuilts, nativeModules.Exclude_prebuilts)...)
+	ctx.AddFarVariationDependencies(target.Variations(), kernelModulesTag,
+		android.RemoveListFromList(nativeModules.Kernel_modules, nativeModules.Exclude_kernel_modules)...)
 }
 
 func (a *apexBundle) combineProperties(ctx android.BottomUpMutatorContext) {
@@ -887,6 +901,7 @@ func (a *apexBundle) DepsMutator(ctx android.BottomUpMutatorContext) {
 			Rust_dyn_libs:      a.properties.Rust_dyn_libs,
 			Tests:              a.properties.Tests,
 			Jni_libs:           a.properties.Jni_libs,
+			Kernel_modules:     a.properties.Kernel_modules,
 		})
 
 		// Add native modules targeting the first ABI When multilib.* is omitted for
@@ -1981,6 +1996,16 @@ func (a *apexBundle) depVisitor(vctx *visitorContext, ctx android.ModuleContext,
 				}
 			} else {
 				ctx.PropertyErrorf("prebuilts", "%q is not a prebuilt_etc module", depName)
+			}
+		case kernelModulesTag:
+			if _, ok := android.OtherModuleProvider(ctx, child, android.PrebuiltKernelModulesComplianceMetadataProvider); ok {
+				for _, ps := range android.OtherModuleProviderOrDefault(ctx, child, android.InstallFilesProvider).PackagingSpecs {
+					src := ps.SrcPath()
+					dir := path.Dir(ps.RelPathInPackage())
+					vctx.filesInfo = append(vctx.filesInfo, newApexFile(ctx, src, commonInfo.BaseModuleName, dir, etc, child))
+				}
+			} else {
+				ctx.PropertyErrorf("kernel_modules", "%q is not a prebuilt_kernel_modules module", depName)
 			}
 		case compatConfigTag:
 			if compatConfig, ok := android.OtherModuleProvider(ctx, child, java.PlatformCompatConfigInfoProvider); ok {

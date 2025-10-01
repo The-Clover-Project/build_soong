@@ -35,6 +35,8 @@ func registerKernelBuildComponents(ctx android.RegistrationContext) {
 	ctx.RegisterModuleType("prebuilt_kernel_modules", PrebuiltKernelModulesFactory)
 }
 
+var PrepareForTestWithPrebuiltKernelModules = android.FixtureRegisterWithContext(registerKernelBuildComponents)
+
 type prebuiltKernelModules struct {
 	android.ModuleBase
 
