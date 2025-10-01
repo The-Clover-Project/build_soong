@@ -305,6 +305,7 @@ type ProductVariables struct {
 	UseRBEJAVAC                  *bool    `json:",omitempty"`
 	UseRBER8                     *bool    `json:",omitempty"`
 	UseRBED8                     *bool    `json:",omitempty"`
+	RBEContainerImage            *string  `json:",omitempty"`
 	Debuggable                   *bool    `json:",omitempty"`
 	Eng                          *bool    `json:",omitempty"`
 	Treble_linker_namespaces     *bool    `json:",omitempty"`

@@ -1608,6 +1608,10 @@ func (c *config) UseRBEJAVAC() bool {
 	return Bool(c.productVariables.UseRBEJAVAC) && c.UseREWrapper()
 }
 
+func (c *config) RBEContainerImage() string {
+	return String(c.productVariables.RBEContainerImage)
+}
+
 func (c *config) UseRBER8() bool {
 	return Bool(c.productVariables.UseRBER8) && c.UseREWrapper()
 }

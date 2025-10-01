@@ -45,6 +45,10 @@ func runNinjaForBuild(ctx Context, config Config) {
 // Siso will invoke ${SISO_CREDENTIAL_HELPER} with no args, so put the actual credhelper command
 // invocation in `soong-convert-command`.
 func createSisoCredsHelper(ctx Context, config Config, cmd *Cmd, cr *credRefresher) error {
+	if cr.path == "" {
+		cmd.Environment.Set("SISO_CREDENTIAL_HELPER", "google-application-default")
+		return nil
+	}
 	cmd.Environment.Set("SISO_CREDENTIAL_HELPER", "build/soong/scripts/siso-creds-helper.py")
 	cacheDir := config.rbeCacheDir()
 	args := []string{cr.path, cr.args, "--cache_dir", cacheDir}
@@ -102,7 +106,7 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 			"--local_jobs", strconv.Itoa(config.Parallel()),
 		}
 		if value := config.SisoConfigDir(); value != "" {
-			value = maybeCreateSisoConfigDir(ctx, config, value)
+			value = createSisoConfigDir(ctx, config, value)
 			args = append(args, fmt.Sprintf("--config_repo_dir=%s", value))
 		}
 		// b/374179435
@@ -144,11 +148,14 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 			var err error
 			cr, err = newCredRefresher(ctx, config)
 			if err != nil {
-				ctx.Fatalf("Failed to find credential helper: %v\n", err)
+				ctx.Fatalf("Failed to initialize credential helper: %v\n", err)
 			}
-			quit := make(chan bool)
-			defer close(quit)
-			go cr.run(ctx, quit)
+			// If there is no helper path, then don't run the credential refresher.
+			if cr.path == "" {
+				quit := make(chan bool)
+				defer close(quit)
+				go cr.run(ctx, quit)
+			}
 		default:
 			ctx.Printf("local only\n")
 		}
