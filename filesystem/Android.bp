@@ -47,6 +47,7 @@ bootstrap_go_package {
         "system_image.go",
         "system_other.go",
         "vbmeta.go",
+        "vendor_module_check.go",
         "testing.go",
         "tzsw.go",
     ],
@@ -54,6 +55,7 @@ bootstrap_go_package {
         "filesystem_test.go",
         "find_shareduid_violation_check_test.go",
         "host_init_verifier_check_test.go",
+        "vendor_module_check_test.go",
     ],
     pluginFor: ["soong_build"],
 }

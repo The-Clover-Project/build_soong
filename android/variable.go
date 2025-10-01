@@ -814,6 +814,11 @@ type PartitionVariables struct {
 	MinimalFontFootprint bool `json:",omitempty"`
 
 	CustomImagesPartitions []string `json:",omitempty"`
+
+	ProductRestrictVendorFiles       string   `json:",omitempty"`
+	VendorProductRestrictVendorFiles string   `json:",omitempty"`
+	VendorExceptionPaths             []string `json:",omitempty"`
+	VendorExceptionModules           []string `json:",omitempty"`
 }
 
 func boolPtr(v bool) *bool {

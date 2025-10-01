@@ -146,6 +146,12 @@ type DeviceProperties struct {
 	// List of src:dst mapping of files to be installed in the root directory of $PRODUCT_OUT,
 	// instead of being installed in any partition subdirectories.
 	Stage_device_files []StageDeviceFilePairProp
+
+	// This is used for vendor_module_check, it will check if VendorOwnerRestrict is true.
+	Vendor_product_restrict_vendor_files *string
+	Product_restrict_vendor_files        *string
+	Vendor_exception_paths               []string
+	Vendor_exception_modules             []string
 }
 
 type PvmfwProperties struct {
@@ -552,6 +558,7 @@ func (a *androidDevice) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	a.findSharedUIDViolation(ctx)
 	a.checkPartitionSizes(ctx)
 	a.fontchainLint(ctx)
+	a.vendorModuleCheck(ctx, allInstalledModules)
 }
 
 func buildComplianceMetadata(ctx android.ModuleContext, tags ...blueprint.DependencyTag) {

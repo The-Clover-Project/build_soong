@@ -800,3 +800,11 @@ func (p *PackagingBase) CopyDepsToZip(ctx ModuleContext, specs map[string]Packag
 	builder.Build("zip_deps", fmt.Sprintf("Zipping deps for %s", ctx.ModuleName()))
 	return entries
 }
+
+// RROInfo contains information about RROs from a module.
+// @auto-generate: gob
+type RROInfo struct {
+	Paths Paths
+}
+
+var RROInfoProvider = blueprint.NewProvider[RROInfo]()
