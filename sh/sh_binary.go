@@ -73,7 +73,7 @@ var PrepareForTestWithShBuildComponents = android.GroupFixturePreparers(
 
 type shBinaryProperties struct {
 	// Source file of this prebuilt.
-	Src proptools.Configurable[string] `android:"path,arch_variant"`
+	Src proptools.Configurable[string] `android:"path,arch_variant,replace_instead_of_append"`
 
 	// optional subdirectory under which this file is installed into
 	Sub_dir *string `android:"arch_variant"`
