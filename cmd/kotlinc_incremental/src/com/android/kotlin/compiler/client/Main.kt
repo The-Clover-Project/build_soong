@@ -24,6 +24,8 @@ import com.android.kotlin.compiler.snapshotter.fileToSnapshotFile
 import java.io.File
 import java.net.URLClassLoader
 import java.util.UUID
+import kotlin.io.path.ExperimentalPathApi
+import kotlin.io.path.deleteRecursively
 import kotlin.system.exitProcess
 import org.jetbrains.kotlin.buildtools.api.CompilationResult
 import org.jetbrains.kotlin.buildtools.api.CompilationService
@@ -126,6 +128,7 @@ fun writeCacheMarker(marker: CacheMarker) {
     }
 }
 
+@OptIn(ExperimentalPathApi::class)
 fun btaCompilation(opts: ClientOptions, cacheMarker: CacheMarker): CompilationResult {
     val kotlincArgs = mutableListOf<String>()
     if (opts.buildFile != null) {
@@ -144,8 +147,8 @@ fun btaCompilation(opts: ClientOptions, cacheMarker: CacheMarker): CompilationRe
 
     if (!cacheMarker.isValid()) {
         println("Invalid or missing cache. Triggering full compile.")
-        opts.workingDir.delete()
-        opts.outputDir.delete()
+        opts.workingDir.toPath().deleteRecursively()
+        opts.outputDir.toPath().deleteRecursively()
     } else {
         if (!cacheMarker.remove()) {
             throw CacheMarkerError("Failed to remove cache marker. Aborting the build.")
