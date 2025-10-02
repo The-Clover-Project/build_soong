@@ -251,6 +251,10 @@ type generateTask struct {
 	keepGendir bool
 }
 
+func (g *Module) IncrementalSupported() bool {
+	return true
+}
+
 func (g *Module) GeneratedSourceFiles() android.Paths {
 	return g.outputFiles
 }

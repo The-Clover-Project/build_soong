@@ -79,6 +79,7 @@ type AndroidMkData struct {
 	Entries AndroidMkEntries
 }
 
+// @auto-generate: gob
 type AndroidMkDataInfo struct {
 	Class string
 }
