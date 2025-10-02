@@ -1121,7 +1121,7 @@ func (libstdTransitionMutator) Split(ctx android.BaseModuleContext) []string {
 					return []string{"rlib-std"}
 				}
 				if library.buildNoStd() {
-					return []string{"rlib-std", "dylib-std", "rlib-core"}
+					return []string{"rlib-core", "rlib-std", "dylib-std"}
 				} else {
 					return []string{"rlib-std", "dylib-std"}
 				}
