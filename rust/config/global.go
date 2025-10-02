@@ -91,6 +91,7 @@ var (
 		"-Z debug-info-for-profiling",
 		// Android has ELF TLS on platform
 		"-Z tls-model=global-dynamic",
+		"-Z has-thread-local=yes",
 		"-C relocation-model=pic",
 	}
 
