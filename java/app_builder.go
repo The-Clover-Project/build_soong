@@ -292,7 +292,10 @@ func (a *AndroidApp) generateJavaUsedByApex(ctx android.ModuleContext) {
 		Output(javaApiUsedByOutputFile).
 		Input(a.Library.Module.outputFile)
 	javaUsedByRule.Build("java_usedby_list", "Generate Java APIs used by Apex")
-	a.javaApiUsedByOutputFile = javaApiUsedByOutputFile
+
+	if !android.ShouldSkipAndroidMkProcessing(ctx, a) {
+		ctx.DistForGoalWithFilename(a.installApkName, javaApiUsedByOutputFile, "java_apis_used_by_apex/"+javaApiUsedByOutputFile.Base())
+	}
 }
 
 func targetToJniDir(target android.Target) string {

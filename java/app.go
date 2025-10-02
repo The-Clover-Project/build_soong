@@ -239,8 +239,6 @@ type AndroidApp struct {
 
 	android.ApexBundleDepsInfo
 
-	javaApiUsedByOutputFile android.ModuleOutPath
-
 	privAppAllowlist android.OptionalPath
 
 	requiredModuleNames []string
