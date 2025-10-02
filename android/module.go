@@ -1993,6 +1993,7 @@ type InstallFilesInfo struct {
 
 var InstallFilesProvider = blueprint.NewProvider[InstallFilesInfo]()
 
+// @auto-generate: gob
 type SourceFilesInfo struct {
 	Srcs Paths
 }
@@ -2099,6 +2100,7 @@ type SourceFileGenerator interface {
 	GeneratedDeps() Paths
 }
 
+// @auto-generate: gob
 type GeneratedSourceInfo struct {
 	GeneratedSourceFiles Paths
 	GeneratedHeaderDirs  Paths

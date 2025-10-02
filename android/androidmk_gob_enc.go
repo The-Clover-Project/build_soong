@@ -8,9 +8,36 @@ import (
 )
 
 func init() {
+	AndroidMkDataInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(AndroidMkDataInfo) })
 	distCopyGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(distCopy) })
 	AndroidMkProviderInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(AndroidMkProviderInfo) })
 	AndroidMkInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(AndroidMkInfo) })
+}
+
+func (r AndroidMkDataInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = gobtools.EncodeString(buf, r.Class); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r *AndroidMkDataInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	err = gobtools.DecodeString(buf, &r.Class)
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
+var AndroidMkDataInfoGobRegId int16
+
+func (r AndroidMkDataInfo) GetTypeId() int16 {
+	return AndroidMkDataInfoGobRegId
 }
 
 func (r distCopy) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {

@@ -10,11 +10,13 @@ import (
 func init() {
 	DistGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(Dist) })
 	InstallFilesInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(InstallFilesInfo) })
+	SourceFilesInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(SourceFilesInfo) })
 	ModuleBuildTargetsInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ModuleBuildTargetsInfo) })
 	CommonModuleInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(CommonModuleInfo) })
 	ApiLevelOrPlatformGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ApiLevelOrPlatform) })
 	HostToolProviderInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(HostToolProviderInfo) })
 	DistInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(DistInfo) })
+	GeneratedSourceInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(GeneratedSourceInfo) })
 	katiInstallGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(katiInstall) })
 	extraFilesZipGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(extraFilesZip) })
 	OutputFilesInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(OutputFilesInfo) })
@@ -705,6 +707,56 @@ var InstallFilesInfoGobRegId int16
 
 func (r InstallFilesInfo) GetTypeId() int16 {
 	return InstallFilesInfoGobRegId
+}
+
+func (r SourceFilesInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if r.Srcs == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.Srcs))); err != nil {
+			return err
+		}
+		for val1 := 0; val1 < len(r.Srcs); val1++ {
+			if err = gobtools.EncodeInterface(ctx, buf, r.Srcs[val1]); err != nil {
+				return err
+			}
+		}
+	}
+	return err
+}
+
+func (r *SourceFilesInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	var val3 int32
+	err = gobtools.DecodeSimple[int32](buf, &val3)
+	if err != nil {
+		return err
+	}
+	if val3 != -1 {
+		r.Srcs = make([]Path, val3)
+		for val4 := 0; val4 < int(val3); val4++ {
+			if val6, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+				return err
+			} else if val6 == nil {
+				r.Srcs[val4] = nil
+			} else {
+				r.Srcs[val4] = val6.(Path)
+			}
+		}
+	}
+
+	return err
+}
+
+var SourceFilesInfoGobRegId int16
+
+func (r SourceFilesInfo) GetTypeId() int16 {
+	return SourceFilesInfoGobRegId
 }
 
 func (r ModuleBuildTargetsInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
@@ -1426,6 +1478,122 @@ var DistInfoGobRegId int16
 
 func (r DistInfo) GetTypeId() int16 {
 	return DistInfoGobRegId
+}
+
+func (r GeneratedSourceInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if r.GeneratedSourceFiles == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.GeneratedSourceFiles))); err != nil {
+			return err
+		}
+		for val1 := 0; val1 < len(r.GeneratedSourceFiles); val1++ {
+			if err = gobtools.EncodeInterface(ctx, buf, r.GeneratedSourceFiles[val1]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if r.GeneratedHeaderDirs == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.GeneratedHeaderDirs))); err != nil {
+			return err
+		}
+		for val2 := 0; val2 < len(r.GeneratedHeaderDirs); val2++ {
+			if err = gobtools.EncodeInterface(ctx, buf, r.GeneratedHeaderDirs[val2]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if r.GeneratedDeps == nil {
+		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeSimple(buf, int32(len(r.GeneratedDeps))); err != nil {
+			return err
+		}
+		for val3 := 0; val3 < len(r.GeneratedDeps); val3++ {
+			if err = gobtools.EncodeInterface(ctx, buf, r.GeneratedDeps[val3]); err != nil {
+				return err
+			}
+		}
+	}
+	return err
+}
+
+func (r *GeneratedSourceInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	var val3 int32
+	err = gobtools.DecodeSimple[int32](buf, &val3)
+	if err != nil {
+		return err
+	}
+	if val3 != -1 {
+		r.GeneratedSourceFiles = make([]Path, val3)
+		for val4 := 0; val4 < int(val3); val4++ {
+			if val6, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+				return err
+			} else if val6 == nil {
+				r.GeneratedSourceFiles[val4] = nil
+			} else {
+				r.GeneratedSourceFiles[val4] = val6.(Path)
+			}
+		}
+	}
+
+	var val9 int32
+	err = gobtools.DecodeSimple[int32](buf, &val9)
+	if err != nil {
+		return err
+	}
+	if val9 != -1 {
+		r.GeneratedHeaderDirs = make([]Path, val9)
+		for val10 := 0; val10 < int(val9); val10++ {
+			if val12, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+				return err
+			} else if val12 == nil {
+				r.GeneratedHeaderDirs[val10] = nil
+			} else {
+				r.GeneratedHeaderDirs[val10] = val12.(Path)
+			}
+		}
+	}
+
+	var val15 int32
+	err = gobtools.DecodeSimple[int32](buf, &val15)
+	if err != nil {
+		return err
+	}
+	if val15 != -1 {
+		r.GeneratedDeps = make([]Path, val15)
+		for val16 := 0; val16 < int(val15); val16++ {
+			if val18, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+				return err
+			} else if val18 == nil {
+				r.GeneratedDeps[val16] = nil
+			} else {
+				r.GeneratedDeps[val16] = val18.(Path)
+			}
+		}
+	}
+
+	return err
+}
+
+var GeneratedSourceInfoGobRegId int16
+
+func (r GeneratedSourceInfo) GetTypeId() int16 {
+	return GeneratedSourceInfoGobRegId
 }
 
 func (r katiInstall) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
