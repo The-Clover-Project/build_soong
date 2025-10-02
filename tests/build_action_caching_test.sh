@@ -46,7 +46,7 @@ python_binary_host {
 }
 EOF
   touch ${test_dir}/my_little_binary_host.py
-  run_soong_build --incremental-build-actions
+  run_soong_build SOONG_INCREMENTAL_ANALYSIS=true
   local dir_before="${test_dir}/before"
   mkdir -p ${dir_before}
   cp -pr out/soong/*.mk out/soong/build.aosp_cf_x86_64*.ninja ${test_dir}/before
@@ -55,7 +55,7 @@ EOF
   cat >> ${test_dir}/Android.bp <<'EOF'
 // new comments
 EOF
-  run_soong_build --incremental-build-actions
+  run_soong_build SOONG_INCREMENTAL_ANALYSIS=true
   local dir_after="${test_dir}/after"
   mkdir -p ${dir_after}
   cp -pr out/soong/*.mk out/soong/build.aosp_cf_x86_64*.ninja ${test_dir}/after
@@ -75,7 +75,7 @@ function test_incremental_build_parity() {
 
   # Now run clean build with incremental enabled
   run_soong_clean
-  run_soong_build --incremental-build-actions
+  run_soong_build SOONG_INCREMENTAL_ANALYSIS=true
   local dir_after="${test_dir}/after"
   mkdir -p ${dir_after}
   cp -pr out/soong/*.mk out/soong/build.aosp_cf_x86_64*.ninja ${test_dir}/after
