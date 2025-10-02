@@ -387,6 +387,14 @@ message IncrementalInfo {
 
   // The metrics for modules.
   optional IncrementalMetrics singleton_metrics = 2;
+
+  // True if incremental analysis was used.  This is only true if a valid cache from
+  // a previous build with incremental analysis enabled was found.
+  optional bool incremental_analysis_used = 3;
+
+  // True if incremental analysis was enabled, whether or not an incremental analysis
+  // was performed or a full analysis was performed and the results cached.
+  optional bool incremental_analysis_enabled = 4;
 }
 
 message IncrementalMetrics {

@@ -39,6 +39,8 @@ type soongMetrics struct {
 	incrementalModules    incrementalMetrics
 	incrementalSingletons incrementalMetrics
 	perfCollector         perfCollector
+	incrementalAnalysis   bool
+	incrementalEnabled    bool
 }
 
 type incrementalMetrics struct {
@@ -106,6 +108,9 @@ func (soongMetricsSingleton) GenerateBuildActions(ctx SingletonContext) {
 			metrics.incrementalSingletons.cacheHit++
 		}
 	})
+
+	metrics.incrementalAnalysis = ctx.GetIncrementalAnalysis()
+	metrics.incrementalEnabled = ctx.GetIncrementalEnabled()
 }
 
 func collectMetrics(config Config, eventHandler *metrics.EventHandler) *soong_metrics_proto.SoongBuildMetrics {
@@ -123,6 +128,8 @@ func collectMetrics(config Config, eventHandler *metrics.EventHandler) *soong_me
 		metrics.Modules = proto.Uint32(uint32(soongMetrics.modules))
 		metrics.Variants = proto.Uint32(uint32(soongMetrics.variants))
 	}
+	metrics.IncrementalInfo.IncrementalAnalysisUsed = proto.Bool(soongMetrics.incrementalAnalysis)
+	metrics.IncrementalInfo.IncrementalAnalysisEnabled = proto.Bool(soongMetrics.incrementalEnabled)
 	metrics.IncrementalInfo.ModuleMetrics.Supported = proto.Uint32(uint32(soongMetrics.incrementalModules.supported))
 	metrics.IncrementalInfo.ModuleMetrics.CacheHit = proto.Uint32(uint32(soongMetrics.incrementalModules.cacheHit))
 	for k, v := range soongMetrics.incrementalModules.providersCached {
