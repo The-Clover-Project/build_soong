@@ -658,7 +658,6 @@ func runSoong(ctx Context, config Config, enforceNoSoongOutput bool) {
 					//"-w", "dupbuild=err",
 					//"-w", "outputdir=err",
 					//"-w", "missingoutfile=err",
-					"-v",
 					"--local_jobs", strconv.Itoa(config.Parallel()),
 					//"--remote_jobs", strconv.Itoa(config.RemoteParallel()),
 					"--frontend_file", fifo,
