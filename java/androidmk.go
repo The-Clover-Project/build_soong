@@ -346,12 +346,6 @@ func (app *AndroidApp) PrepareAndroidMKProviderInfo(config android.Config) *andr
 	}
 
 	info.PrimaryInfo.AddStrings("LOCAL_SOONG_LOGTAGS_FILES", app.logtagsSrcs.Strings()...)
-	if app.javaApiUsedByOutputFile.String() != "" {
-		info.PrimaryInfo.FooterStrings = append(info.PrimaryInfo.FooterStrings,
-
-			fmt.Sprintf("$(call dist-for-goals,%s,%s:%s/$(notdir %s))\n",
-				app.installApkName, app.javaApiUsedByOutputFile.String(), "java_apis_used_by_apex", app.javaApiUsedByOutputFile.String()))
-	}
 
 	return info
 }
