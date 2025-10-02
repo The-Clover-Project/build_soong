@@ -15,8 +15,6 @@
 package apex
 
 import (
-	"strings"
-
 	"android/soong/android"
 	"android/soong/cc"
 
@@ -110,32 +108,6 @@ func makeCompatSymlinks(name string, ctx android.ModuleContext) (symlinks androi
 	// small helper to add symlink commands
 	addSymlink := func(target string, dir android.InstallPath, linkName string) {
 		symlinks = append(symlinks, ctx.InstallAbsoluteSymlink(dir, linkName, target))
-	}
-
-	// TODO(b/142911355): [VNDK APEX] Fix hard-coded references to /system/lib/vndk
-	// When all hard-coded references are fixed, remove symbolic links
-	// Note that  we should keep following symlinks for older VNDKs (<=29)
-	// Since prebuilt vndk libs still depend on system/lib/vndk path
-	if strings.HasPrefix(name, vndkApexNamePrefix) {
-		vndkVersion := strings.TrimPrefix(name, vndkApexNamePrefix)
-		if ver, err := android.ApiLevelFromUser(ctx, vndkVersion); err != nil {
-			ctx.ModuleErrorf("apex_vndk should be named as %v<ver:number>: %s", vndkApexNamePrefix, name)
-			return
-		} else if ver.GreaterThan(android.SdkVersion_Android10) {
-			return
-		}
-		// the name of vndk apex is formatted "com.android.vndk.v" + version
-		apexName := vndkApexNamePrefix + vndkVersion
-		if ctx.Config().Android64() {
-			dir := android.PathForModuleInPartitionInstall(ctx, "system", "lib64")
-			addSymlink("/apex/"+apexName+"/lib64", dir, "vndk-sp-"+vndkVersion)
-			addSymlink("/apex/"+apexName+"/lib64", dir, "vndk-"+vndkVersion)
-		}
-		if !ctx.Config().Android64() || ctx.DeviceConfig().DeviceSecondaryArch() != "" {
-			dir := android.PathForModuleInPartitionInstall(ctx, "system", "lib")
-			addSymlink("/apex/"+apexName+"/lib", dir, "vndk-sp-"+vndkVersion)
-			addSymlink("/apex/"+apexName+"/lib", dir, "vndk-"+vndkVersion)
-		}
 	}
 
 	// http://b/121248172 - create a link from /system/usr/icu to
