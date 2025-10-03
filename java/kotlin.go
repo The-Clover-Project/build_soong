@@ -114,6 +114,13 @@ var kotlinIncremental = pctx.AndroidRemoteStaticRule("kotlin-incremental", andro
 			` -working-dir=$workDir ` +
 			` -Xplugin=${config.KotlinAbiGenPluginJar} ` +
 			` -P plugin:org.jetbrains.kotlin.jvm.abi:outputDir=$headerClassesDir && ` +
+			// abi-gen doesn't delete headers for deleted source files.
+			// To compensate, we diff the classesDir with the headerClassesDir and delete any
+			// header files that should no longer be there.
+			` comm -13 ` +
+			`   <(cd "$classesDir" && find . -type f | sort) ` +
+			`   <(cd "$headerClassesDir" && find . -type f | sort) ` +
+			`   | while read -r filename; do rm "$headerClassesDir/$$filename"; done && ` +
 			`${config.SoongZipCmd} -jar $jarArgs -o $out -C $classesDir -D $classesDir -write_if_changed && ` +
 			`${config.SoongZipCmd} -jar $jarArgs -o $headerJar -C $headerClassesDir -D $headerClassesDir -write_if_changed && ` +
 			`rm -rf "$srcJarDir" ; ` +
