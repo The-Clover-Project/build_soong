@@ -41,21 +41,6 @@ func runNinjaForBuild(ctx Context, config Config) {
 	runNinja(ctx, config, config.NinjaArgs())
 }
 
-// Create a script for siso to use to refresh credentials.
-// Siso will invoke ${SISO_CREDENTIAL_HELPER} with no args, so put the actual credhelper command
-// invocation in `soong-convert-command`.
-func createSisoCredsHelper(ctx Context, config Config, cmd *Cmd, cr *credRefresher) error {
-	if cr.path == "" {
-		cmd.Environment.Set("SISO_CREDENTIAL_HELPER", "google-application-default")
-		return nil
-	}
-	cmd.Environment.Set("SISO_CREDENTIAL_HELPER", "build/soong/scripts/siso-creds-helper.py")
-	cacheDir := config.rbeCacheDir()
-	args := []string{cr.path, cr.args, "--cache_dir", cacheDir}
-	cmdFile := filepath.Join(cacheDir, "soong-convert-command")
-	return os.WriteFile(cmdFile, []byte(strings.Join(args, " ")), 0666)
-}
-
 // Constructs and runs the Ninja command line with a restricted set of
 // environment variables. It's important to restrict the environment Ninja runs
 // for hermeticity reasons, and to avoid spurious rebuilds.
@@ -79,7 +64,6 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 		parallel = config.Parallel()
 	}
 
-	var cr *credRefresher
 	sisoExperiments := []string{}
 	switch config.ninjaCommand {
 	case NINJA_N2:
@@ -143,19 +127,6 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 				args = append(args, "--reapi_address", service)
 			}
 			args = append(args, "--reapi_insecure")
-			// TODO(b/431872600): make remote exec work under sandbox
-			// note: can use RBE by `luci-auth context -- m`
-			var err error
-			cr, err = newCredRefresher(ctx, config)
-			if err != nil {
-				ctx.Fatalf("Failed to initialize credential helper: %v\n", err)
-			}
-			// If there is no helper path, then don't run the credential refresher.
-			if cr.path == "" {
-				quit := make(chan bool)
-				defer close(quit)
-				go cr.run(ctx, quit)
-			}
 		default:
 			ctx.Printf("local only\n")
 		}
@@ -219,11 +190,6 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 			sisoExperiments = append(sisoExperiments, expsValue)
 		}
 		cmd.Environment.Set("SISO_EXPERIMENTS", strings.Join(sisoExperiments, ","))
-		if cr != nil {
-			if err := createSisoCredsHelper(ctx, config, cmd, cr); err != nil {
-				ctx.Fatalf("Failed to create credential helper script: %v\n", err)
-			}
-		}
 	}
 
 	// Allow both NINJA_ARGS and NINJA_EXTRA_ARGS, since both have been

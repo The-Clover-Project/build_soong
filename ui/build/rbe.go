@@ -198,6 +198,45 @@ func createSisoConfigDir(ctx Context, config Config, value string) string {
 	return confDir
 }
 
+// Create a script for siso to get credentials.
+// Siso will invoke ${SISO_CREDENTIAL_HELPER} with "get", so put the actual credhelper command
+// invocation in `soong-convert-command`.
+func createSisoCredsHelper(ctx Context, config Config) (string, error) {
+	var helperPath string
+	var helperArgs string
+
+	// RBE_credentials_helper_args contains space-separated arguments for the helper
+	if envArgs, ok := config.environ.Get("RBE_credentials_helper_args"); ok && envArgs != "" {
+		helperArgs = envArgs
+	}
+	var ok bool
+	if helperPath, ok = config.Environment().Get("RBE_credentials_helper"); !ok {
+		helperPath = "execrel://"
+	}
+	if strings.HasPrefix(helperPath, "execrel://") {
+		relpath, _ := strings.CutPrefix(helperPath, "execrel://")
+		dir, ok := config.Environment().Get("RBE_DIR")
+		if !ok {
+			dir = "prebuilts/remoteexecution-client/live"
+		}
+		// Use the one from RBE_DIR.
+		helperPath = filepath.Join(dir, relpath, "credshelper")
+	}
+	if helperArgs == "" {
+		helperArgs = "--auth_source=automaticAuth --gcert_refresh_timeout=20"
+	}
+	if helperPath == "" {
+		return "", fmt.Errorf("missing RBE_credentials_helper")
+	}
+	ctx.Printf("Using '%s %s' for RBE credentials helper\n", helperPath, helperArgs)
+	cacheDir := config.rbeCacheDir()
+	helperArgs = strings.TrimSpace(helperArgs)
+	args := []string{helperPath, helperArgs, "--cache_dir", cacheDir}
+	cmdFile := filepath.Join(cacheDir, "soong-convert-command")
+	err := os.WriteFile(cmdFile, []byte(strings.Join(args, " ")), 0666)
+	return "build/soong/scripts/siso-creds-helper.py", err
+}
+
 func startRBEproxy(ctx Context, config Config) {
 	e := ctx.BeginTrace(metrics.RunSetupTool, "rbe_bootstrap")
 	defer e.End()
@@ -210,16 +249,24 @@ func startRBEproxy(ctx Context, config Config) {
 	}
 	authType, _ := config.rbeAuth()
 	switch authType {
-	case "RBE_credentials_helper", "RBE_use_google_prod_creds":
+	case "RBE_credentials_helper":
+		helper, err := createSisoCredsHelper(ctx, config)
+		if err != nil {
+			ctx.Fatalf("Failed to create credential helper script: %v\n", err)
+		}
+		config.environ.Set("SISO_CREDENTIAL_HELPER", helper)
+	case "RBE_use_google_prod_creds":
+		ctx.Printf("Using google prod credentials\n")
 	default:
 		config.environ.Set("SISO_CREDENTIAL_HELPER", "google-application-default")
-		if instance, ok := config.environ.Get("RBE_instance"); ok {
-			args = append(args, "--reapi_instance", instance)
-		}
-		if service, ok := config.environ.Get("RBE_service"); ok {
-			// Pass the actual service to siso proxy.
-			args = append(args, "--reapi_address", service)
-		}
+		ctx.Printf("Using google application default credentials\n")
+	}
+	if instance, ok := config.environ.Get("RBE_instance"); ok {
+		args = append(args, "--reapi_instance", instance)
+	}
+	if service, ok := config.environ.Get("RBE_service"); ok {
+		// Pass the actual service to siso proxy.
+		args = append(args, "--reapi_address", service)
 	}
 	if project := getRBEProject(ctx, config); project != "" {
 		args = append(args, "--project", project)
