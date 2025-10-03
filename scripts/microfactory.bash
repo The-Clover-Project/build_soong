@@ -38,6 +38,10 @@ case $(uname) in
     *) echo "unknown OS:" $(uname) >&2 && exit 1;;
 esac
 
+if [[ "${GOROOT}" != $(${GOROOT}/bin/go env GOROOT) ]]; then
+  echo "Error: go env GOROOT variable is being overridden. Are you inside a go module?" >&2 && exit 1
+fi
+
 # Find the output directory
 function getoutdir
 {
