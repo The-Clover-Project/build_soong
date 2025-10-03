@@ -19,10 +19,20 @@ import (
 	"fmt"
 	"io/ioutil"
 	"os"
+	"slices"
 	"strings"
 
 	"android/soong/ui/metrics"
 	"android/soong/ui/status"
+)
+
+type dumpvarsType int
+
+const (
+	_ dumpvarsType = iota
+	DUMPVARS_PRE_CONFIG
+	DUMPVARS_PRODUCT_CONFIG
+	DUMPVARS_USER
 )
 
 // DumpMakeVars can be used to extract the values of Make variables after the
@@ -62,9 +72,9 @@ func DumpMakeVars(ctx Context, config Config, goals, vars []string) (map[string]
 		defer os.RemoveAll(tmpDir)
 
 		SetupLitePath(ctx, config, tmpDir)
-		SetProductReleaseConfigMaps(ctx, config, QueryProductReleaseConfigMaps(ctx, config))
+		CollectEarlyReleaseConfig(ctx, config, QueryEarlyReleaseConfig(ctx, config))
 
-		ret, err = dumpMakeVars(ctx, config, goals, makeVars, false, tmpDir)
+		ret, err = dumpMakeVars(ctx, config, goals, makeVars, tmpDir, DUMPVARS_USER)
 		if err != nil {
 			return ret, err
 		}
@@ -81,14 +91,13 @@ func DumpMakeVars(ctx Context, config Config, goals, vars []string) (map[string]
 	return ret, nil
 }
 
-func dumpMakeVars(ctx Context, config Config, goals, vars []string, write_soong_vars bool, tmpDir string) (map[string]string, error) {
+func dumpMakeVars(ctx Context, config Config, goals, vars []string, tmpDir string, which dumpvarsType) (map[string]string, error) {
 	e := ctx.BeginTrace(metrics.RunKati, "dumpvars")
 	defer e.End()
 
 	tool := ctx.Status.StartTool()
-	if write_soong_vars {
-		// only print this when write_soong_vars is true so that it's not printed when using
-		// the get_build_var command.
+	if which == DUMPVARS_PRODUCT_CONFIG {
+		// Only print this during product config.
 		tool.Status("Running product configuration...")
 	}
 	defer tool.Finish()
@@ -100,10 +109,14 @@ func dumpMakeVars(ctx Context, config Config, goals, vars []string, write_soong_
 		"--kati_stats",
 		"dump-many-vars",
 		"MAKECMDGOALS="+strings.Join(goals, " "))
-	cmd.Environment.Set("CALLED_FROM_SETUP", "true")
-	if write_soong_vars {
+	switch which {
+	case DUMPVARS_PRE_CONFIG:
+		cmd.Environment.Set("CALLED_PRE_PRODUCT_CONFIG", "true")
+	case DUMPVARS_PRODUCT_CONFIG:
 		cmd.Environment.Set("WRITE_SOONG_VARIABLES", "true")
+	default:
 	}
+	cmd.Environment.Set("CALLED_FROM_SETUP", "true")
 	cmd.Environment.Set("DUMP_MANY_VARS", strings.Join(vars, " "))
 	if tmpDir != "" {
 		cmd.Environment.Set("TMPDIR", tmpDir)
@@ -250,7 +263,7 @@ func runMakeProductConfig(ctx Context, config Config) {
 		"RELEASE_BUILD_CLANG_VERSION",
 	}
 
-	allVars := append(append(append([]string{
+	allVars := slices.Concat([]string{
 		// Used to execute Kati and Ninja
 		"NINJA_GOALS",
 		"KATI_GOALS",
@@ -318,11 +331,20 @@ func runMakeProductConfig(ctx Context, config Config) {
 		"RELEASE_SRC_DIR_IS_READ_ONLY",
 		"RELEASE_USE_RKATI",
 		"RELEASE_BUILD_WITH_JDK_25",
-	}, exportEnvVars...), BannerVars...), sisoStringVars...)
+	}, exportEnvVars, BannerVars, sisoStringVars, earlyReleaseConfigVars)
 
-	makeVars, err := dumpMakeVars(ctx, config, config.Arguments(), allVars, true, "")
+	makeVars, err := dumpMakeVars(ctx, config, config.Arguments(), allVars, "", DUMPVARS_PRODUCT_CONFIG)
 	if err != nil {
 		ctx.Fatalln("Error dumping make vars:", err)
+	}
+
+	// Verify that none of the earlyVars changed values.
+	for _, name := range earlyReleaseConfigVars {
+		if config.earlyVars[name] != makeVars[name] {
+			ctx.Fatalf("Product config value for %q is not consistent: %q (early call) became %q (final call).\n",
+				name, config.earlyVars[name], makeVars[name])
+
+		}
 	}
 
 	// Populate the environment

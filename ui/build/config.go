@@ -25,6 +25,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -161,6 +162,14 @@ type configImpl struct {
 	// could consider merging them.
 	moduleDebugFile      string
 	incrementalDebugFile string
+
+	// Variables that are set when we determine PRODUCT_RELEASE_CONFIG_MAPS.
+	// This should only include:
+	// - PRODUCT_RELEASE_CONFIG_MAPS (because we need to set it), and
+	// - Any build flag that soong_ui needs to know prior to running product config.
+	//   There should be a bug for any such flag, to refactor soong_ui to remove the
+	//   need for it.
+	earlyVars map[string]string
 
 	// Which builder are we using
 	ninjaCommand ninjaCommandType
@@ -632,9 +641,9 @@ func NewBuildActionConfig(action BuildAction, dir string, ctx Context, args ...s
 	return NewConfig(ctx, getConfigArgs(action, dir, ctx, args)...)
 }
 
-type productReleaseConfigMapsInfo struct {
-	// The value of PRODUCT_RELEASE_CONFIG_MAPS
-	value string
+type earlyReleaseConfigInfo struct {
+	// Map of VariableName: Value
+	ValueMap map[string]string
 
 	// Any error
 	err error
@@ -645,25 +654,29 @@ type productReleaseConfigMapsInfo struct {
 //
 // Returns:
 //
-//	chan to pass to SetProductReleaseConfigMaps to finish setting the value.
+//	chan to pass to CollectEarlyReleaseConfig to finish setting the value.
 //
 // TODO: when converting product config to a declarative language, make sure
 // that PRODUCT_RELEASE_CONFIG_MAPS is properly handled as a separate step in
 // that process.
-func QueryProductReleaseConfigMaps(ctx Context, config Config) chan *productReleaseConfigMapsInfo {
-	mapsCh := make(chan *productReleaseConfigMapsInfo)
+func QueryEarlyReleaseConfig(ctx Context, config Config) chan *earlyReleaseConfigInfo {
+	mapsCh := make(chan *earlyReleaseConfigInfo)
 	go func() {
 		defer close(mapsCh)
-		getProductReleaseConfigMaps(ctx, config, mapsCh)
+		getEarlyReleaseConfig(ctx, config, mapsCh)
 	}()
 	return mapsCh
 }
 
-func getProductReleaseConfigMaps(ctx Context, config Config, mapsCh chan *productReleaseConfigMapsInfo) {
-	e := ctx.BeginTrace(metrics.RunKati, "SetProductReleaseConfigMaps")
+var earlyReleaseConfigVars = []string{
+	"PRODUCT_RELEASE_CONFIG_MAPS",
+}
+
+func getEarlyReleaseConfig(ctx Context, config Config, mapsCh chan *earlyReleaseConfigInfo) {
+	e := ctx.BeginTrace(metrics.RunKati, "CollectEarlyReleaseConfig")
 	defer e.End()
 
-	ret := &productReleaseConfigMapsInfo{}
+	ret := &earlyReleaseConfigInfo{}
 
 	if config.SkipConfig() {
 		// This duplicates the logic from Build to skip product config
@@ -671,31 +684,28 @@ func getProductReleaseConfigMaps(ctx Context, config Config, mapsCh chan *produc
 		return
 	}
 
-	releaseConfigVars := []string{
-		"PRODUCT_RELEASE_CONFIG_MAPS",
-	}
-
 	// Get the PRODUCT_RELEASE_CONFIG_MAPS for this product, to avoid polluting the environment
 	// when we run product config to get the rest of the make vars.
-	releaseMapVars, err := dumpMakeVars(ctx, config, nil, releaseConfigVars, false, "")
+	earlyVars, err := dumpMakeVars(ctx, config, nil, earlyReleaseConfigVars, "", DUMPVARS_PRE_CONFIG)
 	if err != nil {
 		ret.err = err
 	} else {
-		ret.value = releaseMapVars["PRODUCT_RELEASE_CONFIG_MAPS"]
+		ret.ValueMap = earlyVars
 	}
 	mapsCh <- ret
 }
 
 // Wait for the Query to finish, and set PRODUCT_RELEASE_CONFIG_MAPS in the environment.
-func SetProductReleaseConfigMaps(ctx Context, config Config, mapsCh chan *productReleaseConfigMapsInfo) {
+func CollectEarlyReleaseConfig(ctx Context, config Config, mapsCh chan *earlyReleaseConfigInfo) {
 	if config.SkipConfig() {
 		return
 	}
-	mapsInfo := <-mapsCh
-	if mapsInfo.err != nil {
-		ctx.Fatalln("Error getting PRODUCT_RELEASE_CONFIG_MAPS:", mapsInfo.err)
+	earlyVars := <-mapsCh
+	if earlyVars.err != nil {
+		ctx.Fatalln("Error getting 'pre product config' release config:", earlyVars.err)
 	}
-	config.Environment().Set("PRODUCT_RELEASE_CONFIG_MAPS", mapsInfo.value)
+	config.earlyVars = earlyVars.ValueMap
+	config.Environment().Set("PRODUCT_RELEASE_CONFIG_MAPS", config.earlyVars["PRODUCT_RELEASE_CONFIG_MAPS"])
 }
 
 func (config *configImpl) setupSandboxConfig(ctx Context, makeVars map[string]string) {
@@ -2076,4 +2086,77 @@ func GetMetricsUploader(topDir string, env *Environment) string {
 	}
 
 	return ""
+}
+
+var envVarFlagDirs = []string{
+	"build/release",
+	"vendor/google_shared/build/release",
+	"vendor/google/release",
+}
+
+// Look for environment variable defaults for TARGET_RELEASE.
+//
+// This allows us to effectively guard changes to Soong where the value of the guard flag needs to
+// be resolved before Soong runs product config.
+//
+// If multiple directories contain default values for environment variables, the last one listed in
+// envVarFlagDirs will be used as the default for that environment variable. SOONG_ENVVAR_FLAG_DIRS
+// can be used to add directories to the list.
+func ResolveSoongEnvVars() error {
+	targetRelease := os.Getenv("TARGET_RELEASE")
+	if targetRelease == "" {
+		// This build does not use TARGET_RELEASE.
+		return nil
+	}
+	envMap := OsEnvironment().AsMap()
+	quiet := OsEnvironment().IsEnvTrue("ANDROID_QUIET_BUILD")
+	flagDirs := slices.Concat(envVarFlagDirs, strings.Fields(os.Getenv("SOONG_ENVVAR_FLAG_DIRS")))
+
+	// Starting with the last directory, look for variables for ${TARGET_RELEASE}
+	for _, dir := range slices.Backward(flagDirs) {
+		jsonPath := filepath.Join(dir, "build_config", "soong_env", targetRelease+".json")
+		data, err := os.ReadFile(jsonPath)
+		if err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
+			return fmt.Errorf("reading file %s: %w", jsonPath, err)
+		}
+
+		// Use map[string]interface{} to handle the arbitrary JSON structure.
+		var config map[string]interface{}
+
+		if err := json.Unmarshal(data, &config); err != nil {
+			return fmt.Errorf("unmarshaling JSON from %s: %w", jsonPath, err)
+		}
+
+		// Look at the JSON object for "env_default".
+		envDefault, ok := config["env_default"].(map[string]interface{})
+		if !ok {
+			// 'env_default' may not exist or may not be a map, which is fine, continue.
+			continue
+		}
+
+		// For each key in env_default, set the environment variable if not defined.
+		for key, value := range envDefault {
+			switch value.(type) {
+			case string:
+			default:
+				data, err := json.Marshal(value)
+				if err != nil {
+					return fmt.Errorf("[%s] failed to marshal `%v` for error: %w", jsonPath, value, err)
+				}
+				return fmt.Errorf("[%s] env_default[%q] must contain a string, but contains `%s`", jsonPath, key, string(data))
+			}
+			if _, exists := envMap[key]; !exists {
+				v := fmt.Sprintf("%v", value)
+				if !quiet {
+					fmt.Fprintf(os.Stderr, "[%s] Setting %s=%v\n", jsonPath, key, v)
+				}
+				os.Setenv(key, v)
+				envMap[key] = v
+			}
+		}
+	}
+	return nil
 }
