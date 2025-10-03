@@ -16,7 +16,7 @@ func (r JavaPluginInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error
 	var err error
 
 	val1 := r.ProcessorClass == nil
-	if err = gobtools.EncodeSimple(buf, val1); err != nil {
+	if err = gobtools.EncodeBool(buf, val1); err != nil {
 		return err
 	}
 	if !val1 {
@@ -25,7 +25,7 @@ func (r JavaPluginInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error
 		}
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.GeneratesApi); err != nil {
+	if err = gobtools.EncodeBool(buf, r.GeneratesApi); err != nil {
 		return err
 	}
 	return err
@@ -35,7 +35,7 @@ func (r *JavaPluginInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) erro
 	var err error
 
 	var val2 bool
-	if err = gobtools.DecodeSimple(buf, &val2); err != nil {
+	if err = gobtools.DecodeBool(buf, &val2); err != nil {
 		return err
 	}
 	if !val2 {
@@ -47,7 +47,7 @@ func (r *JavaPluginInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) erro
 		r.ProcessorClass = &val1
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.GeneratesApi)
+	err = gobtools.DecodeBool(buf, &r.GeneratesApi)
 	if err != nil {
 		return err
 	}

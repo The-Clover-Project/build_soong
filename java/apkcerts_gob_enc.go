@@ -27,7 +27,7 @@ func (r ApkCertInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.Test); err != nil {
+	if err = gobtools.EncodeBool(buf, r.Test); err != nil {
 		return err
 	}
 	return err
@@ -53,7 +53,7 @@ func (r *ApkCertInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.Test)
+	err = gobtools.DecodeBool(buf, &r.Test)
 	if err != nil {
 		return err
 	}

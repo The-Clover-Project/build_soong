@@ -16,11 +16,11 @@ func (r JavaFuzzTestInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) err
 	var err error
 
 	if r.JniFilePaths == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.JniFilePaths))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.JniFilePaths)); err != nil {
 			return err
 		}
 		for val1 := 0; val1 < len(r.JniFilePaths); val1++ {
@@ -35,8 +35,8 @@ func (r JavaFuzzTestInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) err
 func (r *JavaFuzzTestInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
-	var val3 int32
-	err = gobtools.DecodeSimple[int32](buf, &val3)
+	var val3 int
+	err = gobtools.DecodeInt(buf, &val3)
 	if err != nil {
 		return err
 	}

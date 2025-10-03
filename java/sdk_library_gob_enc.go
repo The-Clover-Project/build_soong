@@ -18,11 +18,11 @@ func (r ApiScopePathsInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) er
 	var err error
 
 	if r.StubsImplPath == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.StubsImplPath))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.StubsImplPath)); err != nil {
 			return err
 		}
 		for val1 := 0; val1 < len(r.StubsImplPath); val1++ {
@@ -53,8 +53,8 @@ func (r ApiScopePathsInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) er
 func (r *ApiScopePathsInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
-	var val3 int32
-	err = gobtools.DecodeSimple[int32](buf, &val3)
+	var val3 int
+	err = gobtools.DecodeInt(buf, &val3)
 	if err != nil {
 		return err
 	}
@@ -100,7 +100,7 @@ func (r ApiScopePropsInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) er
 	var err error
 
 	val1 := r.SdkVersion == nil
-	if err = gobtools.EncodeSimple(buf, val1); err != nil {
+	if err = gobtools.EncodeBool(buf, val1); err != nil {
 		return err
 	}
 	if !val1 {
@@ -115,7 +115,7 @@ func (r *ApiScopePropsInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) e
 	var err error
 
 	var val2 bool
-	if err = gobtools.DecodeSimple(buf, &val2); err != nil {
+	if err = gobtools.DecodeBool(buf, &val2); err != nil {
 		return err
 	}
 	if !val2 {
@@ -140,11 +140,11 @@ func (r SdkLibraryInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error
 	var err error
 
 	if r.GeneratingLibs == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.GeneratingLibs))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.GeneratingLibs)); err != nil {
 			return err
 		}
 		for val1 := 0; val1 < len(r.GeneratingLibs); val1++ {
@@ -155,15 +155,15 @@ func (r SdkLibraryInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error
 	}
 
 	if r.EverythingStubDexJarPaths == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.EverythingStubDexJarPaths))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.EverythingStubDexJarPaths)); err != nil {
 			return err
 		}
 		for k, v := range r.EverythingStubDexJarPaths {
-			if err = gobtools.EncodeSimple(buf, int64(int(k))); err != nil {
+			if err = gobtools.EncodeInt(buf, int(k)); err != nil {
 				return err
 			}
 			if err = v.Encode(ctx, buf); err != nil {
@@ -173,15 +173,15 @@ func (r SdkLibraryInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error
 	}
 
 	if r.ExportableStubDexJarPaths == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.ExportableStubDexJarPaths))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.ExportableStubDexJarPaths)); err != nil {
 			return err
 		}
 		for k, v := range r.ExportableStubDexJarPaths {
-			if err = gobtools.EncodeSimple(buf, int64(int(k))); err != nil {
+			if err = gobtools.EncodeInt(buf, int(k)); err != nil {
 				return err
 			}
 			if err = v.Encode(ctx, buf); err != nil {
@@ -191,15 +191,15 @@ func (r SdkLibraryInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error
 	}
 
 	if r.RemovedTxtFiles == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.RemovedTxtFiles))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.RemovedTxtFiles)); err != nil {
 			return err
 		}
 		for k, v := range r.RemovedTxtFiles {
-			if err = gobtools.EncodeSimple(buf, int64(int(k))); err != nil {
+			if err = gobtools.EncodeInt(buf, int(k)); err != nil {
 				return err
 			}
 			if err = v.Encode(ctx, buf); err != nil {
@@ -208,11 +208,11 @@ func (r SdkLibraryInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error
 		}
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.SharedLibrary); err != nil {
+	if err = gobtools.EncodeBool(buf, r.SharedLibrary); err != nil {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.Prebuilt); err != nil {
+	if err = gobtools.EncodeBool(buf, r.Prebuilt); err != nil {
 		return err
 	}
 
@@ -221,11 +221,11 @@ func (r SdkLibraryInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error
 	}
 
 	if r.DoctagPaths == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.DoctagPaths))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.DoctagPaths)); err != nil {
 			return err
 		}
 		for val2 := 0; val2 < len(r.DoctagPaths); val2++ {
@@ -236,7 +236,7 @@ func (r SdkLibraryInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error
 	}
 
 	val3 := r.OnBootclasspathSince == nil
-	if err = gobtools.EncodeSimple(buf, val3); err != nil {
+	if err = gobtools.EncodeBool(buf, val3); err != nil {
 		return err
 	}
 	if !val3 {
@@ -246,7 +246,7 @@ func (r SdkLibraryInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error
 	}
 
 	val4 := r.OnBootclasspathBefore == nil
-	if err = gobtools.EncodeSimple(buf, val4); err != nil {
+	if err = gobtools.EncodeBool(buf, val4); err != nil {
 		return err
 	}
 	if !val4 {
@@ -256,7 +256,7 @@ func (r SdkLibraryInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error
 	}
 
 	val5 := r.MinDeviceSdk == nil
-	if err = gobtools.EncodeSimple(buf, val5); err != nil {
+	if err = gobtools.EncodeBool(buf, val5); err != nil {
 		return err
 	}
 	if !val5 {
@@ -266,7 +266,7 @@ func (r SdkLibraryInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error
 	}
 
 	val6 := r.MaxDeviceSdk == nil
-	if err = gobtools.EncodeSimple(buf, val6); err != nil {
+	if err = gobtools.EncodeBool(buf, val6); err != nil {
 		return err
 	}
 	if !val6 {
@@ -275,16 +275,16 @@ func (r SdkLibraryInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error
 		}
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.ImplLibProfileGuided); err != nil {
+	if err = gobtools.EncodeBool(buf, r.ImplLibProfileGuided); err != nil {
 		return err
 	}
 
 	if r.ApiScopePaths == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.ApiScopePaths))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.ApiScopePaths)); err != nil {
 			return err
 		}
 		for k, v := range r.ApiScopePaths {
@@ -298,11 +298,11 @@ func (r SdkLibraryInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error
 	}
 
 	if r.ApiScopeProps == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.ApiScopeProps))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.ApiScopeProps)); err != nil {
 			return err
 		}
 		for k, v := range r.ApiScopeProps {
@@ -320,8 +320,8 @@ func (r SdkLibraryInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error
 func (r *SdkLibraryInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
-	var val2 int32
-	err = gobtools.DecodeSimple[int32](buf, &val2)
+	var val2 int
+	err = gobtools.DecodeInt(buf, &val2)
 	if err != nil {
 		return err
 	}
@@ -335,8 +335,8 @@ func (r *SdkLibraryInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) erro
 		}
 	}
 
-	var val5 int32
-	err = gobtools.DecodeSimple[int32](buf, &val5)
+	var val5 int
+	err = gobtools.DecodeInt(buf, &val5)
 	if err != nil {
 		return err
 	}
@@ -346,12 +346,10 @@ func (r *SdkLibraryInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) erro
 			var k android.SdkKind
 			var v OptionalDexJarPath
 			var val8 int
-			var val9 int64
-			err = gobtools.DecodeSimple[int64](buf, &val9)
+			err = gobtools.DecodeInt(buf, &val8)
 			if err != nil {
 				return err
 			}
-			val8 = int(val9)
 			k = android.SdkKind(val8)
 			if err = v.Decode(ctx, buf); err != nil {
 				return err
@@ -360,8 +358,8 @@ func (r *SdkLibraryInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) erro
 		}
 	}
 
-	var val11 int32
-	err = gobtools.DecodeSimple[int32](buf, &val11)
+	var val11 int
+	err = gobtools.DecodeInt(buf, &val11)
 	if err != nil {
 		return err
 	}
@@ -371,12 +369,10 @@ func (r *SdkLibraryInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) erro
 			var k android.SdkKind
 			var v OptionalDexJarPath
 			var val14 int
-			var val15 int64
-			err = gobtools.DecodeSimple[int64](buf, &val15)
+			err = gobtools.DecodeInt(buf, &val14)
 			if err != nil {
 				return err
 			}
-			val14 = int(val15)
 			k = android.SdkKind(val14)
 			if err = v.Decode(ctx, buf); err != nil {
 				return err
@@ -385,8 +381,8 @@ func (r *SdkLibraryInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) erro
 		}
 	}
 
-	var val17 int32
-	err = gobtools.DecodeSimple[int32](buf, &val17)
+	var val17 int
+	err = gobtools.DecodeInt(buf, &val17)
 	if err != nil {
 		return err
 	}
@@ -396,12 +392,10 @@ func (r *SdkLibraryInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) erro
 			var k android.SdkKind
 			var v android.OptionalPath
 			var val20 int
-			var val21 int64
-			err = gobtools.DecodeSimple[int64](buf, &val21)
+			err = gobtools.DecodeInt(buf, &val20)
 			if err != nil {
 				return err
 			}
-			val20 = int(val21)
 			k = android.SdkKind(val20)
 			if err = v.Decode(ctx, buf); err != nil {
 				return err
@@ -410,12 +404,12 @@ func (r *SdkLibraryInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) erro
 		}
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.SharedLibrary)
+	err = gobtools.DecodeBool(buf, &r.SharedLibrary)
 	if err != nil {
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.Prebuilt)
+	err = gobtools.DecodeBool(buf, &r.Prebuilt)
 	if err != nil {
 		return err
 	}
@@ -425,8 +419,8 @@ func (r *SdkLibraryInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) erro
 		return err
 	}
 
-	var val28 int32
-	err = gobtools.DecodeSimple[int32](buf, &val28)
+	var val28 int
+	err = gobtools.DecodeInt(buf, &val28)
 	if err != nil {
 		return err
 	}
@@ -444,7 +438,7 @@ func (r *SdkLibraryInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) erro
 	}
 
 	var val33 bool
-	if err = gobtools.DecodeSimple(buf, &val33); err != nil {
+	if err = gobtools.DecodeBool(buf, &val33); err != nil {
 		return err
 	}
 	if !val33 {
@@ -457,7 +451,7 @@ func (r *SdkLibraryInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) erro
 	}
 
 	var val36 bool
-	if err = gobtools.DecodeSimple(buf, &val36); err != nil {
+	if err = gobtools.DecodeBool(buf, &val36); err != nil {
 		return err
 	}
 	if !val36 {
@@ -470,7 +464,7 @@ func (r *SdkLibraryInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) erro
 	}
 
 	var val39 bool
-	if err = gobtools.DecodeSimple(buf, &val39); err != nil {
+	if err = gobtools.DecodeBool(buf, &val39); err != nil {
 		return err
 	}
 	if !val39 {
@@ -483,7 +477,7 @@ func (r *SdkLibraryInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) erro
 	}
 
 	var val42 bool
-	if err = gobtools.DecodeSimple(buf, &val42); err != nil {
+	if err = gobtools.DecodeBool(buf, &val42); err != nil {
 		return err
 	}
 	if !val42 {
@@ -495,13 +489,13 @@ func (r *SdkLibraryInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) erro
 		r.MaxDeviceSdk = &val41
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.ImplLibProfileGuided)
+	err = gobtools.DecodeBool(buf, &r.ImplLibProfileGuided)
 	if err != nil {
 		return err
 	}
 
-	var val45 int32
-	err = gobtools.DecodeSimple[int32](buf, &val45)
+	var val45 int
+	err = gobtools.DecodeInt(buf, &val45)
 	if err != nil {
 		return err
 	}
@@ -521,8 +515,8 @@ func (r *SdkLibraryInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) erro
 		}
 	}
 
-	var val49 int32
-	err = gobtools.DecodeSimple[int32](buf, &val49)
+	var val49 int
+	err = gobtools.DecodeInt(buf, &val49)
 	if err != nil {
 		return err
 	}

@@ -16,23 +16,23 @@ func (r HiddenAPIPropertyInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer
 	var err error
 
 	if r.FlagFilesByCategory == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.FlagFilesByCategory))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.FlagFilesByCategory)); err != nil {
 			return err
 		}
 		for k, v := range r.FlagFilesByCategory {
-			if err = gobtools.EncodeSimple(buf, int64(int(k))); err != nil {
+			if err = gobtools.EncodeInt(buf, int(k)); err != nil {
 				return err
 			}
 			if v == nil {
-				if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+				if err = gobtools.EncodeInt(buf, -1); err != nil {
 					return err
 				}
 			} else {
-				if err = gobtools.EncodeSimple(buf, int32(len(v))); err != nil {
+				if err = gobtools.EncodeInt(buf, len(v)); err != nil {
 					return err
 				}
 				for val1 := 0; val1 < len(v); val1++ {
@@ -45,11 +45,11 @@ func (r HiddenAPIPropertyInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer
 	}
 
 	if r.PackagePrefixes == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.PackagePrefixes))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.PackagePrefixes)); err != nil {
 			return err
 		}
 		for val2 := 0; val2 < len(r.PackagePrefixes); val2++ {
@@ -60,11 +60,11 @@ func (r HiddenAPIPropertyInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer
 	}
 
 	if r.SinglePackages == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.SinglePackages))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.SinglePackages)); err != nil {
 			return err
 		}
 		for val3 := 0; val3 < len(r.SinglePackages); val3++ {
@@ -75,11 +75,11 @@ func (r HiddenAPIPropertyInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer
 	}
 
 	if r.SplitPackages == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.SplitPackages))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.SplitPackages)); err != nil {
 			return err
 		}
 		for val4 := 0; val4 < len(r.SplitPackages); val4++ {
@@ -94,8 +94,8 @@ func (r HiddenAPIPropertyInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer
 func (r *HiddenAPIPropertyInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
-	var val2 int32
-	err = gobtools.DecodeSimple[int32](buf, &val2)
+	var val2 int
+	err = gobtools.DecodeInt(buf, &val2)
 	if err != nil {
 		return err
 	}
@@ -105,15 +105,13 @@ func (r *HiddenAPIPropertyInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reade
 			var k hiddenAPIFlagFileCategory
 			var v android.Paths
 			var val5 int
-			var val6 int64
-			err = gobtools.DecodeSimple[int64](buf, &val6)
+			err = gobtools.DecodeInt(buf, &val5)
 			if err != nil {
 				return err
 			}
-			val5 = int(val6)
 			k = hiddenAPIFlagFileCategory(val5)
-			var val9 int32
-			err = gobtools.DecodeSimple[int32](buf, &val9)
+			var val9 int
+			err = gobtools.DecodeInt(buf, &val9)
 			if err != nil {
 				return err
 			}
@@ -133,8 +131,8 @@ func (r *HiddenAPIPropertyInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reade
 		}
 	}
 
-	var val14 int32
-	err = gobtools.DecodeSimple[int32](buf, &val14)
+	var val14 int
+	err = gobtools.DecodeInt(buf, &val14)
 	if err != nil {
 		return err
 	}
@@ -148,8 +146,8 @@ func (r *HiddenAPIPropertyInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reade
 		}
 	}
 
-	var val18 int32
-	err = gobtools.DecodeSimple[int32](buf, &val18)
+	var val18 int
+	err = gobtools.DecodeInt(buf, &val18)
 	if err != nil {
 		return err
 	}
@@ -163,8 +161,8 @@ func (r *HiddenAPIPropertyInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reade
 		}
 	}
 
-	var val22 int32
-	err = gobtools.DecodeSimple[int32](buf, &val22)
+	var val22 int
+	err = gobtools.DecodeInt(buf, &val22)
 	if err != nil {
 		return err
 	}

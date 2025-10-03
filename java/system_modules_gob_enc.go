@@ -16,11 +16,11 @@ func (r SystemModulesProviderInfo) Encode(ctx gobtools.EncContext, buf *bytes.Bu
 	var err error
 
 	if r.HeaderJars == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.HeaderJars))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.HeaderJars)); err != nil {
 			return err
 		}
 		for val1 := 0; val1 < len(r.HeaderJars); val1++ {
@@ -35,11 +35,11 @@ func (r SystemModulesProviderInfo) Encode(ctx gobtools.EncContext, buf *bytes.Bu
 	}
 
 	if r.OutputDirDeps == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.OutputDirDeps))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.OutputDirDeps)); err != nil {
 			return err
 		}
 		for val2 := 0; val2 < len(r.OutputDirDeps); val2++ {
@@ -53,16 +53,16 @@ func (r SystemModulesProviderInfo) Encode(ctx gobtools.EncContext, buf *bytes.Bu
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.Prebuilt); err != nil {
+	if err = gobtools.EncodeBool(buf, r.Prebuilt); err != nil {
 		return err
 	}
 
 	if r.Libs == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.Libs))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.Libs)); err != nil {
 			return err
 		}
 		for val3 := 0; val3 < len(r.Libs); val3++ {
@@ -77,8 +77,8 @@ func (r SystemModulesProviderInfo) Encode(ctx gobtools.EncContext, buf *bytes.Bu
 func (r *SystemModulesProviderInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
-	var val3 int32
-	err = gobtools.DecodeSimple[int32](buf, &val3)
+	var val3 int
+	err = gobtools.DecodeInt(buf, &val3)
 	if err != nil {
 		return err
 	}
@@ -103,8 +103,8 @@ func (r *SystemModulesProviderInfo) Decode(ctx gobtools.EncContext, buf *bytes.R
 		r.OutputDir = val8.(android.Path)
 	}
 
-	var val11 int32
-	err = gobtools.DecodeSimple[int32](buf, &val11)
+	var val11 int
+	err = gobtools.DecodeInt(buf, &val11)
 	if err != nil {
 		return err
 	}
@@ -125,13 +125,13 @@ func (r *SystemModulesProviderInfo) Decode(ctx gobtools.EncContext, buf *bytes.R
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.Prebuilt)
+	err = gobtools.DecodeBool(buf, &r.Prebuilt)
 	if err != nil {
 		return err
 	}
 
-	var val18 int32
-	err = gobtools.DecodeSimple[int32](buf, &val18)
+	var val18 int
+	err = gobtools.DecodeInt(buf, &val18)
 	if err != nil {
 		return err
 	}

@@ -22,7 +22,7 @@ func (r librarySdkMemberType) Encode(ctx gobtools.EncContext, buf *bytes.Buffer)
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.noOutputFiles); err != nil {
+	if err = gobtools.EncodeBool(buf, r.noOutputFiles); err != nil {
 		return err
 	}
 	return err
@@ -40,7 +40,7 @@ func (r *librarySdkMemberType) Decode(ctx gobtools.EncContext, buf *bytes.Reader
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.noOutputFiles)
+	err = gobtools.DecodeBool(buf, &r.noOutputFiles)
 	if err != nil {
 		return err
 	}

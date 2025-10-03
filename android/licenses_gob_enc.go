@@ -20,16 +20,16 @@ func (r applicableLicensesProperty) Encode(ctx gobtools.EncContext, buf *bytes.B
 	}
 
 	val1 := r.licensesProperty == nil
-	if err = gobtools.EncodeSimple(buf, val1); err != nil {
+	if err = gobtools.EncodeBool(buf, val1); err != nil {
 		return err
 	}
 	if !val1 {
 		if (*r.licensesProperty) == nil {
-			if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+			if err = gobtools.EncodeInt(buf, -1); err != nil {
 				return err
 			}
 		} else {
-			if err = gobtools.EncodeSimple(buf, int32(len((*r.licensesProperty)))); err != nil {
+			if err = gobtools.EncodeInt(buf, len((*r.licensesProperty))); err != nil {
 				return err
 			}
 			for val2 := 0; val2 < len((*r.licensesProperty)); val2++ {
@@ -51,13 +51,13 @@ func (r *applicableLicensesProperty) Decode(ctx gobtools.EncContext, buf *bytes.
 	}
 
 	var val3 bool
-	if err = gobtools.DecodeSimple(buf, &val3); err != nil {
+	if err = gobtools.DecodeBool(buf, &val3); err != nil {
 		return err
 	}
 	if !val3 {
 		var val2 []string
-		var val5 int32
-		err = gobtools.DecodeSimple[int32](buf, &val5)
+		var val5 int
+		err = gobtools.DecodeInt(buf, &val5)
 		if err != nil {
 			return err
 		}
@@ -86,11 +86,11 @@ func (r LicensesInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	var err error
 
 	if r.Licenses == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.Licenses))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.Licenses)); err != nil {
 			return err
 		}
 		for val1 := 0; val1 < len(r.Licenses); val1++ {
@@ -105,8 +105,8 @@ func (r LicensesInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 func (r *LicensesInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
-	var val2 int32
-	err = gobtools.DecodeSimple[int32](buf, &val2)
+	var val2 int
+	err = gobtools.DecodeInt(buf, &val2)
 	if err != nil {
 		return err
 	}

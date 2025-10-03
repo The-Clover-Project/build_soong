@@ -14,11 +14,11 @@ func init() {
 func (r TestModuleInformation) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	var err error
 
-	if err = gobtools.EncodeSimple(buf, r.TestOnly); err != nil {
+	if err = gobtools.EncodeBool(buf, r.TestOnly); err != nil {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.TopLevelTarget); err != nil {
+	if err = gobtools.EncodeBool(buf, r.TopLevelTarget); err != nil {
 		return err
 	}
 	return err
@@ -27,12 +27,12 @@ func (r TestModuleInformation) Encode(ctx gobtools.EncContext, buf *bytes.Buffer
 func (r *TestModuleInformation) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
-	err = gobtools.DecodeSimple[bool](buf, &r.TestOnly)
+	err = gobtools.DecodeBool(buf, &r.TestOnly)
 	if err != nil {
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.TopLevelTarget)
+	err = gobtools.DecodeBool(buf, &r.TopLevelTarget)
 	if err != nil {
 		return err
 	}

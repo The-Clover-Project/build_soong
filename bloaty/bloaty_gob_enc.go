@@ -16,11 +16,11 @@ func (r measuredFiles) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error 
 	var err error
 
 	if r.paths == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.paths))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.paths)); err != nil {
 			return err
 		}
 		for val1 := 0; val1 < len(r.paths); val1++ {
@@ -35,8 +35,8 @@ func (r measuredFiles) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error 
 func (r *measuredFiles) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
-	var val2 int32
-	err = gobtools.DecodeSimple[int32](buf, &val2)
+	var val2 int
+	err = gobtools.DecodeInt(buf, &val2)
 	if err != nil {
 		return err
 	}

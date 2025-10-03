@@ -26,15 +26,15 @@ func (r ApexInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.Updatable); err != nil {
+	if err = gobtools.EncodeBool(buf, r.Updatable); err != nil {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.UsePlatformApis); err != nil {
+	if err = gobtools.EncodeBool(buf, r.UsePlatformApis); err != nil {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.ForPrebuiltApex); err != nil {
+	if err = gobtools.EncodeBool(buf, r.ForPrebuiltApex); err != nil {
 		return err
 	}
 
@@ -60,17 +60,17 @@ func (r *ApexInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.Updatable)
+	err = gobtools.DecodeBool(buf, &r.Updatable)
 	if err != nil {
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.UsePlatformApis)
+	err = gobtools.DecodeBool(buf, &r.UsePlatformApis)
 	if err != nil {
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.ForPrebuiltApex)
+	err = gobtools.DecodeBool(buf, &r.ForPrebuiltApex)
 	if err != nil {
 		return err
 	}
@@ -138,7 +138,7 @@ func (r ApexBundleDepsInfo) GetTypeId() int16 {
 func (r ApexBundleDepsData) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	var err error
 
-	if err = gobtools.EncodeSimple(buf, r.Updatable); err != nil {
+	if err = gobtools.EncodeBool(buf, r.Updatable); err != nil {
 		return err
 	}
 
@@ -151,7 +151,7 @@ func (r ApexBundleDepsData) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) e
 func (r *ApexBundleDepsData) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
-	err = gobtools.DecodeSimple[bool](buf, &r.Updatable)
+	err = gobtools.DecodeBool(buf, &r.Updatable)
 	if err != nil {
 		return err
 	}
@@ -221,7 +221,7 @@ func (r PrebuiltJsonInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) err
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.Is_prebuilt); err != nil {
+	if err = gobtools.EncodeBool(buf, r.Is_prebuilt); err != nil {
 		return err
 	}
 
@@ -239,7 +239,7 @@ func (r *PrebuiltJsonInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) er
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.Is_prebuilt)
+	err = gobtools.DecodeBool(buf, &r.Is_prebuilt)
 	if err != nil {
 		return err
 	}

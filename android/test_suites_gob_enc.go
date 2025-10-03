@@ -23,11 +23,11 @@ func (r TestSuiteInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error 
 	}
 
 	if r.TestSuites == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.TestSuites))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.TestSuites)); err != nil {
 			return err
 		}
 		for val1 := 0; val1 < len(r.TestSuites); val1++ {
@@ -37,7 +37,7 @@ func (r TestSuiteInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error 
 		}
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.NeedsArchFolder); err != nil {
+	if err = gobtools.EncodeBool(buf, r.NeedsArchFolder); err != nil {
 		return err
 	}
 
@@ -62,11 +62,11 @@ func (r TestSuiteInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error 
 	}
 
 	if r.ExtraConfigs == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.ExtraConfigs))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.ExtraConfigs)); err != nil {
 			return err
 		}
 		for val2 := 0; val2 < len(r.ExtraConfigs); val2++ {
@@ -76,16 +76,16 @@ func (r TestSuiteInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error 
 		}
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.PerTestcaseDirectory); err != nil {
+	if err = gobtools.EncodeBool(buf, r.PerTestcaseDirectory); err != nil {
 		return err
 	}
 
 	if r.Data == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.Data))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.Data)); err != nil {
 			return err
 		}
 		for val3 := 0; val3 < len(r.Data); val3++ {
@@ -96,11 +96,11 @@ func (r TestSuiteInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error 
 	}
 
 	if r.NonArchData == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.NonArchData))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.NonArchData)); err != nil {
 			return err
 		}
 		for val4 := 0; val4 < len(r.NonArchData); val4++ {
@@ -111,11 +111,11 @@ func (r TestSuiteInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error 
 	}
 
 	if r.CompatibilitySupportFiles == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.CompatibilitySupportFiles))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.CompatibilitySupportFiles)); err != nil {
 			return err
 		}
 		for val5 := 0; val5 < len(r.CompatibilitySupportFiles); val5++ {
@@ -125,11 +125,11 @@ func (r TestSuiteInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error 
 		}
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.DisableTestConfig); err != nil {
+	if err = gobtools.EncodeBool(buf, r.DisableTestConfig); err != nil {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.IsUnitTest); err != nil {
+	if err = gobtools.EncodeBool(buf, r.IsUnitTest); err != nil {
 		return err
 	}
 	return err
@@ -143,8 +143,8 @@ func (r *TestSuiteInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error
 		return err
 	}
 
-	var val3 int32
-	err = gobtools.DecodeSimple[int32](buf, &val3)
+	var val3 int
+	err = gobtools.DecodeInt(buf, &val3)
 	if err != nil {
 		return err
 	}
@@ -158,7 +158,7 @@ func (r *TestSuiteInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error
 		}
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.NeedsArchFolder)
+	err = gobtools.DecodeBool(buf, &r.NeedsArchFolder)
 	if err != nil {
 		return err
 	}
@@ -194,8 +194,8 @@ func (r *TestSuiteInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error
 		return err
 	}
 
-	var val16 int32
-	err = gobtools.DecodeSimple[int32](buf, &val16)
+	var val16 int
+	err = gobtools.DecodeInt(buf, &val16)
 	if err != nil {
 		return err
 	}
@@ -212,13 +212,13 @@ func (r *TestSuiteInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error
 		}
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.PerTestcaseDirectory)
+	err = gobtools.DecodeBool(buf, &r.PerTestcaseDirectory)
 	if err != nil {
 		return err
 	}
 
-	var val22 int32
-	err = gobtools.DecodeSimple[int32](buf, &val22)
+	var val22 int
+	err = gobtools.DecodeInt(buf, &val22)
 	if err != nil {
 		return err
 	}
@@ -231,8 +231,8 @@ func (r *TestSuiteInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error
 		}
 	}
 
-	var val26 int32
-	err = gobtools.DecodeSimple[int32](buf, &val26)
+	var val26 int
+	err = gobtools.DecodeInt(buf, &val26)
 	if err != nil {
 		return err
 	}
@@ -245,8 +245,8 @@ func (r *TestSuiteInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error
 		}
 	}
 
-	var val30 int32
-	err = gobtools.DecodeSimple[int32](buf, &val30)
+	var val30 int
+	err = gobtools.DecodeInt(buf, &val30)
 	if err != nil {
 		return err
 	}
@@ -263,12 +263,12 @@ func (r *TestSuiteInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error
 		}
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.DisableTestConfig)
+	err = gobtools.DecodeBool(buf, &r.DisableTestConfig)
 	if err != nil {
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.IsUnitTest)
+	err = gobtools.DecodeBool(buf, &r.IsUnitTest)
 	if err != nil {
 		return err
 	}
@@ -286,11 +286,11 @@ func (r TestSuiteSharedLibsInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buff
 	var err error
 
 	if r.MakeNames == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.MakeNames))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.MakeNames)); err != nil {
 			return err
 		}
 		for val1 := 0; val1 < len(r.MakeNames); val1++ {
@@ -305,8 +305,8 @@ func (r TestSuiteSharedLibsInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buff
 func (r *TestSuiteSharedLibsInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
-	var val2 int32
-	err = gobtools.DecodeSimple[int32](buf, &val2)
+	var val2 int
+	err = gobtools.DecodeInt(buf, &val2)
 	if err != nil {
 		return err
 	}
@@ -400,11 +400,11 @@ func (r TestSuiteInstallsInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer
 	var err error
 
 	if r.Files == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.Files))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.Files)); err != nil {
 			return err
 		}
 		for val1 := 0; val1 < len(r.Files); val1++ {
@@ -415,11 +415,11 @@ func (r TestSuiteInstallsInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer
 	}
 
 	if r.OneVariantInstalls == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.OneVariantInstalls))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.OneVariantInstalls)); err != nil {
 			return err
 		}
 		for val2 := 0; val2 < len(r.OneVariantInstalls); val2++ {
@@ -434,8 +434,8 @@ func (r TestSuiteInstallsInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer
 func (r *TestSuiteInstallsInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
-	var val2 int32
-	err = gobtools.DecodeSimple[int32](buf, &val2)
+	var val2 int
+	err = gobtools.DecodeInt(buf, &val2)
 	if err != nil {
 		return err
 	}
@@ -448,8 +448,8 @@ func (r *TestSuiteInstallsInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reade
 		}
 	}
 
-	var val6 int32
-	err = gobtools.DecodeSimple[int32](buf, &val6)
+	var val6 int
+	err = gobtools.DecodeInt(buf, &val6)
 	if err != nil {
 		return err
 	}

@@ -15,11 +15,11 @@ func (r PhonyInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	var err error
 
 	if r.Phonies == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.Phonies))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.Phonies)); err != nil {
 			return err
 		}
 		for k, v := range r.Phonies {
@@ -27,11 +27,11 @@ func (r PhonyInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 				return err
 			}
 			if v == nil {
-				if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+				if err = gobtools.EncodeInt(buf, -1); err != nil {
 					return err
 				}
 			} else {
-				if err = gobtools.EncodeSimple(buf, int32(len(v))); err != nil {
+				if err = gobtools.EncodeInt(buf, len(v)); err != nil {
 					return err
 				}
 				for val1 := 0; val1 < len(v); val1++ {
@@ -48,8 +48,8 @@ func (r PhonyInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 func (r *PhonyInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
-	var val2 int32
-	err = gobtools.DecodeSimple[int32](buf, &val2)
+	var val2 int
+	err = gobtools.DecodeInt(buf, &val2)
 	if err != nil {
 		return err
 	}
@@ -62,8 +62,8 @@ func (r *PhonyInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 			if err != nil {
 				return err
 			}
-			var val7 int32
-			err = gobtools.DecodeSimple[int32](buf, &val7)
+			var val7 int
+			err = gobtools.DecodeInt(buf, &val7)
 			if err != nil {
 				return err
 			}

@@ -17,7 +17,7 @@ func init() {
 func (r unstableInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	var err error
 
-	if err = gobtools.EncodeSimple(buf, r.ContainsPlatformPrivateApis); err != nil {
+	if err = gobtools.EncodeBool(buf, r.ContainsPlatformPrivateApis); err != nil {
 		return err
 	}
 	return err
@@ -26,7 +26,7 @@ func (r unstableInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 func (r *unstableInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
-	err = gobtools.DecodeSimple[bool](buf, &r.ContainsPlatformPrivateApis)
+	err = gobtools.DecodeBool(buf, &r.ContainsPlatformPrivateApis)
 	if err != nil {
 		return err
 	}
@@ -44,7 +44,7 @@ func (r restriction) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	var err error
 
 	val1 := r.dependency == nil
-	if err = gobtools.EncodeSimple(buf, val1); err != nil {
+	if err = gobtools.EncodeBool(buf, val1); err != nil {
 		return err
 	}
 	if !val1 {
@@ -58,15 +58,15 @@ func (r restriction) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	}
 
 	if r.allowedExceptions == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.allowedExceptions))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.allowedExceptions)); err != nil {
 			return err
 		}
 		for val2 := 0; val2 < len(r.allowedExceptions); val2++ {
-			if err = gobtools.EncodeSimple(buf, int64(int(r.allowedExceptions[val2]))); err != nil {
+			if err = gobtools.EncodeInt(buf, int(r.allowedExceptions[val2])); err != nil {
 				return err
 			}
 		}
@@ -78,7 +78,7 @@ func (r *restriction) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
 	var val2 bool
-	if err = gobtools.DecodeSimple(buf, &val2); err != nil {
+	if err = gobtools.DecodeBool(buf, &val2); err != nil {
 		return err
 	}
 	if !val2 {
@@ -94,8 +94,8 @@ func (r *restriction) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 		return err
 	}
 
-	var val6 int32
-	err = gobtools.DecodeSimple[int32](buf, &val6)
+	var val6 int
+	err = gobtools.DecodeInt(buf, &val6)
 	if err != nil {
 		return err
 	}
@@ -103,12 +103,10 @@ func (r *restriction) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 		r.allowedExceptions = make([]exceptionHandleFuncLabel, val6)
 		for val7 := 0; val7 < int(val6); val7++ {
 			var val9 int
-			var val10 int64
-			err = gobtools.DecodeSimple[int64](buf, &val10)
+			err = gobtools.DecodeInt(buf, &val9)
 			if err != nil {
 				return err
 			}
-			val9 = int(val10)
 			r.allowedExceptions[val7] = exceptionHandleFuncLabel(val9)
 		}
 	}
@@ -130,11 +128,11 @@ func (r container) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	}
 
 	if r.restricted == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.restricted))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.restricted)); err != nil {
 			return err
 		}
 		for val1 := 0; val1 < len(r.restricted); val1++ {
@@ -154,8 +152,8 @@ func (r *container) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 		return err
 	}
 
-	var val3 int32
-	err = gobtools.DecodeSimple[int32](buf, &val3)
+	var val3 int
+	err = gobtools.DecodeInt(buf, &val3)
 	if err != nil {
 		return err
 	}
@@ -181,16 +179,16 @@ func (r ContainersInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error
 	var err error
 
 	if r.belongingContainers == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.belongingContainers))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.belongingContainers)); err != nil {
 			return err
 		}
 		for val1 := 0; val1 < len(r.belongingContainers); val1++ {
 			val2 := r.belongingContainers[val1] == nil
-			if err = gobtools.EncodeSimple(buf, val2); err != nil {
+			if err = gobtools.EncodeBool(buf, val2); err != nil {
 				return err
 			}
 			if !val2 {
@@ -202,11 +200,11 @@ func (r ContainersInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error
 	}
 
 	if r.belongingApexes == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.belongingApexes))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.belongingApexes)); err != nil {
 			return err
 		}
 		for val3 := 0; val3 < len(r.belongingApexes); val3++ {
@@ -221,8 +219,8 @@ func (r ContainersInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error
 func (r *ContainersInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
-	var val2 int32
-	err = gobtools.DecodeSimple[int32](buf, &val2)
+	var val2 int
+	err = gobtools.DecodeInt(buf, &val2)
 	if err != nil {
 		return err
 	}
@@ -230,7 +228,7 @@ func (r *ContainersInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) erro
 		r.belongingContainers = make([]*container, val2)
 		for val3 := 0; val3 < int(val2); val3++ {
 			var val5 bool
-			if err = gobtools.DecodeSimple(buf, &val5); err != nil {
+			if err = gobtools.DecodeBool(buf, &val5); err != nil {
 				return err
 			}
 			if !val5 {
@@ -243,8 +241,8 @@ func (r *ContainersInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) erro
 		}
 	}
 
-	var val8 int32
-	err = gobtools.DecodeSimple[int32](buf, &val8)
+	var val8 int
+	err = gobtools.DecodeInt(buf, &val8)
 	if err != nil {
 		return err
 	}
