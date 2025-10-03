@@ -25,6 +25,7 @@ import (
 	"os/user"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strconv"
 	"strings"
 	"sync"
@@ -2085,4 +2086,77 @@ func GetMetricsUploader(topDir string, env *Environment) string {
 	}
 
 	return ""
+}
+
+var envVarFlagDirs = []string{
+	"build/release",
+	"vendor/google_shared/build/release",
+	"vendor/google/release",
+}
+
+// Look for environment variable defaults for TARGET_RELEASE.
+//
+// This allows us to effectively guard changes to Soong where the value of the guard flag needs to
+// be resolved before Soong runs product config.
+//
+// If multiple directories contain default values for environment variables, the last one listed in
+// envVarFlagDirs will be used as the default for that environment variable. SOONG_ENVVAR_FLAG_DIRS
+// can be used to add directories to the list.
+func ResolveSoongEnvVars() error {
+	targetRelease := os.Getenv("TARGET_RELEASE")
+	if targetRelease == "" {
+		// This build does not use TARGET_RELEASE.
+		return nil
+	}
+	envMap := OsEnvironment().AsMap()
+	quiet := OsEnvironment().IsEnvTrue("ANDROID_QUIET_BUILD")
+	flagDirs := slices.Concat(envVarFlagDirs, strings.Fields(os.Getenv("SOONG_ENVVAR_FLAG_DIRS")))
+
+	// Starting with the last directory, look for variables for ${TARGET_RELEASE}
+	for _, dir := range slices.Backward(flagDirs) {
+		jsonPath := filepath.Join(dir, "build_config", "soong_env", targetRelease+".json")
+		data, err := os.ReadFile(jsonPath)
+		if err != nil {
+			if os.IsNotExist(err) {
+				continue
+			}
+			return fmt.Errorf("reading file %s: %w", jsonPath, err)
+		}
+
+		// Use map[string]interface{} to handle the arbitrary JSON structure.
+		var config map[string]interface{}
+
+		if err := json.Unmarshal(data, &config); err != nil {
+			return fmt.Errorf("unmarshaling JSON from %s: %w", jsonPath, err)
+		}
+
+		// Look at the JSON object for "env_default".
+		envDefault, ok := config["env_default"].(map[string]interface{})
+		if !ok {
+			// 'env_default' may not exist or may not be a map, which is fine, continue.
+			continue
+		}
+
+		// For each key in env_default, set the environment variable if not defined.
+		for key, value := range envDefault {
+			switch value.(type) {
+			case string:
+			default:
+				data, err := json.Marshal(value)
+				if err != nil {
+					return fmt.Errorf("[%s] failed to marshal `%v` for error: %w", jsonPath, value, err)
+				}
+				return fmt.Errorf("[%s] env_default[%q] must contain a string, but contains `%s`", jsonPath, key, string(data))
+			}
+			if _, exists := envMap[key]; !exists {
+				v := fmt.Sprintf("%v", value)
+				if !quiet {
+					fmt.Fprintf(os.Stderr, "[%s] Setting %s=%v\n", jsonPath, key, v)
+				}
+				os.Setenv(key, v)
+				envMap[key] = v
+			}
+		}
+	}
+	return nil
 }

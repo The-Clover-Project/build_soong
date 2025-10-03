@@ -130,6 +130,13 @@ func main() {
 
 	buildStarted := time.Now()
 
+	// Resolve Soong environment variable values.
+	// If any defaults are provided for ${TARGET_RELEASE}, use them for any unset variables.
+	err := build.ResolveSoongEnvVars()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error resolving `soong` environment: %s.\n", err)
+		os.Exit(1)
+	}
 	c, args, err := getCommand(os.Args)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error parsing `soong` args: %s.\n", err)
