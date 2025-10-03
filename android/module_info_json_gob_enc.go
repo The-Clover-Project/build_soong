@@ -22,11 +22,11 @@ func (r CoreModuleInfoJSON) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) e
 	}
 
 	if r.Path == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.Path))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.Path)); err != nil {
 			return err
 		}
 		for val1 := 0; val1 < len(r.Path); val1++ {
@@ -37,11 +37,11 @@ func (r CoreModuleInfoJSON) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) e
 	}
 
 	if r.Installed == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.Installed))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.Installed)); err != nil {
 			return err
 		}
 		for val2 := 0; val2 < len(r.Installed); val2++ {
@@ -56,11 +56,11 @@ func (r CoreModuleInfoJSON) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) e
 	}
 
 	if r.SupportedVariants == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.SupportedVariants))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.SupportedVariants)); err != nil {
 			return err
 		}
 		for val3 := 0; val3 < len(r.SupportedVariants); val3++ {
@@ -71,11 +71,11 @@ func (r CoreModuleInfoJSON) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) e
 	}
 
 	if r.HostDependencies == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.HostDependencies))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.HostDependencies)); err != nil {
 			return err
 		}
 		for val4 := 0; val4 < len(r.HostDependencies); val4++ {
@@ -86,11 +86,11 @@ func (r CoreModuleInfoJSON) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) e
 	}
 
 	if r.TargetDependencies == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.TargetDependencies))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.TargetDependencies)); err != nil {
 			return err
 		}
 		for val5 := 0; val5 < len(r.TargetDependencies); val5++ {
@@ -101,11 +101,11 @@ func (r CoreModuleInfoJSON) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) e
 	}
 
 	if r.Data == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.Data))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.Data)); err != nil {
 			return err
 		}
 		for val6 := 0; val6 < len(r.Data); val6++ {
@@ -116,11 +116,11 @@ func (r CoreModuleInfoJSON) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) e
 	}
 
 	if r.Required == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.Required))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.Required)); err != nil {
 			return err
 		}
 		for val7 := 0; val7 < len(r.Required); val7++ {
@@ -140,8 +140,8 @@ func (r *CoreModuleInfoJSON) Decode(ctx gobtools.EncContext, buf *bytes.Reader) 
 		return err
 	}
 
-	var val3 int32
-	err = gobtools.DecodeSimple[int32](buf, &val3)
+	var val3 int
+	err = gobtools.DecodeInt(buf, &val3)
 	if err != nil {
 		return err
 	}
@@ -155,8 +155,8 @@ func (r *CoreModuleInfoJSON) Decode(ctx gobtools.EncContext, buf *bytes.Reader) 
 		}
 	}
 
-	var val7 int32
-	err = gobtools.DecodeSimple[int32](buf, &val7)
+	var val7 int
+	err = gobtools.DecodeInt(buf, &val7)
 	if err != nil {
 		return err
 	}
@@ -175,8 +175,8 @@ func (r *CoreModuleInfoJSON) Decode(ctx gobtools.EncContext, buf *bytes.Reader) 
 		return err
 	}
 
-	var val12 int32
-	err = gobtools.DecodeSimple[int32](buf, &val12)
+	var val12 int
+	err = gobtools.DecodeInt(buf, &val12)
 	if err != nil {
 		return err
 	}
@@ -190,8 +190,8 @@ func (r *CoreModuleInfoJSON) Decode(ctx gobtools.EncContext, buf *bytes.Reader) 
 		}
 	}
 
-	var val16 int32
-	err = gobtools.DecodeSimple[int32](buf, &val16)
+	var val16 int
+	err = gobtools.DecodeInt(buf, &val16)
 	if err != nil {
 		return err
 	}
@@ -205,8 +205,8 @@ func (r *CoreModuleInfoJSON) Decode(ctx gobtools.EncContext, buf *bytes.Reader) 
 		}
 	}
 
-	var val20 int32
-	err = gobtools.DecodeSimple[int32](buf, &val20)
+	var val20 int
+	err = gobtools.DecodeInt(buf, &val20)
 	if err != nil {
 		return err
 	}
@@ -220,8 +220,8 @@ func (r *CoreModuleInfoJSON) Decode(ctx gobtools.EncContext, buf *bytes.Reader) 
 		}
 	}
 
-	var val24 int32
-	err = gobtools.DecodeSimple[int32](buf, &val24)
+	var val24 int
+	err = gobtools.DecodeInt(buf, &val24)
 	if err != nil {
 		return err
 	}
@@ -235,8 +235,8 @@ func (r *CoreModuleInfoJSON) Decode(ctx gobtools.EncContext, buf *bytes.Reader) 
 		}
 	}
 
-	var val28 int32
-	err = gobtools.DecodeSimple[int32](buf, &val28)
+	var val28 int
+	err = gobtools.DecodeInt(buf, &val28)
 	if err != nil {
 		return err
 	}
@@ -266,16 +266,16 @@ func (r ExtraModuleInfoJSON) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) 
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.Uninstallable); err != nil {
+	if err = gobtools.EncodeBool(buf, r.Uninstallable); err != nil {
 		return err
 	}
 
 	if r.Class == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.Class))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.Class)); err != nil {
 			return err
 		}
 		for val1 := 0; val1 < len(r.Class); val1++ {
@@ -286,11 +286,11 @@ func (r ExtraModuleInfoJSON) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) 
 	}
 
 	if r.Tags == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.Tags))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.Tags)); err != nil {
 			return err
 		}
 		for val2 := 0; val2 < len(r.Tags); val2++ {
@@ -301,11 +301,11 @@ func (r ExtraModuleInfoJSON) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) 
 	}
 
 	if r.Dependencies == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.Dependencies))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.Dependencies)); err != nil {
 			return err
 		}
 		for val3 := 0; val3 < len(r.Dependencies); val3++ {
@@ -316,11 +316,11 @@ func (r ExtraModuleInfoJSON) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) 
 	}
 
 	if r.SharedLibs == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.SharedLibs))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.SharedLibs)); err != nil {
 			return err
 		}
 		for val4 := 0; val4 < len(r.SharedLibs); val4++ {
@@ -331,11 +331,11 @@ func (r ExtraModuleInfoJSON) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) 
 	}
 
 	if r.StaticLibs == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.StaticLibs))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.StaticLibs)); err != nil {
 			return err
 		}
 		for val5 := 0; val5 < len(r.StaticLibs); val5++ {
@@ -346,11 +346,11 @@ func (r ExtraModuleInfoJSON) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) 
 	}
 
 	if r.SystemSharedLibs == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.SystemSharedLibs))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.SystemSharedLibs)); err != nil {
 			return err
 		}
 		for val6 := 0; val6 < len(r.SystemSharedLibs); val6++ {
@@ -361,11 +361,11 @@ func (r ExtraModuleInfoJSON) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) 
 	}
 
 	if r.Srcs == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.Srcs))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.Srcs)); err != nil {
 			return err
 		}
 		for val7 := 0; val7 < len(r.Srcs); val7++ {
@@ -376,11 +376,11 @@ func (r ExtraModuleInfoJSON) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) 
 	}
 
 	if r.SrcJars == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.SrcJars))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.SrcJars)); err != nil {
 			return err
 		}
 		for val8 := 0; val8 < len(r.SrcJars); val8++ {
@@ -391,11 +391,11 @@ func (r ExtraModuleInfoJSON) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) 
 	}
 
 	if r.ClassesJar == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.ClassesJar))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.ClassesJar)); err != nil {
 			return err
 		}
 		for val9 := 0; val9 < len(r.ClassesJar); val9++ {
@@ -406,11 +406,11 @@ func (r ExtraModuleInfoJSON) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) 
 	}
 
 	if r.TestMainlineModules == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.TestMainlineModules))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.TestMainlineModules)); err != nil {
 			return err
 		}
 		for val10 := 0; val10 < len(r.TestMainlineModules); val10++ {
@@ -425,11 +425,11 @@ func (r ExtraModuleInfoJSON) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) 
 	}
 
 	if r.TestOptionsTags == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.TestOptionsTags))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.TestOptionsTags)); err != nil {
 			return err
 		}
 		for val11 := 0; val11 < len(r.TestOptionsTags); val11++ {
@@ -440,11 +440,11 @@ func (r ExtraModuleInfoJSON) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) 
 	}
 
 	if r.RuntimeDependencies == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.RuntimeDependencies))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.RuntimeDependencies)); err != nil {
 			return err
 		}
 		for val12 := 0; val12 < len(r.RuntimeDependencies); val12++ {
@@ -455,11 +455,11 @@ func (r ExtraModuleInfoJSON) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) 
 	}
 
 	if r.StaticDependencies == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.StaticDependencies))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.StaticDependencies)); err != nil {
 			return err
 		}
 		for val13 := 0; val13 < len(r.StaticDependencies); val13++ {
@@ -470,11 +470,11 @@ func (r ExtraModuleInfoJSON) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) 
 	}
 
 	if r.DataDependencies == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.DataDependencies))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.DataDependencies)); err != nil {
 			return err
 		}
 		for val14 := 0; val14 < len(r.DataDependencies); val14++ {
@@ -485,11 +485,11 @@ func (r ExtraModuleInfoJSON) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) 
 	}
 
 	if r.CompatibilitySuites == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.CompatibilitySuites))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.CompatibilitySuites)); err != nil {
 			return err
 		}
 		for val15 := 0; val15 < len(r.CompatibilitySuites); val15++ {
@@ -500,11 +500,11 @@ func (r ExtraModuleInfoJSON) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) 
 	}
 
 	if r.AutoTestConfig == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.AutoTestConfig))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.AutoTestConfig)); err != nil {
 			return err
 		}
 		for val16 := 0; val16 < len(r.AutoTestConfig); val16++ {
@@ -515,11 +515,11 @@ func (r ExtraModuleInfoJSON) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) 
 	}
 
 	if r.TestConfig == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.TestConfig))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.TestConfig)); err != nil {
 			return err
 		}
 		for val17 := 0; val17 < len(r.TestConfig); val17++ {
@@ -534,11 +534,11 @@ func (r ExtraModuleInfoJSON) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) 
 	}
 
 	if r.ExtraRequired == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.ExtraRequired))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.ExtraRequired)); err != nil {
 			return err
 		}
 		for val18 := 0; val18 < len(r.ExtraRequired); val18++ {
@@ -549,11 +549,11 @@ func (r ExtraModuleInfoJSON) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) 
 	}
 
 	if r.ExtraHostRequired == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.ExtraHostRequired))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.ExtraHostRequired)); err != nil {
 			return err
 		}
 		for val19 := 0; val19 < len(r.ExtraHostRequired); val19++ {
@@ -564,11 +564,11 @@ func (r ExtraModuleInfoJSON) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) 
 	}
 
 	if r.SupportedVariantsOverride == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.SupportedVariantsOverride))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.SupportedVariantsOverride)); err != nil {
 			return err
 		}
 		for val20 := 0; val20 < len(r.SupportedVariantsOverride); val20++ {
@@ -578,7 +578,7 @@ func (r ExtraModuleInfoJSON) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) 
 		}
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.Disabled); err != nil {
+	if err = gobtools.EncodeBool(buf, r.Disabled); err != nil {
 		return err
 	}
 
@@ -600,13 +600,13 @@ func (r *ExtraModuleInfoJSON) Decode(ctx gobtools.EncContext, buf *bytes.Reader)
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.Uninstallable)
+	err = gobtools.DecodeBool(buf, &r.Uninstallable)
 	if err != nil {
 		return err
 	}
 
-	var val4 int32
-	err = gobtools.DecodeSimple[int32](buf, &val4)
+	var val4 int
+	err = gobtools.DecodeInt(buf, &val4)
 	if err != nil {
 		return err
 	}
@@ -620,8 +620,8 @@ func (r *ExtraModuleInfoJSON) Decode(ctx gobtools.EncContext, buf *bytes.Reader)
 		}
 	}
 
-	var val8 int32
-	err = gobtools.DecodeSimple[int32](buf, &val8)
+	var val8 int
+	err = gobtools.DecodeInt(buf, &val8)
 	if err != nil {
 		return err
 	}
@@ -635,8 +635,8 @@ func (r *ExtraModuleInfoJSON) Decode(ctx gobtools.EncContext, buf *bytes.Reader)
 		}
 	}
 
-	var val12 int32
-	err = gobtools.DecodeSimple[int32](buf, &val12)
+	var val12 int
+	err = gobtools.DecodeInt(buf, &val12)
 	if err != nil {
 		return err
 	}
@@ -650,8 +650,8 @@ func (r *ExtraModuleInfoJSON) Decode(ctx gobtools.EncContext, buf *bytes.Reader)
 		}
 	}
 
-	var val16 int32
-	err = gobtools.DecodeSimple[int32](buf, &val16)
+	var val16 int
+	err = gobtools.DecodeInt(buf, &val16)
 	if err != nil {
 		return err
 	}
@@ -665,8 +665,8 @@ func (r *ExtraModuleInfoJSON) Decode(ctx gobtools.EncContext, buf *bytes.Reader)
 		}
 	}
 
-	var val20 int32
-	err = gobtools.DecodeSimple[int32](buf, &val20)
+	var val20 int
+	err = gobtools.DecodeInt(buf, &val20)
 	if err != nil {
 		return err
 	}
@@ -680,8 +680,8 @@ func (r *ExtraModuleInfoJSON) Decode(ctx gobtools.EncContext, buf *bytes.Reader)
 		}
 	}
 
-	var val24 int32
-	err = gobtools.DecodeSimple[int32](buf, &val24)
+	var val24 int
+	err = gobtools.DecodeInt(buf, &val24)
 	if err != nil {
 		return err
 	}
@@ -695,8 +695,8 @@ func (r *ExtraModuleInfoJSON) Decode(ctx gobtools.EncContext, buf *bytes.Reader)
 		}
 	}
 
-	var val28 int32
-	err = gobtools.DecodeSimple[int32](buf, &val28)
+	var val28 int
+	err = gobtools.DecodeInt(buf, &val28)
 	if err != nil {
 		return err
 	}
@@ -710,8 +710,8 @@ func (r *ExtraModuleInfoJSON) Decode(ctx gobtools.EncContext, buf *bytes.Reader)
 		}
 	}
 
-	var val32 int32
-	err = gobtools.DecodeSimple[int32](buf, &val32)
+	var val32 int
+	err = gobtools.DecodeInt(buf, &val32)
 	if err != nil {
 		return err
 	}
@@ -725,8 +725,8 @@ func (r *ExtraModuleInfoJSON) Decode(ctx gobtools.EncContext, buf *bytes.Reader)
 		}
 	}
 
-	var val36 int32
-	err = gobtools.DecodeSimple[int32](buf, &val36)
+	var val36 int
+	err = gobtools.DecodeInt(buf, &val36)
 	if err != nil {
 		return err
 	}
@@ -740,8 +740,8 @@ func (r *ExtraModuleInfoJSON) Decode(ctx gobtools.EncContext, buf *bytes.Reader)
 		}
 	}
 
-	var val40 int32
-	err = gobtools.DecodeSimple[int32](buf, &val40)
+	var val40 int
+	err = gobtools.DecodeInt(buf, &val40)
 	if err != nil {
 		return err
 	}
@@ -760,8 +760,8 @@ func (r *ExtraModuleInfoJSON) Decode(ctx gobtools.EncContext, buf *bytes.Reader)
 		return err
 	}
 
-	var val45 int32
-	err = gobtools.DecodeSimple[int32](buf, &val45)
+	var val45 int
+	err = gobtools.DecodeInt(buf, &val45)
 	if err != nil {
 		return err
 	}
@@ -775,8 +775,8 @@ func (r *ExtraModuleInfoJSON) Decode(ctx gobtools.EncContext, buf *bytes.Reader)
 		}
 	}
 
-	var val49 int32
-	err = gobtools.DecodeSimple[int32](buf, &val49)
+	var val49 int
+	err = gobtools.DecodeInt(buf, &val49)
 	if err != nil {
 		return err
 	}
@@ -790,8 +790,8 @@ func (r *ExtraModuleInfoJSON) Decode(ctx gobtools.EncContext, buf *bytes.Reader)
 		}
 	}
 
-	var val53 int32
-	err = gobtools.DecodeSimple[int32](buf, &val53)
+	var val53 int
+	err = gobtools.DecodeInt(buf, &val53)
 	if err != nil {
 		return err
 	}
@@ -805,8 +805,8 @@ func (r *ExtraModuleInfoJSON) Decode(ctx gobtools.EncContext, buf *bytes.Reader)
 		}
 	}
 
-	var val57 int32
-	err = gobtools.DecodeSimple[int32](buf, &val57)
+	var val57 int
+	err = gobtools.DecodeInt(buf, &val57)
 	if err != nil {
 		return err
 	}
@@ -820,8 +820,8 @@ func (r *ExtraModuleInfoJSON) Decode(ctx gobtools.EncContext, buf *bytes.Reader)
 		}
 	}
 
-	var val61 int32
-	err = gobtools.DecodeSimple[int32](buf, &val61)
+	var val61 int
+	err = gobtools.DecodeInt(buf, &val61)
 	if err != nil {
 		return err
 	}
@@ -835,8 +835,8 @@ func (r *ExtraModuleInfoJSON) Decode(ctx gobtools.EncContext, buf *bytes.Reader)
 		}
 	}
 
-	var val65 int32
-	err = gobtools.DecodeSimple[int32](buf, &val65)
+	var val65 int
+	err = gobtools.DecodeInt(buf, &val65)
 	if err != nil {
 		return err
 	}
@@ -850,8 +850,8 @@ func (r *ExtraModuleInfoJSON) Decode(ctx gobtools.EncContext, buf *bytes.Reader)
 		}
 	}
 
-	var val69 int32
-	err = gobtools.DecodeSimple[int32](buf, &val69)
+	var val69 int
+	err = gobtools.DecodeInt(buf, &val69)
 	if err != nil {
 		return err
 	}
@@ -870,8 +870,8 @@ func (r *ExtraModuleInfoJSON) Decode(ctx gobtools.EncContext, buf *bytes.Reader)
 		return err
 	}
 
-	var val74 int32
-	err = gobtools.DecodeSimple[int32](buf, &val74)
+	var val74 int
+	err = gobtools.DecodeInt(buf, &val74)
 	if err != nil {
 		return err
 	}
@@ -885,8 +885,8 @@ func (r *ExtraModuleInfoJSON) Decode(ctx gobtools.EncContext, buf *bytes.Reader)
 		}
 	}
 
-	var val78 int32
-	err = gobtools.DecodeSimple[int32](buf, &val78)
+	var val78 int
+	err = gobtools.DecodeInt(buf, &val78)
 	if err != nil {
 		return err
 	}
@@ -900,8 +900,8 @@ func (r *ExtraModuleInfoJSON) Decode(ctx gobtools.EncContext, buf *bytes.Reader)
 		}
 	}
 
-	var val82 int32
-	err = gobtools.DecodeSimple[int32](buf, &val82)
+	var val82 int
+	err = gobtools.DecodeInt(buf, &val82)
 	if err != nil {
 		return err
 	}
@@ -915,7 +915,7 @@ func (r *ExtraModuleInfoJSON) Decode(ctx gobtools.EncContext, buf *bytes.Reader)
 		}
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.Disabled)
+	err = gobtools.DecodeBool(buf, &r.Disabled)
 	if err != nil {
 		return err
 	}
@@ -976,16 +976,16 @@ func (r ModuleInfoJSONInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) e
 	var err error
 
 	if r.Data == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.Data))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.Data)); err != nil {
 			return err
 		}
 		for val1 := 0; val1 < len(r.Data); val1++ {
 			val2 := r.Data[val1] == nil
-			if err = gobtools.EncodeSimple(buf, val2); err != nil {
+			if err = gobtools.EncodeBool(buf, val2); err != nil {
 				return err
 			}
 			if !val2 {
@@ -1001,8 +1001,8 @@ func (r ModuleInfoJSONInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) e
 func (r *ModuleInfoJSONInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
-	var val2 int32
-	err = gobtools.DecodeSimple[int32](buf, &val2)
+	var val2 int
+	err = gobtools.DecodeInt(buf, &val2)
 	if err != nil {
 		return err
 	}
@@ -1010,7 +1010,7 @@ func (r *ModuleInfoJSONInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) 
 		r.Data = make([]*ModuleInfoJSON, val2)
 		for val3 := 0; val3 < int(val2); val3++ {
 			var val5 bool
-			if err = gobtools.DecodeSimple(buf, &val5); err != nil {
+			if err = gobtools.DecodeBool(buf, &val5); err != nil {
 				return err
 			}
 			if !val5 {

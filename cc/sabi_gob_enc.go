@@ -57,11 +57,11 @@ func (r TaggedLsDumpsInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) er
 	var err error
 
 	if r == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r)); err != nil {
 			return err
 		}
 		for val1 := 0; val1 < len(r); val1++ {
@@ -76,8 +76,8 @@ func (r TaggedLsDumpsInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) er
 func (r *TaggedLsDumpsInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
-	var val2 int32
-	err = gobtools.DecodeSimple[int32](buf, &val2)
+	var val2 int
+	err = gobtools.DecodeInt(buf, &val2)
 	if err != nil {
 		return err
 	}

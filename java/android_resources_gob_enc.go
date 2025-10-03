@@ -19,7 +19,7 @@ func (r rroDir) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, int64(int(r.overlayType))); err != nil {
+	if err = gobtools.EncodeInt(buf, int(r.overlayType)); err != nil {
 		return err
 	}
 	return err
@@ -37,12 +37,10 @@ func (r *rroDir) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	}
 
 	var val4 int
-	var val5 int64
-	err = gobtools.DecodeSimple[int64](buf, &val5)
+	err = gobtools.DecodeInt(buf, &val4)
 	if err != nil {
 		return err
 	}
-	val4 = int(val5)
 	r.overlayType = overlayType(val4)
 
 	return err

@@ -18,11 +18,11 @@ func (r ApiLevel) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, int64(r.number)); err != nil {
+	if err = gobtools.EncodeInt(buf, r.number); err != nil {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.isPreview); err != nil {
+	if err = gobtools.EncodeBool(buf, r.isPreview); err != nil {
 		return err
 	}
 	return err
@@ -36,14 +36,12 @@ func (r *ApiLevel) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 		return err
 	}
 
-	var val2 int64
-	err = gobtools.DecodeSimple[int64](buf, &val2)
+	err = gobtools.DecodeInt(buf, &r.number)
 	if err != nil {
 		return err
 	}
-	r.number = int(val2)
 
-	err = gobtools.DecodeSimple[bool](buf, &r.isPreview)
+	err = gobtools.DecodeBool(buf, &r.isPreview)
 	if err != nil {
 		return err
 	}

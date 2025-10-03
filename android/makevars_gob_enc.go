@@ -15,11 +15,11 @@ func (r dist) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	var err error
 
 	if r.goals == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.goals))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.goals)); err != nil {
 			return err
 		}
 		for val1 := 0; val1 < len(r.goals); val1++ {
@@ -30,11 +30,11 @@ func (r dist) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	}
 
 	if r.paths == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.paths))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.paths)); err != nil {
 			return err
 		}
 		for val2 := 0; val2 < len(r.paths); val2++ {
@@ -49,8 +49,8 @@ func (r dist) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 func (r *dist) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
-	var val2 int32
-	err = gobtools.DecodeSimple[int32](buf, &val2)
+	var val2 int
+	err = gobtools.DecodeInt(buf, &val2)
 	if err != nil {
 		return err
 	}
@@ -64,8 +64,8 @@ func (r *dist) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 		}
 	}
 
-	var val7 int32
-	err = gobtools.DecodeSimple[int32](buf, &val7)
+	var val7 int
+	err = gobtools.DecodeInt(buf, &val7)
 	if err != nil {
 		return err
 	}

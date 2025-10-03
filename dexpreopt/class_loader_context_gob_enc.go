@@ -19,7 +19,7 @@ func (r ClassLoaderContext) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) e
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.Optional); err != nil {
+	if err = gobtools.EncodeBool(buf, r.Optional); err != nil {
 		return err
 	}
 
@@ -32,16 +32,16 @@ func (r ClassLoaderContext) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) e
 	}
 
 	if r.Subcontexts == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.Subcontexts))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.Subcontexts)); err != nil {
 			return err
 		}
 		for val1 := 0; val1 < len(r.Subcontexts); val1++ {
 			val2 := r.Subcontexts[val1] == nil
-			if err = gobtools.EncodeSimple(buf, val2); err != nil {
+			if err = gobtools.EncodeBool(buf, val2); err != nil {
 				return err
 			}
 			if !val2 {
@@ -62,7 +62,7 @@ func (r *ClassLoaderContext) Decode(ctx gobtools.EncContext, buf *bytes.Reader) 
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.Optional)
+	err = gobtools.DecodeBool(buf, &r.Optional)
 	if err != nil {
 		return err
 	}
@@ -80,8 +80,8 @@ func (r *ClassLoaderContext) Decode(ctx gobtools.EncContext, buf *bytes.Reader) 
 		return err
 	}
 
-	var val7 int32
-	err = gobtools.DecodeSimple[int32](buf, &val7)
+	var val7 int
+	err = gobtools.DecodeInt(buf, &val7)
 	if err != nil {
 		return err
 	}
@@ -89,7 +89,7 @@ func (r *ClassLoaderContext) Decode(ctx gobtools.EncContext, buf *bytes.Reader) 
 		r.Subcontexts = make([]*ClassLoaderContext, val7)
 		for val8 := 0; val8 < int(val7); val8++ {
 			var val10 bool
-			if err = gobtools.DecodeSimple(buf, &val10); err != nil {
+			if err = gobtools.DecodeBool(buf, &val10); err != nil {
 				return err
 			}
 			if !val10 {

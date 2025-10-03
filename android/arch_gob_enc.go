@@ -30,11 +30,11 @@ func (r Arch) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	}
 
 	if r.Abi == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.Abi))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.Abi)); err != nil {
 			return err
 		}
 		for val1 := 0; val1 < len(r.Abi); val1++ {
@@ -45,11 +45,11 @@ func (r Arch) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	}
 
 	if r.ArchFeatures == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.ArchFeatures))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.ArchFeatures)); err != nil {
 			return err
 		}
 		for val2 := 0; val2 < len(r.ArchFeatures); val2++ {
@@ -78,8 +78,8 @@ func (r *Arch) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 		return err
 	}
 
-	var val5 int32
-	err = gobtools.DecodeSimple[int32](buf, &val5)
+	var val5 int
+	err = gobtools.DecodeInt(buf, &val5)
 	if err != nil {
 		return err
 	}
@@ -93,8 +93,8 @@ func (r *Arch) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 		}
 	}
 
-	var val9 int32
-	err = gobtools.DecodeSimple[int32](buf, &val9)
+	var val9 int
+	err = gobtools.DecodeInt(buf, &val9)
 	if err != nil {
 		return err
 	}
@@ -172,11 +172,11 @@ func (r OsType) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, int64(int(r.Class))); err != nil {
+	if err = gobtools.EncodeInt(buf, int(r.Class)); err != nil {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.DefaultDisabled); err != nil {
+	if err = gobtools.EncodeBool(buf, r.DefaultDisabled); err != nil {
 		return err
 	}
 	return err
@@ -196,15 +196,13 @@ func (r *OsType) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	}
 
 	var val4 int
-	var val5 int64
-	err = gobtools.DecodeSimple[int64](buf, &val5)
+	err = gobtools.DecodeInt(buf, &val4)
 	if err != nil {
 		return err
 	}
-	val4 = int(val5)
 	r.Class = OsClass(val4)
 
-	err = gobtools.DecodeSimple[bool](buf, &r.DefaultDisabled)
+	err = gobtools.DecodeBool(buf, &r.DefaultDisabled)
 	if err != nil {
 		return err
 	}
@@ -229,7 +227,7 @@ func (r Target) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, bool(r.NativeBridge)); err != nil {
+	if err = gobtools.EncodeBool(buf, bool(r.NativeBridge)); err != nil {
 		return err
 	}
 
@@ -241,7 +239,7 @@ func (r Target) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.HostCross); err != nil {
+	if err = gobtools.EncodeBool(buf, r.HostCross); err != nil {
 		return err
 	}
 	return err
@@ -259,7 +257,7 @@ func (r *Target) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	}
 
 	var val4 bool
-	err = gobtools.DecodeSimple[bool](buf, &val4)
+	err = gobtools.DecodeBool(buf, &val4)
 	if err != nil {
 		return err
 	}
@@ -275,7 +273,7 @@ func (r *Target) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.HostCross)
+	err = gobtools.DecodeBool(buf, &r.HostCross)
 	if err != nil {
 		return err
 	}

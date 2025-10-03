@@ -40,15 +40,15 @@ func (r FuzzConfigInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.FuzzOnHaikuDevice); err != nil {
+	if err = gobtools.EncodeBool(buf, r.FuzzOnHaikuDevice); err != nil {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.FuzzOnHaikuHost); err != nil {
+	if err = gobtools.EncodeBool(buf, r.FuzzOnHaikuHost); err != nil {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.UseForPresubmit); err != nil {
+	if err = gobtools.EncodeBool(buf, r.UseForPresubmit); err != nil {
 		return err
 	}
 	return err
@@ -99,17 +99,17 @@ func (r *FuzzConfigInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) erro
 	}
 	r.UsePlatformLibs = UsePlatformLibs(val17)
 
-	err = gobtools.DecodeSimple[bool](buf, &r.FuzzOnHaikuDevice)
+	err = gobtools.DecodeBool(buf, &r.FuzzOnHaikuDevice)
 	if err != nil {
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.FuzzOnHaikuHost)
+	err = gobtools.DecodeBool(buf, &r.FuzzOnHaikuHost)
 	if err != nil {
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.UseForPresubmit)
+	err = gobtools.DecodeBool(buf, &r.UseForPresubmit)
 	if err != nil {
 		return err
 	}
@@ -127,7 +127,7 @@ func (r FuzzPackagedModuleInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffe
 	var err error
 
 	val1 := r.FuzzConfig == nil
-	if err = gobtools.EncodeSimple(buf, val1); err != nil {
+	if err = gobtools.EncodeBool(buf, val1); err != nil {
 		return err
 	}
 	if !val1 {
@@ -141,11 +141,11 @@ func (r FuzzPackagedModuleInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffe
 	}
 
 	if r.Corpus == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.Corpus))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.Corpus)); err != nil {
 			return err
 		}
 		for val2 := 0; val2 < len(r.Corpus); val2++ {
@@ -160,11 +160,11 @@ func (r FuzzPackagedModuleInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffe
 	}
 
 	if r.Data == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.Data))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.Data)); err != nil {
 			return err
 		}
 		for val3 := 0; val3 < len(r.Data); val3++ {
@@ -180,7 +180,7 @@ func (r *FuzzPackagedModuleInfo) Decode(ctx gobtools.EncContext, buf *bytes.Read
 	var err error
 
 	var val2 bool
-	if err = gobtools.DecodeSimple(buf, &val2); err != nil {
+	if err = gobtools.DecodeBool(buf, &val2); err != nil {
 		return err
 	}
 	if !val2 {
@@ -199,8 +199,8 @@ func (r *FuzzPackagedModuleInfo) Decode(ctx gobtools.EncContext, buf *bytes.Read
 		r.Dictionary = val5.(android.Path)
 	}
 
-	var val8 int32
-	err = gobtools.DecodeSimple[int32](buf, &val8)
+	var val8 int
+	err = gobtools.DecodeInt(buf, &val8)
 	if err != nil {
 		return err
 	}
@@ -225,8 +225,8 @@ func (r *FuzzPackagedModuleInfo) Decode(ctx gobtools.EncContext, buf *bytes.Read
 		r.Config = val13.(android.Path)
 	}
 
-	var val16 int32
-	err = gobtools.DecodeSimple[int32](buf, &val16)
+	var val16 int
+	err = gobtools.DecodeInt(buf, &val16)
 	if err != nil {
 		return err
 	}

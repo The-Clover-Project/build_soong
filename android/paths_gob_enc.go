@@ -66,11 +66,11 @@ func (r Paths) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	var err error
 
 	if r == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r)); err != nil {
 			return err
 		}
 		for val1 := 0; val1 < len(r); val1++ {
@@ -85,8 +85,8 @@ func (r Paths) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 func (r *Paths) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
-	var val2 int32
-	err = gobtools.DecodeSimple[int32](buf, &val2)
+	var val2 int
+	err = gobtools.DecodeInt(buf, &val2)
 	if err != nil {
 		return err
 	}
@@ -359,7 +359,7 @@ func (r InstallPath) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.makePath); err != nil {
+	if err = gobtools.EncodeBool(buf, r.makePath); err != nil {
 		return err
 	}
 
@@ -391,7 +391,7 @@ func (r *InstallPath) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.makePath)
+	err = gobtools.DecodeBool(buf, &r.makePath)
 	if err != nil {
 		return err
 	}
@@ -471,7 +471,7 @@ func (r DataPath) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.WithoutRel); err != nil {
+	if err = gobtools.EncodeBool(buf, r.WithoutRel); err != nil {
 		return err
 	}
 	return err
@@ -493,7 +493,7 @@ func (r *DataPath) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.WithoutRel)
+	err = gobtools.DecodeBool(buf, &r.WithoutRel)
 	if err != nil {
 		return err
 	}

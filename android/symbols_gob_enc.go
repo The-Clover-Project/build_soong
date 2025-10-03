@@ -61,16 +61,16 @@ func (r SymbolicOutputInfos) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) 
 	var err error
 
 	if r == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r)); err != nil {
 			return err
 		}
 		for val1 := 0; val1 < len(r); val1++ {
 			val2 := r[val1] == nil
-			if err = gobtools.EncodeSimple(buf, val2); err != nil {
+			if err = gobtools.EncodeBool(buf, val2); err != nil {
 				return err
 			}
 			if !val2 {
@@ -86,8 +86,8 @@ func (r SymbolicOutputInfos) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) 
 func (r *SymbolicOutputInfos) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
-	var val2 int32
-	err = gobtools.DecodeSimple[int32](buf, &val2)
+	var val2 int
+	err = gobtools.DecodeInt(buf, &val2)
 	if err != nil {
 		return err
 	}
@@ -95,7 +95,7 @@ func (r *SymbolicOutputInfos) Decode(ctx gobtools.EncContext, buf *bytes.Reader)
 		(*r) = make([]*SymbolicOutputInfo, val2)
 		for val3 := 0; val3 < int(val2); val3++ {
 			var val5 bool
-			if err = gobtools.DecodeSimple(buf, &val5); err != nil {
+			if err = gobtools.DecodeBool(buf, &val5); err != nil {
 				return err
 			}
 			if !val5 {

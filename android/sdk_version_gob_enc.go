@@ -14,7 +14,7 @@ func init() {
 func (r SdkSpec) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	var err error
 
-	if err = gobtools.EncodeSimple(buf, int64(int(r.Kind))); err != nil {
+	if err = gobtools.EncodeInt(buf, int(r.Kind)); err != nil {
 		return err
 	}
 
@@ -32,12 +32,10 @@ func (r *SdkSpec) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
 	var val2 int
-	var val3 int64
-	err = gobtools.DecodeSimple[int64](buf, &val3)
+	err = gobtools.DecodeInt(buf, &val2)
 	if err != nil {
 		return err
 	}
-	val2 = int(val3)
 	r.Kind = SdkKind(val2)
 
 	if err = r.ApiLevel.Decode(ctx, buf); err != nil {

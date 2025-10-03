@@ -16,11 +16,11 @@ func (r BaseTestProviderData) Encode(ctx gobtools.EncContext, buf *bytes.Buffer)
 	var err error
 
 	if r.TestcaseRelDataFiles == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.TestcaseRelDataFiles))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.TestcaseRelDataFiles)); err != nil {
 			return err
 		}
 		for val1 := 0; val1 < len(r.TestcaseRelDataFiles); val1++ {
@@ -39,11 +39,11 @@ func (r BaseTestProviderData) Encode(ctx gobtools.EncContext, buf *bytes.Buffer)
 	}
 
 	if r.HostRequiredModuleNames == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.HostRequiredModuleNames))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.HostRequiredModuleNames)); err != nil {
 			return err
 		}
 		for val2 := 0; val2 < len(r.HostRequiredModuleNames); val2++ {
@@ -54,11 +54,11 @@ func (r BaseTestProviderData) Encode(ctx gobtools.EncContext, buf *bytes.Buffer)
 	}
 
 	if r.RequiredModuleNames == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.RequiredModuleNames))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.RequiredModuleNames)); err != nil {
 			return err
 		}
 		for val3 := 0; val3 < len(r.RequiredModuleNames); val3++ {
@@ -69,11 +69,11 @@ func (r BaseTestProviderData) Encode(ctx gobtools.EncContext, buf *bytes.Buffer)
 	}
 
 	if r.TestSuites == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.TestSuites))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.TestSuites)); err != nil {
 			return err
 		}
 		for val4 := 0; val4 < len(r.TestSuites); val4++ {
@@ -83,7 +83,7 @@ func (r BaseTestProviderData) Encode(ctx gobtools.EncContext, buf *bytes.Buffer)
 		}
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.IsHost); err != nil {
+	if err = gobtools.EncodeBool(buf, r.IsHost); err != nil {
 		return err
 	}
 
@@ -95,7 +95,7 @@ func (r BaseTestProviderData) Encode(ctx gobtools.EncContext, buf *bytes.Buffer)
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.IsUnitTest); err != nil {
+	if err = gobtools.EncodeBool(buf, r.IsUnitTest); err != nil {
 		return err
 	}
 
@@ -116,8 +116,8 @@ func (r BaseTestProviderData) Encode(ctx gobtools.EncContext, buf *bytes.Buffer)
 func (r *BaseTestProviderData) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
-	var val2 int32
-	err = gobtools.DecodeSimple[int32](buf, &val2)
+	var val2 int
+	err = gobtools.DecodeInt(buf, &val2)
 	if err != nil {
 		return err
 	}
@@ -147,8 +147,8 @@ func (r *BaseTestProviderData) Decode(ctx gobtools.EncContext, buf *bytes.Reader
 		r.TestConfig = val8.(android.Path)
 	}
 
-	var val10 int32
-	err = gobtools.DecodeSimple[int32](buf, &val10)
+	var val10 int
+	err = gobtools.DecodeInt(buf, &val10)
 	if err != nil {
 		return err
 	}
@@ -162,8 +162,8 @@ func (r *BaseTestProviderData) Decode(ctx gobtools.EncContext, buf *bytes.Reader
 		}
 	}
 
-	var val14 int32
-	err = gobtools.DecodeSimple[int32](buf, &val14)
+	var val14 int
+	err = gobtools.DecodeInt(buf, &val14)
 	if err != nil {
 		return err
 	}
@@ -177,8 +177,8 @@ func (r *BaseTestProviderData) Decode(ctx gobtools.EncContext, buf *bytes.Reader
 		}
 	}
 
-	var val18 int32
-	err = gobtools.DecodeSimple[int32](buf, &val18)
+	var val18 int
+	err = gobtools.DecodeInt(buf, &val18)
 	if err != nil {
 		return err
 	}
@@ -192,7 +192,7 @@ func (r *BaseTestProviderData) Decode(ctx gobtools.EncContext, buf *bytes.Reader
 		}
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.IsHost)
+	err = gobtools.DecodeBool(buf, &r.IsHost)
 	if err != nil {
 		return err
 	}
@@ -207,7 +207,7 @@ func (r *BaseTestProviderData) Decode(ctx gobtools.EncContext, buf *bytes.Reader
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.IsUnitTest)
+	err = gobtools.DecodeBool(buf, &r.IsUnitTest)
 	if err != nil {
 		return err
 	}

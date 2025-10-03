@@ -81,11 +81,11 @@ func (r CcObjectInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	var err error
 
 	if r.ObjFiles == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.ObjFiles))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.ObjFiles)); err != nil {
 			return err
 		}
 		for val1 := 0; val1 < len(r.ObjFiles); val1++ {
@@ -96,11 +96,11 @@ func (r CcObjectInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	}
 
 	if r.TidyFiles == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.TidyFiles))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.TidyFiles)); err != nil {
 			return err
 		}
 		for val2 := 0; val2 < len(r.TidyFiles); val2++ {
@@ -111,11 +111,11 @@ func (r CcObjectInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	}
 
 	if r.KytheFiles == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.KytheFiles))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.KytheFiles)); err != nil {
 			return err
 		}
 		for val3 := 0; val3 < len(r.KytheFiles); val3++ {
@@ -130,8 +130,8 @@ func (r CcObjectInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 func (r *CcObjectInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
-	var val3 int32
-	err = gobtools.DecodeSimple[int32](buf, &val3)
+	var val3 int
+	err = gobtools.DecodeInt(buf, &val3)
 	if err != nil {
 		return err
 	}
@@ -148,8 +148,8 @@ func (r *CcObjectInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error 
 		}
 	}
 
-	var val9 int32
-	err = gobtools.DecodeSimple[int32](buf, &val9)
+	var val9 int
+	err = gobtools.DecodeInt(buf, &val9)
 	if err != nil {
 		return err
 	}
@@ -166,8 +166,8 @@ func (r *CcObjectInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error 
 		}
 	}
 
-	var val15 int32
-	err = gobtools.DecodeSimple[int32](buf, &val15)
+	var val15 int
+	err = gobtools.DecodeInt(buf, &val15)
 	if err != nil {
 		return err
 	}
@@ -193,11 +193,11 @@ func (r AidlInterfaceInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) er
 	var err error
 
 	if r.Sources == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.Sources))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.Sources)); err != nil {
 			return err
 		}
 		for val1 := 0; val1 < len(r.Sources); val1++ {
@@ -216,11 +216,11 @@ func (r AidlInterfaceInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) er
 	}
 
 	if r.Flags == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.Flags))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.Flags)); err != nil {
 			return err
 		}
 		for val2 := 0; val2 < len(r.Flags); val2++ {
@@ -235,8 +235,8 @@ func (r AidlInterfaceInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) er
 func (r *AidlInterfaceInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
-	var val2 int32
-	err = gobtools.DecodeSimple[int32](buf, &val2)
+	var val2 int
+	err = gobtools.DecodeInt(buf, &val2)
 	if err != nil {
 		return err
 	}
@@ -260,8 +260,8 @@ func (r *AidlInterfaceInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) e
 		return err
 	}
 
-	var val8 int32
-	err = gobtools.DecodeSimple[int32](buf, &val8)
+	var val8 int
+	err = gobtools.DecodeInt(buf, &val8)
 	if err != nil {
 		return err
 	}
@@ -288,11 +288,11 @@ func (r CompilerInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	var err error
 
 	if r.Srcs == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.Srcs))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.Srcs)); err != nil {
 			return err
 		}
 		for val1 := 0; val1 < len(r.Srcs); val1++ {
@@ -303,11 +303,11 @@ func (r CompilerInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	}
 
 	if r.Cflags == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.Cflags))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.Cflags)); err != nil {
 			return err
 		}
 		for val2 := 0; val2 < len(r.Cflags); val2++ {
@@ -322,7 +322,7 @@ func (r CompilerInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	}
 
 	val3 := r.LibraryDecoratorInfo == nil
-	if err = gobtools.EncodeSimple(buf, val3); err != nil {
+	if err = gobtools.EncodeBool(buf, val3); err != nil {
 		return err
 	}
 	if !val3 {
@@ -336,8 +336,8 @@ func (r CompilerInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 func (r *CompilerInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
-	var val3 int32
-	err = gobtools.DecodeSimple[int32](buf, &val3)
+	var val3 int
+	err = gobtools.DecodeInt(buf, &val3)
 	if err != nil {
 		return err
 	}
@@ -354,8 +354,8 @@ func (r *CompilerInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error 
 		}
 	}
 
-	var val8 int32
-	err = gobtools.DecodeSimple[int32](buf, &val8)
+	var val8 int
+	err = gobtools.DecodeInt(buf, &val8)
 	if err != nil {
 		return err
 	}
@@ -374,7 +374,7 @@ func (r *CompilerInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error 
 	}
 
 	var val13 bool
-	if err = gobtools.DecodeSimple(buf, &val13); err != nil {
+	if err = gobtools.DecodeBool(buf, &val13); err != nil {
 		return err
 	}
 	if !val13 {
@@ -398,11 +398,11 @@ func (r LinkerInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	var err error
 
 	if r.WholeStaticLibs == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.WholeStaticLibs))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.WholeStaticLibs)); err != nil {
 			return err
 		}
 		for val1 := 0; val1 < len(r.WholeStaticLibs); val1++ {
@@ -413,11 +413,11 @@ func (r LinkerInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	}
 
 	if r.StaticLibs == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.StaticLibs))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.StaticLibs)); err != nil {
 			return err
 		}
 		for val2 := 0; val2 < len(r.StaticLibs); val2++ {
@@ -428,11 +428,11 @@ func (r LinkerInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	}
 
 	if r.SharedLibs == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.SharedLibs))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.SharedLibs)); err != nil {
 			return err
 		}
 		for val3 := 0; val3 < len(r.SharedLibs); val3++ {
@@ -443,11 +443,11 @@ func (r LinkerInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	}
 
 	if r.HeaderLibs == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.HeaderLibs))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.HeaderLibs)); err != nil {
 			return err
 		}
 		for val4 := 0; val4 < len(r.HeaderLibs); val4++ {
@@ -458,11 +458,11 @@ func (r LinkerInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	}
 
 	if r.SystemSharedLibs == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.SystemSharedLibs))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.SystemSharedLibs)); err != nil {
 			return err
 		}
 		for val5 := 0; val5 < len(r.SystemSharedLibs); val5++ {
@@ -473,7 +473,7 @@ func (r LinkerInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	}
 
 	val6 := r.ImplementationModuleName == nil
-	if err = gobtools.EncodeSimple(buf, val6); err != nil {
+	if err = gobtools.EncodeBool(buf, val6); err != nil {
 		return err
 	}
 	if !val6 {
@@ -483,7 +483,7 @@ func (r LinkerInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	}
 
 	val7 := r.BinaryDecoratorInfo == nil
-	if err = gobtools.EncodeSimple(buf, val7); err != nil {
+	if err = gobtools.EncodeBool(buf, val7); err != nil {
 		return err
 	}
 	if !val7 {
@@ -493,7 +493,7 @@ func (r LinkerInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	}
 
 	val8 := r.LibraryDecoratorInfo == nil
-	if err = gobtools.EncodeSimple(buf, val8); err != nil {
+	if err = gobtools.EncodeBool(buf, val8); err != nil {
 		return err
 	}
 	if !val8 {
@@ -503,7 +503,7 @@ func (r LinkerInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	}
 
 	val9 := r.TestBinaryInfo == nil
-	if err = gobtools.EncodeSimple(buf, val9); err != nil {
+	if err = gobtools.EncodeBool(buf, val9); err != nil {
 		return err
 	}
 	if !val9 {
@@ -513,7 +513,7 @@ func (r LinkerInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	}
 
 	val10 := r.BenchmarkDecoratorInfo == nil
-	if err = gobtools.EncodeSimple(buf, val10); err != nil {
+	if err = gobtools.EncodeBool(buf, val10); err != nil {
 		return err
 	}
 	if !val10 {
@@ -523,7 +523,7 @@ func (r LinkerInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	}
 
 	val11 := r.ObjectLinkerInfo == nil
-	if err = gobtools.EncodeSimple(buf, val11); err != nil {
+	if err = gobtools.EncodeBool(buf, val11); err != nil {
 		return err
 	}
 	if !val11 {
@@ -533,7 +533,7 @@ func (r LinkerInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	}
 
 	val12 := r.StubDecoratorInfo == nil
-	if err = gobtools.EncodeSimple(buf, val12); err != nil {
+	if err = gobtools.EncodeBool(buf, val12); err != nil {
 		return err
 	}
 	if !val12 {
@@ -543,7 +543,7 @@ func (r LinkerInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	}
 
 	val13 := r.PrebuiltLibraryLinkerInfo == nil
-	if err = gobtools.EncodeSimple(buf, val13); err != nil {
+	if err = gobtools.EncodeBool(buf, val13); err != nil {
 		return err
 	}
 	if !val13 {
@@ -557,8 +557,8 @@ func (r LinkerInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 func (r *LinkerInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
-	var val2 int32
-	err = gobtools.DecodeSimple[int32](buf, &val2)
+	var val2 int
+	err = gobtools.DecodeInt(buf, &val2)
 	if err != nil {
 		return err
 	}
@@ -572,8 +572,8 @@ func (r *LinkerInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 		}
 	}
 
-	var val6 int32
-	err = gobtools.DecodeSimple[int32](buf, &val6)
+	var val6 int
+	err = gobtools.DecodeInt(buf, &val6)
 	if err != nil {
 		return err
 	}
@@ -587,8 +587,8 @@ func (r *LinkerInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 		}
 	}
 
-	var val10 int32
-	err = gobtools.DecodeSimple[int32](buf, &val10)
+	var val10 int
+	err = gobtools.DecodeInt(buf, &val10)
 	if err != nil {
 		return err
 	}
@@ -602,8 +602,8 @@ func (r *LinkerInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 		}
 	}
 
-	var val14 int32
-	err = gobtools.DecodeSimple[int32](buf, &val14)
+	var val14 int
+	err = gobtools.DecodeInt(buf, &val14)
 	if err != nil {
 		return err
 	}
@@ -617,8 +617,8 @@ func (r *LinkerInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 		}
 	}
 
-	var val18 int32
-	err = gobtools.DecodeSimple[int32](buf, &val18)
+	var val18 int
+	err = gobtools.DecodeInt(buf, &val18)
 	if err != nil {
 		return err
 	}
@@ -633,7 +633,7 @@ func (r *LinkerInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	}
 
 	var val22 bool
-	if err = gobtools.DecodeSimple(buf, &val22); err != nil {
+	if err = gobtools.DecodeBool(buf, &val22); err != nil {
 		return err
 	}
 	if !val22 {
@@ -646,7 +646,7 @@ func (r *LinkerInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	}
 
 	var val25 bool
-	if err = gobtools.DecodeSimple(buf, &val25); err != nil {
+	if err = gobtools.DecodeBool(buf, &val25); err != nil {
 		return err
 	}
 	if !val25 {
@@ -658,7 +658,7 @@ func (r *LinkerInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	}
 
 	var val28 bool
-	if err = gobtools.DecodeSimple(buf, &val28); err != nil {
+	if err = gobtools.DecodeBool(buf, &val28); err != nil {
 		return err
 	}
 	if !val28 {
@@ -670,7 +670,7 @@ func (r *LinkerInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	}
 
 	var val31 bool
-	if err = gobtools.DecodeSimple(buf, &val31); err != nil {
+	if err = gobtools.DecodeBool(buf, &val31); err != nil {
 		return err
 	}
 	if !val31 {
@@ -682,7 +682,7 @@ func (r *LinkerInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	}
 
 	var val34 bool
-	if err = gobtools.DecodeSimple(buf, &val34); err != nil {
+	if err = gobtools.DecodeBool(buf, &val34); err != nil {
 		return err
 	}
 	if !val34 {
@@ -694,7 +694,7 @@ func (r *LinkerInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	}
 
 	var val37 bool
-	if err = gobtools.DecodeSimple(buf, &val37); err != nil {
+	if err = gobtools.DecodeBool(buf, &val37); err != nil {
 		return err
 	}
 	if !val37 {
@@ -706,7 +706,7 @@ func (r *LinkerInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	}
 
 	var val40 bool
-	if err = gobtools.DecodeSimple(buf, &val40); err != nil {
+	if err = gobtools.DecodeBool(buf, &val40); err != nil {
 		return err
 	}
 	if !val40 {
@@ -718,7 +718,7 @@ func (r *LinkerInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	}
 
 	var val43 bool
-	if err = gobtools.DecodeSimple(buf, &val43); err != nil {
+	if err = gobtools.DecodeBool(buf, &val43); err != nil {
 		return err
 	}
 	if !val43 {
@@ -741,11 +741,11 @@ func (r LinkerInfo) GetTypeId() int16 {
 func (r BinaryDecoratorInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	var err error
 
-	if err = gobtools.EncodeSimple(buf, r.StaticExecutable); err != nil {
+	if err = gobtools.EncodeBool(buf, r.StaticExecutable); err != nil {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.Nocrt); err != nil {
+	if err = gobtools.EncodeBool(buf, r.Nocrt); err != nil {
 		return err
 	}
 	return err
@@ -754,12 +754,12 @@ func (r BinaryDecoratorInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) 
 func (r *BinaryDecoratorInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
-	err = gobtools.DecodeSimple[bool](buf, &r.StaticExecutable)
+	err = gobtools.DecodeBool(buf, &r.StaticExecutable)
 	if err != nil {
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.Nocrt)
+	err = gobtools.DecodeBool(buf, &r.Nocrt)
 	if err != nil {
 		return err
 	}
@@ -777,11 +777,11 @@ func (r LibraryDecoratorInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer)
 	var err error
 
 	if r.ExportIncludeDirs == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.ExportIncludeDirs))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.ExportIncludeDirs)); err != nil {
 			return err
 		}
 		for val1 := 0; val1 < len(r.ExportIncludeDirs); val1++ {
@@ -791,7 +791,7 @@ func (r LibraryDecoratorInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer)
 		}
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.InjectBsslHash); err != nil {
+	if err = gobtools.EncodeBool(buf, r.InjectBsslHash); err != nil {
 		return err
 	}
 
@@ -804,21 +804,21 @@ func (r LibraryDecoratorInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer)
 	}
 
 	val2 := r.UniqueHostSoname == nil
-	if err = gobtools.EncodeSimple(buf, val2); err != nil {
+	if err = gobtools.EncodeBool(buf, val2); err != nil {
 		return err
 	}
 	if !val2 {
-		if err = gobtools.EncodeSimple(buf, (*r.UniqueHostSoname)); err != nil {
+		if err = gobtools.EncodeBool(buf, (*r.UniqueHostSoname)); err != nil {
 			return err
 		}
 	}
 
 	if r.SharedLibs == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.SharedLibs))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.SharedLibs)); err != nil {
 			return err
 		}
 		for val3 := 0; val3 < len(r.SharedLibs); val3++ {
@@ -829,11 +829,11 @@ func (r LibraryDecoratorInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer)
 	}
 
 	if r.SystemSharedLibs == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.SystemSharedLibs))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.SystemSharedLibs)); err != nil {
 			return err
 		}
 		for val4 := 0; val4 < len(r.SystemSharedLibs); val4++ {
@@ -852,8 +852,8 @@ func (r LibraryDecoratorInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer)
 func (r *LibraryDecoratorInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
-	var val2 int32
-	err = gobtools.DecodeSimple[int32](buf, &val2)
+	var val2 int
+	err = gobtools.DecodeInt(buf, &val2)
 	if err != nil {
 		return err
 	}
@@ -867,7 +867,7 @@ func (r *LibraryDecoratorInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader
 		}
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.InjectBsslHash)
+	err = gobtools.DecodeBool(buf, &r.InjectBsslHash)
 	if err != nil {
 		return err
 	}
@@ -886,20 +886,20 @@ func (r *LibraryDecoratorInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader
 	}
 
 	var val10 bool
-	if err = gobtools.DecodeSimple(buf, &val10); err != nil {
+	if err = gobtools.DecodeBool(buf, &val10); err != nil {
 		return err
 	}
 	if !val10 {
 		var val9 bool
-		err = gobtools.DecodeSimple[bool](buf, &val9)
+		err = gobtools.DecodeBool(buf, &val9)
 		if err != nil {
 			return err
 		}
 		r.UniqueHostSoname = &val9
 	}
 
-	var val13 int32
-	err = gobtools.DecodeSimple[int32](buf, &val13)
+	var val13 int
+	err = gobtools.DecodeInt(buf, &val13)
 	if err != nil {
 		return err
 	}
@@ -913,8 +913,8 @@ func (r *LibraryDecoratorInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader
 		}
 	}
 
-	var val17 int32
-	err = gobtools.DecodeSimple[int32](buf, &val17)
+	var val17 int
+	err = gobtools.DecodeInt(buf, &val17)
 	if err != nil {
 		return err
 	}
@@ -974,7 +974,7 @@ func (r SnapshotInfo) GetTypeId() int16 {
 func (r TestBinaryInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	var err error
 
-	if err = gobtools.EncodeSimple(buf, r.Gtest); err != nil {
+	if err = gobtools.EncodeBool(buf, r.Gtest); err != nil {
 		return err
 	}
 	return err
@@ -983,7 +983,7 @@ func (r TestBinaryInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error
 func (r *TestBinaryInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
-	err = gobtools.DecodeSimple[bool](buf, &r.Gtest)
+	err = gobtools.DecodeBool(buf, &r.Gtest)
 	if err != nil {
 		return err
 	}
@@ -1021,16 +1021,16 @@ func (r StubDecoratorInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) er
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.HasAbiDump); err != nil {
+	if err = gobtools.EncodeBool(buf, r.HasAbiDump); err != nil {
 		return err
 	}
 
 	if r.AbiDiffPaths == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.AbiDiffPaths))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.AbiDiffPaths)); err != nil {
 			return err
 		}
 		for val1 := 0; val1 < len(r.AbiDiffPaths); val1++ {
@@ -1053,13 +1053,13 @@ func (r *StubDecoratorInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) e
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.HasAbiDump)
+	err = gobtools.DecodeBool(buf, &r.HasAbiDump)
 	if err != nil {
 		return err
 	}
 
-	var val5 int32
-	err = gobtools.DecodeSimple[int32](buf, &val5)
+	var val5 int
+	err = gobtools.DecodeInt(buf, &val5)
 	if err != nil {
 		return err
 	}
@@ -1101,11 +1101,11 @@ func (r ObjectLinkerInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) err
 	}
 
 	if r.SharedLibs == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.SharedLibs))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.SharedLibs)); err != nil {
 			return err
 		}
 		for val1 := 0; val1 < len(r.SharedLibs); val1++ {
@@ -1116,11 +1116,11 @@ func (r ObjectLinkerInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) err
 	}
 
 	if r.SystemSharedLibs == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.SystemSharedLibs))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.SystemSharedLibs)); err != nil {
 			return err
 		}
 		for val2 := 0; val2 < len(r.SystemSharedLibs); val2++ {
@@ -1143,8 +1143,8 @@ func (r *ObjectLinkerInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) er
 		r.NdkSysrootPath = val2.(android.Path)
 	}
 
-	var val4 int32
-	err = gobtools.DecodeSimple[int32](buf, &val4)
+	var val4 int
+	err = gobtools.DecodeInt(buf, &val4)
 	if err != nil {
 		return err
 	}
@@ -1158,8 +1158,8 @@ func (r *ObjectLinkerInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) er
 		}
 	}
 
-	var val8 int32
-	err = gobtools.DecodeSimple[int32](buf, &val8)
+	var val8 int
+	err = gobtools.DecodeInt(buf, &val8)
 	if err != nil {
 		return err
 	}
@@ -1211,16 +1211,16 @@ func (r PrebuiltLibraryLinkerInfo) GetTypeId() int16 {
 func (r LibraryInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	var err error
 
-	if err = gobtools.EncodeSimple(buf, r.BuildStubs); err != nil {
+	if err = gobtools.EncodeBool(buf, r.BuildStubs); err != nil {
 		return err
 	}
 
 	if r.AllStubsVersions == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.AllStubsVersions))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.AllStubsVersions)); err != nil {
 			return err
 		}
 		for val1 := 0; val1 < len(r.AllStubsVersions); val1++ {
@@ -1235,13 +1235,13 @@ func (r LibraryInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 func (r *LibraryInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
-	err = gobtools.DecodeSimple[bool](buf, &r.BuildStubs)
+	err = gobtools.DecodeBool(buf, &r.BuildStubs)
 	if err != nil {
 		return err
 	}
 
-	var val3 int32
-	err = gobtools.DecodeSimple[int32](buf, &val3)
+	var val3 int
+	err = gobtools.DecodeInt(buf, &val3)
 	if err != nil {
 		return err
 	}
@@ -1268,7 +1268,7 @@ func (r InstallerInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error 
 	var err error
 
 	val1 := r.StubDecoratorInfo == nil
-	if err = gobtools.EncodeSimple(buf, val1); err != nil {
+	if err = gobtools.EncodeBool(buf, val1); err != nil {
 		return err
 	}
 	if !val1 {
@@ -1283,7 +1283,7 @@ func (r *InstallerInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error
 	var err error
 
 	var val2 bool
-	if err = gobtools.DecodeSimple(buf, &val2); err != nil {
+	if err = gobtools.DecodeBool(buf, &val2); err != nil {
 		return err
 	}
 	if !val2 {
@@ -1307,11 +1307,11 @@ func (r LocalOrGlobalFlagsInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffe
 	var err error
 
 	if r.CommonFlags == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.CommonFlags))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.CommonFlags)); err != nil {
 			return err
 		}
 		for val1 := 0; val1 < len(r.CommonFlags); val1++ {
@@ -1322,11 +1322,11 @@ func (r LocalOrGlobalFlagsInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffe
 	}
 
 	if r.CFlags == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.CFlags))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.CFlags)); err != nil {
 			return err
 		}
 		for val2 := 0; val2 < len(r.CFlags); val2++ {
@@ -1337,11 +1337,11 @@ func (r LocalOrGlobalFlagsInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffe
 	}
 
 	if r.ConlyFlags == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.ConlyFlags))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.ConlyFlags)); err != nil {
 			return err
 		}
 		for val3 := 0; val3 < len(r.ConlyFlags); val3++ {
@@ -1352,11 +1352,11 @@ func (r LocalOrGlobalFlagsInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffe
 	}
 
 	if r.CppFlags == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.CppFlags))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.CppFlags)); err != nil {
 			return err
 		}
 		for val4 := 0; val4 < len(r.CppFlags); val4++ {
@@ -1371,8 +1371,8 @@ func (r LocalOrGlobalFlagsInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffe
 func (r *LocalOrGlobalFlagsInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
-	var val2 int32
-	err = gobtools.DecodeSimple[int32](buf, &val2)
+	var val2 int
+	err = gobtools.DecodeInt(buf, &val2)
 	if err != nil {
 		return err
 	}
@@ -1386,8 +1386,8 @@ func (r *LocalOrGlobalFlagsInfo) Decode(ctx gobtools.EncContext, buf *bytes.Read
 		}
 	}
 
-	var val6 int32
-	err = gobtools.DecodeSimple[int32](buf, &val6)
+	var val6 int
+	err = gobtools.DecodeInt(buf, &val6)
 	if err != nil {
 		return err
 	}
@@ -1401,8 +1401,8 @@ func (r *LocalOrGlobalFlagsInfo) Decode(ctx gobtools.EncContext, buf *bytes.Read
 		}
 	}
 
-	var val10 int32
-	err = gobtools.DecodeSimple[int32](buf, &val10)
+	var val10 int
+	err = gobtools.DecodeInt(buf, &val10)
 	if err != nil {
 		return err
 	}
@@ -1416,8 +1416,8 @@ func (r *LocalOrGlobalFlagsInfo) Decode(ctx gobtools.EncContext, buf *bytes.Read
 		}
 	}
 
-	var val14 int32
-	err = gobtools.DecodeSimple[int32](buf, &val14)
+	var val14 int
+	err = gobtools.DecodeInt(buf, &val14)
 	if err != nil {
 		return err
 	}
@@ -1443,7 +1443,7 @@ func (r LocalOrGlobalFlagsInfo) GetTypeId() int16 {
 func (r SanitizeInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	var err error
 
-	if err = gobtools.EncodeSimple(buf, r.IsUnsanitizedVariant); err != nil {
+	if err = gobtools.EncodeBool(buf, r.IsUnsanitizedVariant); err != nil {
 		return err
 	}
 
@@ -1456,7 +1456,7 @@ func (r SanitizeInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 func (r *SanitizeInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
-	err = gobtools.DecodeSimple[bool](buf, &r.IsUnsanitizedVariant)
+	err = gobtools.DecodeBool(buf, &r.IsUnsanitizedVariant)
 	if err != nil {
 		return err
 	}
@@ -1478,7 +1478,7 @@ func (r StlInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	var err error
 
 	val1 := r.Stl == nil
-	if err = gobtools.EncodeSimple(buf, val1); err != nil {
+	if err = gobtools.EncodeBool(buf, val1); err != nil {
 		return err
 	}
 	if !val1 {
@@ -1493,7 +1493,7 @@ func (r *StlInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
 	var val2 bool
-	if err = gobtools.DecodeSimple(buf, &val2); err != nil {
+	if err = gobtools.DecodeBool(buf, &val2); err != nil {
 		return err
 	}
 	if !val2 {
@@ -1517,24 +1517,24 @@ func (r StlInfo) GetTypeId() int16 {
 func (r CcInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	var err error
 
-	if err = gobtools.EncodeSimple(buf, r.IsPrebuilt); err != nil {
+	if err = gobtools.EncodeBool(buf, r.IsPrebuilt); err != nil {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.CmakeSnapshotSupported); err != nil {
+	if err = gobtools.EncodeBool(buf, r.CmakeSnapshotSupported); err != nil {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.HasLlndkStubs); err != nil {
+	if err = gobtools.EncodeBool(buf, r.HasLlndkStubs); err != nil {
 		return err
 	}
 
 	if r.DataPaths == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.DataPaths))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.DataPaths)); err != nil {
 			return err
 		}
 		for val1 := 0; val1 < len(r.DataPaths); val1++ {
@@ -1544,32 +1544,32 @@ func (r CcInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		}
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.VendorAvailable); err != nil {
+	if err = gobtools.EncodeBool(buf, r.VendorAvailable); err != nil {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.OdmAvailable); err != nil {
+	if err = gobtools.EncodeBool(buf, r.OdmAvailable); err != nil {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.ProductAvailable); err != nil {
+	if err = gobtools.EncodeBool(buf, r.ProductAvailable); err != nil {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.IsVendorPublicLibrary); err != nil {
+	if err = gobtools.EncodeBool(buf, r.IsVendorPublicLibrary); err != nil {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.DoubleLoadable); err != nil {
+	if err = gobtools.EncodeBool(buf, r.DoubleLoadable); err != nil {
 		return err
 	}
 
 	if r.SdkMemberTypes == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.SdkMemberTypes))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.SdkMemberTypes)); err != nil {
 			return err
 		}
 		for val2 := 0; val2 < len(r.SdkMemberTypes); val2++ {
@@ -1588,11 +1588,11 @@ func (r CcInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	}
 
 	if r.SystemIncludeFlags == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.SystemIncludeFlags))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.SystemIncludeFlags)); err != nil {
 			return err
 		}
 		for val3 := 0; val3 < len(r.SystemIncludeFlags); val3++ {
@@ -1603,11 +1603,11 @@ func (r CcInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	}
 
 	if r.NoOverrideFlags == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.NoOverrideFlags))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.NoOverrideFlags)); err != nil {
 			return err
 		}
 		for val4 := 0; val4 < len(r.NoOverrideFlags); val4++ {
@@ -1618,7 +1618,7 @@ func (r CcInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	}
 
 	val5 := r.CompilerInfo == nil
-	if err = gobtools.EncodeSimple(buf, val5); err != nil {
+	if err = gobtools.EncodeBool(buf, val5); err != nil {
 		return err
 	}
 	if !val5 {
@@ -1628,7 +1628,7 @@ func (r CcInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	}
 
 	val6 := r.LinkerInfo == nil
-	if err = gobtools.EncodeSimple(buf, val6); err != nil {
+	if err = gobtools.EncodeBool(buf, val6); err != nil {
 		return err
 	}
 	if !val6 {
@@ -1638,7 +1638,7 @@ func (r CcInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	}
 
 	val7 := r.SnapshotInfo == nil
-	if err = gobtools.EncodeSimple(buf, val7); err != nil {
+	if err = gobtools.EncodeBool(buf, val7); err != nil {
 		return err
 	}
 	if !val7 {
@@ -1648,7 +1648,7 @@ func (r CcInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	}
 
 	val8 := r.LibraryInfo == nil
-	if err = gobtools.EncodeSimple(buf, val8); err != nil {
+	if err = gobtools.EncodeBool(buf, val8); err != nil {
 		return err
 	}
 	if !val8 {
@@ -1658,7 +1658,7 @@ func (r CcInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	}
 
 	val9 := r.InstallerInfo == nil
-	if err = gobtools.EncodeSimple(buf, val9); err != nil {
+	if err = gobtools.EncodeBool(buf, val9); err != nil {
 		return err
 	}
 	if !val9 {
@@ -1668,7 +1668,7 @@ func (r CcInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	}
 
 	val10 := r.StlInfo == nil
-	if err = gobtools.EncodeSimple(buf, val10); err != nil {
+	if err = gobtools.EncodeBool(buf, val10); err != nil {
 		return err
 	}
 	if !val10 {
@@ -1678,7 +1678,7 @@ func (r CcInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	}
 
 	val11 := r.SanitizeInfo == nil
-	if err = gobtools.EncodeSimple(buf, val11); err != nil {
+	if err = gobtools.EncodeBool(buf, val11); err != nil {
 		return err
 	}
 	if !val11 {
@@ -1692,23 +1692,23 @@ func (r CcInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 func (r *CcInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
-	err = gobtools.DecodeSimple[bool](buf, &r.IsPrebuilt)
+	err = gobtools.DecodeBool(buf, &r.IsPrebuilt)
 	if err != nil {
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.CmakeSnapshotSupported)
+	err = gobtools.DecodeBool(buf, &r.CmakeSnapshotSupported)
 	if err != nil {
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.HasLlndkStubs)
+	err = gobtools.DecodeBool(buf, &r.HasLlndkStubs)
 	if err != nil {
 		return err
 	}
 
-	var val5 int32
-	err = gobtools.DecodeSimple[int32](buf, &val5)
+	var val5 int
+	err = gobtools.DecodeInt(buf, &val5)
 	if err != nil {
 		return err
 	}
@@ -1721,33 +1721,33 @@ func (r *CcInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 		}
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.VendorAvailable)
+	err = gobtools.DecodeBool(buf, &r.VendorAvailable)
 	if err != nil {
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.OdmAvailable)
+	err = gobtools.DecodeBool(buf, &r.OdmAvailable)
 	if err != nil {
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.ProductAvailable)
+	err = gobtools.DecodeBool(buf, &r.ProductAvailable)
 	if err != nil {
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.IsVendorPublicLibrary)
+	err = gobtools.DecodeBool(buf, &r.IsVendorPublicLibrary)
 	if err != nil {
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.DoubleLoadable)
+	err = gobtools.DecodeBool(buf, &r.DoubleLoadable)
 	if err != nil {
 		return err
 	}
 
-	var val14 int32
-	err = gobtools.DecodeSimple[int32](buf, &val14)
+	var val14 int
+	err = gobtools.DecodeInt(buf, &val14)
 	if err != nil {
 		return err
 	}
@@ -1772,8 +1772,8 @@ func (r *CcInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 		return err
 	}
 
-	var val21 int32
-	err = gobtools.DecodeSimple[int32](buf, &val21)
+	var val21 int
+	err = gobtools.DecodeInt(buf, &val21)
 	if err != nil {
 		return err
 	}
@@ -1787,8 +1787,8 @@ func (r *CcInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 		}
 	}
 
-	var val25 int32
-	err = gobtools.DecodeSimple[int32](buf, &val25)
+	var val25 int
+	err = gobtools.DecodeInt(buf, &val25)
 	if err != nil {
 		return err
 	}
@@ -1803,7 +1803,7 @@ func (r *CcInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	}
 
 	var val29 bool
-	if err = gobtools.DecodeSimple(buf, &val29); err != nil {
+	if err = gobtools.DecodeBool(buf, &val29); err != nil {
 		return err
 	}
 	if !val29 {
@@ -1815,7 +1815,7 @@ func (r *CcInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	}
 
 	var val32 bool
-	if err = gobtools.DecodeSimple(buf, &val32); err != nil {
+	if err = gobtools.DecodeBool(buf, &val32); err != nil {
 		return err
 	}
 	if !val32 {
@@ -1827,7 +1827,7 @@ func (r *CcInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	}
 
 	var val35 bool
-	if err = gobtools.DecodeSimple(buf, &val35); err != nil {
+	if err = gobtools.DecodeBool(buf, &val35); err != nil {
 		return err
 	}
 	if !val35 {
@@ -1839,7 +1839,7 @@ func (r *CcInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	}
 
 	var val38 bool
-	if err = gobtools.DecodeSimple(buf, &val38); err != nil {
+	if err = gobtools.DecodeBool(buf, &val38); err != nil {
 		return err
 	}
 	if !val38 {
@@ -1851,7 +1851,7 @@ func (r *CcInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	}
 
 	var val41 bool
-	if err = gobtools.DecodeSimple(buf, &val41); err != nil {
+	if err = gobtools.DecodeBool(buf, &val41); err != nil {
 		return err
 	}
 	if !val41 {
@@ -1863,7 +1863,7 @@ func (r *CcInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	}
 
 	var val44 bool
-	if err = gobtools.DecodeSimple(buf, &val44); err != nil {
+	if err = gobtools.DecodeBool(buf, &val44); err != nil {
 		return err
 	}
 	if !val44 {
@@ -1875,7 +1875,7 @@ func (r *CcInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	}
 
 	var val47 bool
-	if err = gobtools.DecodeSimple(buf, &val47); err != nil {
+	if err = gobtools.DecodeBool(buf, &val47); err != nil {
 		return err
 	}
 	if !val47 {
@@ -1898,23 +1898,23 @@ func (r CcInfo) GetTypeId() int16 {
 func (r LinkableInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	var err error
 
-	if err = gobtools.EncodeSimple(buf, r.StaticExecutable); err != nil {
+	if err = gobtools.EncodeBool(buf, r.StaticExecutable); err != nil {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.Static); err != nil {
+	if err = gobtools.EncodeBool(buf, r.Static); err != nil {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.Shared); err != nil {
+	if err = gobtools.EncodeBool(buf, r.Shared); err != nil {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.Header); err != nil {
+	if err = gobtools.EncodeBool(buf, r.Header); err != nil {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.HasStubsVariants); err != nil {
+	if err = gobtools.EncodeBool(buf, r.HasStubsVariants); err != nil {
 		return err
 	}
 
@@ -1922,7 +1922,7 @@ func (r LinkableInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.IsStubs); err != nil {
+	if err = gobtools.EncodeBool(buf, r.IsStubs); err != nil {
 		return err
 	}
 
@@ -1935,11 +1935,11 @@ func (r LinkableInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	}
 
 	if r.CoverageFiles == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.CoverageFiles))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.CoverageFiles)); err != nil {
 			return err
 		}
 		for val1 := 0; val1 < len(r.CoverageFiles); val1++ {
@@ -1953,16 +1953,16 @@ func (r LinkableInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.LinkCoverage); err != nil {
+	if err = gobtools.EncodeBool(buf, r.LinkCoverage); err != nil {
 		return err
 	}
 
 	if r.SAbiDumpFiles == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.SAbiDumpFiles))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.SAbiDumpFiles)); err != nil {
 			return err
 		}
 		for val2 := 0; val2 < len(r.SAbiDumpFiles); val2++ {
@@ -1976,15 +1976,15 @@ func (r LinkableInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.CcLibrary); err != nil {
+	if err = gobtools.EncodeBool(buf, r.CcLibrary); err != nil {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.CcLibraryInterface); err != nil {
+	if err = gobtools.EncodeBool(buf, r.CcLibraryInterface); err != nil {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.RustLibraryInterface); err != nil {
+	if err = gobtools.EncodeBool(buf, r.RustLibraryInterface); err != nil {
 		return err
 	}
 
@@ -1993,11 +1993,11 @@ func (r LinkableInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	}
 
 	if r.ExportedCrateLinkDirs == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.ExportedCrateLinkDirs))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.ExportedCrateLinkDirs)); err != nil {
 			return err
 		}
 		for val3 := 0; val3 < len(r.ExportedCrateLinkDirs); val3++ {
@@ -2007,19 +2007,19 @@ func (r LinkableInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		}
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.HasNonSystemVariants); err != nil {
+	if err = gobtools.EncodeBool(buf, r.HasNonSystemVariants); err != nil {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.IsLlndk); err != nil {
+	if err = gobtools.EncodeBool(buf, r.IsLlndk); err != nil {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.IsNdk); err != nil {
+	if err = gobtools.EncodeBool(buf, r.IsNdk); err != nil {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.InVendorOrProduct); err != nil {
+	if err = gobtools.EncodeBool(buf, r.InVendorOrProduct); err != nil {
 		return err
 	}
 
@@ -2027,40 +2027,40 @@ func (r LinkableInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.InRamdisk); err != nil {
+	if err = gobtools.EncodeBool(buf, r.InRamdisk); err != nil {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.OnlyInRamdisk); err != nil {
+	if err = gobtools.EncodeBool(buf, r.OnlyInRamdisk); err != nil {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.InVendorRamdisk); err != nil {
+	if err = gobtools.EncodeBool(buf, r.InVendorRamdisk); err != nil {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.OnlyInVendorRamdisk); err != nil {
+	if err = gobtools.EncodeBool(buf, r.OnlyInVendorRamdisk); err != nil {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.InRecovery); err != nil {
+	if err = gobtools.EncodeBool(buf, r.InRecovery); err != nil {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.OnlyInRecovery); err != nil {
+	if err = gobtools.EncodeBool(buf, r.OnlyInRecovery); err != nil {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.InVendor); err != nil {
+	if err = gobtools.EncodeBool(buf, r.InVendor); err != nil {
 		return err
 	}
 
 	val4 := r.Installable == nil
-	if err = gobtools.EncodeSimple(buf, val4); err != nil {
+	if err = gobtools.EncodeBool(buf, val4); err != nil {
 		return err
 	}
 	if !val4 {
-		if err = gobtools.EncodeSimple(buf, (*r.Installable)); err != nil {
+		if err = gobtools.EncodeBool(buf, (*r.Installable)); err != nil {
 			return err
 		}
 	}
@@ -2069,11 +2069,11 @@ func (r LinkableInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.RustApexExclude); err != nil {
+	if err = gobtools.EncodeBool(buf, r.RustApexExclude); err != nil {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.Bootstrap); err != nil {
+	if err = gobtools.EncodeBool(buf, r.Bootstrap); err != nil {
 		return err
 	}
 
@@ -2085,16 +2085,16 @@ func (r LinkableInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.IsStubsImplementationRequired); err != nil {
+	if err = gobtools.EncodeBool(buf, r.IsStubsImplementationRequired); err != nil {
 		return err
 	}
 
 	if r.Symlinks == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.Symlinks))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.Symlinks)); err != nil {
 			return err
 		}
 		for val5 := 0; val5 < len(r.Symlinks); val5++ {
@@ -2109,11 +2109,11 @@ func (r LinkableInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	}
 
 	if r.FuzzSharedLibraries == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.FuzzSharedLibraries))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.FuzzSharedLibraries)); err != nil {
 			return err
 		}
 		for val6 := 0; val6 < len(r.FuzzSharedLibraries); val6++ {
@@ -2123,15 +2123,15 @@ func (r LinkableInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		}
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.IsVndkPrebuiltLibrary); err != nil {
+	if err = gobtools.EncodeBool(buf, r.IsVndkPrebuiltLibrary); err != nil {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.HasLLNDKStubs); err != nil {
+	if err = gobtools.EncodeBool(buf, r.HasLLNDKStubs); err != nil {
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.IsLLNDKMovedToApex); err != nil {
+	if err = gobtools.EncodeBool(buf, r.IsLLNDKMovedToApex); err != nil {
 		return err
 	}
 
@@ -2148,27 +2148,27 @@ func (r LinkableInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 func (r *LinkableInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
-	err = gobtools.DecodeSimple[bool](buf, &r.StaticExecutable)
+	err = gobtools.DecodeBool(buf, &r.StaticExecutable)
 	if err != nil {
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.Static)
+	err = gobtools.DecodeBool(buf, &r.Static)
 	if err != nil {
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.Shared)
+	err = gobtools.DecodeBool(buf, &r.Shared)
 	if err != nil {
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.Header)
+	err = gobtools.DecodeBool(buf, &r.Header)
 	if err != nil {
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.HasStubsVariants)
+	err = gobtools.DecodeBool(buf, &r.HasStubsVariants)
 	if err != nil {
 		return err
 	}
@@ -2178,7 +2178,7 @@ func (r *LinkableInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error 
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.IsStubs)
+	err = gobtools.DecodeBool(buf, &r.IsStubs)
 	if err != nil {
 		return err
 	}
@@ -2195,8 +2195,8 @@ func (r *LinkableInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error 
 		return err
 	}
 
-	var val13 int32
-	err = gobtools.DecodeSimple[int32](buf, &val13)
+	var val13 int
+	err = gobtools.DecodeInt(buf, &val13)
 	if err != nil {
 		return err
 	}
@@ -2217,13 +2217,13 @@ func (r *LinkableInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error 
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.LinkCoverage)
+	err = gobtools.DecodeBool(buf, &r.LinkCoverage)
 	if err != nil {
 		return err
 	}
 
-	var val21 int32
-	err = gobtools.DecodeSimple[int32](buf, &val21)
+	var val21 int
+	err = gobtools.DecodeInt(buf, &val21)
 	if err != nil {
 		return err
 	}
@@ -2245,17 +2245,17 @@ func (r *LinkableInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error 
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.CcLibrary)
+	err = gobtools.DecodeBool(buf, &r.CcLibrary)
 	if err != nil {
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.CcLibraryInterface)
+	err = gobtools.DecodeBool(buf, &r.CcLibraryInterface)
 	if err != nil {
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.RustLibraryInterface)
+	err = gobtools.DecodeBool(buf, &r.RustLibraryInterface)
 	if err != nil {
 		return err
 	}
@@ -2265,8 +2265,8 @@ func (r *LinkableInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error 
 		return err
 	}
 
-	var val31 int32
-	err = gobtools.DecodeSimple[int32](buf, &val31)
+	var val31 int
+	err = gobtools.DecodeInt(buf, &val31)
 	if err != nil {
 		return err
 	}
@@ -2280,22 +2280,22 @@ func (r *LinkableInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error 
 		}
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.HasNonSystemVariants)
+	err = gobtools.DecodeBool(buf, &r.HasNonSystemVariants)
 	if err != nil {
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.IsLlndk)
+	err = gobtools.DecodeBool(buf, &r.IsLlndk)
 	if err != nil {
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.IsNdk)
+	err = gobtools.DecodeBool(buf, &r.IsNdk)
 	if err != nil {
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.InVendorOrProduct)
+	err = gobtools.DecodeBool(buf, &r.InVendorOrProduct)
 	if err != nil {
 		return err
 	}
@@ -2305,48 +2305,48 @@ func (r *LinkableInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error 
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.InRamdisk)
+	err = gobtools.DecodeBool(buf, &r.InRamdisk)
 	if err != nil {
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.OnlyInRamdisk)
+	err = gobtools.DecodeBool(buf, &r.OnlyInRamdisk)
 	if err != nil {
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.InVendorRamdisk)
+	err = gobtools.DecodeBool(buf, &r.InVendorRamdisk)
 	if err != nil {
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.OnlyInVendorRamdisk)
+	err = gobtools.DecodeBool(buf, &r.OnlyInVendorRamdisk)
 	if err != nil {
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.InRecovery)
+	err = gobtools.DecodeBool(buf, &r.InRecovery)
 	if err != nil {
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.OnlyInRecovery)
+	err = gobtools.DecodeBool(buf, &r.OnlyInRecovery)
 	if err != nil {
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.InVendor)
+	err = gobtools.DecodeBool(buf, &r.InVendor)
 	if err != nil {
 		return err
 	}
 
 	var val47 bool
-	if err = gobtools.DecodeSimple(buf, &val47); err != nil {
+	if err = gobtools.DecodeBool(buf, &val47); err != nil {
 		return err
 	}
 	if !val47 {
 		var val46 bool
-		err = gobtools.DecodeSimple[bool](buf, &val46)
+		err = gobtools.DecodeBool(buf, &val46)
 		if err != nil {
 			return err
 		}
@@ -2358,12 +2358,12 @@ func (r *LinkableInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error 
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.RustApexExclude)
+	err = gobtools.DecodeBool(buf, &r.RustApexExclude)
 	if err != nil {
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.Bootstrap)
+	err = gobtools.DecodeBool(buf, &r.Bootstrap)
 	if err != nil {
 		return err
 	}
@@ -2378,13 +2378,13 @@ func (r *LinkableInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error 
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.IsStubsImplementationRequired)
+	err = gobtools.DecodeBool(buf, &r.IsStubsImplementationRequired)
 	if err != nil {
 		return err
 	}
 
-	var val56 int32
-	err = gobtools.DecodeSimple[int32](buf, &val56)
+	var val56 int
+	err = gobtools.DecodeInt(buf, &val56)
 	if err != nil {
 		return err
 	}
@@ -2402,8 +2402,8 @@ func (r *LinkableInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error 
 		return err
 	}
 
-	var val62 int32
-	err = gobtools.DecodeSimple[int32](buf, &val62)
+	var val62 int
+	err = gobtools.DecodeInt(buf, &val62)
 	if err != nil {
 		return err
 	}
@@ -2416,17 +2416,17 @@ func (r *LinkableInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error 
 		}
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.IsVndkPrebuiltLibrary)
+	err = gobtools.DecodeBool(buf, &r.IsVndkPrebuiltLibrary)
 	if err != nil {
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.HasLLNDKStubs)
+	err = gobtools.DecodeBool(buf, &r.HasLLNDKStubs)
 	if err != nil {
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.IsLLNDKMovedToApex)
+	err = gobtools.DecodeBool(buf, &r.IsLLNDKMovedToApex)
 	if err != nil {
 		return err
 	}
@@ -2495,11 +2495,11 @@ func (r RustRlibDep) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	}
 
 	if r.LinkDirs == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.LinkDirs))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.LinkDirs)); err != nil {
 			return err
 		}
 		for val1 := 0; val1 < len(r.LinkDirs); val1++ {
@@ -2526,8 +2526,8 @@ func (r *RustRlibDep) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 		r.LibPath = val2.(android.Path)
 	}
 
-	var val4 int32
-	err = gobtools.DecodeSimple[int32](buf, &val4)
+	var val4 int
+	err = gobtools.DecodeInt(buf, &val4)
 	if err != nil {
 		return err
 	}

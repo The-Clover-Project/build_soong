@@ -29,11 +29,11 @@ func (r resourcesNode) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error 
 
 	val1 := r.additionalManifests.ToSlice()
 	if val1 == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(val1))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(val1)); err != nil {
 			return err
 		}
 		for val2 := 0; val2 < len(val1); val2++ {
@@ -55,7 +55,7 @@ func (r resourcesNode) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error 
 		return err
 	}
 
-	if err = gobtools.EncodeSimple(buf, r.usedResourceProcessor); err != nil {
+	if err = gobtools.EncodeBool(buf, r.usedResourceProcessor); err != nil {
 		return err
 	}
 	return err
@@ -81,8 +81,8 @@ func (r *resourcesNode) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error
 	}
 
 	var val6 []android.Path
-	var val7 int32
-	err = gobtools.DecodeSimple[int32](buf, &val7)
+	var val7 int
+	err = gobtools.DecodeInt(buf, &val7)
 	if err != nil {
 		return err
 	}
@@ -120,7 +120,7 @@ func (r *resourcesNode) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error
 		return err
 	}
 
-	err = gobtools.DecodeSimple[bool](buf, &r.usedResourceProcessor)
+	err = gobtools.DecodeBool(buf, &r.usedResourceProcessor)
 	if err != nil {
 		return err
 	}
@@ -155,11 +155,11 @@ func (r JniPackageInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error
 	var err error
 
 	if r.JniPackages == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.JniPackages))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.JniPackages)); err != nil {
 			return err
 		}
 		for val1 := 0; val1 < len(r.JniPackages); val1++ {
@@ -174,8 +174,8 @@ func (r JniPackageInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error
 func (r *JniPackageInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
-	var val3 int32
-	err = gobtools.DecodeSimple[int32](buf, &val3)
+	var val3 int
+	err = gobtools.DecodeInt(buf, &val3)
 	if err != nil {
 		return err
 	}

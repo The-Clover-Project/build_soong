@@ -15,11 +15,11 @@ func (r LogtagsInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	var err error
 
 	if r.Logtags == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.Logtags))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.Logtags)); err != nil {
 			return err
 		}
 		for val1 := 0; val1 < len(r.Logtags); val1++ {
@@ -34,8 +34,8 @@ func (r LogtagsInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 func (r *LogtagsInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
-	var val3 int32
-	err = gobtools.DecodeSimple[int32](buf, &val3)
+	var val3 int
+	err = gobtools.DecodeInt(buf, &val3)
 	if err != nil {
 		return err
 	}

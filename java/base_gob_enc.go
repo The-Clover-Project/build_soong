@@ -16,7 +16,7 @@ func init() {
 func (r OptionalDexJarPath) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	var err error
 
-	if err = gobtools.EncodeSimple(buf, r.isSet); err != nil {
+	if err = gobtools.EncodeBool(buf, r.isSet); err != nil {
 		return err
 	}
 
@@ -29,7 +29,7 @@ func (r OptionalDexJarPath) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) e
 func (r *OptionalDexJarPath) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
-	err = gobtools.DecodeSimple[bool](buf, &r.isSet)
+	err = gobtools.DecodeBool(buf, &r.isSet)
 	if err != nil {
 		return err
 	}
@@ -51,11 +51,11 @@ func (r JarJarProviderData) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) e
 	var err error
 
 	if r.Rename == nil {
-		if err = gobtools.EncodeSimple(buf, int32(-1)); err != nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeSimple(buf, int32(len(r.Rename))); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.Rename)); err != nil {
 			return err
 		}
 		for k, v := range r.Rename {
@@ -73,8 +73,8 @@ func (r JarJarProviderData) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) e
 func (r *JarJarProviderData) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
-	var val1 int32
-	err = gobtools.DecodeSimple[int32](buf, &val1)
+	var val1 int
+	err = gobtools.DecodeInt(buf, &val1)
 	if err != nil {
 		return err
 	}
