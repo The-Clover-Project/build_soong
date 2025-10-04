@@ -195,11 +195,11 @@ func (r BootclasspathFragmentApexContentInfo) Encode(ctx gobtools.EncContext, bu
 		if err = gobtools.EncodeInt(buf, len(r.contentModuleDexJarPaths)); err != nil {
 			return err
 		}
-		for k, v := range r.contentModuleDexJarPaths {
-			if err = gobtools.EncodeString(buf, k); err != nil {
+		for val1, val2 := range r.contentModuleDexJarPaths {
+			if err = gobtools.EncodeString(buf, val1); err != nil {
 				return err
 			}
-			if err = gobtools.EncodeInterface(ctx, buf, v); err != nil {
+			if err = gobtools.EncodeInterface(ctx, buf, val2); err != nil {
 				return err
 			}
 		}
@@ -226,29 +226,29 @@ func (r *BootclasspathFragmentApexContentInfo) Decode(ctx gobtools.EncContext, b
 	if val2 != -1 {
 		r.contentModuleDexJarPaths = make(map[string]android.Path, val2)
 		for val3 := 0; val3 < int(val2); val3++ {
-			var k string
-			var v android.Path
-			err = gobtools.DecodeString(buf, &k)
+			var val4 string
+			var val5 android.Path
+			err = gobtools.DecodeString(buf, &val4)
 			if err != nil {
 				return err
 			}
-			if val6, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+			if val8, err := gobtools.DecodeInterface(ctx, buf); err != nil {
 				return err
-			} else if val6 == nil {
-				v = nil
+			} else if val8 == nil {
+				val5 = nil
 			} else {
-				v = val6.(android.Path)
+				val5 = val8.(android.Path)
 			}
-			r.contentModuleDexJarPaths[k] = v
+			r.contentModuleDexJarPaths[val4] = val5
 		}
 	}
 
-	if val8, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+	if val10, err := gobtools.DecodeInterface(ctx, buf); err != nil {
 		return err
-	} else if val8 == nil {
+	} else if val10 == nil {
 		r.profilePathOnHost = nil
 	} else {
-		r.profilePathOnHost = val8.(android.Path)
+		r.profilePathOnHost = val10.(android.Path)
 	}
 
 	err = gobtools.DecodeString(buf, &r.profileInstallPathInApex)

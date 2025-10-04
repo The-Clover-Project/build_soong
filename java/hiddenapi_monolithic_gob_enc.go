@@ -23,20 +23,20 @@ func (r MonolithicHiddenAPIInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buff
 		if err = gobtools.EncodeInt(buf, len(r.FlagsFilesByCategory)); err != nil {
 			return err
 		}
-		for k, v := range r.FlagsFilesByCategory {
-			if err = gobtools.EncodeInt(buf, int(k)); err != nil {
+		for val1, val2 := range r.FlagsFilesByCategory {
+			if err = gobtools.EncodeInt(buf, int(val1)); err != nil {
 				return err
 			}
-			if v == nil {
+			if val2 == nil {
 				if err = gobtools.EncodeInt(buf, -1); err != nil {
 					return err
 				}
 			} else {
-				if err = gobtools.EncodeInt(buf, len(v)); err != nil {
+				if err = gobtools.EncodeInt(buf, len(val2)); err != nil {
 					return err
 				}
-				for val1 := 0; val1 < len(v); val1++ {
-					if err = gobtools.EncodeInterface(ctx, buf, v[val1]); err != nil {
+				for val3 := 0; val3 < len(val2); val3++ {
+					if err = gobtools.EncodeInterface(ctx, buf, val2[val3]); err != nil {
 						return err
 					}
 				}
@@ -52,8 +52,8 @@ func (r MonolithicHiddenAPIInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buff
 		if err = gobtools.EncodeInt(buf, len(r.AnnotationFlagsPaths)); err != nil {
 			return err
 		}
-		for val2 := 0; val2 < len(r.AnnotationFlagsPaths); val2++ {
-			if err = gobtools.EncodeInterface(ctx, buf, r.AnnotationFlagsPaths[val2]); err != nil {
+		for val4 := 0; val4 < len(r.AnnotationFlagsPaths); val4++ {
+			if err = gobtools.EncodeInterface(ctx, buf, r.AnnotationFlagsPaths[val4]); err != nil {
 				return err
 			}
 		}
@@ -67,8 +67,8 @@ func (r MonolithicHiddenAPIInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buff
 		if err = gobtools.EncodeInt(buf, len(r.MetadataPaths)); err != nil {
 			return err
 		}
-		for val3 := 0; val3 < len(r.MetadataPaths); val3++ {
-			if err = gobtools.EncodeInterface(ctx, buf, r.MetadataPaths[val3]); err != nil {
+		for val5 := 0; val5 < len(r.MetadataPaths); val5++ {
+			if err = gobtools.EncodeInterface(ctx, buf, r.MetadataPaths[val5]); err != nil {
 				return err
 			}
 		}
@@ -82,8 +82,8 @@ func (r MonolithicHiddenAPIInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buff
 		if err = gobtools.EncodeInt(buf, len(r.IndexPaths)); err != nil {
 			return err
 		}
-		for val4 := 0; val4 < len(r.IndexPaths); val4++ {
-			if err = gobtools.EncodeInterface(ctx, buf, r.IndexPaths[val4]); err != nil {
+		for val6 := 0; val6 < len(r.IndexPaths); val6++ {
+			if err = gobtools.EncodeInterface(ctx, buf, r.IndexPaths[val6]); err != nil {
 				return err
 			}
 		}
@@ -97,8 +97,8 @@ func (r MonolithicHiddenAPIInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buff
 		if err = gobtools.EncodeInt(buf, len(r.StubFlagSubsets)); err != nil {
 			return err
 		}
-		for val5 := 0; val5 < len(r.StubFlagSubsets); val5++ {
-			if err = r.StubFlagSubsets[val5].Encode(ctx, buf); err != nil {
+		for val7 := 0; val7 < len(r.StubFlagSubsets); val7++ {
+			if err = r.StubFlagSubsets[val7].Encode(ctx, buf); err != nil {
 				return err
 			}
 		}
@@ -112,8 +112,8 @@ func (r MonolithicHiddenAPIInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buff
 		if err = gobtools.EncodeInt(buf, len(r.FlagSubsets)); err != nil {
 			return err
 		}
-		for val6 := 0; val6 < len(r.FlagSubsets); val6++ {
-			if err = r.FlagSubsets[val6].Encode(ctx, buf); err != nil {
+		for val8 := 0; val8 < len(r.FlagSubsets); val8++ {
+			if err = r.FlagSubsets[val8].Encode(ctx, buf); err != nil {
 				return err
 			}
 		}
@@ -127,8 +127,8 @@ func (r MonolithicHiddenAPIInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buff
 		if err = gobtools.EncodeInt(buf, len(r.ClassesJars)); err != nil {
 			return err
 		}
-		for val7 := 0; val7 < len(r.ClassesJars); val7++ {
-			if err = gobtools.EncodeInterface(ctx, buf, r.ClassesJars[val7]); err != nil {
+		for val9 := 0; val9 < len(r.ClassesJars); val9++ {
+			if err = gobtools.EncodeInterface(ctx, buf, r.ClassesJars[val9]); err != nil {
 				return err
 			}
 		}
@@ -147,131 +147,131 @@ func (r *MonolithicHiddenAPIInfo) Decode(ctx gobtools.EncContext, buf *bytes.Rea
 	if val2 != -1 {
 		r.FlagsFilesByCategory = make(map[hiddenAPIFlagFileCategory]android.Paths, val2)
 		for val3 := 0; val3 < int(val2); val3++ {
-			var k hiddenAPIFlagFileCategory
-			var v android.Paths
-			var val5 int
-			err = gobtools.DecodeInt(buf, &val5)
+			var val4 hiddenAPIFlagFileCategory
+			var val5 android.Paths
+			var val7 int
+			err = gobtools.DecodeInt(buf, &val7)
 			if err != nil {
 				return err
 			}
-			k = hiddenAPIFlagFileCategory(val5)
-			var val9 int
-			err = gobtools.DecodeInt(buf, &val9)
+			val4 = hiddenAPIFlagFileCategory(val7)
+			var val11 int
+			err = gobtools.DecodeInt(buf, &val11)
 			if err != nil {
 				return err
 			}
-			if val9 != -1 {
-				v = make([]android.Path, val9)
-				for val10 := 0; val10 < int(val9); val10++ {
-					if val12, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+			if val11 != -1 {
+				val5 = make([]android.Path, val11)
+				for val12 := 0; val12 < int(val11); val12++ {
+					if val14, err := gobtools.DecodeInterface(ctx, buf); err != nil {
 						return err
-					} else if val12 == nil {
-						v[val10] = nil
+					} else if val14 == nil {
+						val5[val12] = nil
 					} else {
-						v[val10] = val12.(android.Path)
+						val5[val12] = val14.(android.Path)
 					}
 				}
 			}
-			r.FlagsFilesByCategory[k] = v
+			r.FlagsFilesByCategory[val4] = val5
 		}
 	}
 
-	var val15 int
-	err = gobtools.DecodeInt(buf, &val15)
+	var val17 int
+	err = gobtools.DecodeInt(buf, &val17)
 	if err != nil {
 		return err
 	}
-	if val15 != -1 {
-		r.AnnotationFlagsPaths = make([]android.Path, val15)
-		for val16 := 0; val16 < int(val15); val16++ {
-			if val18, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+	if val17 != -1 {
+		r.AnnotationFlagsPaths = make([]android.Path, val17)
+		for val18 := 0; val18 < int(val17); val18++ {
+			if val20, err := gobtools.DecodeInterface(ctx, buf); err != nil {
 				return err
-			} else if val18 == nil {
-				r.AnnotationFlagsPaths[val16] = nil
+			} else if val20 == nil {
+				r.AnnotationFlagsPaths[val18] = nil
 			} else {
-				r.AnnotationFlagsPaths[val16] = val18.(android.Path)
+				r.AnnotationFlagsPaths[val18] = val20.(android.Path)
 			}
 		}
 	}
 
-	var val21 int
-	err = gobtools.DecodeInt(buf, &val21)
+	var val23 int
+	err = gobtools.DecodeInt(buf, &val23)
 	if err != nil {
 		return err
 	}
-	if val21 != -1 {
-		r.MetadataPaths = make([]android.Path, val21)
-		for val22 := 0; val22 < int(val21); val22++ {
-			if val24, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+	if val23 != -1 {
+		r.MetadataPaths = make([]android.Path, val23)
+		for val24 := 0; val24 < int(val23); val24++ {
+			if val26, err := gobtools.DecodeInterface(ctx, buf); err != nil {
 				return err
-			} else if val24 == nil {
-				r.MetadataPaths[val22] = nil
+			} else if val26 == nil {
+				r.MetadataPaths[val24] = nil
 			} else {
-				r.MetadataPaths[val22] = val24.(android.Path)
+				r.MetadataPaths[val24] = val26.(android.Path)
 			}
 		}
 	}
 
-	var val27 int
-	err = gobtools.DecodeInt(buf, &val27)
+	var val29 int
+	err = gobtools.DecodeInt(buf, &val29)
 	if err != nil {
 		return err
 	}
-	if val27 != -1 {
-		r.IndexPaths = make([]android.Path, val27)
-		for val28 := 0; val28 < int(val27); val28++ {
-			if val30, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+	if val29 != -1 {
+		r.IndexPaths = make([]android.Path, val29)
+		for val30 := 0; val30 < int(val29); val30++ {
+			if val32, err := gobtools.DecodeInterface(ctx, buf); err != nil {
 				return err
-			} else if val30 == nil {
-				r.IndexPaths[val28] = nil
+			} else if val32 == nil {
+				r.IndexPaths[val30] = nil
 			} else {
-				r.IndexPaths[val28] = val30.(android.Path)
+				r.IndexPaths[val30] = val32.(android.Path)
 			}
 		}
 	}
 
-	var val33 int
-	err = gobtools.DecodeInt(buf, &val33)
+	var val35 int
+	err = gobtools.DecodeInt(buf, &val35)
 	if err != nil {
 		return err
 	}
-	if val33 != -1 {
-		r.StubFlagSubsets = make([]SignatureCsvSubset, val33)
-		for val34 := 0; val34 < int(val33); val34++ {
-			if err = r.StubFlagSubsets[val34].Decode(ctx, buf); err != nil {
+	if val35 != -1 {
+		r.StubFlagSubsets = make([]SignatureCsvSubset, val35)
+		for val36 := 0; val36 < int(val35); val36++ {
+			if err = r.StubFlagSubsets[val36].Decode(ctx, buf); err != nil {
 				return err
 			}
 		}
 	}
 
-	var val38 int
-	err = gobtools.DecodeInt(buf, &val38)
+	var val40 int
+	err = gobtools.DecodeInt(buf, &val40)
 	if err != nil {
 		return err
 	}
-	if val38 != -1 {
-		r.FlagSubsets = make([]SignatureCsvSubset, val38)
-		for val39 := 0; val39 < int(val38); val39++ {
-			if err = r.FlagSubsets[val39].Decode(ctx, buf); err != nil {
+	if val40 != -1 {
+		r.FlagSubsets = make([]SignatureCsvSubset, val40)
+		for val41 := 0; val41 < int(val40); val41++ {
+			if err = r.FlagSubsets[val41].Decode(ctx, buf); err != nil {
 				return err
 			}
 		}
 	}
 
-	var val43 int
-	err = gobtools.DecodeInt(buf, &val43)
+	var val45 int
+	err = gobtools.DecodeInt(buf, &val45)
 	if err != nil {
 		return err
 	}
-	if val43 != -1 {
-		r.ClassesJars = make([]android.Path, val43)
-		for val44 := 0; val44 < int(val43); val44++ {
-			if val46, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+	if val45 != -1 {
+		r.ClassesJars = make([]android.Path, val45)
+		for val46 := 0; val46 < int(val45); val46++ {
+			if val48, err := gobtools.DecodeInterface(ctx, buf); err != nil {
 				return err
-			} else if val46 == nil {
-				r.ClassesJars[val44] = nil
+			} else if val48 == nil {
+				r.ClassesJars[val46] = nil
 			} else {
-				r.ClassesJars[val44] = val46.(android.Path)
+				r.ClassesJars[val46] = val48.(android.Path)
 			}
 		}
 	}

@@ -22,20 +22,20 @@ func (r PhonyInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		if err = gobtools.EncodeInt(buf, len(r.Phonies)); err != nil {
 			return err
 		}
-		for k, v := range r.Phonies {
-			if err = gobtools.EncodeString(buf, k); err != nil {
+		for val1, val2 := range r.Phonies {
+			if err = gobtools.EncodeString(buf, val1); err != nil {
 				return err
 			}
-			if v == nil {
+			if val2 == nil {
 				if err = gobtools.EncodeInt(buf, -1); err != nil {
 					return err
 				}
 			} else {
-				if err = gobtools.EncodeInt(buf, len(v)); err != nil {
+				if err = gobtools.EncodeInt(buf, len(val2)); err != nil {
 					return err
 				}
-				for val1 := 0; val1 < len(v); val1++ {
-					if err = gobtools.EncodeInterface(ctx, buf, v[val1]); err != nil {
+				for val3 := 0; val3 < len(val2); val3++ {
+					if err = gobtools.EncodeInterface(ctx, buf, val2[val3]); err != nil {
 						return err
 					}
 				}
@@ -56,30 +56,30 @@ func (r *PhonyInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	if val2 != -1 {
 		r.Phonies = make(map[string]Paths, val2)
 		for val3 := 0; val3 < int(val2); val3++ {
-			var k string
-			var v Paths
-			err = gobtools.DecodeString(buf, &k)
+			var val4 string
+			var val5 Paths
+			err = gobtools.DecodeString(buf, &val4)
 			if err != nil {
 				return err
 			}
-			var val7 int
-			err = gobtools.DecodeInt(buf, &val7)
+			var val9 int
+			err = gobtools.DecodeInt(buf, &val9)
 			if err != nil {
 				return err
 			}
-			if val7 != -1 {
-				v = make([]Path, val7)
-				for val8 := 0; val8 < int(val7); val8++ {
-					if val10, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+			if val9 != -1 {
+				val5 = make([]Path, val9)
+				for val10 := 0; val10 < int(val9); val10++ {
+					if val12, err := gobtools.DecodeInterface(ctx, buf); err != nil {
 						return err
-					} else if val10 == nil {
-						v[val8] = nil
+					} else if val12 == nil {
+						val5[val10] = nil
 					} else {
-						v[val8] = val10.(Path)
+						val5[val10] = val12.(Path)
 					}
 				}
 			}
-			r.Phonies[k] = v
+			r.Phonies[val4] = val5
 		}
 	}
 
