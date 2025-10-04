@@ -11,6 +11,7 @@ import (
 func init() {
 	HiddenAPIScopeGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(HiddenAPIScope) })
 	FlagFilesByCategoryGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(FlagFilesByCategory) })
+	HiddenAPIInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(HiddenAPIInfo) })
 	HiddenAPIInfoForSdkGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(HiddenAPIInfoForSdk) })
 	ModuleStubDexJarsGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ModuleStubDexJars) })
 	HiddenAPIPropertyInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(HiddenAPIPropertyInfo) })
@@ -173,6 +174,184 @@ var FlagFilesByCategoryGobRegId int16
 
 func (r FlagFilesByCategory) GetTypeId() int16 {
 	return FlagFilesByCategoryGobRegId
+}
+
+func (r HiddenAPIInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if r.FlagFilesByCategory == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r.FlagFilesByCategory)); err != nil {
+			return err
+		}
+		for val1, val2 := range r.FlagFilesByCategory {
+			if err = gobtools.EncodeInt(buf, int(val1)); err != nil {
+				return err
+			}
+			if val2 == nil {
+				if err = gobtools.EncodeInt(buf, -1); err != nil {
+					return err
+				}
+			} else {
+				if err = gobtools.EncodeInt(buf, len(val2)); err != nil {
+					return err
+				}
+				for val3 := 0; val3 < len(val2); val3++ {
+					if err = gobtools.EncodeInterface(ctx, buf, val2[val3]); err != nil {
+						return err
+					}
+				}
+			}
+		}
+	}
+
+	if r.TransitiveStubDexJarsByScope == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r.TransitiveStubDexJarsByScope)); err != nil {
+			return err
+		}
+		for val4, val5 := range r.TransitiveStubDexJarsByScope {
+			if err = gobtools.EncodeString(buf, val4); err != nil {
+				return err
+			}
+			if val5 == nil {
+				if err = gobtools.EncodeInt(buf, -1); err != nil {
+					return err
+				}
+			} else {
+				if err = gobtools.EncodeInt(buf, len(val5)); err != nil {
+					return err
+				}
+				for val6, val7 := range val5 {
+					val8 := val6 == nil
+					if err = gobtools.EncodeBool(buf, val8); err != nil {
+						return err
+					}
+					if !val8 {
+						if err = (*val6).Encode(ctx, buf); err != nil {
+							return err
+						}
+					}
+					if err = gobtools.EncodeInterface(ctx, buf, val7); err != nil {
+						return err
+					}
+				}
+			}
+		}
+	}
+
+	if err = r.HiddenAPIFlagOutput.Encode(ctx, buf); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r *HiddenAPIInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	var val2 int
+	err = gobtools.DecodeInt(buf, &val2)
+	if err != nil {
+		return err
+	}
+	if val2 != -1 {
+		r.FlagFilesByCategory = make(map[hiddenAPIFlagFileCategory]android.Paths, val2)
+		for val3 := 0; val3 < int(val2); val3++ {
+			var val4 hiddenAPIFlagFileCategory
+			var val5 android.Paths
+			var val7 int
+			err = gobtools.DecodeInt(buf, &val7)
+			if err != nil {
+				return err
+			}
+			val4 = hiddenAPIFlagFileCategory(val7)
+			var val11 int
+			err = gobtools.DecodeInt(buf, &val11)
+			if err != nil {
+				return err
+			}
+			if val11 != -1 {
+				val5 = make([]android.Path, val11)
+				for val12 := 0; val12 < int(val11); val12++ {
+					if val14, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+						return err
+					} else if val14 == nil {
+						val5[val12] = nil
+					} else {
+						val5[val12] = val14.(android.Path)
+					}
+				}
+			}
+			r.FlagFilesByCategory[val4] = val5
+		}
+	}
+
+	var val16 int
+	err = gobtools.DecodeInt(buf, &val16)
+	if err != nil {
+		return err
+	}
+	if val16 != -1 {
+		r.TransitiveStubDexJarsByScope = make(map[string]ModuleStubDexJars, val16)
+		for val17 := 0; val17 < int(val16); val17++ {
+			var val18 string
+			var val19 ModuleStubDexJars
+			err = gobtools.DecodeString(buf, &val18)
+			if err != nil {
+				return err
+			}
+			var val22 int
+			err = gobtools.DecodeInt(buf, &val22)
+			if err != nil {
+				return err
+			}
+			if val22 != -1 {
+				val19 = make(map[*HiddenAPIScope]android.Path, val22)
+				for val23 := 0; val23 < int(val22); val23++ {
+					var val24 *HiddenAPIScope
+					var val25 android.Path
+					var val27 bool
+					if err = gobtools.DecodeBool(buf, &val27); err != nil {
+						return err
+					}
+					if !val27 {
+						var val26 HiddenAPIScope
+						if err = val26.Decode(ctx, buf); err != nil {
+							return err
+						}
+						val24 = &val26
+					}
+					if val30, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+						return err
+					} else if val30 == nil {
+						val25 = nil
+					} else {
+						val25 = val30.(android.Path)
+					}
+					val19[val24] = val25
+				}
+			}
+			r.TransitiveStubDexJarsByScope[val18] = val19
+		}
+	}
+
+	if err = r.HiddenAPIFlagOutput.Decode(ctx, buf); err != nil {
+		return err
+	}
+
+	return err
+}
+
+var HiddenAPIInfoGobRegId int16
+
+func (r HiddenAPIInfo) GetTypeId() int16 {
+	return HiddenAPIInfoGobRegId
 }
 
 func (r HiddenAPIInfoForSdk) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
