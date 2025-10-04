@@ -8,11 +8,29 @@ import (
 )
 
 func init() {
+	BpPrintableBaseGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(BpPrintableBase) })
 	SdkMemberTraitBaseGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(SdkMemberTraitBase) })
 	SdkMemberTypeBaseGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(SdkMemberTypeBase) })
 	ExportedComponentsInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ExportedComponentsInfo) })
 	AdditionalSdkInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(AdditionalSdkInfo) })
 	AdditionalSdkInfoPropertiesGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(AdditionalSdkInfoProperties) })
+}
+
+func (r BpPrintableBase) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+	return err
+}
+
+func (r *BpPrintableBase) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	return err
+}
+
+var BpPrintableBaseGobRegId int16
+
+func (r BpPrintableBase) GetTypeId() int16 {
+	return BpPrintableBaseGobRegId
 }
 
 func (r SdkMemberTraitBase) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {

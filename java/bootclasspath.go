@@ -23,6 +23,8 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 // Contains code that is common to both platform_bootclasspath and bootclasspath_fragment.
 
 // addDependencyOntoApexVariants adds dependencies onto the appropriate apex specific variants of
@@ -202,6 +204,7 @@ func gatherApexModulePairDepsWithTag(ctx android.BaseModuleContext,
 }
 
 // ApexVariantReference specifies a particular apex variant of a module.
+// @auto-generate: gob
 type ApexVariantReference struct {
 	android.BpPrintableBase
 

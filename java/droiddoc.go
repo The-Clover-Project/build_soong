@@ -26,6 +26,8 @@ import (
 	"android/soong/java/config"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 func init() {
 	RegisterDocsBuildComponents(android.InitRegistrationContext)
 }
@@ -880,6 +882,7 @@ type ExportedDroiddocDirProperties struct {
 	Path *string
 }
 
+// @auto-generate: gob
 type ExportedDroiddocDirInfo struct {
 	Deps android.Paths
 	Dir  android.Path

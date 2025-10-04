@@ -25,10 +25,13 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 func init() {
 	RegisterRobolectricBuildComponents(android.InitRegistrationContext)
 }
 
+// @auto-generate: gob
 type RobolectricRuntimesInfo struct {
 	Runtimes []android.InstallPath
 }

@@ -24,6 +24,8 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 func init() {
 	RegisterRavenwoodBuildComponents(android.InitRegistrationContext)
 }
@@ -57,6 +59,7 @@ var genManifestProperties = pctx.AndroidStaticRule("genManifestProperties",
 const ravenwoodUtilsName = "ravenwood-utils"
 const ravenwoodRuntimeName = "ravenwood-runtime"
 
+// @auto-generate: gob
 type ravenwoodLibgroupJniDepProviderInfo struct {
 	// All the jni_libs module names with transient dependencies.
 	names map[string]bool

@@ -22,6 +22,8 @@ import (
 	"strings"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 // The ConfiguredJarList struct provides methods for handling a list of (apex, jar) pairs.
 // Such lists are used in the build system for things like bootclasspath jars or system server jars.
 // The apex part is either an apex name, or a special names "platform" or "system_ext". Jar is a
@@ -31,6 +33,8 @@ import (
 //   - "com.android.art:core-oj"
 //   - "platform:framework"
 //   - "system_ext:foo"
+//
+// @auto-generate: gob
 type ConfiguredJarList struct {
 	// A list of apex components, which can be an apex name,
 	// or special names like "platform" or "system_ext".

@@ -26,6 +26,8 @@ import (
 	"android/soong/android"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 // Build rules and utilities to generate individual packages/modules/common/proto/classpaths.proto
 // config files based on build configuration to embed into /system and /apex on a device.
 //
@@ -226,6 +228,7 @@ func (c *ClasspathFragmentBase) androidMkInfo() android.AndroidMkInfo {
 
 var ClasspathFragmentProtoContentInfoProvider = blueprint.NewProvider[ClasspathFragmentProtoContentInfo]()
 
+// @auto-generate: gob
 type ClasspathFragmentProtoContentInfo struct {
 	// Whether the classpaths.proto config is generated for the fragment.
 	ClasspathFragmentProtoGenerated bool

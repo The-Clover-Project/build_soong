@@ -47,6 +47,7 @@ type ApkCertInfo struct {
 
 var ApkCertInfoProvider = blueprint.NewProvider[ApkCertInfo]()
 
+// @auto-generate: gob
 type ApkCertsInfo []ApkCertInfo
 
 var ApkCertsInfoProvider = blueprint.NewProvider[ApkCertsInfo]()

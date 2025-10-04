@@ -23,6 +23,7 @@ func init() {
 	SyspropPublicStubInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(SyspropPublicStubInfo) })
 	jniLibGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(jniLib) })
 	JavaTestInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(JavaTestInfo) })
+	JavaApiImportInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(JavaApiImportInfo) })
 }
 
 func (r ProguardSpecInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
@@ -1911,4 +1912,42 @@ var JavaTestInfoGobRegId int16
 
 func (r JavaTestInfo) GetTypeId() int16 {
 	return JavaTestInfoGobRegId
+}
+
+func (r JavaApiImportInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = gobtools.EncodeInterface(ctx, buf, r.ApiFile); err != nil {
+		return err
+	}
+
+	if err = gobtools.EncodeString(buf, r.ApiSurface); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r *JavaApiImportInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	if val2, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+		return err
+	} else if val2 == nil {
+		r.ApiFile = nil
+	} else {
+		r.ApiFile = val2.(android.Path)
+	}
+
+	err = gobtools.DecodeString(buf, &r.ApiSurface)
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
+var JavaApiImportInfoGobRegId int16
+
+func (r JavaApiImportInfo) GetTypeId() int16 {
+	return JavaApiImportInfoGobRegId
 }
