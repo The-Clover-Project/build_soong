@@ -10,6 +10,7 @@ import (
 
 func init() {
 	LintInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(LintInfo) })
+	ModuleLintReportZipsInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ModuleLintReportZipsInfo) })
 }
 
 func (r LintInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
@@ -107,4 +108,57 @@ var LintInfoGobRegId int16
 
 func (r LintInfo) GetTypeId() int16 {
 	return LintInfoGobRegId
+}
+
+func (r ModuleLintReportZipsInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = gobtools.EncodeInterface(ctx, buf, r.HtmlZip); err != nil {
+		return err
+	}
+
+	if err = gobtools.EncodeInterface(ctx, buf, r.TextZip); err != nil {
+		return err
+	}
+
+	if err = gobtools.EncodeInterface(ctx, buf, r.XmlZip); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r *ModuleLintReportZipsInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	if val2, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+		return err
+	} else if val2 == nil {
+		r.HtmlZip = nil
+	} else {
+		r.HtmlZip = val2.(android.Path)
+	}
+
+	if val4, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+		return err
+	} else if val4 == nil {
+		r.TextZip = nil
+	} else {
+		r.TextZip = val4.(android.Path)
+	}
+
+	if val6, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+		return err
+	} else if val6 == nil {
+		r.XmlZip = nil
+	} else {
+		r.XmlZip = val6.(android.Path)
+	}
+
+	return err
+}
+
+var ModuleLintReportZipsInfoGobRegId int16
+
+func (r ModuleLintReportZipsInfo) GetTypeId() int16 {
+	return ModuleLintReportZipsInfoGobRegId
 }

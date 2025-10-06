@@ -591,6 +591,7 @@ func BuildModuleLintReportZips(ctx android.ModuleContext, depSets LintDepSets, v
 	return android.Paths{htmlZip, textZip, xmlZip}
 }
 
+// @auto-generate: gob
 type ModuleLintReportZipsInfo struct {
 	HtmlZip android.Path
 	TextZip android.Path
