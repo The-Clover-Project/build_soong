@@ -1410,6 +1410,7 @@ type filesystemBaseProperty struct {
 	Compile_multilib        *string
 	Native_bridge_supported *bool
 	Visibility              []string
+	Unchecked_module        *bool
 }
 
 func generateBaseProps(namePtr *string, config android.Config) *filesystemBaseProperty {
@@ -1419,6 +1420,9 @@ func generateBaseProps(namePtr *string, config android.Config) *filesystemBasePr
 		Native_bridge_supported: proptools.BoolPtr(config.ProductVariables().NativeBridgeArch != nil),
 		// The vbmeta modules are currently in the root directory and depend on the partitions
 		Visibility: []string{"//.", "//build/soong:__subpackages__"},
+		// Don't build this module on checkbuilds, the soong-built partitions are still in-progress
+		// and sometimes don't build.
+		Unchecked_module: proptools.BoolPtr(true),
 	}
 }
 
@@ -1492,10 +1496,6 @@ func generateFsProps(ctx android.EarlyModuleContext, partitions allGeneratedPart
 			fsProps.Share_dup_blocks = proptools.BoolPtr(s)
 		}
 	}
-
-	// Don't build this module on checkbuilds, the soong-built partitions are still in-progress
-	// and sometimes don't build.
-	fsProps.Unchecked_module = proptools.BoolPtr(true)
 
 	// BOARD_AVB_ENABLE
 	fsProps.Use_avb = avbInfo.avbEnable

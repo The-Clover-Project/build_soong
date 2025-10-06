@@ -535,6 +535,9 @@ type commonProperties struct {
 	// Set to true if this module must be generic and does not require product-specific information.
 	// To be included in the system image, this property must be set to true.
 	Use_generic_config *bool
+
+	// If this property is set to true, this module will not be built on checkbuilds.
+	Unchecked_module *bool
 }
 
 // Properties common to all modules inheriting from ModuleBase. Unlike commonProperties, these
@@ -2264,6 +2267,10 @@ func (m *ModuleBase) GenerateBuildActions(blueprintCtx blueprint.ModuleContext) 
 			x.IDEInfo(ctx, &result)
 			result.BaseModuleName = x.BaseModuleName()
 			SetProvider(ctx, IdeInfoProviderKey, result)
+		}
+
+		if proptools.Bool(m.commonProperties.Unchecked_module) {
+			ctx.UncheckedModule()
 		}
 
 		// Create the set of tagged dist files after calling GenerateAndroidBuildActions

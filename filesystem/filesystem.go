@@ -932,10 +932,6 @@ func (f *filesystem) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 
 	f.fileListFile = fileListFile
 
-	if proptools.Bool(f.properties.Unchecked_module) {
-		ctx.UncheckedModule()
-	}
-
 	f.setVbmetaPartitionProvider(ctx)
 
 	// Dump metadata that can not be done in android/compliance-metadata.go
