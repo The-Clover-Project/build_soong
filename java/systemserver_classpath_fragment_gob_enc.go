@@ -100,11 +100,11 @@ func (r LibraryNameToPartitionInfo) Encode(ctx gobtools.EncContext, buf *bytes.B
 		if err = gobtools.EncodeInt(buf, len(r.LibraryNameToPartition)); err != nil {
 			return err
 		}
-		for k, v := range r.LibraryNameToPartition {
-			if err = gobtools.EncodeString(buf, k); err != nil {
+		for val1, val2 := range r.LibraryNameToPartition {
+			if err = gobtools.EncodeString(buf, val1); err != nil {
 				return err
 			}
-			if err = gobtools.EncodeString(buf, v); err != nil {
+			if err = gobtools.EncodeString(buf, val2); err != nil {
 				return err
 			}
 		}
@@ -123,17 +123,17 @@ func (r *LibraryNameToPartitionInfo) Decode(ctx gobtools.EncContext, buf *bytes.
 	if val1 != -1 {
 		r.LibraryNameToPartition = make(map[string]string, val1)
 		for val2 := 0; val2 < int(val1); val2++ {
-			var k string
-			var v string
-			err = gobtools.DecodeString(buf, &k)
+			var val3 string
+			var val4 string
+			err = gobtools.DecodeString(buf, &val3)
 			if err != nil {
 				return err
 			}
-			err = gobtools.DecodeString(buf, &v)
+			err = gobtools.DecodeString(buf, &val4)
 			if err != nil {
 				return err
 			}
-			r.LibraryNameToPartition[k] = v
+			r.LibraryNameToPartition[val3] = val4
 		}
 	}
 

@@ -438,20 +438,20 @@ func (r InstallFilesInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) err
 		if err = gobtools.EncodeInt(buf, len(r.DistFiles)); err != nil {
 			return err
 		}
-		for k, v := range r.DistFiles {
-			if err = gobtools.EncodeString(buf, k); err != nil {
+		for val13, val14 := range r.DistFiles {
+			if err = gobtools.EncodeString(buf, val13); err != nil {
 				return err
 			}
-			if v == nil {
+			if val14 == nil {
 				if err = gobtools.EncodeInt(buf, -1); err != nil {
 					return err
 				}
 			} else {
-				if err = gobtools.EncodeInt(buf, len(v)); err != nil {
+				if err = gobtools.EncodeInt(buf, len(val14)); err != nil {
 					return err
 				}
-				for val13 := 0; val13 < len(v); val13++ {
-					if err = gobtools.EncodeInterface(ctx, buf, v[val13]); err != nil {
+				for val15 := 0; val15 < len(val14); val15++ {
+					if err = gobtools.EncodeInterface(ctx, buf, val14[val15]); err != nil {
 						return err
 					}
 				}
@@ -673,30 +673,30 @@ func (r *InstallFilesInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) er
 	if val68 != -1 {
 		r.DistFiles = make(map[string]Paths, val68)
 		for val69 := 0; val69 < int(val68); val69++ {
-			var k string
-			var v Paths
-			err = gobtools.DecodeString(buf, &k)
+			var val70 string
+			var val71 Paths
+			err = gobtools.DecodeString(buf, &val70)
 			if err != nil {
 				return err
 			}
-			var val73 int
-			err = gobtools.DecodeInt(buf, &val73)
+			var val75 int
+			err = gobtools.DecodeInt(buf, &val75)
 			if err != nil {
 				return err
 			}
-			if val73 != -1 {
-				v = make([]Path, val73)
-				for val74 := 0; val74 < int(val73); val74++ {
-					if val76, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+			if val75 != -1 {
+				val71 = make([]Path, val75)
+				for val76 := 0; val76 < int(val75); val76++ {
+					if val78, err := gobtools.DecodeInterface(ctx, buf); err != nil {
 						return err
-					} else if val76 == nil {
-						v[val74] = nil
+					} else if val78 == nil {
+						val71[val76] = nil
 					} else {
-						v[val74] = val76.(Path)
+						val71[val76] = val78.(Path)
 					}
 				}
 			}
-			r.DistFiles[k] = v
+			r.DistFiles[val70] = val71
 		}
 	}
 
@@ -1802,20 +1802,20 @@ func (r OutputFilesInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) erro
 		if err = gobtools.EncodeInt(buf, len(r.TaggedOutputFiles)); err != nil {
 			return err
 		}
-		for k, v := range r.TaggedOutputFiles {
-			if err = gobtools.EncodeString(buf, k); err != nil {
+		for val2, val3 := range r.TaggedOutputFiles {
+			if err = gobtools.EncodeString(buf, val2); err != nil {
 				return err
 			}
-			if v == nil {
+			if val3 == nil {
 				if err = gobtools.EncodeInt(buf, -1); err != nil {
 					return err
 				}
 			} else {
-				if err = gobtools.EncodeInt(buf, len(v)); err != nil {
+				if err = gobtools.EncodeInt(buf, len(val3)); err != nil {
 					return err
 				}
-				for val2 := 0; val2 < len(v); val2++ {
-					if err = gobtools.EncodeInterface(ctx, buf, v[val2]); err != nil {
+				for val4 := 0; val4 < len(val3); val4++ {
+					if err = gobtools.EncodeInterface(ctx, buf, val3[val4]); err != nil {
 						return err
 					}
 				}
@@ -1854,30 +1854,30 @@ func (r *OutputFilesInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) err
 	if val7 != -1 {
 		r.TaggedOutputFiles = make(map[string]Paths, val7)
 		for val8 := 0; val8 < int(val7); val8++ {
-			var k string
-			var v Paths
-			err = gobtools.DecodeString(buf, &k)
+			var val9 string
+			var val10 Paths
+			err = gobtools.DecodeString(buf, &val9)
 			if err != nil {
 				return err
 			}
-			var val12 int
-			err = gobtools.DecodeInt(buf, &val12)
+			var val14 int
+			err = gobtools.DecodeInt(buf, &val14)
 			if err != nil {
 				return err
 			}
-			if val12 != -1 {
-				v = make([]Path, val12)
-				for val13 := 0; val13 < int(val12); val13++ {
-					if val15, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+			if val14 != -1 {
+				val10 = make([]Path, val14)
+				for val15 := 0; val15 < int(val14); val15++ {
+					if val17, err := gobtools.DecodeInterface(ctx, buf); err != nil {
 						return err
-					} else if val15 == nil {
-						v[val13] = nil
+					} else if val17 == nil {
+						val10[val15] = nil
 					} else {
-						v[val13] = val15.(Path)
+						val10[val15] = val17.(Path)
 					}
 				}
 			}
-			r.TaggedOutputFiles[k] = v
+			r.TaggedOutputFiles[val9] = val10
 		}
 	}
 

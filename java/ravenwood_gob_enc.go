@@ -22,11 +22,11 @@ func (r ravenwoodLibgroupJniDepProviderInfo) Encode(ctx gobtools.EncContext, buf
 		if err = gobtools.EncodeInt(buf, len(r.names)); err != nil {
 			return err
 		}
-		for k, v := range r.names {
-			if err = gobtools.EncodeString(buf, k); err != nil {
+		for val1, val2 := range r.names {
+			if err = gobtools.EncodeString(buf, val1); err != nil {
 				return err
 			}
-			if err = gobtools.EncodeBool(buf, v); err != nil {
+			if err = gobtools.EncodeBool(buf, val2); err != nil {
 				return err
 			}
 		}
@@ -45,17 +45,17 @@ func (r *ravenwoodLibgroupJniDepProviderInfo) Decode(ctx gobtools.EncContext, bu
 	if val1 != -1 {
 		r.names = make(map[string]bool, val1)
 		for val2 := 0; val2 < int(val1); val2++ {
-			var k string
-			var v bool
-			err = gobtools.DecodeString(buf, &k)
+			var val3 string
+			var val4 bool
+			err = gobtools.DecodeString(buf, &val3)
 			if err != nil {
 				return err
 			}
-			err = gobtools.DecodeBool(buf, &v)
+			err = gobtools.DecodeBool(buf, &val4)
 			if err != nil {
 				return err
 			}
-			r.names[k] = v
+			r.names[val3] = val4
 		}
 	}
 

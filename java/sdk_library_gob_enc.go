@@ -162,11 +162,11 @@ func (r SdkLibraryInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error
 		if err = gobtools.EncodeInt(buf, len(r.EverythingStubDexJarPaths)); err != nil {
 			return err
 		}
-		for k, v := range r.EverythingStubDexJarPaths {
-			if err = gobtools.EncodeInt(buf, int(k)); err != nil {
+		for val2, val3 := range r.EverythingStubDexJarPaths {
+			if err = gobtools.EncodeInt(buf, int(val2)); err != nil {
 				return err
 			}
-			if err = v.Encode(ctx, buf); err != nil {
+			if err = val3.Encode(ctx, buf); err != nil {
 				return err
 			}
 		}
@@ -180,11 +180,11 @@ func (r SdkLibraryInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error
 		if err = gobtools.EncodeInt(buf, len(r.ExportableStubDexJarPaths)); err != nil {
 			return err
 		}
-		for k, v := range r.ExportableStubDexJarPaths {
-			if err = gobtools.EncodeInt(buf, int(k)); err != nil {
+		for val4, val5 := range r.ExportableStubDexJarPaths {
+			if err = gobtools.EncodeInt(buf, int(val4)); err != nil {
 				return err
 			}
-			if err = v.Encode(ctx, buf); err != nil {
+			if err = val5.Encode(ctx, buf); err != nil {
 				return err
 			}
 		}
@@ -198,11 +198,11 @@ func (r SdkLibraryInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error
 		if err = gobtools.EncodeInt(buf, len(r.RemovedTxtFiles)); err != nil {
 			return err
 		}
-		for k, v := range r.RemovedTxtFiles {
-			if err = gobtools.EncodeInt(buf, int(k)); err != nil {
+		for val6, val7 := range r.RemovedTxtFiles {
+			if err = gobtools.EncodeInt(buf, int(val6)); err != nil {
 				return err
 			}
-			if err = v.Encode(ctx, buf); err != nil {
+			if err = val7.Encode(ctx, buf); err != nil {
 				return err
 			}
 		}
@@ -228,48 +228,48 @@ func (r SdkLibraryInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error
 		if err = gobtools.EncodeInt(buf, len(r.DoctagPaths)); err != nil {
 			return err
 		}
-		for val2 := 0; val2 < len(r.DoctagPaths); val2++ {
-			if err = gobtools.EncodeInterface(ctx, buf, r.DoctagPaths[val2]); err != nil {
+		for val8 := 0; val8 < len(r.DoctagPaths); val8++ {
+			if err = gobtools.EncodeInterface(ctx, buf, r.DoctagPaths[val8]); err != nil {
 				return err
 			}
 		}
 	}
 
-	val3 := r.OnBootclasspathSince == nil
-	if err = gobtools.EncodeBool(buf, val3); err != nil {
+	val9 := r.OnBootclasspathSince == nil
+	if err = gobtools.EncodeBool(buf, val9); err != nil {
 		return err
 	}
-	if !val3 {
+	if !val9 {
 		if err = gobtools.EncodeString(buf, (*r.OnBootclasspathSince)); err != nil {
 			return err
 		}
 	}
 
-	val4 := r.OnBootclasspathBefore == nil
-	if err = gobtools.EncodeBool(buf, val4); err != nil {
+	val10 := r.OnBootclasspathBefore == nil
+	if err = gobtools.EncodeBool(buf, val10); err != nil {
 		return err
 	}
-	if !val4 {
+	if !val10 {
 		if err = gobtools.EncodeString(buf, (*r.OnBootclasspathBefore)); err != nil {
 			return err
 		}
 	}
 
-	val5 := r.MinDeviceSdk == nil
-	if err = gobtools.EncodeBool(buf, val5); err != nil {
+	val11 := r.MinDeviceSdk == nil
+	if err = gobtools.EncodeBool(buf, val11); err != nil {
 		return err
 	}
-	if !val5 {
+	if !val11 {
 		if err = gobtools.EncodeString(buf, (*r.MinDeviceSdk)); err != nil {
 			return err
 		}
 	}
 
-	val6 := r.MaxDeviceSdk == nil
-	if err = gobtools.EncodeBool(buf, val6); err != nil {
+	val12 := r.MaxDeviceSdk == nil
+	if err = gobtools.EncodeBool(buf, val12); err != nil {
 		return err
 	}
-	if !val6 {
+	if !val12 {
 		if err = gobtools.EncodeString(buf, (*r.MaxDeviceSdk)); err != nil {
 			return err
 		}
@@ -287,11 +287,11 @@ func (r SdkLibraryInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error
 		if err = gobtools.EncodeInt(buf, len(r.ApiScopePaths)); err != nil {
 			return err
 		}
-		for k, v := range r.ApiScopePaths {
-			if err = gobtools.EncodeString(buf, k); err != nil {
+		for val13, val14 := range r.ApiScopePaths {
+			if err = gobtools.EncodeString(buf, val13); err != nil {
 				return err
 			}
-			if err = v.Encode(ctx, buf); err != nil {
+			if err = val14.Encode(ctx, buf); err != nil {
 				return err
 			}
 		}
@@ -305,11 +305,11 @@ func (r SdkLibraryInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error
 		if err = gobtools.EncodeInt(buf, len(r.ApiScopeProps)); err != nil {
 			return err
 		}
-		for k, v := range r.ApiScopeProps {
-			if err = gobtools.EncodeString(buf, k); err != nil {
+		for val15, val16 := range r.ApiScopeProps {
+			if err = gobtools.EncodeString(buf, val15); err != nil {
 				return err
 			}
-			if err = v.Encode(ctx, buf); err != nil {
+			if err = val16.Encode(ctx, buf); err != nil {
 				return err
 			}
 		}
@@ -343,64 +343,64 @@ func (r *SdkLibraryInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) erro
 	if val5 != -1 {
 		r.EverythingStubDexJarPaths = make(map[android.SdkKind]OptionalDexJarPath, val5)
 		for val6 := 0; val6 < int(val5); val6++ {
-			var k android.SdkKind
-			var v OptionalDexJarPath
-			var val8 int
-			err = gobtools.DecodeInt(buf, &val8)
+			var val7 android.SdkKind
+			var val8 OptionalDexJarPath
+			var val10 int
+			err = gobtools.DecodeInt(buf, &val10)
 			if err != nil {
 				return err
 			}
-			k = android.SdkKind(val8)
-			if err = v.Decode(ctx, buf); err != nil {
+			val7 = android.SdkKind(val10)
+			if err = val8.Decode(ctx, buf); err != nil {
 				return err
 			}
-			r.EverythingStubDexJarPaths[k] = v
+			r.EverythingStubDexJarPaths[val7] = val8
 		}
 	}
 
-	var val11 int
-	err = gobtools.DecodeInt(buf, &val11)
+	var val13 int
+	err = gobtools.DecodeInt(buf, &val13)
 	if err != nil {
 		return err
 	}
-	if val11 != -1 {
-		r.ExportableStubDexJarPaths = make(map[android.SdkKind]OptionalDexJarPath, val11)
-		for val12 := 0; val12 < int(val11); val12++ {
-			var k android.SdkKind
-			var v OptionalDexJarPath
-			var val14 int
-			err = gobtools.DecodeInt(buf, &val14)
+	if val13 != -1 {
+		r.ExportableStubDexJarPaths = make(map[android.SdkKind]OptionalDexJarPath, val13)
+		for val14 := 0; val14 < int(val13); val14++ {
+			var val15 android.SdkKind
+			var val16 OptionalDexJarPath
+			var val18 int
+			err = gobtools.DecodeInt(buf, &val18)
 			if err != nil {
 				return err
 			}
-			k = android.SdkKind(val14)
-			if err = v.Decode(ctx, buf); err != nil {
+			val15 = android.SdkKind(val18)
+			if err = val16.Decode(ctx, buf); err != nil {
 				return err
 			}
-			r.ExportableStubDexJarPaths[k] = v
+			r.ExportableStubDexJarPaths[val15] = val16
 		}
 	}
 
-	var val17 int
-	err = gobtools.DecodeInt(buf, &val17)
+	var val21 int
+	err = gobtools.DecodeInt(buf, &val21)
 	if err != nil {
 		return err
 	}
-	if val17 != -1 {
-		r.RemovedTxtFiles = make(map[android.SdkKind]android.OptionalPath, val17)
-		for val18 := 0; val18 < int(val17); val18++ {
-			var k android.SdkKind
-			var v android.OptionalPath
-			var val20 int
-			err = gobtools.DecodeInt(buf, &val20)
+	if val21 != -1 {
+		r.RemovedTxtFiles = make(map[android.SdkKind]android.OptionalPath, val21)
+		for val22 := 0; val22 < int(val21); val22++ {
+			var val23 android.SdkKind
+			var val24 android.OptionalPath
+			var val26 int
+			err = gobtools.DecodeInt(buf, &val26)
 			if err != nil {
 				return err
 			}
-			k = android.SdkKind(val20)
-			if err = v.Decode(ctx, buf); err != nil {
+			val23 = android.SdkKind(val26)
+			if err = val24.Decode(ctx, buf); err != nil {
 				return err
 			}
-			r.RemovedTxtFiles[k] = v
+			r.RemovedTxtFiles[val23] = val24
 		}
 	}
 
@@ -419,48 +419,22 @@ func (r *SdkLibraryInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) erro
 		return err
 	}
 
-	var val28 int
-	err = gobtools.DecodeInt(buf, &val28)
+	var val34 int
+	err = gobtools.DecodeInt(buf, &val34)
 	if err != nil {
 		return err
 	}
-	if val28 != -1 {
-		r.DoctagPaths = make([]android.Path, val28)
-		for val29 := 0; val29 < int(val28); val29++ {
-			if val31, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+	if val34 != -1 {
+		r.DoctagPaths = make([]android.Path, val34)
+		for val35 := 0; val35 < int(val34); val35++ {
+			if val37, err := gobtools.DecodeInterface(ctx, buf); err != nil {
 				return err
-			} else if val31 == nil {
-				r.DoctagPaths[val29] = nil
+			} else if val37 == nil {
+				r.DoctagPaths[val35] = nil
 			} else {
-				r.DoctagPaths[val29] = val31.(android.Path)
+				r.DoctagPaths[val35] = val37.(android.Path)
 			}
 		}
-	}
-
-	var val33 bool
-	if err = gobtools.DecodeBool(buf, &val33); err != nil {
-		return err
-	}
-	if !val33 {
-		var val32 string
-		err = gobtools.DecodeString(buf, &val32)
-		if err != nil {
-			return err
-		}
-		r.OnBootclasspathSince = &val32
-	}
-
-	var val36 bool
-	if err = gobtools.DecodeBool(buf, &val36); err != nil {
-		return err
-	}
-	if !val36 {
-		var val35 string
-		err = gobtools.DecodeString(buf, &val35)
-		if err != nil {
-			return err
-		}
-		r.OnBootclasspathBefore = &val35
 	}
 
 	var val39 bool
@@ -473,7 +447,7 @@ func (r *SdkLibraryInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) erro
 		if err != nil {
 			return err
 		}
-		r.MinDeviceSdk = &val38
+		r.OnBootclasspathSince = &val38
 	}
 
 	var val42 bool
@@ -486,7 +460,33 @@ func (r *SdkLibraryInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) erro
 		if err != nil {
 			return err
 		}
-		r.MaxDeviceSdk = &val41
+		r.OnBootclasspathBefore = &val41
+	}
+
+	var val45 bool
+	if err = gobtools.DecodeBool(buf, &val45); err != nil {
+		return err
+	}
+	if !val45 {
+		var val44 string
+		err = gobtools.DecodeString(buf, &val44)
+		if err != nil {
+			return err
+		}
+		r.MinDeviceSdk = &val44
+	}
+
+	var val48 bool
+	if err = gobtools.DecodeBool(buf, &val48); err != nil {
+		return err
+	}
+	if !val48 {
+		var val47 string
+		err = gobtools.DecodeString(buf, &val47)
+		if err != nil {
+			return err
+		}
+		r.MaxDeviceSdk = &val47
 	}
 
 	err = gobtools.DecodeBool(buf, &r.ImplLibProfileGuided)
@@ -494,45 +494,45 @@ func (r *SdkLibraryInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) erro
 		return err
 	}
 
-	var val45 int
-	err = gobtools.DecodeInt(buf, &val45)
+	var val51 int
+	err = gobtools.DecodeInt(buf, &val51)
 	if err != nil {
 		return err
 	}
-	if val45 != -1 {
-		r.ApiScopePaths = make(map[string]ApiScopePathsInfo, val45)
-		for val46 := 0; val46 < int(val45); val46++ {
-			var k string
-			var v ApiScopePathsInfo
-			err = gobtools.DecodeString(buf, &k)
+	if val51 != -1 {
+		r.ApiScopePaths = make(map[string]ApiScopePathsInfo, val51)
+		for val52 := 0; val52 < int(val51); val52++ {
+			var val53 string
+			var val54 ApiScopePathsInfo
+			err = gobtools.DecodeString(buf, &val53)
 			if err != nil {
 				return err
 			}
-			if err = v.Decode(ctx, buf); err != nil {
+			if err = val54.Decode(ctx, buf); err != nil {
 				return err
 			}
-			r.ApiScopePaths[k] = v
+			r.ApiScopePaths[val53] = val54
 		}
 	}
 
-	var val49 int
-	err = gobtools.DecodeInt(buf, &val49)
+	var val57 int
+	err = gobtools.DecodeInt(buf, &val57)
 	if err != nil {
 		return err
 	}
-	if val49 != -1 {
-		r.ApiScopeProps = make(map[string]ApiScopePropsInfo, val49)
-		for val50 := 0; val50 < int(val49); val50++ {
-			var k string
-			var v ApiScopePropsInfo
-			err = gobtools.DecodeString(buf, &k)
+	if val57 != -1 {
+		r.ApiScopeProps = make(map[string]ApiScopePropsInfo, val57)
+		for val58 := 0; val58 < int(val57); val58++ {
+			var val59 string
+			var val60 ApiScopePropsInfo
+			err = gobtools.DecodeString(buf, &val59)
 			if err != nil {
 				return err
 			}
-			if err = v.Decode(ctx, buf); err != nil {
+			if err = val60.Decode(ctx, buf); err != nil {
 				return err
 			}
-			r.ApiScopeProps[k] = v
+			r.ApiScopeProps[val59] = val60
 		}
 	}
 
