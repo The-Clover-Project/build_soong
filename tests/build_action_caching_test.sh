@@ -36,6 +36,7 @@ function assert_files_equal {
 }
 
 function test_build_action_restoring() {
+  local extra_flags="$1"
   local test_dir="${OUTPUT_DIR}/test_build_action_restoring"
   mkdir -p ${test_dir}
   run_soong_clean
@@ -46,7 +47,7 @@ python_binary_host {
 }
 EOF
   touch ${test_dir}/my_little_binary_host.py
-  run_soong_build SOONG_INCREMENTAL_ANALYSIS=true
+  run_soong_build SOONG_INCREMENTAL_ANALYSIS=true ${extra_flags}
   local dir_before="${test_dir}/before"
   mkdir -p ${dir_before}
   cp -pr out/soong/*.mk out/soong/build.aosp_cf_x86_64*.ninja ${test_dir}/before
@@ -55,7 +56,7 @@ EOF
   cat >> ${test_dir}/Android.bp <<'EOF'
 // new comments
 EOF
-  run_soong_build SOONG_INCREMENTAL_ANALYSIS=true
+  run_soong_build SOONG_INCREMENTAL_ANALYSIS=true ${extra_flags}
   local dir_after="${test_dir}/after"
   mkdir -p ${dir_after}
   cp -pr out/soong/*.mk out/soong/build.aosp_cf_x86_64*.ninja ${test_dir}/after
@@ -83,6 +84,10 @@ function test_incremental_build_parity() {
   compare_incremental_files $dir_before $dir_after
   rm -rf "$test_dir"
   echo "test_incremental_build_parity test passed"
+}
+
+function test_build_action_restoring_providers() {
+  test_build_action_restoring "--incremental-provider-test"
 }
 
 function compare_incremental_files() {
@@ -133,3 +138,4 @@ function compare_files_parity() {
 
 test_incremental_build_parity
 test_build_action_restoring
+test_build_action_restoring_providers
