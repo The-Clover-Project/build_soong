@@ -875,3 +875,73 @@ func TestRustLinkPropagation(t *testing.T) {
 			libdylib3.Args["linkFlags"])
 	}
 }
+
+func TestNoStdRlibsWithStdVariant(t *testing.T) {
+	ctx := testRust(t, `
+		rust_library {
+			name: "libfoo",
+			crate_name: "foo",
+			srcs: ["foo.rs"],
+			no_std: {
+				enabled: true,
+			},
+		}
+		rust_binary {
+			name: "foobar",
+			srcs: ["foo.rs"],
+			no_std_rlibs: ["libfoo"],
+		}
+	`)
+	module := ctx.ModuleForTests(t, "foobar", "android_arm64_armv8-a").Module().(*Module)
+	if !android.InList("libfoo.rlib-core", module.Properties.AndroidMkRlibs) {
+		t.Errorf("no_std_rlibs dependency not detected: %v", module.Properties.AndroidMkRlibs)
+	}
+}
+
+func TestNoStdFallback(t *testing.T) {
+	ctx := testRust(t, `
+		rust_library {
+			name: "libfoo",
+			crate_name: "foo",
+			srcs: ["foo.rs"],
+		}
+		rust_binary {
+			name: "foobar",
+			srcs: ["foo.rs"],
+			rlibs: ["libfoo_nostd"],
+		}
+	`)
+	module := ctx.ModuleForTests(t, "foobar", "android_arm64_armv8-a").Module().(*Module)
+	if !android.InList("libfoo", module.Properties.AndroidMkRlibs) {
+		t.Errorf("nostd fallback dependency not detected (dependency missing from AndroidMkRlibs)")
+	}
+}
+
+// Checks that we can have libfoo.dylib-std -> libcbar -> libbang -> libfoo.core-std without a loop
+func TestVariantCycle(t *testing.T) {
+	// We don't need to do anything with this, just loading it will crash if broken
+	testRust(t, `
+		rust_library {
+			name: "libfoo",
+			crate_name: "foo",
+			srcs: ["foo.rs"],
+			static_libs: ["libcbar"],
+			no_std: {
+				enabled: true,
+				static_libs: [],
+			}
+		}
+		rust_library_rlib {
+			name: "libbang",
+			crate_name: "bang",
+			srcs: ["foo.rs"],
+			rustlibs: ["libfoo"],
+			no_stdlibs: true,
+		}
+		cc_library {
+			name: "libcbar",
+			static_libs: ["libbang"],
+			srcs: ["foo.c"],
+		}
+	`)
+}

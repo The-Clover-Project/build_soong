@@ -92,6 +92,7 @@ type compiler interface {
 
 	stdLinkage(device bool) StdLinkage
 	noStdlibs() bool
+	forceStdlibs()
 
 	unstrippedOutputFilePath() android.Path
 	strippedOutputFilePath() android.OptionalPath
@@ -182,6 +183,9 @@ type BaseCompilerProperties struct {
 	// list of rust automatic crate dependencies.
 	// Rustlibs linkage is rlib for host targets and dylib for device targets.
 	Rustlibs proptools.Configurable[[]string] `android:"arch_variant"`
+
+	// list of no_std forced dependencies
+	No_std_rlibs proptools.Configurable[[]string] `android:"arch_variant"`
 
 	// list of rust proc_macro crate dependencies
 	Proc_macros proptools.Configurable[[]string] `android:"arch_variant"`
@@ -315,6 +319,10 @@ func (compiler *baseCompiler) SetDisabled() {
 
 func (compiler *baseCompiler) noStdlibs() bool {
 	return Bool(compiler.Properties.No_stdlibs)
+}
+
+func (compiler *baseCompiler) forceStdlibs() {
+	compiler.Properties.No_stdlibs = proptools.BoolPtr(false)
 }
 
 func (compiler *baseCompiler) preferRlib() bool {
@@ -549,6 +557,7 @@ func (compiler *baseCompiler) checkJsonFilePath() android.OptionalPath {
 func (compiler *baseCompiler) compilerDeps(ctx DepsContext, deps Deps) Deps {
 	deps.Rlibs = append(deps.Rlibs, compiler.Properties.Rlibs.GetOrDefault(ctx, nil)...)
 	deps.Rustlibs = append(deps.Rustlibs, compiler.Properties.Rustlibs.GetOrDefault(ctx, nil)...)
+	deps.NoStdRlibs = append(deps.NoStdRlibs, compiler.Properties.No_std_rlibs.GetOrDefault(ctx, nil)...)
 	deps.ProcMacros = append(deps.ProcMacros, compiler.Properties.Proc_macros.GetOrDefault(ctx, nil)...)
 	deps.StaticLibs = append(deps.StaticLibs, compiler.Properties.Static_libs.GetOrDefault(ctx, nil)...)
 	deps.WholeStaticLibs = append(deps.WholeStaticLibs, compiler.Properties.Whole_static_libs.GetOrDefault(ctx, nil)...)
