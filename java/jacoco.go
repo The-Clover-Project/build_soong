@@ -182,7 +182,10 @@ type JacocoInfo struct {
 	ModuleName        string
 }
 
-var ApexJacocoInfoProvider = blueprint.NewProvider[[]JacocoInfo]()
+// @auto-generate: gob
+type JacocoInfos []JacocoInfo
+
+var ApexJacocoInfoProvider = blueprint.NewProvider[JacocoInfos]()
 
 type BuildJacocoZipContext interface {
 	android.BuilderContext
