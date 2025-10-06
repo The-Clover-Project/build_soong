@@ -10,6 +10,7 @@ import (
 
 func init() {
 	JacocoInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(JacocoInfo) })
+	JacocoInfosGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(JacocoInfos) })
 }
 
 func (r JacocoInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
@@ -57,4 +58,50 @@ var JacocoInfoGobRegId int16
 
 func (r JacocoInfo) GetTypeId() int16 {
 	return JacocoInfoGobRegId
+}
+
+func (r JacocoInfos) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if r == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r)); err != nil {
+			return err
+		}
+		for val1 := 0; val1 < len(r); val1++ {
+			if err = r[val1].Encode(ctx, buf); err != nil {
+				return err
+			}
+		}
+	}
+	return err
+}
+
+func (r *JacocoInfos) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	var val2 int
+	err = gobtools.DecodeInt(buf, &val2)
+	if err != nil {
+		return err
+	}
+	if val2 != -1 {
+		(*r) = make([]JacocoInfo, val2)
+		for val3 := 0; val3 < int(val2); val3++ {
+			if err = (*r)[val3].Decode(ctx, buf); err != nil {
+				return err
+			}
+		}
+	}
+
+	return err
+}
+
+var JacocoInfosGobRegId int16
+
+func (r JacocoInfos) GetTypeId() int16 {
+	return JacocoInfosGobRegId
 }
