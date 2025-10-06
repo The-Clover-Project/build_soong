@@ -50,7 +50,7 @@ func TestClippy(t *testing.T) {
 	}{
 		{"", "${config.ClippyDefaultLints}"},
 		{"external/", ""},
-		{"hardware/", "${config.ClippyVendorLints}"},
+		{"hardware/", ""},
 	}
 
 	for _, tc := range clippyLintTests {
