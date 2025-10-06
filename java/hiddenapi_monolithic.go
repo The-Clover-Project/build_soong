@@ -19,11 +19,14 @@ import (
 	"github.com/google/blueprint"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 // MonolithicHiddenAPIInfo contains information needed/provided by the hidden API generation of the
 // monolithic hidden API files.
 //
 // Each list of paths includes all the equivalent paths from each of the bootclasspath_fragment
 // modules that contribute to the platform-bootclasspath.
+// @auto-generate: gob
 type MonolithicHiddenAPIInfo struct {
 	// FlagsFilesByCategory maps from the flag file category to the paths containing information for
 	// that category.

@@ -1001,6 +1001,7 @@ type AndroidLibraryInfo struct {
 
 var AndroidLibraryInfoProvider = blueprint.NewProvider[AndroidLibraryInfo]()
 
+// @auto-generate: gob
 type AARImportInfo struct {
 	// Empty for now
 }

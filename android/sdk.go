@@ -178,6 +178,7 @@ type BpPrintable interface {
 
 // BpPrintableBase must be embedded within any struct that is added as a
 // property value.
+// @auto-generate: gob
 type BpPrintableBase struct {
 }
 

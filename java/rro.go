@@ -24,6 +24,8 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 func init() {
 	RegisterRuntimeResourceOverlayBuildComponents(android.InitRegistrationContext)
 }
@@ -34,6 +36,7 @@ func RegisterRuntimeResourceOverlayBuildComponents(ctx android.RegistrationConte
 	ctx.RegisterModuleType("override_runtime_resource_overlay", OverrideRuntimeResourceOverlayModuleFactory)
 }
 
+// @auto-generate: gob
 type RuntimeResourceOverlayInfo struct {
 	OutputFile                    android.Path
 	Certificate                   Certificate

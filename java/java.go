@@ -2453,6 +2453,7 @@ func ApiContributionFactory() android.Module {
 	return module
 }
 
+// @auto-generate: gob
 type JavaApiImportInfo struct {
 	ApiFile    android.Path
 	ApiSurface string

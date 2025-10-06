@@ -62,6 +62,7 @@ bootstrap_go_package {
         "test_config.go",
         "configurable_properties.go",
         "configured_jars.go",
+        "configured_jars_gob_enc.go",
         "csuite_config.go",
         "deapexer.go",
         "defaults.go",

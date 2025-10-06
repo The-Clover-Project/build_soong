@@ -1966,6 +1966,7 @@ type AndroidAppCertificateProperties struct {
 	Certificate *string
 }
 
+// @auto-generate: gob
 type AndroidAppCertificateInfo struct {
 	Certificate Certificate
 }

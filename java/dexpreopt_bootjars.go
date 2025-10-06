@@ -26,6 +26,8 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 // =================================================================================================
 // WIP - see http://b/177892522 for details
 //
@@ -1215,6 +1217,7 @@ var artBootImageHostInfoProvider = blueprint.NewProvider[artBootImageHostInfo]()
 
 // artBootImageHostInfo contains the install locations of the host variant of ART boot image
 // this contains both the primary and secondary arch locations
+// @auto-generate: gob
 type artBootImageHostInfo struct {
 	installs android.RuleBuilderInstalls
 }
@@ -1493,6 +1496,7 @@ func bootImageProfileRuleCommon(ctx android.ModuleContext, name string, dexFiles
 	return profile
 }
 
+// @auto-generate: gob
 type profileInstallInfo struct {
 	// Rules which should be used in make to install the outputs.
 	profileInstalls android.RuleBuilderInstalls

@@ -23,6 +23,8 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 func init() {
 	registerPlatformCompatConfigBuildComponents(android.InitRegistrationContext)
 
@@ -43,6 +45,7 @@ func registerPlatformCompatConfigBuildComponents(ctx android.RegistrationContext
 	ctx.RegisterModuleType("global_compat_config", globalCompatConfigFactory)
 }
 
+// @auto-generate: gob
 type PlatformCompatConfigInfo struct {
 	CompatConfig         android.OutputPath
 	SubDir               string

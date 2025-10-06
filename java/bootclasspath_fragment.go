@@ -28,6 +28,8 @@ import (
 	"github.com/google/blueprint"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 func init() {
 	registerBootclasspathFragmentBuildComponents(android.InitRegistrationContext)
 
@@ -40,6 +42,7 @@ func registerBootclasspathFragmentBuildComponents(ctx android.RegistrationContex
 	ctx.RegisterModuleType("prebuilt_bootclasspath_fragment", prebuiltBootclasspathFragmentFactory)
 }
 
+// @auto-generate: gob
 type BootclasspathFragmentInfo struct {
 	ImageName               *string
 	Contents                []string
@@ -383,6 +386,7 @@ var BootclasspathFragmentApexContentInfoProvider = blueprint.NewProvider[Bootcla
 
 // BootclasspathFragmentApexContentInfo contains the bootclasspath_fragments contributions to the
 // apex contents.
+// @auto-generate: gob
 type BootclasspathFragmentApexContentInfo struct {
 	// Map from the base module name (without prebuilt_ prefix) of a fragment's contents module to the
 	// hidden API encoded dex jar path.

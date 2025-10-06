@@ -29,6 +29,9 @@ import (
 	"android/soong/remoteexec"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
+// @auto-generate: gob
 type StubsInfo struct {
 	ApiVersionsXml android.Path
 	AnnotationsZip android.Path
@@ -36,6 +39,7 @@ type StubsInfo struct {
 	RemovedApiFile android.Path
 }
 
+// @auto-generate: gob
 type DroidStubsInfo struct {
 	CheckedInApiFile        android.Path
 	CheckedInRemovedApiFile android.Path
@@ -47,6 +51,7 @@ type DroidStubsInfo struct {
 
 var DroidStubsInfoProvider = blueprint.NewProvider[DroidStubsInfo]()
 
+// @auto-generate: gob
 type StubsSrcInfo struct {
 	EverythingStubsSrcJar android.Path
 	ExportableStubsSrcJar android.Path
@@ -55,6 +60,7 @@ type StubsSrcInfo struct {
 var StubsSrcInfoProvider = blueprint.NewProvider[StubsSrcInfo]()
 
 // Marker provider that indicates this module has files to update on an `m update-api`.
+// @auto-generate: gob
 type UpdateApiInfo struct {
 	Name                 string
 	SourceApiFile        android.Path

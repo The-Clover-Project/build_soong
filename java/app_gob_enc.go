@@ -12,6 +12,7 @@ func init() {
 	FlagsPackagesGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(FlagsPackages) })
 	AppInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(AppInfo) })
 	CertificateGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(Certificate) })
+	AndroidAppCertificateInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(AndroidAppCertificateInfo) })
 	BundleInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(BundleInfo) })
 }
 
@@ -372,6 +373,31 @@ var CertificateGobRegId int16
 
 func (r Certificate) GetTypeId() int16 {
 	return CertificateGobRegId
+}
+
+func (r AndroidAppCertificateInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = r.Certificate.Encode(ctx, buf); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r *AndroidAppCertificateInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	if err = r.Certificate.Decode(ctx, buf); err != nil {
+		return err
+	}
+
+	return err
+}
+
+var AndroidAppCertificateInfoGobRegId int16
+
+func (r AndroidAppCertificateInfo) GetTypeId() int16 {
+	return AndroidAppCertificateInfoGobRegId
 }
 
 func (r BundleInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {

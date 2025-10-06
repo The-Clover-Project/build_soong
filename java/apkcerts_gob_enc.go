@@ -10,6 +10,7 @@ import (
 
 func init() {
 	ApkCertInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ApkCertInfo) })
+	ApkCertsInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ApkCertsInfo) })
 }
 
 func (r ApkCertInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
@@ -65,4 +66,50 @@ var ApkCertInfoGobRegId int16
 
 func (r ApkCertInfo) GetTypeId() int16 {
 	return ApkCertInfoGobRegId
+}
+
+func (r ApkCertsInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if r == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r)); err != nil {
+			return err
+		}
+		for val1 := 0; val1 < len(r); val1++ {
+			if err = r[val1].Encode(ctx, buf); err != nil {
+				return err
+			}
+		}
+	}
+	return err
+}
+
+func (r *ApkCertsInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	var val2 int
+	err = gobtools.DecodeInt(buf, &val2)
+	if err != nil {
+		return err
+	}
+	if val2 != -1 {
+		(*r) = make([]ApkCertInfo, val2)
+		for val3 := 0; val3 < int(val2); val3++ {
+			if err = (*r)[val3].Decode(ctx, buf); err != nil {
+				return err
+			}
+		}
+	}
+
+	return err
+}
+
+var ApkCertsInfoGobRegId int16
+
+func (r ApkCertsInfo) GetTypeId() int16 {
+	return ApkCertsInfoGobRegId
 }

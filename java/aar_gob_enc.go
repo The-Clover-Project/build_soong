@@ -12,6 +12,7 @@ import (
 func init() {
 	resourcesNodeGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(resourcesNode) })
 	AndroidLibraryInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(AndroidLibraryInfo) })
+	AARImportInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(AARImportInfo) })
 	JniPackageInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(JniPackageInfo) })
 	AARInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(AARInfo) })
 }
@@ -149,6 +150,23 @@ var AndroidLibraryInfoGobRegId int16
 
 func (r AndroidLibraryInfo) GetTypeId() int16 {
 	return AndroidLibraryInfoGobRegId
+}
+
+func (r AARImportInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+	return err
+}
+
+func (r *AARImportInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	return err
+}
+
+var AARImportInfoGobRegId int16
+
+func (r AARImportInfo) GetTypeId() int16 {
+	return AARImportInfoGobRegId
 }
 
 func (r JniPackageInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
