@@ -328,6 +328,9 @@ func bootstrapBlueprint(ctx Context, config Config) {
 	if config.incrementalBuildActions {
 		mainSoongBuildExtraArgs = append(mainSoongBuildExtraArgs, "--incremental-build-actions")
 	}
+	if config.incrementalProviderTest {
+		mainSoongBuildExtraArgs = append(mainSoongBuildExtraArgs, "--incremental-provider-test")
+	}
 
 	pbfs := []PrimaryBuilderFactory{
 		{
