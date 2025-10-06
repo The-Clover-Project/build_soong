@@ -295,11 +295,6 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 			"RUST_BACKTRACE",
 			"RUST_LOG",
 
-			// SOONG_USE_PARTIAL_COMPILE only determines which half of the rule we execute.
-			// When it transitions true => false, we build phony target "partialcompileclean",
-			// which removes all files that could have been created while it was true.
-			"SOONG_USE_PARTIAL_COMPILE",
-
 			// Directory for ExecutionMetrics
 			"SOONG_METRICS_AGGREGATION_DIR",
 

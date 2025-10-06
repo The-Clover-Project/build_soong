@@ -200,7 +200,8 @@ func runKati(ctx Context, config Config, e *TraceEvent, extraSuffix string, args
 	//
 	// In general, the partial compile features will be implemented in Soong-based rules. We
 	// also allow them to be used in makefiles.  Clear the environment variable when calling
-	// kati so that we avoid reanalysis when the user changes it.  We will pass it to Ninja.
+	// kati so that we avoid reanalysis when the user changes it.  We will pass it to Ninja
+	// (via the file `${OUT_DIR}/soong/use_partial_compile-${TARGET_PRODUCT}.sh`).
 	// As a result, rules where we want to allow the developer to toggle the feature ("use
 	// the partial compile feature" vs "legacy, aka full compile behavior") need to use this
 	// in the rule, since changing it will not cause reanalysis.

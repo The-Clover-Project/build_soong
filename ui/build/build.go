@@ -370,6 +370,12 @@ func Build(ctx Context, config Config) {
 
 	// Everything below here depends on product config.
 
+	// Write SOONG_USE_PARTIAL_COMPILE so it can be sourced by rules that use it.
+	shFile := config.DeviceUsePartialCompile()
+	ensureDirectoriesExist(ctx, filepath.Dir(shFile))
+	value, _ := config.environ.Get("SOONG_USE_PARTIAL_COMPILE")
+	writeValueIfChanged(ctx, shFile, fmt.Sprintf("\nSOONG_USE_PARTIAL_COMPILE=%s\n", value))
+
 	if inList("installclean", config.Arguments()) ||
 		inList("install-clean", config.Arguments()) {
 		logArgsOtherThan("installclean", "install-clean")

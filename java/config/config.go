@@ -131,6 +131,9 @@ func init() {
 
 	pctx.VariableConfigMethod("hostPrebuiltTag", android.Config.PrebuiltOS)
 
+	pctx.VariableFunc("UsePartialCompileFile", func(ctx android.PackageVarContext) string {
+		return ctx.Config().UsePartialCompileFile(ctx).String()
+	})
 	pctx.VariableFunc("JavaHome", func(ctx android.PackageVarContext) string {
 		// This is set up and guaranteed by soong_ui
 		return ctx.Config().Getenv("ANDROID_JAVA_HOME")
