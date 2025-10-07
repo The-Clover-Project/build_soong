@@ -101,6 +101,7 @@ func validateDependencies(t *testing.T, crate map[string]any) []string {
 }
 
 func TestProjectJsonDep(t *testing.T) {
+	t.Parallel()
 	bp := `
 	rust_library {
 		name: "liba",
@@ -119,6 +120,7 @@ func TestProjectJsonDep(t *testing.T) {
 }
 
 func TestProjectJsonProcMacroDep(t *testing.T) {
+	t.Parallel()
 	bp := `
 	rust_proc_macro {
 		name: "libproc_macro",
@@ -169,6 +171,7 @@ func TestProjectJsonProcMacroDep(t *testing.T) {
 }
 
 func TestProjectJsonFeature(t *testing.T) {
+	t.Parallel()
 	bp := `
 	rust_library {
 		name: "liba",
@@ -204,6 +207,7 @@ func TestProjectJsonFeature(t *testing.T) {
 }
 
 func TestProjectJsonBinary(t *testing.T) {
+	t.Parallel()
 	bp := `
 	rust_binary {
 		name: "libz",
@@ -227,6 +231,7 @@ func TestProjectJsonBinary(t *testing.T) {
 }
 
 func TestProjectJsonBindGen(t *testing.T) {
+	t.Parallel()
 	buildOS := android.TestConfig(t.TempDir(), nil, "", nil).BuildOS
 
 	bp := `
@@ -299,6 +304,7 @@ func TestProjectJsonBindGen(t *testing.T) {
 }
 
 func TestProjectJsonMultiVersion(t *testing.T) {
+	t.Parallel()
 	bp := `
 	rust_library {
 		name: "liba1",
