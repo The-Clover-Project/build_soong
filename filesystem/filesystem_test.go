@@ -46,6 +46,7 @@ var fixture = android.GroupFixturePreparers(
 )
 
 func TestFileSystemDeps(t *testing.T) {
+	t.Parallel()
 	result := fixture.RunTestWithBp(t, `
 		android_filesystem {
 			name: "myfilesystem",
@@ -138,6 +139,7 @@ func TestFileSystemDeps(t *testing.T) {
 }
 
 func TestFileSystemFillsLinkerConfigWithStubLibs(t *testing.T) {
+	t.Parallel()
 	result := fixture.RunTestWithBp(t, `
 		android_system_image {
 			name: "myfilesystem",
@@ -205,6 +207,7 @@ func (c *component) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 }
 
 func TestFileSystemGathersItemsOnlyInSystemPartition(t *testing.T) {
+	t.Parallel()
 	f := android.GroupFixturePreparers(fixture, android.FixtureRegisterWithContext(registerComponent))
 	result := f.RunTestWithBp(t, `
 		android_system_image {
@@ -230,6 +233,7 @@ func TestFileSystemGathersItemsOnlyInSystemPartition(t *testing.T) {
 }
 
 func TestAvbGenVbmetaImage(t *testing.T) {
+	t.Parallel()
 	result := fixture.RunTestWithBp(t, `
 		avb_gen_vbmeta_image {
 			name: "input_hashdesc",
@@ -249,6 +253,7 @@ func TestAvbGenVbmetaImage(t *testing.T) {
 }
 
 func TestAvbAddHashFooter(t *testing.T) {
+	t.Parallel()
 	result := fixture.RunTestWithBp(t, `
 		avb_gen_vbmeta_image {
 			name: "input_hashdesc",
@@ -293,6 +298,7 @@ func TestAvbAddHashFooter(t *testing.T) {
 }
 
 func TestFileSystemWithCoverageVariants(t *testing.T) {
+	t.Parallel()
 	context := android.GroupFixturePreparers(
 		fixture,
 		android.FixtureModifyProductVariables(func(variables android.FixtureProductVariables) {
@@ -349,6 +355,7 @@ func TestFileSystemWithCoverageVariants(t *testing.T) {
 }
 
 func TestSystemImageDefaults(t *testing.T) {
+	t.Parallel()
 	result := fixture.RunTestWithBp(t, `
 		android_filesystem_defaults {
 			name: "defaults",
@@ -418,6 +425,7 @@ func TestSystemImageDefaults(t *testing.T) {
 }
 
 func TestInconsistentPartitionTypesInDefaults(t *testing.T) {
+	t.Parallel()
 	fixture.ExtendWithErrorHandler(android.FixtureExpectsOneErrorPattern(
 		"doesn't match with the partition type")).
 		RunTestWithBp(t, `
@@ -440,6 +448,7 @@ func TestInconsistentPartitionTypesInDefaults(t *testing.T) {
 }
 
 func TestPreventDuplicatedEntries(t *testing.T) {
+	t.Parallel()
 	fixture.ExtendWithErrorHandler(android.FixtureExpectsOneErrorPattern(
 		"packaging conflict at")).
 		RunTestWithBp(t, `
@@ -463,6 +472,7 @@ func TestPreventDuplicatedEntries(t *testing.T) {
 }
 
 func TestTrackPhonyAsRequiredDep(t *testing.T) {
+	t.Parallel()
 	result := fixture.RunTestWithBp(t, `
 		android_filesystem {
 			name: "fs",
@@ -495,6 +505,7 @@ func TestTrackPhonyAsRequiredDep(t *testing.T) {
 }
 
 func TestFilterOutUnsupportedArches(t *testing.T) {
+	t.Parallel()
 	result := fixture.RunTestWithBp(t, `
 		android_filesystem {
 			name: "fs_64_only",
@@ -558,6 +569,7 @@ func TestFilterOutUnsupportedArches(t *testing.T) {
 }
 
 func TestErofsPartition(t *testing.T) {
+	t.Parallel()
 	result := fixture.RunTestWithBp(t, `
 		android_filesystem {
 			name: "erofs_partition",
@@ -583,6 +595,7 @@ func TestErofsPartition(t *testing.T) {
 }
 
 func TestF2fsPartition(t *testing.T) {
+	t.Parallel()
 	result := fixture.RunTestWithBp(t, `
 		android_filesystem {
 			name: "f2fs_partition",
@@ -597,6 +610,7 @@ func TestF2fsPartition(t *testing.T) {
 }
 
 func TestFsTypesPropertyError(t *testing.T) {
+	t.Parallel()
 	fixture.ExtendWithErrorHandler(android.FixtureExpectsOneErrorPattern(
 		"erofs: erofs is non-empty, but FS type is f2fs\n. Please delete erofs properties if this partition should use f2fs\n")).
 		RunTestWithBp(t, `
@@ -614,6 +628,7 @@ func TestFsTypesPropertyError(t *testing.T) {
 // If a system_ext/ module depends on system/ module, the dependency should *not*
 // be installed in system_ext/
 func TestDoNotPackageCrossPartitionDependencies(t *testing.T) {
+	t.Parallel()
 	t.Skip() // TODO (spandandas): Re-enable this
 	result := fixture.RunTestWithBp(t, `
 		android_filesystem {
@@ -640,6 +655,7 @@ func TestDoNotPackageCrossPartitionDependencies(t *testing.T) {
 // If a cc_library is listed in `deps`, and it has a shared and static variant, then the shared variant
 // should be installed.
 func TestUseSharedVariationOfNativeLib(t *testing.T) {
+	t.Parallel()
 	result := fixture.RunTestWithBp(t, `
 		android_filesystem {
 			name: "myfilesystem",
@@ -660,6 +676,7 @@ func TestUseSharedVariationOfNativeLib(t *testing.T) {
 
 // binfoo1 overrides binbar. transitive deps of binbar should not be installed.
 func TestDoNotInstallTransitiveDepOfOverriddenModule(t *testing.T) {
+	t.Parallel()
 	result := fixture.RunTestWithBp(t, `
 android_filesystem {
     name: "myfilesystem",
@@ -696,6 +713,7 @@ cc_library {
 }
 
 func TestInstallLinkerConfigFile(t *testing.T) {
+	t.Parallel()
 	result := fixture.RunTestWithBp(t, `
 android_filesystem {
     name: "myfilesystem",
@@ -726,6 +744,7 @@ cc_library {
 // If both of these are listed in `deps`, the base module should not be installed.
 // Also, required deps should be updated too.
 func TestOverrideModulesInDeps(t *testing.T) {
+	t.Parallel()
 	result := fixture.RunTestWithBp(t, `
 		cc_library_shared {
 			name: "libfoo",
@@ -781,6 +800,7 @@ func TestOverrideModulesInDeps(t *testing.T) {
 }
 
 func TestRamdiskPartitionSetsDevNodes(t *testing.T) {
+	t.Parallel()
 	result := android.GroupFixturePreparers(
 		fixture,
 		android.FixtureMergeMockFs(android.MockFS{
@@ -806,6 +826,7 @@ func TestRamdiskPartitionSetsDevNodes(t *testing.T) {
 }
 
 func TestFileSystemWithNativeBridgeDeps(t *testing.T) {
+	t.Parallel()
 	result := android.GroupFixturePreparers(
 		fixture,
 		android.PrepareForNativeBridgeEnabled,
@@ -868,6 +889,7 @@ func TestFileSystemWithNativeBridgeDeps(t *testing.T) {
 }
 
 func TestCrossPartitionVintfInstalls(t *testing.T) {
+	t.Parallel()
 	result := fixture.RunTestWithBp(t, `
 		android_filesystem {
 			name: "myfilesystem",
@@ -911,6 +933,7 @@ func TestCrossPartitionVintfInstalls(t *testing.T) {
 }
 
 func TestRamdiskFragmentInBootImg(t *testing.T) {
+	t.Parallel()
 	result := fixture.RunTestWithBp(t, `
 android_filesystem {
 	name: "vendor_ramdisk",
@@ -935,6 +958,7 @@ bootimg {
 }
 
 func TestRamdiskFragmentInTargetFiles(t *testing.T) {
+	t.Parallel()
 	result := fixture.RunTestWithBp(t, `
 android_filesystem {
 	name: "vendor_ramdisk",
