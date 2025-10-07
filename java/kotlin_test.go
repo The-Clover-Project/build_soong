@@ -379,7 +379,7 @@ func TestKapt(t *testing.T) {
 		}
 
 		// Test that the errorprone plugins are passed to errorprone
-		errorProneJar := "out/soong/.intermediates/external/error_prone/error_prone_plugin/linux_glibc_common/combined/error_prone_plugin.jar"
+		errorProneJar := "out/soong/.intermediates/external/error_prone/error_prone_plugin/" + buildOS + "_common/combined/error_prone_plugin.jar"
 		expectedProcessorPath = "-processorpath " + errorProneJar + ":" + myCheck
 		if errorprone.Args["processorpath"] != expectedProcessorPath {
 			t.Errorf("expected processorpath %q, got %q", expectedProcessorPath, errorprone.Args["processorpath"])
