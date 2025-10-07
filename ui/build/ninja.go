@@ -150,6 +150,13 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 				"-w", "missingoutfile=err",
 			)
 		}
+
+		if sandboxing, ok := config.Environment().Get("SOONG_ACTION_SANDBOXING"); ok && sandboxing == "nsjail" {
+			ninjaArgs = append(ninjaArgs, []string{
+				"-o", fmt.Sprintf("nsjail=%s", config.PrebuiltBuildTool("nsjail")),
+				"-o", fmt.Sprintf("nsjail_workdir=%s", filepath.Join(config.SoongOutDir(), "action_sandboxing_workdir")),
+			}...)
+		}
 	}
 	args = append(args, ninjaArgs...)
 
