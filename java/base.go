@@ -946,8 +946,12 @@ func (j *Module) deps(ctx android.BottomUpMutatorContext) {
 
 	ctx.AddFarVariationDependencies(ctx.Config().BuildOSCommonTarget.Variations(), pluginTag, j.properties.Plugins...)
 	ctx.AddFarVariationDependencies(ctx.Config().BuildOSCommonTarget.Variations(), kotlinPluginTag, j.properties.Kotlin_plugins...)
-	ctx.AddFarVariationDependencies(ctx.Config().BuildOSCommonTarget.Variations(), errorpronePluginTag, j.properties.Errorprone.Extra_check_modules...)
 	ctx.AddFarVariationDependencies(ctx.Config().BuildOSCommonTarget.Variations(), exportedPluginTag, j.properties.Exported_plugins...)
+	epEnabled := j.properties.Errorprone.Enabled
+	if (ctx.Config().RunErrorProne() && epEnabled == nil) || Bool(epEnabled) {
+		ctx.AddFarVariationDependencies(ctx.Config().BuildOSCommonTarget.Variations(), errorpronePluginTag, "error_prone_plugin")
+		ctx.AddFarVariationDependencies(ctx.Config().BuildOSCommonTarget.Variations(), errorpronePluginTag, j.properties.Errorprone.Extra_check_modules...)
+	}
 
 	android.ProtoDeps(ctx, &j.protoProperties)
 	if j.hasSrcExt(ctx, ".proto") {
@@ -1082,7 +1086,7 @@ func (j *Module) collectBuilderFlags(ctx android.ModuleContext, deps deps) javaB
 
 	epEnabled := j.properties.Errorprone.Enabled
 	if (ctx.Config().RunErrorProne() && epEnabled == nil) || Bool(epEnabled) {
-		if config.ErrorProneClasspath == nil && !ctx.Config().RunningInsideUnitTest() {
+		if config.ErrorProneFlags == nil && !ctx.Config().RunningInsideUnitTest() {
 			ctx.ModuleErrorf("cannot build with Error Prone, missing external/error_prone?")
 		}
 
@@ -1094,7 +1098,6 @@ func (j *Module) collectBuilderFlags(ctx android.ModuleContext, deps deps) javaB
 
 		flags.errorProneExtraJavacFlags = "${config.ErrorProneHeapFlags} ${config.ErrorProneFlags} " +
 			"'" + strings.Join(errorProneFlags, " ") + "'"
-		flags.errorProneProcessorPath = classpath(android.PathsForSource(ctx, config.ErrorProneClasspath))
 	}
 
 	// classpath

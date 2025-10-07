@@ -65,6 +65,14 @@ var PrepareForTestWithJavaBuildComponents = android.GroupFixturePreparers(
 		"build/make/target/product/security": nil,
 		// Required to generate Java used-by API coverage
 		"build/soong/scripts/gen_java_usedby_apex.sh": nil,
+		"external/error_prone/Android.bp": []byte(`
+			java_plugin {
+				name: "error_prone_plugin",
+				errorprone: {
+					enabled: false,
+				},
+			}
+			`),
 		// Needed for the global lint checks provided from tools/lint_checks
 		"tools/lint_checks/global/Android.bp": []byte(`
 			java_library_host {
