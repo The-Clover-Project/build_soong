@@ -196,6 +196,16 @@ rust_defaults {
     defaults_visibility: ["//visibility:public"],
 }
 
+// Dependencies of ErrorProne need to disable ErrorProne checking, otherwise
+// there would be a circular dependency.
+java_defaults {
+    name: "error_prone_dependency_defaults",
+    errorprone: {
+        enabled: false,
+    },
+    defaults_visibility: ["//visibility:public"],
+}
+
 product_config {
     name: "product_config",
     visibility: [
