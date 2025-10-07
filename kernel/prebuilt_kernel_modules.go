@@ -47,7 +47,7 @@ type prebuiltKernelModules struct {
 
 type prebuiltKernelModulesProperties struct {
 	// List or filegroup of prebuilt kernel module files. Should have .ko suffix.
-	Srcs []string `android:"path,arch_variant"`
+	Srcs proptools.Configurable[[]string] `android:"path,arch_variant"`
 
 	// List of kernel module filenames that will be loaded via modules.load.
 	// Should have .ko suffix.
@@ -113,7 +113,7 @@ func (pkm *prebuiltKernelModules) GenerateAndroidBuildActions(ctx android.Module
 		pkm.SkipInstall()
 	}
 
-	modules := android.PathsForModuleSrc(ctx, pkm.properties.Srcs)
+	modules := android.PathsForModuleSrc(ctx, pkm.properties.Srcs.GetOrDefault(ctx, nil))
 	systemModules := android.PathsForModuleSrc(ctx, pkm.properties.System_deps)
 
 	depmodOut := pkm.runDepmod(ctx, modules, systemModules)
@@ -145,7 +145,7 @@ func (pkm *prebuiltKernelModules) GenerateAndroidBuildActions(ctx android.Module
 		installPath := ctx.InstallFile(installDir16k, filepath.Base(m.String()), m)
 		dests = append(dests, installPath.String())
 	}
-	srcs := android.PathsForModuleSrc(ctx, pkm.properties.Srcs).Strings()
+	srcs := android.PathsForModuleSrc(ctx, pkm.properties.Srcs.GetOrDefault(ctx, nil)).Strings()
 	srcs = append(srcs, android.PathsForModuleSrc(ctx, pkm.properties.Srcs_16k).Strings()...)
 	// Use ANDROID-GEN to identify the source of module.* files which are generated in the build process.
 	// See the use of ANDROID-GEN in build/make/core/Makefile
@@ -307,7 +307,7 @@ func (pkm *prebuiltKernelModules) validateSrcFilenamesToLoad(ctx android.ModuleC
 		return
 	}
 	filenames := make(map[string]bool)
-	for _, module := range android.PathsForModuleSrc(ctx, pkm.properties.Srcs) {
+	for _, module := range android.PathsForModuleSrc(ctx, pkm.properties.Srcs.GetOrDefault(ctx, nil)) {
 		filenames[module.Base()] = true
 	}
 	for _, filenameToLoad := range pkm.properties.Src_filenames_to_load {
