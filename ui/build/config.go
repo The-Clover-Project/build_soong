@@ -429,7 +429,8 @@ func newConfig(ctx Context, isDumpVar bool, args ...string) Config {
 
 	// If SOONG_USE_PARTIAL_COMPILE is set, make it one of "true" or the empty string.
 	// This simplifies the generated Ninja rules, so that they only need to check for the empty string.
-	if value, ok := ret.environ.Get("SOONG_USE_PARTIAL_COMPILE"); ok {
+	value, ok := ret.environ.Get("SOONG_USE_PARTIAL_COMPILE")
+	if ok {
 		if value == "true" || value == "1" || value == "y" || value == "yes" {
 			value = "true"
 		} else {
@@ -1887,6 +1888,11 @@ func (c *configImpl) ProductOut() string {
 
 func (c *configImpl) DevicePreviousProductConfig() string {
 	return filepath.Join(c.ProductOut(), "previous_build_config.mk")
+}
+
+// This will be sourced by rules that use SOONG_USE_PARTIAL_COMPILE.
+func (c *configImpl) DeviceUsePartialCompile() string {
+	return filepath.Join(c.SoongOutDir(), "use_partial_compile-"+c.TargetDevice()+".sh")
 }
 
 func (c *configImpl) DevicePreviousUsePartialCompile() string {

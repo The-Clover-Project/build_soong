@@ -1381,6 +1381,11 @@ func (c *config) DefaultAppTargetSdk(ctx EarlyModuleContext) ApiLevel {
 	return ApiLevelOrPanic(ctx, codename)
 }
 
+// This file is written by soong_ui, and sourced by rules that need a value for `SOONG_USE_PARTIAL_COMPILE`.
+func (c *config) UsePartialCompileFile(ctx PathContext) Path {
+	return PathForOutput(ctx, "use_partial_compile-"+*c.deviceNameToInstall+".sh")
+}
+
 func (c *config) PartialCompileFlags() partialCompileFlags {
 	return c.partialCompileFlags
 }
