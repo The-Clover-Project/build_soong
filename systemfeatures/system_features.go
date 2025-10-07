@@ -58,7 +58,7 @@ func (m *javaSystemFeaturesSrcs) GenerateAndroidBuildActions(ctx android.ModuleC
 	classNameParts := strings.Split(m.properties.Full_class_name, ".")
 	outputDir := android.PathForModuleGen(ctx)
 	outputFileName := classNameParts[len(classNameParts)-1] + ".java"
-	outputFile := android.PathForModuleGen(ctx, outputFileName).OutputPath
+	outputFile := android.PathForModuleGen(ctx, outputFileName)
 
 	// Collect all RELEASE_SYSTEM_FEATURE_$K:$V build flags into a list of "$K:$V" pairs.
 	var features []string
@@ -87,7 +87,7 @@ func (m *javaSystemFeaturesSrcs) GenerateAndroidBuildActions(ctx android.ModuleC
 		}
 	}
 
-	ruleCmd.FlagWithOutput(" > ", outputFile)
+	ruleCmd.FlagWithOutput("--output=", outputFile)
 	rule.Build(ctx.ModuleName(), "Generating systemfeatures srcs filegroup")
 
 	m.outputFiles = append(m.outputFiles, outputFile)
