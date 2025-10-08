@@ -81,7 +81,7 @@ var (
 				`cat $srcJarList >> $out.rsp && ` +
 				`if [ -s $genAnnoSrcJarList ] ; then ` +
 				`echo >> $out.rsp && cat $genAnnoSrcJarList >> $out.rsp; fi && ` +
-				`source ${config.UsePartialCompileFile} && ` +
+				`. ${config.UsePartialCompileFile} && ` +
 				`${config.IncrementalJavacInputCmd} ` +
 				`--srcs $out.rsp --classDir $outDir --deps $javacDeps --javacTarget $out --srcDepsProto $out.proto --localHeaderJars $localHeaderJars --crossModuleJarList $crossModuleJars && ` +
 				`mkdir -p "$outDir" && ` +

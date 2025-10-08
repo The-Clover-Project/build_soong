@@ -94,7 +94,7 @@ var kotlinIncremental = pctx.AndroidRemoteStaticRule("kotlin-incremental", andro
 		Command: // Incremental
 
 		inputDeltaCmd + ` && ` +
-			`source ${config.UsePartialCompileFile} && ` +
+			`. ${config.UsePartialCompileFile} && ` +
 			`if [ "$$SOONG_USE_PARTIAL_COMPILE" = "true" ]; then ` +
 			`rm -rf "$srcJarDir" "$kotlinBuildFile" "$emptyDir" && ` +
 			`mkdir -p "$headerClassesDir" "$srcJarDir" "$emptyDir" && ` +

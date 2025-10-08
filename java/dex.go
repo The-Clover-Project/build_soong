@@ -229,7 +229,7 @@ var d8IncClean = pctx.AndroidStaticRule("d8Inc-partialcompileclean",
 var d8Inc, d8IncRE = pctx.MultiCommandRemoteStaticRules("d8Inc",
 	blueprint.RuleParams{
 		Command: `mkdir -p "$outDir" "$outDir/packages" && ` +
-			`source ${config.UsePartialCompileFile} && ` +
+			`. ${config.UsePartialCompileFile} && ` +
 			`${config.IncrementalDexInputCmd} ` +
 			`--classesJar $in --dexTarget $out --deps $d8Deps --outputDir $outDir --packageOutputDir $outDir/packages && ` +
 			`$d8Template${config.D8Cmd} ${config.D8Flags} $d8Flags --output $outDir --no-dex-input-jar $in --packages $out.rsp --mod-packages $out.inc.rsp --package-output $outDir/packages && ` +
@@ -278,7 +278,7 @@ var d8IncR8, d8IncR8RE = pctx.MultiCommandRemoteStaticRules("d8Incr8",
 		Command: `mkdir -p "$outDir" "$outDir/packages" && ` +
 			`rm -f "$outDict" && rm -f "$outConfig" && rm -rf "${outUsageDir}" && ` +
 			`mkdir -p $$(dirname ${outUsage}) && ` +
-			`source ${config.UsePartialCompileFile} && ` +
+			`. ${config.UsePartialCompileFile} && ` +
 			`if [ -n "$${SOONG_USE_PARTIAL_COMPILE}" ]; then ` +
 			` for f in "${outConfig}" "${outDict}" "${outUsage}" "${resourcesOutput}"; do ` +
 			`   test -n "$${f}" && test ! -f "$${f}" && mkdir -p "$$(dirname "$${f}")" && touch "$${f}" || true; ` +
@@ -382,7 +382,7 @@ var d8r8, d8r8RE = pctx.MultiCommandRemoteStaticRules("d8r8",
 		Command: `rm -rf "$outDir" && mkdir -p "$outDir" && ` +
 			`rm -f "$outDict" && rm -f "$outConfig" && rm -rf "${outUsageDir}" && ` +
 			`mkdir -p $$(dirname ${outUsage}) && ` +
-			`source ${config.UsePartialCompileFile} && ` +
+			`. ${config.UsePartialCompileFile} && ` +
 			`if [ -n "$${SOONG_USE_PARTIAL_COMPILE}" ]; then ` +
 			` for f in "${outConfig}" "${outDict}" "${outUsage}" "${resourcesOutput}"; do ` +
 			`   test -n "$${f}" && test ! -f "$${f}" && mkdir -p "$$(dirname "$${f}")" && touch "$${f}" || true; ` +
