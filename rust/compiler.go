@@ -495,18 +495,8 @@ func (compiler *baseCompiler) compilerFlags(ctx ModuleContext, flags Flags) Flag
 
 	flags.RustFlags = append(flags.RustFlags, lintFlags)
 	flags.RustFlags = append(flags.RustFlags, compiler.Properties.Flags...)
-	// TODO(jamesfarrell): Revert this abomination once Rust 1.89 is released.
-	edition := compiler.edition()
-	if config.GetRustVersion(ctx) < "1.89" {
-		if ctx.ModuleName() == "libcompiler_builtins.rust_sysroot" {
-			edition = "2021"
-		}
-		if ctx.ModuleName() == "libgetopts" {
-			edition = "2015"
-		}
-	}
-	flags.RustFlags = append(flags.RustFlags, "--edition="+edition)
-	flags.RustdocFlags = append(flags.RustdocFlags, "--edition="+edition)
+	flags.RustFlags = append(flags.RustFlags, "--edition="+compiler.edition())
+	flags.RustdocFlags = append(flags.RustdocFlags, "--edition="+compiler.edition())
 	flags.LinkFlags = append(flags.LinkFlags, compiler.Properties.Ld_flags...)
 
 	return flags
