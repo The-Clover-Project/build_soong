@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"maps"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -69,6 +70,11 @@ type ReleaseConfigs struct {
 
 	// Dictionary of flag_name:FlagDeclaration, with no overrides applied.
 	FlagArtifacts FlagArtifacts
+
+	// Flags with no declaration that have value overrides.
+	// This is used by `build-flag` to indicate that there are flag
+	// values, but they are being ignored.
+	IgnoredFlags map[string]bool
 
 	// Containers used by build flags.
 	BuildFlagContainers []string
@@ -203,6 +209,7 @@ func ReleaseConfigsFactory(allowMissing bool, targetBuildVariant string) (c *Rel
 	configs := ReleaseConfigs{
 		Aliases:              make(map[string]*string),
 		FlagArtifacts:        make(map[string]*FlagArtifact),
+		IgnoredFlags:         make(map[string]bool),
 		ReleaseConfigs:       make(map[string]*ReleaseConfig),
 		releaseConfigMapsMap: make(map[string]*ReleaseConfigMap),
 		configDirs:           []string{},
@@ -344,23 +351,19 @@ type loadContext struct {
 	// WaitGroup for threads processing a directory.
 	dirReaderWg sync.WaitGroup
 
-	// Requests to read a flag_declarations/ file and send it to declHandlerChan.
+	// Requests to read a flag_declarations/ file and send it to infoHandlerChan.
 	declReaderChan chan *declReq
 	declReaderWg   sync.WaitGroup
-	//declHandlerChan chan *declInfo
 
-	// Requests to read a release_configs/ file and send it to contribHandlerChan
+	// Requests to read a release_configs/ file and send it to infoHandlerChan
 	contribReaderChan chan *contribReq
 	contribReaderWg   sync.WaitGroup
-	//contribHandlerChan chan *contribInfo
 
-	// Requests to read flag_values/ file and send it to valueHandlerChan
+	// Requests to read flag_values/ file and send it to infoHandlerChan
 	valueReaderChan chan *valueReq
 	valueReaderWg   sync.WaitGroup
-	//valueHandlerChan chan *valueInfo
 
-	// Reads and processes data from declHandlerChan, contribHandlerChan, and
-	// valueHandlerChan.
+	// Reads and processes data from infoHandlerChan.
 	infoHandlerWg   sync.WaitGroup
 	infoHandlerChan chan *fileInfo
 }
@@ -598,6 +601,9 @@ func (configs *ReleaseConfigs) getReleaseConfig(name string, allow_missing bool,
 		var err error
 		if generate {
 			err = config.GenerateReleaseConfig(configs)
+			if err == nil {
+				maps.Copy(configs.IgnoredFlags, config.IgnoredFlags)
+			}
 		}
 		return config, err
 	}
@@ -637,6 +643,7 @@ func (configs *ReleaseConfigs) GenerateAllReleaseConfigs(targetRelease string) e
 		if err != nil {
 			return err
 		}
+		maps.Copy(configs.IgnoredFlags, c.IgnoredFlags)
 		if c.Name != releaseConfig.Name {
 			orc = append(orc, c.ReleaseConfigArtifact)
 		}
@@ -764,6 +771,7 @@ func (configs *ReleaseConfigs) Finalize(ctx *loadContext, targetRelease string) 
 		// Look for flag values for release configs that are not declared in `release_configs/`.
 		for k, names := range m.FlagValueDirs {
 			for _, rcName := range names {
+				// Legacy directory.  We can remove this once the directory has been deleted.
 				if strings.HasSuffix(rcName, "_ro_snapshot") {
 					continue
 				}

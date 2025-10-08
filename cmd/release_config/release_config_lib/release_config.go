@@ -18,6 +18,7 @@ import (
 	"bytes"
 	"cmp"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -77,6 +78,11 @@ type ReleaseConfig struct {
 
 	// Unmarshalled flag artifacts
 	FlagArtifacts FlagArtifacts
+
+	// Flags with no declaration that have value overrides.
+	// This is used by `build-flag` to indicate that there are flag
+	// values, but they are being ignored.
+	IgnoredFlags map[string]bool
 
 	// Generated release config
 	ReleaseConfigArtifact *rc_proto.ReleaseConfigArtifact
@@ -150,6 +156,7 @@ func ReleaseConfigFactory(name string, index int) (c *ReleaseConfig) {
 	return &ReleaseConfig{
 		Name:             name,
 		DeclarationIndex: index,
+		IgnoredFlags:     make(map[string]bool),
 		PriorStagesMap:   make(map[string]bool),
 		inheritNamesMap:  make(map[string]bool),
 	}
@@ -187,6 +194,7 @@ func (config *ReleaseConfig) InheritConfig(iConfig *ReleaseConfig) error {
 			myFa.Value = fa.Value
 		}
 	}
+	maps.Copy(config.IgnoredFlags, iConfig.IgnoredFlags)
 	return nil
 }
 
@@ -306,7 +314,9 @@ func (config *ReleaseConfig) GenerateReleaseConfig(configs *ReleaseConfigs) erro
 			name := *value.proto.Name
 			fa, ok := config.FlagArtifacts[name]
 			if !ok {
-				return fmt.Errorf("Setting value for undefined flag %s in %s\n", name, value.path)
+				// b/450252549: Ignore flag values where the flag declaration has been deleted.
+				configs.IgnoredFlags[name] = true
+				continue
 			}
 			// Record that flag declarations from fa.DeclarationIndex were included in this release config.
 			myDirsMap[fa.DeclarationIndex] = true
