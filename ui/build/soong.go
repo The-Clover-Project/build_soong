@@ -682,7 +682,11 @@ func runSoong(ctx Context, config Config, enforceNoSoongOutput bool) {
 				// Output `siso version`.
 				vcmd := Command(ctx, config, nil, "siso version",
 					config.SisoBin(), "version")
-				vcmd.RunAndStreamOrFatal()
+				versionOutput, err := vcmd.CombinedOutput()
+				if err != nil {
+					ctx.Fatalf("Failed to run siso version: %s\n", err)
+				}
+				ctx.Verbosef("%s", versionOutput)
 			default:
 				// NINJA_NINJA is the default.
 				ninjaCmd = config.NinjaBin()

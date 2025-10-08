@@ -104,7 +104,7 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 		)
 		switch {
 		case config.StartReproxy():
-			ctx.Printf("with reclient\n")
+			ctx.Verbosef("with reclient\n")
 			args = append(args, "--config", "reclient")
 			if config.RemoteParallel() != 0 {
 				args = append(args, "--remote_jobs", strconv.Itoa(config.RemoteParallel()))
@@ -112,7 +112,7 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 			// Explicitly turn off reapi in Siso.
 			args = append(args, "--project=", "--reapi_address=", "--reapi_instance=")
 		case config.UseRBEproxy():
-			ctx.Printf("with rbeproxy\n")
+			ctx.Verbosef("with rbeproxy\n")
 			if config.RemoteParallel() != 0 {
 				args = append(args, "--remote_jobs", strconv.Itoa(config.RemoteParallel()))
 			}
@@ -128,7 +128,7 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 			}
 			args = append(args, "--reapi_insecure")
 		default:
-			ctx.Printf("local only\n")
+			ctx.Verbosef("local only\n")
 		}
 	default:
 		// NINJA_NINJA or NINJA_NINJAGO.
