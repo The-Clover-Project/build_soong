@@ -33,6 +33,9 @@ var (
 		// And add concrete overrides of abstract methods, see b/299366704 for more
 		// information.
 		"--format-defaults overloaded-method-order=source,add-additional-overrides=yes",
+
+		// Use K1 UAST parser (b/326652553)
+		"--Xuse-k1-uast",
 	}
 
 	MetalavaFlags = strings.Join(metalavaFlags, " ")
