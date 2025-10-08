@@ -17,6 +17,15 @@ def __handlers(ctx, vars, handlers):
     return handlers
 
 def __step_config(ctx, vars, step_config):
+    if vars.use_reclient:
+        step_config["rules"].extend([
+            {
+                "name": "rewrapper",
+                "command_prefix": "prebuilts/remoteexecution-client/live//rewrapper ",
+                "timeout": "2m",
+                "use_remote_exec_wrapper": True,
+            },
+        ])
     for i in __my_imports:
         step_config = i.step_config(ctx, vars, step_config)
     return step_config
