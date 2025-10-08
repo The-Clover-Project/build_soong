@@ -23,6 +23,7 @@ import (
 	"android/soong/android"
 
 	"github.com/google/blueprint"
+	"github.com/google/blueprint/proptools"
 )
 
 type AconfigReleaseConfigValue struct {
@@ -38,7 +39,7 @@ type DeclarationsModule struct {
 	// Properties for "aconfig_declarations"
 	properties struct {
 		// aconfig files, relative to this Android.bp file
-		Srcs []string `android:"path"`
+		Srcs proptools.Configurable[[]string] `android:"path"`
 
 		// Release config flag package
 		Package string
@@ -78,7 +79,7 @@ var implicitValuesTag = implicitValuesTagType{}
 
 func (module *DeclarationsModule) DepsMutator(ctx android.BottomUpMutatorContext) {
 	// Validate Properties
-	if len(module.properties.Srcs) == 0 {
+	if len(module.properties.Srcs.GetOrDefault(ctx, nil)) == 0 {
 		ctx.PropertyErrorf("srcs", "missing source files")
 		return
 	}
@@ -174,7 +175,7 @@ func (module *DeclarationsModule) GenerateAndroidBuildActions(ctx android.Module
 		})
 
 		// Intermediate format
-		declarationFiles := android.PathsForModuleSrc(ctx, module.properties.Srcs)
+		declarationFiles := android.PathsForModuleSrc(ctx, module.properties.Srcs.GetOrDefault(ctx, nil))
 		intermediateCacheFilePath := android.PathForModuleOut(ctx, assembleFileName(config, "aconfig-cache.pb"))
 		var defaultPermission string
 		defaultPermission = ctx.Config().ReleaseAconfigFlagDefaultPermission()
