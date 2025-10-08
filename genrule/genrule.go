@@ -770,6 +770,8 @@ func (g *Module) setOutputFiles(ctx android.ModuleContext) {
 	for _, files := range g.outputFiles {
 		ctx.SetOutputFiles(android.Paths{files}, files.Rel())
 	}
+
+	ctx.CheckbuildFile(g.outputFiles...)
 }
 
 // Collect information for opening IDE project files in java/jdeps.go.
