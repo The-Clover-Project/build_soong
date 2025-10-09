@@ -31,8 +31,8 @@ bootstrap_go_package {
     srcs: [
         "androidmk.go",
         "apex.go",
+        "apex_enc.go",
         "apex_sdk_member.go",
-        "apex_sdk_member_gob_enc.go",
         "apex_singleton.go",
         "builder.go",
         "deapexer.go",

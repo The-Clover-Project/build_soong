@@ -8,6 +8,7 @@ import (
 	"github.com/google/blueprint/gobtools"
 )
 
+// begin of class_loader_context.go
 func init() {
 	ClassLoaderContextGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ClassLoaderContext) })
 }
@@ -110,3 +111,5 @@ var ClassLoaderContextGobRegId int16
 func (r ClassLoaderContext) GetTypeId() int16 {
 	return ClassLoaderContextGobRegId
 }
+
+// end of class_loader_context.go

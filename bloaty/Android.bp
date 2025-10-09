@@ -12,7 +12,7 @@ bootstrap_go_package {
     ],
     srcs: [
         "bloaty.go",
-        "bloaty_gob_enc.go",
+        "bloaty_enc.go",
         "testing.go",
     ],
     pluginFor: ["soong_build"],
