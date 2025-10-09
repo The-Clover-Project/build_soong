@@ -100,8 +100,7 @@ type aaptProperties struct {
 	// library that provided them, as opposed to aapt2 which produces R.java files for every package containing
 	// every resource.  Using the resource processor can provide significant build time speedups, but requires
 	// fixing the module to use the correct package to reference each resource, and to avoid having any other
-	// libraries in the tree that use the same package name.  Defaults to false, but will default to true in the
-	// future.
+	// libraries in the tree that use the same package name.  Defaults to true.
 	Use_resource_processor *bool
 
 	// true if RRO is enforced for any of the dependent modules
