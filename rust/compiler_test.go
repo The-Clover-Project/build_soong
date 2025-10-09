@@ -218,7 +218,7 @@ func TestInstallDir(t *testing.T) {
 }
 
 func TestLints(t *testing.T) {
-
+	t.Parallel()
 	bp := `
 		// foo uses the default value of lints
 		rust_library {

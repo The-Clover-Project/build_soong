@@ -432,7 +432,6 @@ func TestRustFFIExportedIncludes(t *testing.T) {
 // define a rust_ffi module which can't be done in soong-cc to avoid the
 // circular dependency.
 func TestCCRustlibsForMake(t *testing.T) {
-	t.Parallel()
 	result := testRust(t, `
 		rust_ffi_static {
 			name: "libbar",

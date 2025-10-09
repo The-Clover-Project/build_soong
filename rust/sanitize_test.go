@@ -145,6 +145,7 @@ var prepareForTestWithMemtagHeap = android.GroupFixturePreparers(
 )
 
 func TestSanitizeMemtagHeap(t *testing.T) {
+	t.Parallel()
 	variant := "android_arm64_armv8-a"
 
 	result := android.GroupFixturePreparers(
@@ -215,6 +216,7 @@ func TestSanitizeMemtagHeap(t *testing.T) {
 }
 
 func TestSanitizeMemtagHeapWithSanitizeDevice(t *testing.T) {
+	t.Parallel()
 	variant := "android_arm64_armv8-a"
 
 	result := android.GroupFixturePreparers(
@@ -290,6 +292,7 @@ func TestSanitizeMemtagHeapWithSanitizeDevice(t *testing.T) {
 }
 
 func TestSanitizeMemtagHeapWithSanitizeDeviceDiag(t *testing.T) {
+	t.Parallel()
 	variant := "android_arm64_armv8-a"
 
 	result := android.GroupFixturePreparers(
