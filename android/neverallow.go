@@ -429,6 +429,7 @@ func createAutogenRroBpDefineRule() Rule {
 func createUncheckedModuleRule() Rule {
 	allowedModuleNameList := []string{
 		"static_apexer_tools",
+		"static_sdk_tools",
 	}
 	return NeverAllow().
 		NotIn("build/soong").
