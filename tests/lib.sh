@@ -114,7 +114,7 @@ function create_mock_soong {
   symlink_directory external/python
   symlink_directory external/sqlite
   symlink_directory external/spdx-tools
-  symlink_directory libcore
+  symlink_directory external/pogreb
 
   # TODO: b/286872909 - Remove these when the blocking bug is completed
   symlink_directory external/libavc
@@ -149,7 +149,7 @@ function create_mock_soong_for_java_lib {
   symlink_directory external/python
   symlink_directory external/sqlite
   symlink_directory external/spdx-tools
-  symlink_directory libcore
+  symlink_directory external/pogreb
 
   # TODO: b/286872909 - Remove these when the blocking bug is completed
   symlink_directory external/libavc
