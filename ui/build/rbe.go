@@ -231,7 +231,7 @@ func createSisoCredsHelper(ctx Context, config Config) (string, error) {
 	ctx.Verbosef("Using '%s %s' for RBE credentials helper\n", helperPath, helperArgs)
 	cacheDir := config.rbeCacheDir()
 	helperArgs = strings.TrimSpace(helperArgs)
-	args := []string{helperPath, helperArgs, "--cache_dir", cacheDir}
+	args := []string{helperPath, helperArgs, "--cache_dir", cacheDir, "-bazel_compat"}
 	cmdFile := filepath.Join(cacheDir, "soong-convert-command")
 	err := os.WriteFile(cmdFile, []byte(strings.Join(args, " ")), 0666)
 	return "build/soong/scripts/siso-creds-helper.py", err
