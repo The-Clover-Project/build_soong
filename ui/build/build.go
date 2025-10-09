@@ -375,7 +375,7 @@ func Build(ctx Context, config Config) {
 	shFile := config.DeviceUsePartialCompile()
 	ensureDirectoriesExist(ctx, filepath.Dir(shFile))
 	value, _ := config.environ.Get("SOONG_USE_PARTIAL_COMPILE")
-	writeValueIfChanged(ctx, shFile, fmt.Sprintf("\nSOONG_USE_PARTIAL_COMPILE=%s\n", value))
+	writeValueIfChanged(ctx, shFile, fmt.Sprintf("\nexport SOONG_USE_PARTIAL_COMPILE=%s\n", value))
 
 	if inList("installclean", config.Arguments()) ||
 		inList("install-clean", config.Arguments()) {
