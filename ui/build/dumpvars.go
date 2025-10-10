@@ -20,6 +20,7 @@ import (
 	"io/ioutil"
 	"os"
 	"slices"
+	"strconv"
 	"strings"
 
 	"android/soong/ui/metrics"
@@ -50,9 +51,11 @@ const (
 // to call into make, to retain compatibility.
 func DumpMakeVars(ctx Context, config Config, goals, vars []string) (map[string]string, error) {
 	soongUiVars := map[string]func() string{
-		"OUT_DIR":  func() string { return config.OutDir() },
-		"DIST_DIR": func() string { return config.DistDir() },
-		"TMPDIR":   func() string { return absPath(ctx, config.TempDir()) },
+		"OUT_DIR":     func() string { return config.OutDir() },
+		"DIST_DIR":    func() string { return config.DistDir() },
+		"TMPDIR":      func() string { return absPath(ctx, config.TempDir()) },
+		"SOONG_NINJA": func() string { return config.ninjaCommand.String() },
+		"SOONG_ONLY":  func() string { return strconv.FormatBool(config.soongOnlyRequested) },
 	}
 
 	makeVars := make([]string, 0, len(vars))
@@ -331,6 +334,7 @@ func runMakeProductConfig(ctx Context, config Config) {
 		"RELEASE_SRC_DIR_IS_READ_ONLY",
 		"RELEASE_USE_RKATI",
 		"RELEASE_BUILD_WITH_JDK_25",
+		"SOONG_INCREMENTAL_ANALYSIS",
 	}, exportEnvVars, BannerVars, sisoStringVars, earlyReleaseConfigVars)
 
 	makeVars, err := dumpMakeVars(ctx, config, config.Arguments(), allVars, "", DUMPVARS_PRODUCT_CONFIG)
