@@ -66,4 +66,223 @@ function test_incremental_build_parity() {
   echo "test_incremental_build_parity test passed"
 }
 
+function test_add_module() {
+  setup
+
+  run_soong SOONG_INCREMENTAL_ANALYSIS=true
+
+  mkdir -p a
+  cat >> a/Android.bp <<EOF
+python_binary_host {
+  name: "my_little_binary_host",
+  srcs: ["my_little_binary_host.py"],
+}
+EOF
+  touch a/my_little_binary_host.py
+
+  compare_incremental_and_full_analysis
+}
+
+function test_remove_module() {
+  setup
+
+  mkdir -p a
+  cat >> a/Android.bp <<EOF
+python_binary_host {
+  name: "my_little_binary_host",
+  srcs: ["my_little_binary_host.py"],
+}
+EOF
+  touch a/my_little_binary_host.py
+
+  run_soong SOONG_INCREMENTAL_ANALYSIS=true
+
+  echo > a/Android.bp
+
+  compare_incremental_and_full_analysis
+}
+
+function test_add_dependency() {
+  setup
+
+  mkdir -p a
+  cat >> a/Android.bp <<EOF
+python_binary_host {
+  name: "my_little_binary_host",
+  srcs: ["my_little_binary_host.py"],
+  libs: [],
+}
+
+python_library_host {
+  name: "my_little_library_host",
+  srcs: ["my_little_library_host.py"],
+}
+EOF
+  touch a/my_little_binary_host.py
+  touch a/my_little_library_host.py
+
+  run_soong SOONG_INCREMENTAL_ANALYSIS=true
+
+  sed -i -e 's/libs: \[\]/libs: \["my_little_library_host"\]/' a/Android.bp
+
+  compare_incremental_and_full_analysis
+}
+
+function test_remove_dependency() {
+  setup
+
+  mkdir -p a
+  cat >> a/Android.bp <<EOF
+python_binary_host {
+  name: "my_little_binary_host",
+  srcs: ["my_little_binary_host.py"],
+  libs: ["my_little_library_host"],
+}
+
+python_library_host {
+  name: "my_little_library_host",
+  srcs: ["my_little_library_host.py"],
+}
+EOF
+  touch a/my_little_binary_host.py
+  touch a/my_little_library_host.py
+
+  run_soong SOONG_INCREMENTAL_ANALYSIS=true
+
+  sed -i -e 's/libs: \["my_little_library_host"\]/libs: \[\]/' a/Android.bp
+
+  compare_incremental_and_full_analysis
+}
+
+function test_modify_dependency() {
+  setup
+
+  mkdir -p a
+  cat >> a/Android.bp <<EOF
+python_binary_host {
+  name: "my_little_binary_host",
+  srcs: ["my_little_binary_host.py"],
+  libs: ["my_little_library_host"],
+}
+
+python_library_host {
+  name: "my_little_library_host",
+  srcs: ["my_little_library_host.py"],
+}
+
+python_library_host {
+  name: "my_little_library_host2",
+  srcs: ["my_little_library_host2.py"],
+}
+EOF
+  touch a/my_little_binary_host.py
+  touch a/my_little_library_host.py
+  touch a/my_little_library_host2.py
+
+  run_soong SOONG_INCREMENTAL_ANALYSIS=true
+
+  sed -i -e 's/libs: \["my_little_library_host"\]/libs: \["my_little_library_host2"\]/' a/Android.bp
+
+  compare_incremental_and_full_analysis
+}
+
+function test_add_source() {
+  setup
+
+  mkdir -p a
+  cat >> a/Android.bp <<EOF
+python_binary_host {
+  name: "my_little_binary_host",
+  srcs: ["*.py"],
+}
+EOF
+  touch a/my_little_binary_host.py
+
+  run_soong SOONG_INCREMENTAL_ANALYSIS=true
+
+  touch a/my_little_binary_host2.py
+
+  compare_incremental_and_full_analysis
+}
+
+function test_remove_source() {
+  setup
+
+  mkdir -p a
+  cat >> a/Android.bp <<EOF
+python_binary_host {
+  name: "my_little_binary_host",
+  srcs: ["*.py"],
+}
+EOF
+  touch a/my_little_binary_host.py
+  touch a/my_little_binary_host2.py
+
+  run_soong SOONG_INCREMENTAL_ANALYSIS=true
+
+  rm a/my_little_binary_host2.py
+
+  compare_incremental_and_full_analysis
+}
+
+function test_replace_source() {
+  setup
+
+  mkdir -p a
+  cat >> a/Android.bp <<EOF
+python_binary_host {
+  name: "my_little_binary_host",
+  srcs: ["*.py"],
+}
+EOF
+  touch a/my_little_binary_host.py
+  touch a/my_little_binary_host2.py
+
+  run_soong SOONG_INCREMENTAL_ANALYSIS=true
+
+  rm a/my_little_binary_host2.py
+  touch a/my_little_binary_host3.py
+
+  compare_incremental_and_full_analysis
+}
+
+function test_error() {
+  setup
+
+  mkdir -p a
+  cat >> a/Android.bp <<EOF
+python_binary_host {
+  name: "my_little_binary_host",
+  srcs: ["*.py"],
+}
+EOF
+  touch a/my_little_binary_host.py
+
+  run_soong SOONG_INCREMENTAL_ANALYSIS=true
+
+  echo inserted_syntax_error >> a/Android.bp
+
+  run_soong SOONG_INCREMENTAL_ANALYSIS=true || true
+
+  sed -i -e'/inserted_syntax_error/d' a/Android.bp
+
+  compare_incremental_and_full_analysis
+}
+
+function test_set_environment_variable() {
+  setup
+
+  run_soong SOONG_INCREMENTAL_ANALYSIS=true
+
+  compare_incremental_and_full_analysis LLVM_PREBUILTS_VERSION=foo
+}
+
+function test_change_environment_variable() {
+  setup
+
+  run_soong LLVM_PREBUILTS_VERSION=foo
+
+  compare_incremental_and_full_analysis LLVM_PREBUILTS_VERSION=bar
+}
+
 scan_and_run_tests "$@"

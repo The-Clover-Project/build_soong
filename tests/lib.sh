@@ -347,3 +347,18 @@ function compare_files_parity() {
   done
   echo "Compared $count ninja files"
 }
+
+# Assumes an initial run of "run_soong SOONG_INCREMENTAL_ANALYSIS=true" and then
+# the tree is modified.
+function compare_incremental_and_full_analysis() {
+    run_soong SOONG_INCREMENTAL_ANALYSIS=true "$@"
+    mkdir before
+    cp -pr out/soong/*.mk out/soong/build.aosp_arm*.ninja before
+
+    touch Android.bp
+    run_soong "$@"
+    mkdir after
+    cp -pr out/soong/*.mk out/soong/build.aosp_arm*.ninja after
+
+    compare_incremental_files before after
+}
