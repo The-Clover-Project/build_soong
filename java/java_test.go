@@ -1357,20 +1357,35 @@ func TestCompilerFlags(t *testing.T) {
 }
 
 // TODO(jungjw): Consider making this more robust by ignoring path order.
-func checkPatchModuleFlag(t *testing.T, ctx *android.TestContext, moduleName string, expected string) {
+func checkPatchModuleFlag(t *testing.T, ctx *android.TestContext, moduleName string, expected []string) {
 	t.Helper()
 	variables := ctx.ModuleForTests(t, moduleName, "android_common").VariablesForTestsRelativeToTop()
-	flags := strings.Split(variables["javacFlags"], " ")
-	got := ""
-	for _, flag := range flags {
-		keyEnd := strings.Index(flag, "=")
-		if keyEnd > -1 && flag[:keyEnd] == "--patch-module" {
-			got = flag[keyEnd+1:]
-			break
+
+	module := ctx.ModuleForTests(t, moduleName, "android_common")
+	patchModulePathsFileRule := module.MaybeOutput("javac/patch_module_paths")
+	if patchModulePathsFileRule.Rule == nil {
+		if expected != nil {
+			t.Errorf("expected no patch_module_paths file, found one")
 		}
+		return
 	}
-	if expected != android.StringPathRelativeToTop(ctx.Config().SoongOutDir(), got) {
-		t.Errorf("Unexpected patch-module flag for module %q - expected %q, but got %q", moduleName, expected, got)
+
+	flags := variables["javacFlags"]
+	wantFlag := "@" + patchModulePathsFileRule.Output.String()
+	if !strings.Contains(flags, wantFlag) {
+		t.Fatalf("expected %q in flags, not found in %q", wantFlag, flags)
+	}
+
+	got := android.ContentFromFileRuleForTests(t, ctx, patchModulePathsFileRule)
+	got = strings.TrimSpace(got)
+	wantPrefix := "--patch-module=java.base="
+	if !strings.HasPrefix(got, wantPrefix) {
+		t.Fatalf("expected patch_module_paths file content to start with %q, found %q", wantPrefix, got)
+	}
+	paths := strings.Split(strings.TrimPrefix(got, wantPrefix), ":")
+	pathsRelativeToTop := android.StringPathsRelativeToTop(ctx.Config().SoongOutDir(), paths)
+	if !slices.Equal(expected, pathsRelativeToTop) {
+		t.Errorf("Unexpected patch-module flag for module %q - expected %q, but got %q", moduleName, expected, pathsRelativeToTop)
 	}
 }
 
@@ -1404,9 +1419,9 @@ func TestPatchModule(t *testing.T) {
 		`
 		ctx, _ := testJava(t, bp)
 
-		checkPatchModuleFlag(t, ctx, "foo", "")
-		checkPatchModuleFlag(t, ctx, "bar", "")
-		checkPatchModuleFlag(t, ctx, "baz", "")
+		checkPatchModuleFlag(t, ctx, "foo", nil)
+		checkPatchModuleFlag(t, ctx, "bar", nil)
+		checkPatchModuleFlag(t, ctx, "baz", nil)
 	})
 
 	t.Run("Java language level 9", func(t *testing.T) {
@@ -1441,11 +1456,12 @@ func TestPatchModule(t *testing.T) {
 		`
 		ctx, _ := testJava(t, bp)
 
-		checkPatchModuleFlag(t, ctx, "foo", "")
-		expected := "java.base=.:out/soong"
+		checkPatchModuleFlag(t, ctx, "foo", nil)
+		expected := []string{"out/soong/.intermediates/bar/android_common", "."}
 		checkPatchModuleFlag(t, ctx, "bar", expected)
-		expected = "java.base=" + strings.Join([]string{
-			".", "out/soong", defaultModuleToPath("ext"), defaultModuleToPath("framework")}, ":")
+		expected = []string{
+			"out/soong/.intermediates/baz/android_common", ".", "dir", "dir2", "nested/dir",
+			defaultModuleToPath("ext"), defaultModuleToPath("framework")}
 		checkPatchModuleFlag(t, ctx, "baz", expected)
 	})
 }

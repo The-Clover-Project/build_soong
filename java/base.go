@@ -1176,15 +1176,19 @@ func (j *Module) collectJavacFlags(
 			// Manually specify build directory in case it is not under the repo root.
 			// (javac doesn't seem to expand into symbolic links when searching for patch-module targets, so
 			// just adding a symlink under the root doesn't help.)
-			patchPaths := []string{".", ctx.Config().SoongOutDir()}
-
-			classPath := flags.classpath.FormJavaClassPath("")
-			if classPath != "" {
-				patchPaths = append(patchPaths, classPath)
+			patchPathDirs := []string{android.PathForModuleOut(ctx).String()}
+			for _, srcFile := range srcFiles {
+				srcDir := filepath.Dir(srcFile.String())
+				if !slices.Contains(patchPathDirs, srcDir) {
+					patchPathDirs = append(patchPathDirs, srcDir)
+				}
 			}
-			javacFlags = append(
-				javacFlags,
-				"--patch-module="+String(j.properties.Patch_module)+"="+strings.Join(patchPaths, ":"))
+			patchPathDirs = append(patchPathDirs, flags.classpath.Strings()...)
+			patchPathFlag := "--patch-module=" + String(j.properties.Patch_module) + "=" + strings.Join(patchPathDirs, ":")
+			patchPathFlagFile := android.PathForModuleOut(ctx, "javac", "patch_module_paths")
+			android.WriteFileRule(ctx, patchPathFlagFile, patchPathFlag)
+			javacFlags = append(javacFlags, "@"+patchPathFlagFile.String())
+			flags.javacFlagsDeps = append(flags.javacFlagsDeps, patchPathFlagFile)
 		}
 	}
 
