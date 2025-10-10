@@ -110,59 +110,17 @@ function create_mock_soong {
   symlink_directory external/go-cmp
   symlink_directory external/golang-protobuf
   symlink_directory external/licenseclassifier
-  symlink_directory external/starlark-go
   symlink_directory external/python
-  symlink_directory external/sqlite
+  symlink_directory external/pogreb
   symlink_directory external/spdx-tools
-  symlink_directory libcore
-
-  # TODO: b/286872909 - Remove these when the blocking bug is completed
-  symlink_directory external/libavc
-  symlink_directory external/libaom
-  symlink_directory external/libvpx
-  symlink_directory frameworks/base/libs/androidfw
-  symlink_directory external/libhevc
-  symlink_directory external/libexif
-  symlink_directory external/libopus
-  symlink_directory external/libmpeg2
-  symlink_directory external/expat
-  symlink_directory external/flac
-  symlink_directory system/extras/toolchain-extras
+  symlink_directory external/sqlite
+  symlink_directory external/starlark-go
 
   touch "$MOCK_TOP/Android.bp"
 }
 
 function create_mock_soong_for_java_lib {
-  copy_directory build/blueprint
-  copy_directory build/soong
-  copy_directory build/make
-
-  symlink_directory prebuilts/sdk
-  symlink_directory prebuilts/go
-  symlink_directory prebuilts/build-tools
-  symlink_directory prebuilts/clang/host
-  symlink_directory external/compiler-rt
-  symlink_directory external/go-cmp
-  symlink_directory external/golang-protobuf
-  symlink_directory external/licenseclassifier
-  symlink_directory external/starlark-go
-  symlink_directory external/python
-  symlink_directory external/sqlite
-  symlink_directory external/spdx-tools
-  symlink_directory libcore
-
-  # TODO: b/286872909 - Remove these when the blocking bug is completed
-  symlink_directory external/libavc
-  symlink_directory external/libaom
-  symlink_directory external/libvpx
-  symlink_directory frameworks/base/libs/androidfw
-  symlink_directory external/libhevc
-  symlink_directory external/libexif
-  symlink_directory external/libopus
-  symlink_directory external/libmpeg2
-  symlink_directory external/expat
-  symlink_directory external/flac
-  symlink_directory system/extras/toolchain-extras
+  create_mock_soong
 
   # Required for building java_library type modules.
   symlink_directory prebuilts/jdk
@@ -188,8 +146,6 @@ function create_mock_soong_for_java_lib {
   symlink_directory external/kotlinc
   symlink_directory prebuilts/misc/common/asm/
   symlink_directory system/logging/liblog
-
-  touch "$MOCK_TOP/Android.bp"
 }
 
 function setup {
