@@ -7,22 +7,14 @@ set -euo pipefail
 
 source "$(dirname "$0")/lib.sh"
 
-function assert_files_equal {
-  if [ $# -ne 2 ]; then
-    echo "Usage: assert_files_equal file1 file2"
-    exit 1
-  fi
-
-  if ! cmp -s "$1" "$2"; then
-    echo "Files are different: $1 $2"
-    diff -u "$1" "$2"
-    exit 1
-  fi
-}
-
 function test_build_action_restoring() {
   setup
   do_test_build_action_restoring
+}
+
+function test_build_action_restoring_providers() {
+  setup
+  do_test_build_action_restoring "--incremental-provider-test"
 }
 
 function do_test_build_action_restoring() {
@@ -72,57 +64,6 @@ function test_incremental_build_parity() {
   compare_incremental_files $dir_before $dir_after
   rm -rf "$test_dir"
   echo "test_incremental_build_parity test passed"
-}
-
-function test_build_action_restoring_providers() {
-  setup
-  do_test_build_action_restoring "--incremental-provider-test"
-}
-
-function compare_incremental_files() {
-  local dir_before=$1; shift
-  local dir_after=$1; shift
-  count=0
-  for file_before in ${dir_before}/*.mk; do
-    file_after="${dir_after}/$(basename "$file_before")"
-    assert_files_equal $file_before $file_after
-    ((count++)) || true
-  done
-  echo "Compared $count mk files"
-
-  count=0
-  for file_before in ${dir_before}/*.ninja; do
-    basename=$(basename "$file_before")
-    file_after="${dir_after}/${basename}"
-    # The after file should be a superset of the before one.
-    if [[ "$basename" == "build.aosp_arm.ninja" ]]; then
-      echo "Performing superset check for $basename..."
-      extra_lines=$(comm -23 <(sort "$file_before") <(sort "$file_after"))
-      if [[ -n "$extra_lines" ]]; then
-        # If there are extra lines, print an error and the differing lines, then exit.
-        echo "ERROR: $file_after is NOT a superset of $file_before."
-        echo "The following lines were in the 'before' file but not the 'after' file:"
-        echo "$extra_lines"
-        exit 1
-      fi
-    else
-      assert_files_equal $file_before $file_after
-    fi
-    ((count++)) || true
-  done
-  echo "Compared $count ninja files"
-}
-
-function compare_files_parity() {
-  local dir_before=$1; shift
-  local dir_after=$1; shift
-  count=0
-  for file_before in ${dir_before}/*.*; do
-    file_after="${dir_after}/$(basename "$file_before")"
-    assert_files_equal $file_before $file_after
-    ((count++)) || true
-  done
-  echo "Compared $count ninja files"
 }
 
 scan_and_run_tests
