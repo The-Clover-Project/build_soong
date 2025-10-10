@@ -265,9 +265,12 @@ export ALLOW_BP_UNDER_SYMLINKS=true
 warmup_mock_top
 
 function scan_and_run_tests {
+  test_fns=("$@")
   # find all test_ functions
   # NB "declare -F" output is sorted, hence test order is deterministic
-  readarray -t test_fns < <(declare -F | sed -n -e 's/^declare -f \(test_.*\)$/\1/p')
+  if [[ ${#test_fns[*]} -eq 0 ]]; then
+    readarray -t test_fns < <(declare -F | sed -n -e 's/^declare -f \(test_.*\)$/\1/p')
+  fi
   info "Found ${#test_fns[*]} tests"
   if [[ ${#test_fns[*]} -eq 0 ]]; then
     fail "No tests found"

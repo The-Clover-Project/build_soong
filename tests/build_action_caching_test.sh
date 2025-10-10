@@ -66,4 +66,4 @@ function test_incremental_build_parity() {
   echo "test_incremental_build_parity test passed"
 }
 
-scan_and_run_tests
+scan_and_run_tests "$@"
