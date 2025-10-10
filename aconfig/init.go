@@ -29,8 +29,7 @@ var (
 			Command: `${aconfig} create-cache` +
 				` --package ${package}` +
 				` ${container}` +
-				` ${declarations}` +
-				` ${values}` +
+				` @${out}.rsp` + // rspFile with declarations and values for long cmdlines
 				` ${default-permission}` +
 				` ${allow-read-write}` +
 				` ${mainline-beta-namespace-config}` +
@@ -41,7 +40,10 @@ var (
 			CommandDeps: []string{
 				"${aconfig}",
 			},
-			Restat: true,
+			Rspfile: "${out}.rsp",
+			// Write declarations and values to a response file to avoid command line length limits.
+			RspfileContent: "${declarations} ${values}",
+			Restat:         true,
 		}, "release_version", "package", "container", "declarations", "values", "default-permission", "allow-read-write", "mainline-beta-namespace-config", "force-read-only")
 
 	// For create-device-config-sysprops: Generate aconfig flag value map text file
