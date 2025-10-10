@@ -242,7 +242,7 @@ fi
 
 # shellcheck disable=SC2120
 function run_soong {
-  USE_RBE=false TARGET_PRODUCT=aosp_arm TARGET_RELEASE=trunk_staging TARGET_BUILD_VARIANT=userdebug build/soong/soong_ui.bash --make-mode --skip-ninja --skip-config --soong-only --skip-soong-tests "$@"
+  USE_RBE=false TARGET_PRODUCT=aosp_arm TARGET_RELEASE=trunk_staging TARGET_BUILD_VARIANT=eng build/soong/soong_ui.bash --make-mode --skip-ninja --skip-config --soong-only --skip-soong-tests "$@"
 }
 
 # shellcheck disable=SC2120
@@ -253,7 +253,7 @@ function run_soong_for_java_lib {
 }
 
 function run_ninja {
-  build/soong/soong_ui.bash --make-mode --skip-config --soong-only --skip-soong-tests "$@"
+  USE_RBE=false TARGET_PRODUCT=aosp_arm TARGET_RELEASE=trunk_staging TARGET_BUILD_VARIANT=eng build/soong/soong_ui.bash --make-mode --skip-config --soong-only --skip-soong-tests "$@"
 }
 
 info "Starting Soong integration test suite $(basename "$0")"
