@@ -242,7 +242,7 @@ fi
 
 # shellcheck disable=SC2120
 function run_soong {
-  USE_RBE=false TARGET_PRODUCT=aosp_arm TARGET_RELEASE=trunk_staging TARGET_BUILD_VARIANT=userdebug build/soong/soong_ui.bash --make-mode --skip-ninja --skip-config --soong-only --skip-soong-tests "$@"
+  USE_RBE=false TARGET_PRODUCT=aosp_arm TARGET_RELEASE=trunk_staging TARGET_BUILD_VARIANT=eng build/soong/soong_ui.bash --make-mode --skip-ninja --skip-config --soong-only --skip-soong-tests "$@"
 }
 
 # shellcheck disable=SC2120
@@ -253,7 +253,7 @@ function run_soong_for_java_lib {
 }
 
 function run_ninja {
-  build/soong/soong_ui.bash --make-mode --skip-config --soong-only --skip-soong-tests "$@"
+  USE_RBE=false TARGET_PRODUCT=aosp_arm TARGET_RELEASE=trunk_staging TARGET_BUILD_VARIANT=eng build/soong/soong_ui.bash --make-mode --skip-config --soong-only --skip-soong-tests "$@"
 }
 
 info "Starting Soong integration test suite $(basename "$0")"
@@ -265,9 +265,12 @@ export ALLOW_BP_UNDER_SYMLINKS=true
 warmup_mock_top
 
 function scan_and_run_tests {
+  test_fns=("$@")
   # find all test_ functions
   # NB "declare -F" output is sorted, hence test order is deterministic
-  readarray -t test_fns < <(declare -F | sed -n -e 's/^declare -f \(test_.*\)$/\1/p')
+  if [[ ${#test_fns[*]} -eq 0 ]]; then
+    readarray -t test_fns < <(declare -F | sed -n -e 's/^declare -f \(test_.*\)$/\1/p')
+  fi
   info "Found ${#test_fns[*]} tests"
   if [[ ${#test_fns[*]} -eq 0 ]]; then
     fail "No tests found"
@@ -284,4 +287,78 @@ function move_mock_top {
   mv $MOCK_TOP $MOCK_TOP2
   MOCK_TOP=$MOCK_TOP2
   trap cleanup_mock_top EXIT
+}
+
+function assert_files_equal {
+  if [ $# -ne 2 ]; then
+    echo "Usage: assert_files_equal file1 file2"
+    exit 1
+  fi
+
+  if ! cmp -s "$1" "$2"; then
+    echo "Files are different: $1 $2"
+    diff -u "$1" "$2"
+    exit 1
+  fi
+}
+
+function compare_incremental_files() {
+  local dir_before=$1; shift
+  local dir_after=$1; shift
+  count=0
+  for file_before in ${dir_before}/*.mk; do
+    file_after="${dir_after}/$(basename "$file_before")"
+    assert_files_equal $file_before $file_after
+    ((count++)) || true
+  done
+  echo "Compared $count mk files"
+
+  count=0
+  for file_before in ${dir_before}/*.ninja; do
+    basename=$(basename "$file_before")
+    file_after="${dir_after}/${basename}"
+    # The after file should be a superset of the before one.
+    if [[ "$basename" == "build.aosp_arm.ninja" ]]; then
+      echo "Performing superset check for $basename..."
+      extra_lines=$(comm -23 <(sort "$file_before") <(sort "$file_after"))
+      if [[ -n "$extra_lines" ]]; then
+        # If there are extra lines, print an error and the differing lines, then exit.
+        echo "ERROR: $file_after is NOT a superset of $file_before."
+        echo "The following lines were in the 'before' file but not the 'after' file:"
+        echo "$extra_lines"
+        exit 1
+      fi
+    else
+      assert_files_equal $file_before $file_after
+    fi
+    ((count++)) || true
+  done
+  echo "Compared $count ninja files"
+}
+
+function compare_files_parity() {
+  local dir_before=$1; shift
+  local dir_after=$1; shift
+  count=0
+  for file_before in ${dir_before}/*.*; do
+    file_after="${dir_after}/$(basename "$file_before")"
+    assert_files_equal $file_before $file_after
+    ((count++)) || true
+  done
+  echo "Compared $count ninja files"
+}
+
+# Assumes an initial run of "run_soong SOONG_INCREMENTAL_ANALYSIS=true" and then
+# the tree is modified.
+function compare_incremental_and_full_analysis() {
+    run_soong SOONG_INCREMENTAL_ANALYSIS=true "$@"
+    mkdir before
+    cp -pr out/soong/*.mk out/soong/build.aosp_arm*.ninja before
+
+    touch Android.bp
+    run_soong "$@"
+    mkdir after
+    cp -pr out/soong/*.mk out/soong/build.aosp_arm*.ninja after
+
+    compare_incremental_files before after
 }

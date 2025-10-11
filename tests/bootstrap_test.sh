@@ -585,4 +585,4 @@ EOF
   fi
 }
 
-scan_and_run_tests
+scan_and_run_tests "$@"

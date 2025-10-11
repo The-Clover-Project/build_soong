@@ -7,22 +7,14 @@ set -euo pipefail
 
 source "$(dirname "$0")/lib.sh"
 
-function assert_files_equal {
-  if [ $# -ne 2 ]; then
-    echo "Usage: assert_files_equal file1 file2"
-    exit 1
-  fi
-
-  if ! cmp -s "$1" "$2"; then
-    echo "Files are different: $1 $2"
-    diff -u "$1" "$2"
-    exit 1
-  fi
-}
-
 function test_build_action_restoring() {
   setup
   do_test_build_action_restoring
+}
+
+function test_build_action_restoring_providers() {
+  setup
+  do_test_build_action_restoring "--incremental-provider-test"
 }
 
 function do_test_build_action_restoring() {
@@ -74,55 +66,223 @@ function test_incremental_build_parity() {
   echo "test_incremental_build_parity test passed"
 }
 
-function test_build_action_restoring_providers() {
+function test_add_module() {
   setup
-  do_test_build_action_restoring "--incremental-provider-test"
+
+  run_soong SOONG_INCREMENTAL_ANALYSIS=true
+
+  mkdir -p a
+  cat >> a/Android.bp <<EOF
+python_binary_host {
+  name: "my_little_binary_host",
+  srcs: ["my_little_binary_host.py"],
+}
+EOF
+  touch a/my_little_binary_host.py
+
+  compare_incremental_and_full_analysis
 }
 
-function compare_incremental_files() {
-  local dir_before=$1; shift
-  local dir_after=$1; shift
-  count=0
-  for file_before in ${dir_before}/*.mk; do
-    file_after="${dir_after}/$(basename "$file_before")"
-    assert_files_equal $file_before $file_after
-    ((count++)) || true
-  done
-  echo "Compared $count mk files"
+function test_remove_module() {
+  setup
 
-  count=0
-  for file_before in ${dir_before}/*.ninja; do
-    basename=$(basename "$file_before")
-    file_after="${dir_after}/${basename}"
-    # The after file should be a superset of the before one.
-    if [[ "$basename" == "build.aosp_arm.ninja" ]]; then
-      echo "Performing superset check for $basename..."
-      extra_lines=$(comm -23 <(sort "$file_before") <(sort "$file_after"))
-      if [[ -n "$extra_lines" ]]; then
-        # If there are extra lines, print an error and the differing lines, then exit.
-        echo "ERROR: $file_after is NOT a superset of $file_before."
-        echo "The following lines were in the 'before' file but not the 'after' file:"
-        echo "$extra_lines"
-        exit 1
-      fi
-    else
-      assert_files_equal $file_before $file_after
-    fi
-    ((count++)) || true
-  done
-  echo "Compared $count ninja files"
+  mkdir -p a
+  cat >> a/Android.bp <<EOF
+python_binary_host {
+  name: "my_little_binary_host",
+  srcs: ["my_little_binary_host.py"],
+}
+EOF
+  touch a/my_little_binary_host.py
+
+  run_soong SOONG_INCREMENTAL_ANALYSIS=true
+
+  echo > a/Android.bp
+
+  compare_incremental_and_full_analysis
 }
 
-function compare_files_parity() {
-  local dir_before=$1; shift
-  local dir_after=$1; shift
-  count=0
-  for file_before in ${dir_before}/*.*; do
-    file_after="${dir_after}/$(basename "$file_before")"
-    assert_files_equal $file_before $file_after
-    ((count++)) || true
-  done
-  echo "Compared $count ninja files"
+function test_add_dependency() {
+  setup
+
+  mkdir -p a
+  cat >> a/Android.bp <<EOF
+python_binary_host {
+  name: "my_little_binary_host",
+  srcs: ["my_little_binary_host.py"],
+  libs: [],
 }
 
-scan_and_run_tests
+python_library_host {
+  name: "my_little_library_host",
+  srcs: ["my_little_library_host.py"],
+}
+EOF
+  touch a/my_little_binary_host.py
+  touch a/my_little_library_host.py
+
+  run_soong SOONG_INCREMENTAL_ANALYSIS=true
+
+  sed -i -e 's/libs: \[\]/libs: \["my_little_library_host"\]/' a/Android.bp
+
+  compare_incremental_and_full_analysis
+}
+
+function test_remove_dependency() {
+  setup
+
+  mkdir -p a
+  cat >> a/Android.bp <<EOF
+python_binary_host {
+  name: "my_little_binary_host",
+  srcs: ["my_little_binary_host.py"],
+  libs: ["my_little_library_host"],
+}
+
+python_library_host {
+  name: "my_little_library_host",
+  srcs: ["my_little_library_host.py"],
+}
+EOF
+  touch a/my_little_binary_host.py
+  touch a/my_little_library_host.py
+
+  run_soong SOONG_INCREMENTAL_ANALYSIS=true
+
+  sed -i -e 's/libs: \["my_little_library_host"\]/libs: \[\]/' a/Android.bp
+
+  compare_incremental_and_full_analysis
+}
+
+function test_modify_dependency() {
+  setup
+
+  mkdir -p a
+  cat >> a/Android.bp <<EOF
+python_binary_host {
+  name: "my_little_binary_host",
+  srcs: ["my_little_binary_host.py"],
+  libs: ["my_little_library_host"],
+}
+
+python_library_host {
+  name: "my_little_library_host",
+  srcs: ["my_little_library_host.py"],
+}
+
+python_library_host {
+  name: "my_little_library_host2",
+  srcs: ["my_little_library_host2.py"],
+}
+EOF
+  touch a/my_little_binary_host.py
+  touch a/my_little_library_host.py
+  touch a/my_little_library_host2.py
+
+  run_soong SOONG_INCREMENTAL_ANALYSIS=true
+
+  sed -i -e 's/libs: \["my_little_library_host"\]/libs: \["my_little_library_host2"\]/' a/Android.bp
+
+  compare_incremental_and_full_analysis
+}
+
+function test_add_source() {
+  setup
+
+  mkdir -p a
+  cat >> a/Android.bp <<EOF
+python_binary_host {
+  name: "my_little_binary_host",
+  srcs: ["*.py"],
+}
+EOF
+  touch a/my_little_binary_host.py
+
+  run_soong SOONG_INCREMENTAL_ANALYSIS=true
+
+  touch a/my_little_binary_host2.py
+
+  compare_incremental_and_full_analysis
+}
+
+function test_remove_source() {
+  setup
+
+  mkdir -p a
+  cat >> a/Android.bp <<EOF
+python_binary_host {
+  name: "my_little_binary_host",
+  srcs: ["*.py"],
+}
+EOF
+  touch a/my_little_binary_host.py
+  touch a/my_little_binary_host2.py
+
+  run_soong SOONG_INCREMENTAL_ANALYSIS=true
+
+  rm a/my_little_binary_host2.py
+
+  compare_incremental_and_full_analysis
+}
+
+function test_replace_source() {
+  setup
+
+  mkdir -p a
+  cat >> a/Android.bp <<EOF
+python_binary_host {
+  name: "my_little_binary_host",
+  srcs: ["*.py"],
+}
+EOF
+  touch a/my_little_binary_host.py
+  touch a/my_little_binary_host2.py
+
+  run_soong SOONG_INCREMENTAL_ANALYSIS=true
+
+  rm a/my_little_binary_host2.py
+  touch a/my_little_binary_host3.py
+
+  compare_incremental_and_full_analysis
+}
+
+function test_error() {
+  setup
+
+  mkdir -p a
+  cat >> a/Android.bp <<EOF
+python_binary_host {
+  name: "my_little_binary_host",
+  srcs: ["*.py"],
+}
+EOF
+  touch a/my_little_binary_host.py
+
+  run_soong SOONG_INCREMENTAL_ANALYSIS=true
+
+  echo inserted_syntax_error >> a/Android.bp
+
+  run_soong SOONG_INCREMENTAL_ANALYSIS=true || true
+
+  sed -i -e'/inserted_syntax_error/d' a/Android.bp
+
+  compare_incremental_and_full_analysis
+}
+
+function test_set_environment_variable() {
+  setup
+
+  run_soong SOONG_INCREMENTAL_ANALYSIS=true
+
+  compare_incremental_and_full_analysis LLVM_PREBUILTS_VERSION=foo
+}
+
+function test_change_environment_variable() {
+  setup
+
+  run_soong LLVM_PREBUILTS_VERSION=foo
+
+  compare_incremental_and_full_analysis LLVM_PREBUILTS_VERSION=bar
+}
+
+scan_and_run_tests "$@"
