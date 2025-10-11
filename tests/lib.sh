@@ -35,6 +35,9 @@ function warmup_mock_top {
   if [[ "$BUILD_JAVA_LIBRARY" == "true" ]]; then
     create_mock_soong_for_java_lib
     run_soong_for_java_lib
+    # Precompile dependency-mapper into the warmed up archive to
+    # speed up the individual tests.
+    run_ninja dependency-mapper
   else
     create_mock_soong
     run_soong
@@ -146,6 +149,9 @@ function create_mock_soong_for_java_lib {
   symlink_directory external/kotlinc
   symlink_directory prebuilts/misc/common/asm/
   symlink_directory system/logging/liblog
+  symlink_directory system/cros-codecs
+  symlink_directory tools/lint_checks
+  symlink_directory external/abseil-cpp
 }
 
 function setup {
