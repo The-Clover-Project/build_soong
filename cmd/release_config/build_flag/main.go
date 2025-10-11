@@ -189,6 +189,12 @@ type GetFlags struct {
 
 	// Output flag as json object
 	json bool
+
+	// Show all distinct values in all releases
+	distinctValues bool
+
+	// Hide flag name
+	hideName bool
 }
 
 func GetCommandFactory() CommandFunc {
@@ -197,6 +203,8 @@ func GetCommandFactory() CommandFunc {
 	}
 	flags.flagSet.BoolVar(&flags.all, "all", false, "Display all flags")
 	flags.flagSet.BoolVar(&flags.json, "json", false, "Output flag as json object")
+	flags.flagSet.BoolVar(&flags.hideName, "hide-name", false, "Hide build flag names. (True when only one flag name is given)")
+	flags.flagSet.BoolVar(&flags.distinctValues, "distinct-values", false, "Show all distinct values in all releases")
 	return func(configs *rc_lib.ReleaseConfigs, globalFlags GlobalFlags, args ...string) error {
 		return GetCommand(configs, globalFlags, flags, args...)
 	}
@@ -248,7 +256,7 @@ func GetCommand(configs *rc_lib.ReleaseConfigs, globalFlags GlobalFlags, getFlag
 	isTrace := cmd == "trace"
 	isSet := cmd == "set"
 
-	if isSet {
+	if isSet || getFlags.distinctValues {
 		globalFlags.allReleases = true
 	}
 	releaseConfigList, err := GetReleaseArgs(configs, globalFlags)
@@ -276,8 +284,8 @@ func GetCommand(configs *rc_lib.ReleaseConfigs, globalFlags GlobalFlags, getFlag
 	var maxVariableNameLen, maxReleaseNameLen int
 	var releaseNameFormat, variableNameFormat string
 	valueFormat := "%s"
-	showReleaseName := len(releaseConfigList) > 1
-	showVariableName := len(args) > 1 || getFlags.json
+	showReleaseName := len(releaseConfigList) > 1 && !getFlags.distinctValues
+	showVariableName := (len(args) > 1 && !getFlags.hideName) || getFlags.json
 	if getFlags.json {
 		variableNameFormat = `"%s": `
 		valueFormat = `"%s"`
@@ -287,6 +295,10 @@ func GetCommand(configs *rc_lib.ReleaseConfigs, globalFlags GlobalFlags, getFlag
 		}
 		variableNameFormat = fmt.Sprintf("%%-%ds ", maxVariableNameLen)
 		valueFormat = "'%s'"
+		if getFlags.distinctValues {
+			variableNameFormat = "%s:"
+			valueFormat = "%s"
+		}
 	}
 	if showReleaseName {
 		for _, config := range releaseConfigList {
@@ -323,6 +335,24 @@ func GetCommand(configs *rc_lib.ReleaseConfigs, globalFlags GlobalFlags, getFlag
 		}
 	}
 	args = newArgs
+
+	if getFlags.distinctValues {
+		values := map[string]bool{}
+		for _, arg := range args {
+			for _, config := range releaseConfigList {
+				val, err := MarshalFlagValue(config, arg)
+				if err == nil && val != "" {
+					values[val] = true
+				}
+			}
+			sortedValues := rc_lib.SortedKeys(values)
+			numValues := len(sortedValues)
+			for idx, val := range sortedValues {
+				outputOneLine(arg, "various", val, valueFormat, idx == numValues-1)
+			}
+		}
+		return nil
+	}
 
 	numArgs := len(args)
 	for argIdx, arg := range args {
