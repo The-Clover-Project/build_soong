@@ -479,10 +479,7 @@ def append_additional_vendor_props(args):
   config["ADDITIONAL_VENDOR_PROPERTIES"] = props
 
   # Add the 16K developer args if it is defined for the product.
-  if "PRODUCT_VENDOR_PROPERTIES" not in config:
-    config["PRODUCT_VENDOR_PROPERTIES"] = []
-
-  config["PRODUCT_VENDOR_PROPERTIES"].append(f"ro.product.build.16k_page.enabled={'true' if config['Product16KDeveloperOption'] else 'false'}")
+  config["ADDITIONAL_VENDOR_PROPERTIES"].append(f"ro.product.build.16k_page.enabled={'true' if config['Product16KDeveloperOption'] else 'false'}")
 
 def append_additional_product_props(args):
   props = []
