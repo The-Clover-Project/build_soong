@@ -214,6 +214,9 @@ func main() {
 	defer func() {
 		emet.Finish(build.ExecutionMetricsFinishAdaptor{buildCtx})
 		stat.Finish()
+		for _, str := range buildCtx.FinalStdout {
+			fmt.Fprint(c.stdio().Stdout(), str)
+		}
 		criticalPath.WriteToMetrics(met)
 		met.Dump(soongMetricsFile)
 		emet.Dump(executionMetricsFile, args)
