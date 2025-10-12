@@ -236,7 +236,7 @@ async def run_analyze(args: argparse.Namespace) -> None:
 
     print(f"\nTotal targets written across all shards: {total_targets_written}")
 
-def run_convert(args: argparse.Namespace) -> None:
+async def run_convert(args: argparse.Namespace) -> None:
     """Converts protobuf file(s) to textproto."""
     # Process each input protobuf file.
     for input_path in args.input_proto:
@@ -261,7 +261,7 @@ def run_convert(args: argparse.Namespace) -> None:
 
         print(f"Successfully converted {input_path} to {output_textproto_path}")
 
-def main() -> None:
+async def main() -> None:
     # Set up argument parser.
     parser = argparse.ArgumentParser(description="Analyze ninjago logs for hidden dependencies.")
     subparsers = parser.add_subparsers(dest='command', required=True)
@@ -280,10 +280,7 @@ def main() -> None:
     parser_convert.set_defaults(func=run_convert)
 
     args = parser.parse_args()
-    if asyncio.iscoroutinefunction(args.func):
-        asyncio.run(args.func(args))
-    else:
-        args.func(args)
+    await args.func(args)
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main())
