@@ -918,13 +918,11 @@ func (j *Module) incrementalKotlin(config android.Config) bool {
 }
 
 func (j *Module) deps(ctx android.BottomUpMutatorContext) {
-	j.setOptimizeForceDisabled(proptools.Bool(j.properties.Is_stubs_module))
 	if ctx.Device() {
 		j.linter.deps(ctx)
 
 		compileDex := proptools.Bool(j.properties.Installable) || proptools.Bool(j.dexProperties.Compile_dex)
-		addR8DexDeps := compileDex && !j.dexer.isOptimizeForceDisabled(ctx)
-		sdkDeps(ctx, android.SdkContext(j), addR8DexDeps)
+		sdkDeps(ctx, android.SdkContext(j), compileDex)
 
 		if j.deviceProperties.SyspropPublicStub != "" {
 			// This is a sysprop implementation library that has a corresponding sysprop public
