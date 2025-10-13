@@ -728,18 +728,18 @@ type jniLib struct {
 	installPaths   android.InstallPaths
 }
 
-func sdkDeps(ctx android.BottomUpMutatorContext, sdkContext android.SdkContext, addR8DexDeps bool) {
+func sdkDeps(ctx android.BottomUpMutatorContext, sdkContext android.SdkContext, d dexer) {
 	sdkDep := decodeSdkDep(ctx, sdkContext)
 	if sdkDep.useModule {
 		ctx.AddVariationDependencies(nil, bootClasspathTag, sdkDep.bootclasspath...)
 		ctx.AddVariationDependencies(nil, java9LibTag, sdkDep.java9Classpath...)
 		ctx.AddVariationDependencies(nil, sdkLibTag, sdkDep.classpath...)
-		if addR8DexDeps && sdkDep.hasStandardLibs() {
+		if d.effectiveOptimizeEnabled(ctx) && sdkDep.hasStandardLibs() {
 			ctx.AddVariationDependencies(nil, proguardRaiseTag,
 				config.LegacyCorePlatformBootclasspathLibraries...,
 			)
 		}
-		if addR8DexDeps && sdkDep.hasFrameworkLibs() {
+		if d.effectiveOptimizeEnabled(ctx) && sdkDep.hasFrameworkLibs() {
 			ctx.AddVariationDependencies(nil, proguardRaiseTag, config.FrameworkLibraries...)
 		}
 	}
@@ -3172,11 +3172,8 @@ func (j *Import) DepsMutator(ctx android.BottomUpMutatorContext) {
 	ctx.AddVariationDependencies(nil, libTag, j.properties.Libs.GetOrDefault(ctx, nil)...)
 	ctx.AddVariationDependencies(nil, staticLibTag, j.properties.Static_libs.GetOrDefault(ctx, nil)...)
 
-	j.setOptimizeForceDisabled(proptools.Bool(j.properties.Is_stubs_module))
-
 	if ctx.Device() && Bool(j.dexProperties.Compile_dex) {
-		addR8DexDeps := !j.isOptimizeForceDisabled(ctx)
-		sdkDeps(ctx, android.SdkContext(j), addR8DexDeps)
+		sdkDeps(ctx, android.SdkContext(j), j.dexer)
 	}
 
 	j.EmbeddableSdkLibraryComponent.setComponentDependencyInfoProvider(ctx)
