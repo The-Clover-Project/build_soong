@@ -248,18 +248,18 @@ fi
 
 # shellcheck disable=SC2120
 function run_soong {
-  USE_RBE=false TARGET_PRODUCT=test_arm64 TARGET_RELEASE=trunk_staging TARGET_BUILD_VARIANT=eng build/soong/soong_ui.bash --make-mode --skip-ninja --skip-config --soong-only --skip-soong-tests "$@"
+  OUT_DIR=out USE_RBE=false TARGET_PRODUCT=test_arm64 TARGET_RELEASE=trunk_staging TARGET_BUILD_VARIANT=eng build/soong/soong_ui.bash --make-mode --skip-ninja --skip-config --soong-only --skip-soong-tests "$@"
 }
 
 # shellcheck disable=SC2120
 function run_soong_for_java_lib {
   write_soong_vars soong.test_arm64.variables
   write_soong_vars soong.variables
-  USE_RBE=false TARGET_PRODUCT=test_arm64 TARGET_RELEASE=trunk_staging TARGET_BUILD_VARIANT=eng build/soong/soong_ui.bash --make-mode --skip-ninja --skip-config --soong-only --skip-soong-tests "$@"
+  OUT_DIR=out USE_RBE=false TARGET_PRODUCT=test_arm64 TARGET_RELEASE=trunk_staging TARGET_BUILD_VARIANT=eng build/soong/soong_ui.bash --make-mode --skip-ninja --skip-config --soong-only --skip-soong-tests "$@"
 }
 
 function run_ninja {
-  USE_RBE=false TARGET_PRODUCT=test_arm64 TARGET_RELEASE=trunk_staging TARGET_BUILD_VARIANT=eng build/soong/soong_ui.bash --make-mode --skip-config --soong-only --skip-soong-tests "$@"
+  OUT_DIR=out USE_RBE=false TARGET_PRODUCT=test_arm64 TARGET_RELEASE=trunk_staging TARGET_BUILD_VARIANT=eng build/soong/soong_ui.bash --make-mode --skip-config --soong-only --skip-soong-tests "$@"
 }
 
 info "Starting Soong integration test suite $(basename "$0")"
