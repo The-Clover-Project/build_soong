@@ -1444,6 +1444,15 @@ func (c *configImpl) CoverageSuffix() string {
 }
 
 func (c *configImpl) TargetDevice() string {
+	if c.targetDevice == "" && c.skipConfig {
+		// Integration tests using build/soong/tests/lib.sh run with --skip-config,
+		// don't call runMakeProductConfig, and can't query the product config to
+		// determine the device name.  Assume it's the same as the product name
+		// instead.
+		if v, ok := c.environ.Get("TARGET_PRODUCT"); ok {
+			return v
+		}
+	}
 	return c.targetDevice
 }
 

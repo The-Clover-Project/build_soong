@@ -183,8 +183,8 @@ function write_soong_vars {
     "Platform_version_all_preview_codenames": [
         "S"
     ],
-    "DeviceName": "generic_arm64",
-    "DeviceProduct": "aosp_arm-eng",
+    "DeviceName": "test_arm64",
+    "DeviceProduct": "test_arm64",
     "DeviceArch": "arm64",
     "DeviceArchVariant": "armv8-a",
     "DeviceCpuVariant": "generic",
@@ -242,18 +242,18 @@ fi
 
 # shellcheck disable=SC2120
 function run_soong {
-  USE_RBE=false TARGET_PRODUCT=aosp_arm TARGET_RELEASE=trunk_staging TARGET_BUILD_VARIANT=eng build/soong/soong_ui.bash --make-mode --skip-ninja --skip-config --soong-only --skip-soong-tests "$@"
+  USE_RBE=false TARGET_PRODUCT=test_arm64 TARGET_RELEASE=trunk_staging TARGET_BUILD_VARIANT=eng build/soong/soong_ui.bash --make-mode --skip-ninja --skip-config --soong-only --skip-soong-tests "$@"
 }
 
 # shellcheck disable=SC2120
 function run_soong_for_java_lib {
-  write_soong_vars soong.aosp_arm.variables
+  write_soong_vars soong.test_arm64.variables
   write_soong_vars soong.variables
-  USE_RBE=false TARGET_PRODUCT=aosp_arm TARGET_RELEASE=trunk_staging TARGET_BUILD_VARIANT=eng build/soong/soong_ui.bash --make-mode --skip-ninja --skip-config --soong-only --skip-soong-tests "$@"
+  USE_RBE=false TARGET_PRODUCT=test_arm64 TARGET_RELEASE=trunk_staging TARGET_BUILD_VARIANT=eng build/soong/soong_ui.bash --make-mode --skip-ninja --skip-config --soong-only --skip-soong-tests "$@"
 }
 
 function run_ninja {
-  USE_RBE=false TARGET_PRODUCT=aosp_arm TARGET_RELEASE=trunk_staging TARGET_BUILD_VARIANT=eng build/soong/soong_ui.bash --make-mode --skip-config --soong-only --skip-soong-tests "$@"
+  USE_RBE=false TARGET_PRODUCT=test_arm64 TARGET_RELEASE=trunk_staging TARGET_BUILD_VARIANT=eng build/soong/soong_ui.bash --make-mode --skip-config --soong-only --skip-soong-tests "$@"
 }
 
 info "Starting Soong integration test suite $(basename "$0")"
@@ -318,7 +318,7 @@ function compare_incremental_files() {
     basename=$(basename "$file_before")
     file_after="${dir_after}/${basename}"
     # The after file should be a superset of the before one.
-    if [[ "$basename" == "build.aosp_arm.ninja" ]]; then
+    if [[ "$basename" == "build.test_arm64.ninja" ]]; then
       echo "Performing superset check for $basename..."
       extra_lines=$(comm -23 <(sort "$file_before") <(sort "$file_after"))
       if [[ -n "$extra_lines" ]]; then
@@ -353,12 +353,12 @@ function compare_files_parity() {
 function compare_incremental_and_full_analysis() {
     run_soong SOONG_INCREMENTAL_ANALYSIS=true "$@"
     mkdir before
-    cp -pr out/soong/*.mk out/soong/build.aosp_arm*.ninja before
+    cp -pr out/soong/*.mk out/soong/build.test_arm64*.ninja before
 
     touch Android.bp
     run_soong "$@"
     mkdir after
-    cp -pr out/soong/*.mk out/soong/build.aosp_arm*.ninja after
+    cp -pr out/soong/*.mk out/soong/build.test_arm64*.ninja after
 
     compare_incremental_files before after
 }
