@@ -124,12 +124,12 @@ func ensureSymlink(ctx Context, dir, name, target string) {
 		ctx.Fatalf("Could not ensure that directory %q exists: %w", dir, err)
 	}
 
-	relTarget := target
+	absTarget := target
 	if !filepath.IsAbs(target) {
 		var err error
-		relTarget, err = filepath.Rel(dir, target)
+		absTarget, err = filepath.Abs(target)
 		if err != nil {
-			ctx.Fatalf("Could not create relative path for %s in %s: %w", dir, target, err)
+			ctx.Fatalf("Could not create absolute path for %s in %s: %w", dir, target, err)
 		}
 	}
 
@@ -137,7 +137,7 @@ func ensureSymlink(ctx Context, dir, name, target string) {
 	linkPath := filepath.Join(dir, name)
 	currentTarget, err := os.Readlink(linkPath)
 	if err == nil {
-		if relTarget == currentTarget {
+		if absTarget == currentTarget {
 			return
 		}
 		if err := os.Remove(linkPath); err != nil {
@@ -150,8 +150,8 @@ func ensureSymlink(ctx Context, dir, name, target string) {
 	}
 
 	// Create the new one.
-	if err := os.Symlink(relTarget, linkPath); err != nil {
-		ctx.Fatalf("Failed to create symlink %q => %q: %w", linkPath, relTarget, err)
+	if err := os.Symlink(absTarget, linkPath); err != nil {
+		ctx.Fatalf("Failed to create symlink %q => %q: %w", linkPath, absTarget, err)
 	}
 }
 
