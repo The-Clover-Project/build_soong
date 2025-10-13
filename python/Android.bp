@@ -8,6 +8,7 @@ bootstrap_go_package {
     deps: [
         "blueprint",
         "blueprint-depset",
+        "blueprint-gobtools",
         "blueprint-proptools",
         "soong-android",
         "soong-tradefed",
@@ -20,6 +21,7 @@ bootstrap_go_package {
         "library.go",
         "proto.go",
         "python.go",
+        "python_enc.go",
         "test.go",
         "testing.go",
     ],

@@ -30,6 +30,8 @@ import (
 	"android/soong/phony"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 var (
 	pctx = android.NewPackageContext("android/soong/test_suites")
 
@@ -482,6 +484,7 @@ func gatherCommonHostSharedLibsForSymlinks(ctx android.SingletonContext, suite s
 	return moduleNameToCommonHostSharedLibs
 }
 
+// @auto-generate: gob
 type testSuiteConfig struct {
 	name                                         string
 	buildHostSharedLibsZip                       bool
@@ -1104,6 +1107,7 @@ type compatibilityTestSuitePackage struct {
 	properties compatibilityTestSuitePackageProperties
 }
 
+// @auto-generate: gob
 type compatibilitySuitePackageInfo struct {
 	Name              string
 	Readme            android.Path

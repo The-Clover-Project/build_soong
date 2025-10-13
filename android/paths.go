@@ -594,6 +594,7 @@ type DirectoryPath interface {
 
 var _ DirectoryPath = (*directoryPath)(nil)
 
+// @auto-generate: gob
 type DirectoryPaths []DirectoryPath
 
 func (paths DirectoryPaths) Strings() []string {

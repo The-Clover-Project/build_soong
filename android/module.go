@@ -228,6 +228,7 @@ type Dist struct {
 }
 
 // NamedPath associates a path with a name. e.g. a license text path with a package name
+// @auto-generate: gob
 type NamedPath struct {
 	Path Path
 	Name string
@@ -242,6 +243,7 @@ func (p NamedPath) String() string {
 }
 
 // NamedPaths describes a list of paths each associated with a name.
+// @auto-generate: gob
 type NamedPaths []NamedPath
 
 // Strings returns a list of escaped strings representing each `NamedPath` in the list.

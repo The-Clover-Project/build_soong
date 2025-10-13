@@ -32,6 +32,8 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 type PartitionNameProperties struct {
 	// Name of the super partition filesystem module
 	Super_partition_name *string
@@ -1765,6 +1767,7 @@ func (a *androidDevice) buildWithLicenseZip(ctx android.ModuleContext) {
 	withLicenseBuilder.Build("with_license", "build with-license")
 }
 
+// @auto-generate: gob
 type ApexKeyPathInfo struct {
 	ApexKeyPath android.Path
 }

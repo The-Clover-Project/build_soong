@@ -28,6 +28,8 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 func init() {
 	registerBpfBuildComponents(android.InitRegistrationContext)
 	pctx.Import("android/soong/cc/config")
@@ -59,6 +61,7 @@ func registerBpfBuildComponents(ctx android.RegistrationContext) {
 	ctx.RegisterModuleType("bpf", BpfFactory)
 }
 
+// @auto-generate: gob
 type BpfInfo struct {
 	SubDir string
 }

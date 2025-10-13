@@ -24,6 +24,8 @@ import (
 	"github.com/google/blueprint"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 // Enforces visibility rules between modules.
 //
 // Multi stage process:
@@ -231,6 +233,7 @@ type PartitionTypeInterface interface {
 	PartitionType() string
 }
 
+// @auto-generate: gob
 type PartitionTypeInfo struct {
 	// Identifies which partition this is for //visibility:any_system_image (and others) visibility
 	// checks, and will be used in the future for API surface checks.

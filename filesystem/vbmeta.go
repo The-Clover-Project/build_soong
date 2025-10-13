@@ -28,6 +28,8 @@ import (
 	"android/soong/android"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 func init() {
 	android.RegisterModuleType("vbmeta", VbmetaFactory)
 	pctx.HostBinToolVariable("avbtool", "avbtool")
@@ -123,6 +125,7 @@ type ChainedPartitionProperties struct {
 	Private_key *string `android:"path"`
 }
 
+// @auto-generate: gob
 type vbmetaPartitionInfo struct {
 	// Name of the partition
 	Name string
@@ -148,6 +151,7 @@ type vbmetaPartitionInfo struct {
 	AbOtaBootloaderPartition bool
 }
 
+// @auto-generate: gob
 type vbmetaPartitionInfos []vbmetaPartitionInfo
 
 var vbmetaPartitionProvider = blueprint.NewProvider[vbmetaPartitionInfo]()

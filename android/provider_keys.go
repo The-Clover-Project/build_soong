@@ -16,7 +16,10 @@ package android
 
 import "github.com/google/blueprint"
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 // Providers of package filesystem
+// @auto-generate: gob
 type AndroidDeviceInfo struct {
 	Main_device bool
 }
@@ -24,6 +27,7 @@ type AndroidDeviceInfo struct {
 var AndroidDeviceInfoProvider = blueprint.NewProvider[AndroidDeviceInfo]()
 
 // Providers of prebuilt_kernel_modules
+// @auto-generate: gob
 type PrebuiltKernelModulesComplianceMetadata struct {
 	Srcs  []string
 	Dests []string

@@ -8,6 +8,7 @@ bootstrap_go_package {
     deps: [
         "blueprint",
         "blueprint-depset",
+        "blueprint-gobtools",
         "blueprint-proptools",
         "soong",
         "soong-android",
@@ -33,6 +34,7 @@ bootstrap_go_package {
         "check_partition_sizes.go",
         "dtboimg.go",
         "filesystem.go",
+        "filesystem_enc.go",
         "find_shareduid_violation_check.go",
         "fontchain_lint.go",
         "fsverity_metadata.go",

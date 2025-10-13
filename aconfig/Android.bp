@@ -7,6 +7,7 @@ bootstrap_go_package {
     pkgPath: "android/soong/aconfig",
     deps: [
         "blueprint",
+        "blueprint-gobtools",
         "blueprint-pathtools",
         "blueprint-proptools",
         "sbox_proto",
@@ -15,6 +16,7 @@ bootstrap_go_package {
     ],
     srcs: [
         "aconfig_declarations.go",
+        "aconfig_enc.go",
         "aconfig_values.go",
         "aconfig_value_set.go",
         "all_aconfig_declarations.go",

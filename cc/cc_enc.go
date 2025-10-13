@@ -2850,6 +2850,42 @@ func (r RustRlibDep) GetTypeId() int16 {
 
 // end of cc.go
 
+// begin of fdo_profile.go
+func init() {
+	FdoProfileInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(FdoProfileInfo) })
+}
+
+func (r FdoProfileInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = gobtools.EncodeInterface(ctx, buf, r.Path); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r *FdoProfileInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	if val2, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+		return err
+	} else if val2 == nil {
+		r.Path = nil
+	} else {
+		r.Path = val2.(android.Path)
+	}
+
+	return err
+}
+
+var FdoProfileInfoGobRegId int16
+
+func (r FdoProfileInfo) GetTypeId() int16 {
+	return FdoProfileInfoGobRegId
+}
+
+// end of fdo_profile.go
+
 // begin of image_sdk_traits.go
 func init() {
 	imageSdkTraitStructGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(imageSdkTraitStruct) })
@@ -3479,6 +3515,117 @@ func (r nativeBridgeSdkTraitStruct) GetTypeId() int16 {
 }
 
 // end of native_bridge_sdk_trait.go
+
+// begin of ndk_headers.go
+func init() {
+	NdkHeaderInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(NdkHeaderInfo) })
+}
+
+func (r NdkHeaderInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if r.SrcPaths == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r.SrcPaths)); err != nil {
+			return err
+		}
+		for val1 := 0; val1 < len(r.SrcPaths); val1++ {
+			if err = gobtools.EncodeInterface(ctx, buf, r.SrcPaths[val1]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if r.InstallPaths == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r.InstallPaths)); err != nil {
+			return err
+		}
+		for val2 := 0; val2 < len(r.InstallPaths); val2++ {
+			if err = gobtools.EncodeInterface(ctx, buf, r.InstallPaths[val2]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if err = gobtools.EncodeInterface(ctx, buf, r.LicensePath); err != nil {
+		return err
+	}
+
+	if err = gobtools.EncodeBool(buf, r.SkipVerification); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r *NdkHeaderInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	var val3 int
+	err = gobtools.DecodeInt(buf, &val3)
+	if err != nil {
+		return err
+	}
+	if val3 != -1 {
+		r.SrcPaths = make([]android.Path, val3)
+		for val4 := 0; val4 < int(val3); val4++ {
+			if val6, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+				return err
+			} else if val6 == nil {
+				r.SrcPaths[val4] = nil
+			} else {
+				r.SrcPaths[val4] = val6.(android.Path)
+			}
+		}
+	}
+
+	var val9 int
+	err = gobtools.DecodeInt(buf, &val9)
+	if err != nil {
+		return err
+	}
+	if val9 != -1 {
+		r.InstallPaths = make([]android.Path, val9)
+		for val10 := 0; val10 < int(val9); val10++ {
+			if val12, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+				return err
+			} else if val12 == nil {
+				r.InstallPaths[val10] = nil
+			} else {
+				r.InstallPaths[val10] = val12.(android.Path)
+			}
+		}
+	}
+
+	if val14, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+		return err
+	} else if val14 == nil {
+		r.LicensePath = nil
+	} else {
+		r.LicensePath = val14.(android.Path)
+	}
+
+	err = gobtools.DecodeBool(buf, &r.SkipVerification)
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
+var NdkHeaderInfoGobRegId int16
+
+func (r NdkHeaderInfo) GetTypeId() int16 {
+	return NdkHeaderInfoGobRegId
+}
+
+// end of ndk_headers.go
 
 // begin of sabi.go
 func init() {

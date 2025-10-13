@@ -21,6 +21,8 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 func init() {
 	RegisterFdoProfileBuildComponents(android.InitRegistrationContext)
 }
@@ -40,6 +42,7 @@ type fdoProfileProperties struct {
 }
 
 // FdoProfileInfo is provided by FdoProfileProvider
+// @auto-generate: gob
 type FdoProfileInfo struct {
 	Path android.Path
 }

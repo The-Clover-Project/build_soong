@@ -450,6 +450,66 @@ func (r aconfigPropagatingDeclarationsInfo) GetTypeId() int16 {
 
 // end of aconfig_providers.go
 
+// begin of android_info.go
+func init() {
+	AndroidInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(AndroidInfo) })
+}
+
+func (r AndroidInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = gobtools.EncodeInterface(ctx, buf, r.AndroidInfoProp); err != nil {
+		return err
+	}
+
+	if err = gobtools.EncodeInterface(ctx, buf, r.AndroidInfoTxt); err != nil {
+		return err
+	}
+
+	if err = gobtools.EncodeInterface(ctx, buf, r.BoardInfoTxt); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r *AndroidInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	if val2, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+		return err
+	} else if val2 == nil {
+		r.AndroidInfoProp = nil
+	} else {
+		r.AndroidInfoProp = val2.(Path)
+	}
+
+	if val4, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+		return err
+	} else if val4 == nil {
+		r.AndroidInfoTxt = nil
+	} else {
+		r.AndroidInfoTxt = val4.(Path)
+	}
+
+	if val6, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+		return err
+	} else if val6 == nil {
+		r.BoardInfoTxt = nil
+	} else {
+		r.BoardInfoTxt = val6.(Path)
+	}
+
+	return err
+}
+
+var AndroidInfoGobRegId int16
+
+func (r AndroidInfo) GetTypeId() int16 {
+	return AndroidInfoGobRegId
+}
+
+// end of android_info.go
+
 // begin of androidmk.go
 func init() {
 	AndroidMkDataInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(AndroidMkDataInfo) })
@@ -886,6 +946,7 @@ func init() {
 	ApexBundleDepsInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ApexBundleDepsInfo) })
 	ApexBundleDepsDataGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ApexBundleDepsData) })
 	ApexBundleTypeInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ApexBundleTypeInfo) })
+	ApexExportsInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ApexExportsInfo) })
 	PrebuiltJsonInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(PrebuiltJsonInfo) })
 }
 
@@ -1086,6 +1147,87 @@ var ApexBundleTypeInfoGobRegId int16
 
 func (r ApexBundleTypeInfo) GetTypeId() int16 {
 	return ApexBundleTypeInfoGobRegId
+}
+
+func (r ApexExportsInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = gobtools.EncodeString(buf, r.ApexName); err != nil {
+		return err
+	}
+
+	if err = gobtools.EncodeInterface(ctx, buf, r.ProfilePathOnHost); err != nil {
+		return err
+	}
+
+	if r.LibraryNameToDexJarPathOnHost == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r.LibraryNameToDexJarPathOnHost)); err != nil {
+			return err
+		}
+		for val1, val2 := range r.LibraryNameToDexJarPathOnHost {
+			if err = gobtools.EncodeString(buf, val1); err != nil {
+				return err
+			}
+			if err = gobtools.EncodeInterface(ctx, buf, val2); err != nil {
+				return err
+			}
+		}
+	}
+	return err
+}
+
+func (r *ApexExportsInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	err = gobtools.DecodeString(buf, &r.ApexName)
+	if err != nil {
+		return err
+	}
+
+	if val3, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+		return err
+	} else if val3 == nil {
+		r.ProfilePathOnHost = nil
+	} else {
+		r.ProfilePathOnHost = val3.(Path)
+	}
+
+	var val4 int
+	err = gobtools.DecodeInt(buf, &val4)
+	if err != nil {
+		return err
+	}
+	if val4 != -1 {
+		r.LibraryNameToDexJarPathOnHost = make(map[string]Path, val4)
+		for val5 := 0; val5 < int(val4); val5++ {
+			var val6 string
+			var val7 Path
+			err = gobtools.DecodeString(buf, &val6)
+			if err != nil {
+				return err
+			}
+			if val10, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+				return err
+			} else if val10 == nil {
+				val7 = nil
+			} else {
+				val7 = val10.(Path)
+			}
+			r.LibraryNameToDexJarPathOnHost[val6] = val7
+		}
+	}
+
+	return err
+}
+
+var ApexExportsInfoGobRegId int16
+
+func (r ApexExportsInfo) GetTypeId() int16 {
+	return ApexExportsInfoGobRegId
 }
 
 func (r PrebuiltJsonInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
@@ -2056,6 +2198,449 @@ func (r ContainersInfo) GetTypeId() int16 {
 
 // end of container.go
 
+// begin of deapexer.go
+func init() {
+	RequiredFilesFromPrebuiltApexInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(RequiredFilesFromPrebuiltApexInfo) })
+}
+
+func (r RequiredFilesFromPrebuiltApexInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if r.RequiredFilesFromPrebuiltApex == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r.RequiredFilesFromPrebuiltApex)); err != nil {
+			return err
+		}
+		for val1 := 0; val1 < len(r.RequiredFilesFromPrebuiltApex); val1++ {
+			if err = gobtools.EncodeString(buf, r.RequiredFilesFromPrebuiltApex[val1]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if err = gobtools.EncodeBool(buf, r.UseProfileGuidedDexpreopt); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r *RequiredFilesFromPrebuiltApexInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	var val2 int
+	err = gobtools.DecodeInt(buf, &val2)
+	if err != nil {
+		return err
+	}
+	if val2 != -1 {
+		r.RequiredFilesFromPrebuiltApex = make([]string, val2)
+		for val3 := 0; val3 < int(val2); val3++ {
+			err = gobtools.DecodeString(buf, &r.RequiredFilesFromPrebuiltApex[val3])
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	err = gobtools.DecodeBool(buf, &r.UseProfileGuidedDexpreopt)
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
+var RequiredFilesFromPrebuiltApexInfoGobRegId int16
+
+func (r RequiredFilesFromPrebuiltApexInfo) GetTypeId() int16 {
+	return RequiredFilesFromPrebuiltApexInfoGobRegId
+}
+
+// end of deapexer.go
+
+// begin of dirgroup.go
+func init() {
+	DirInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(DirInfo) })
+}
+
+func (r DirInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if r.Dirs == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r.Dirs)); err != nil {
+			return err
+		}
+		for val1 := 0; val1 < len(r.Dirs); val1++ {
+			if err = gobtools.EncodeInterface(ctx, buf, r.Dirs[val1]); err != nil {
+				return err
+			}
+		}
+	}
+	return err
+}
+
+func (r *DirInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	var val3 int
+	err = gobtools.DecodeInt(buf, &val3)
+	if err != nil {
+		return err
+	}
+	if val3 != -1 {
+		r.Dirs = make([]DirectoryPath, val3)
+		for val4 := 0; val4 < int(val3); val4++ {
+			if val6, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+				return err
+			} else if val6 == nil {
+				r.Dirs[val4] = nil
+			} else {
+				r.Dirs[val4] = val6.(DirectoryPath)
+			}
+		}
+	}
+
+	return err
+}
+
+var DirInfoGobRegId int16
+
+func (r DirInfo) GetTypeId() int16 {
+	return DirInfoGobRegId
+}
+
+// end of dirgroup.go
+
+// begin of gen_notice.go
+func init() {
+	GenNoticeInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(GenNoticeInfo) })
+}
+
+func (r GenNoticeInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if r.For == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r.For)); err != nil {
+			return err
+		}
+		for val1 := 0; val1 < len(r.For); val1++ {
+			if err = gobtools.EncodeString(buf, r.For[val1]); err != nil {
+				return err
+			}
+		}
+	}
+
+	val2 := r.ArtifactName == nil
+	if err = gobtools.EncodeBool(buf, val2); err != nil {
+		return err
+	}
+	if !val2 {
+		if err = gobtools.EncodeString(buf, (*r.ArtifactName)); err != nil {
+			return err
+		}
+	}
+
+	if err = gobtools.EncodeBool(buf, r.Html); err != nil {
+		return err
+	}
+
+	if err = gobtools.EncodeBool(buf, r.Xml); err != nil {
+		return err
+	}
+
+	if err = r.Output.Encode(ctx, buf); err != nil {
+		return err
+	}
+
+	if r.Missing == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r.Missing)); err != nil {
+			return err
+		}
+		for val3 := 0; val3 < len(r.Missing); val3++ {
+			if err = gobtools.EncodeString(buf, r.Missing[val3]); err != nil {
+				return err
+			}
+		}
+	}
+	return err
+}
+
+func (r *GenNoticeInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	var val2 int
+	err = gobtools.DecodeInt(buf, &val2)
+	if err != nil {
+		return err
+	}
+	if val2 != -1 {
+		r.For = make([]string, val2)
+		for val3 := 0; val3 < int(val2); val3++ {
+			err = gobtools.DecodeString(buf, &r.For[val3])
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	var val6 bool
+	if err = gobtools.DecodeBool(buf, &val6); err != nil {
+		return err
+	}
+	if !val6 {
+		var val5 string
+		err = gobtools.DecodeString(buf, &val5)
+		if err != nil {
+			return err
+		}
+		r.ArtifactName = &val5
+	}
+
+	err = gobtools.DecodeBool(buf, &r.Html)
+	if err != nil {
+		return err
+	}
+
+	err = gobtools.DecodeBool(buf, &r.Xml)
+	if err != nil {
+		return err
+	}
+
+	if err = r.Output.Decode(ctx, buf); err != nil {
+		return err
+	}
+
+	var val12 int
+	err = gobtools.DecodeInt(buf, &val12)
+	if err != nil {
+		return err
+	}
+	if val12 != -1 {
+		r.Missing = make([]string, val12)
+		for val13 := 0; val13 < int(val12); val13++ {
+			err = gobtools.DecodeString(buf, &r.Missing[val13])
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return err
+}
+
+var GenNoticeInfoGobRegId int16
+
+func (r GenNoticeInfo) GetTypeId() int16 {
+	return GenNoticeInfoGobRegId
+}
+
+// end of gen_notice.go
+
+// begin of license.go
+func init() {
+	LicenseInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(LicenseInfo) })
+}
+
+func (r LicenseInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	val1 := r.PackageName == nil
+	if err = gobtools.EncodeBool(buf, val1); err != nil {
+		return err
+	}
+	if !val1 {
+		if err = gobtools.EncodeString(buf, (*r.PackageName)); err != nil {
+			return err
+		}
+	}
+
+	if r.EffectiveLicenseText == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r.EffectiveLicenseText)); err != nil {
+			return err
+		}
+		for val2 := 0; val2 < len(r.EffectiveLicenseText); val2++ {
+			if err = r.EffectiveLicenseText[val2].Encode(ctx, buf); err != nil {
+				return err
+			}
+		}
+	}
+
+	if r.EffectiveLicenseKinds == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r.EffectiveLicenseKinds)); err != nil {
+			return err
+		}
+		for val3 := 0; val3 < len(r.EffectiveLicenseKinds); val3++ {
+			if err = gobtools.EncodeString(buf, r.EffectiveLicenseKinds[val3]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if r.EffectiveLicenseConditions == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r.EffectiveLicenseConditions)); err != nil {
+			return err
+		}
+		for val4 := 0; val4 < len(r.EffectiveLicenseConditions); val4++ {
+			if err = gobtools.EncodeString(buf, r.EffectiveLicenseConditions[val4]); err != nil {
+				return err
+			}
+		}
+	}
+	return err
+}
+
+func (r *LicenseInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	var val2 bool
+	if err = gobtools.DecodeBool(buf, &val2); err != nil {
+		return err
+	}
+	if !val2 {
+		var val1 string
+		err = gobtools.DecodeString(buf, &val1)
+		if err != nil {
+			return err
+		}
+		r.PackageName = &val1
+	}
+
+	var val6 int
+	err = gobtools.DecodeInt(buf, &val6)
+	if err != nil {
+		return err
+	}
+	if val6 != -1 {
+		r.EffectiveLicenseText = make([]NamedPath, val6)
+		for val7 := 0; val7 < int(val6); val7++ {
+			if err = r.EffectiveLicenseText[val7].Decode(ctx, buf); err != nil {
+				return err
+			}
+		}
+	}
+
+	var val10 int
+	err = gobtools.DecodeInt(buf, &val10)
+	if err != nil {
+		return err
+	}
+	if val10 != -1 {
+		r.EffectiveLicenseKinds = make([]string, val10)
+		for val11 := 0; val11 < int(val10); val11++ {
+			err = gobtools.DecodeString(buf, &r.EffectiveLicenseKinds[val11])
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	var val14 int
+	err = gobtools.DecodeInt(buf, &val14)
+	if err != nil {
+		return err
+	}
+	if val14 != -1 {
+		r.EffectiveLicenseConditions = make([]string, val14)
+		for val15 := 0; val15 < int(val14); val15++ {
+			err = gobtools.DecodeString(buf, &r.EffectiveLicenseConditions[val15])
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return err
+}
+
+var LicenseInfoGobRegId int16
+
+func (r LicenseInfo) GetTypeId() int16 {
+	return LicenseInfoGobRegId
+}
+
+// end of license.go
+
+// begin of license_kind.go
+func init() {
+	LicenseKindInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(LicenseKindInfo) })
+}
+
+func (r LicenseKindInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if r.Conditions == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r.Conditions)); err != nil {
+			return err
+		}
+		for val1 := 0; val1 < len(r.Conditions); val1++ {
+			if err = gobtools.EncodeString(buf, r.Conditions[val1]); err != nil {
+				return err
+			}
+		}
+	}
+	return err
+}
+
+func (r *LicenseKindInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	var val2 int
+	err = gobtools.DecodeInt(buf, &val2)
+	if err != nil {
+		return err
+	}
+	if val2 != -1 {
+		r.Conditions = make([]string, val2)
+		for val3 := 0; val3 < int(val2); val3++ {
+			err = gobtools.DecodeString(buf, &r.Conditions[val3])
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return err
+}
+
+var LicenseKindInfoGobRegId int16
+
+func (r LicenseKindInfo) GetTypeId() int16 {
+	return LicenseKindInfoGobRegId
+}
+
+// end of license_kind.go
+
 // begin of license_metadata.go
 func init() {
 	LicenseMetadataInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(LicenseMetadataInfo) })
@@ -2316,7 +2901,90 @@ func (r LogtagsInfo) GetTypeId() int16 {
 
 // begin of makevars.go
 func init() {
+	ModuleMakeVarsInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ModuleMakeVarsInfo) })
+	ModuleMakeVarsValueGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ModuleMakeVarsValue) })
 	distGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(dist) })
+}
+
+func (r ModuleMakeVarsInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if r == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r)); err != nil {
+			return err
+		}
+		for val1 := 0; val1 < len(r); val1++ {
+			if err = r[val1].Encode(ctx, buf); err != nil {
+				return err
+			}
+		}
+	}
+	return err
+}
+
+func (r *ModuleMakeVarsInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	var val2 int
+	err = gobtools.DecodeInt(buf, &val2)
+	if err != nil {
+		return err
+	}
+	if val2 != -1 {
+		(*r) = make([]ModuleMakeVarsValue, val2)
+		for val3 := 0; val3 < int(val2); val3++ {
+			if err = (*r)[val3].Decode(ctx, buf); err != nil {
+				return err
+			}
+		}
+	}
+
+	return err
+}
+
+var ModuleMakeVarsInfoGobRegId int16
+
+func (r ModuleMakeVarsInfo) GetTypeId() int16 {
+	return ModuleMakeVarsInfoGobRegId
+}
+
+func (r ModuleMakeVarsValue) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = gobtools.EncodeString(buf, r.Name); err != nil {
+		return err
+	}
+
+	if err = gobtools.EncodeString(buf, r.Value); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r *ModuleMakeVarsValue) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	err = gobtools.DecodeString(buf, &r.Name)
+	if err != nil {
+		return err
+	}
+
+	err = gobtools.DecodeString(buf, &r.Value)
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
+var ModuleMakeVarsValueGobRegId int16
+
+func (r ModuleMakeVarsValue) GetTypeId() int16 {
+	return ModuleMakeVarsValueGobRegId
 }
 
 func (r dist) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
@@ -2400,6 +3068,8 @@ func (r dist) GetTypeId() int16 {
 // begin of module.go
 func init() {
 	DistGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(Dist) })
+	NamedPathGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(NamedPath) })
+	NamedPathsGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(NamedPaths) })
 	InstallFilesInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(InstallFilesInfo) })
 	SourceFilesInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(SourceFilesInfo) })
 	ModuleBuildTargetsInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ModuleBuildTargetsInfo) })
@@ -2620,6 +3290,90 @@ var DistGobRegId int16
 
 func (r Dist) GetTypeId() int16 {
 	return DistGobRegId
+}
+
+func (r NamedPath) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = gobtools.EncodeInterface(ctx, buf, r.Path); err != nil {
+		return err
+	}
+
+	if err = gobtools.EncodeString(buf, r.Name); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r *NamedPath) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	if val2, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+		return err
+	} else if val2 == nil {
+		r.Path = nil
+	} else {
+		r.Path = val2.(Path)
+	}
+
+	err = gobtools.DecodeString(buf, &r.Name)
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
+var NamedPathGobRegId int16
+
+func (r NamedPath) GetTypeId() int16 {
+	return NamedPathGobRegId
+}
+
+func (r NamedPaths) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if r == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r)); err != nil {
+			return err
+		}
+		for val1 := 0; val1 < len(r); val1++ {
+			if err = r[val1].Encode(ctx, buf); err != nil {
+				return err
+			}
+		}
+	}
+	return err
+}
+
+func (r *NamedPaths) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	var val2 int
+	err = gobtools.DecodeInt(buf, &val2)
+	if err != nil {
+		return err
+	}
+	if val2 != -1 {
+		(*r) = make([]NamedPath, val2)
+		for val3 := 0; val3 < int(val2); val3++ {
+			if err = (*r)[val3].Decode(ctx, buf); err != nil {
+				return err
+			}
+		}
+	}
+
+	return err
+}
+
+var NamedPathsGobRegId int16
+
+func (r NamedPaths) GetTypeId() int16 {
+	return NamedPathsGobRegId
 }
 
 func (r InstallFilesInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
@@ -5727,6 +6481,291 @@ func (r ModuleInfoJSONInfo) GetTypeId() int16 {
 
 // end of module_info_json.go
 
+// begin of notices.go
+func init() {
+	NoticeModuleInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(NoticeModuleInfo) })
+	NoticeModuleInfosGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(NoticeModuleInfos) })
+}
+
+func (r NoticeModuleInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = gobtools.EncodeString(buf, r.Name); err != nil {
+		return err
+	}
+
+	if r.OutputDirs == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r.OutputDirs)); err != nil {
+			return err
+		}
+		for val1 := 0; val1 < len(r.OutputDirs); val1++ {
+			if err = gobtools.EncodeString(buf, r.OutputDirs[val1]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if err = gobtools.EncodeInterface(ctx, buf, r.LicenseMetadataFile); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r *NoticeModuleInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	err = gobtools.DecodeString(buf, &r.Name)
+	if err != nil {
+		return err
+	}
+
+	var val3 int
+	err = gobtools.DecodeInt(buf, &val3)
+	if err != nil {
+		return err
+	}
+	if val3 != -1 {
+		r.OutputDirs = make([]string, val3)
+		for val4 := 0; val4 < int(val3); val4++ {
+			err = gobtools.DecodeString(buf, &r.OutputDirs[val4])
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	if val7, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+		return err
+	} else if val7 == nil {
+		r.LicenseMetadataFile = nil
+	} else {
+		r.LicenseMetadataFile = val7.(Path)
+	}
+
+	return err
+}
+
+var NoticeModuleInfoGobRegId int16
+
+func (r NoticeModuleInfo) GetTypeId() int16 {
+	return NoticeModuleInfoGobRegId
+}
+
+func (r NoticeModuleInfos) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if r == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r)); err != nil {
+			return err
+		}
+		for val1 := 0; val1 < len(r); val1++ {
+			if err = r[val1].Encode(ctx, buf); err != nil {
+				return err
+			}
+		}
+	}
+	return err
+}
+
+func (r *NoticeModuleInfos) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	var val2 int
+	err = gobtools.DecodeInt(buf, &val2)
+	if err != nil {
+		return err
+	}
+	if val2 != -1 {
+		(*r) = make([]NoticeModuleInfo, val2)
+		for val3 := 0; val3 < int(val2); val3++ {
+			if err = (*r)[val3].Decode(ctx, buf); err != nil {
+				return err
+			}
+		}
+	}
+
+	return err
+}
+
+var NoticeModuleInfosGobRegId int16
+
+func (r NoticeModuleInfos) GetTypeId() int16 {
+	return NoticeModuleInfosGobRegId
+}
+
+// end of notices.go
+
+// begin of package.go
+func init() {
+	packagePropertiesGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(packageProperties) })
+	PackageInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(PackageInfo) })
+}
+
+func (r packageProperties) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if r.Default_visibility == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r.Default_visibility)); err != nil {
+			return err
+		}
+		for val1 := 0; val1 < len(r.Default_visibility); val1++ {
+			if err = gobtools.EncodeString(buf, r.Default_visibility[val1]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if r.Default_applicable_licenses == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r.Default_applicable_licenses)); err != nil {
+			return err
+		}
+		for val2 := 0; val2 < len(r.Default_applicable_licenses); val2++ {
+			if err = gobtools.EncodeString(buf, r.Default_applicable_licenses[val2]); err != nil {
+				return err
+			}
+		}
+	}
+
+	val3 := r.Default_team == nil
+	if err = gobtools.EncodeBool(buf, val3); err != nil {
+		return err
+	}
+	if !val3 {
+		if err = gobtools.EncodeString(buf, (*r.Default_team)); err != nil {
+			return err
+		}
+	}
+	return err
+}
+
+func (r *packageProperties) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	var val2 int
+	err = gobtools.DecodeInt(buf, &val2)
+	if err != nil {
+		return err
+	}
+	if val2 != -1 {
+		r.Default_visibility = make([]string, val2)
+		for val3 := 0; val3 < int(val2); val3++ {
+			err = gobtools.DecodeString(buf, &r.Default_visibility[val3])
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	var val6 int
+	err = gobtools.DecodeInt(buf, &val6)
+	if err != nil {
+		return err
+	}
+	if val6 != -1 {
+		r.Default_applicable_licenses = make([]string, val6)
+		for val7 := 0; val7 < int(val6); val7++ {
+			err = gobtools.DecodeString(buf, &r.Default_applicable_licenses[val7])
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	var val10 bool
+	if err = gobtools.DecodeBool(buf, &val10); err != nil {
+		return err
+	}
+	if !val10 {
+		var val9 string
+		err = gobtools.DecodeString(buf, &val9)
+		if err != nil {
+			return err
+		}
+		r.Default_team = &val9
+	}
+
+	return err
+}
+
+var packagePropertiesGobRegId int16
+
+func (r packageProperties) GetTypeId() int16 {
+	return packagePropertiesGobRegId
+}
+
+func (r PackageInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = r.Properties.Encode(ctx, buf); err != nil {
+		return err
+	}
+
+	if r.PrimaryLicenses == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r.PrimaryLicenses)); err != nil {
+			return err
+		}
+		for val1 := 0; val1 < len(r.PrimaryLicenses); val1++ {
+			if err = gobtools.EncodeString(buf, r.PrimaryLicenses[val1]); err != nil {
+				return err
+			}
+		}
+	}
+	return err
+}
+
+func (r *PackageInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	if err = r.Properties.Decode(ctx, buf); err != nil {
+		return err
+	}
+
+	var val3 int
+	err = gobtools.DecodeInt(buf, &val3)
+	if err != nil {
+		return err
+	}
+	if val3 != -1 {
+		r.PrimaryLicenses = make([]string, val3)
+		for val4 := 0; val4 < int(val3); val4++ {
+			err = gobtools.DecodeString(buf, &r.PrimaryLicenses[val4])
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return err
+}
+
+var PackageInfoGobRegId int16
+
+func (r PackageInfo) GetTypeId() int16 {
+	return PackageInfoGobRegId
+}
+
+// end of package.go
+
 // begin of packaging.go
 func init() {
 	PackagingSpecGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(PackagingSpec) })
@@ -6029,6 +7068,7 @@ func (r RROInfo) GetTypeId() int16 {
 func init() {
 	OptionalPathGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(OptionalPath) })
 	PathsGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(Paths) })
+	DirectoryPathsGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(DirectoryPaths) })
 	basePathGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(basePath) })
 	SourcePathGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(SourcePath) })
 	OutputPathGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(OutputPath) })
@@ -6129,6 +7169,56 @@ var PathsGobRegId int16
 
 func (r Paths) GetTypeId() int16 {
 	return PathsGobRegId
+}
+
+func (r DirectoryPaths) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if r == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r)); err != nil {
+			return err
+		}
+		for val1 := 0; val1 < len(r); val1++ {
+			if err = gobtools.EncodeInterface(ctx, buf, r[val1]); err != nil {
+				return err
+			}
+		}
+	}
+	return err
+}
+
+func (r *DirectoryPaths) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	var val2 int
+	err = gobtools.DecodeInt(buf, &val2)
+	if err != nil {
+		return err
+	}
+	if val2 != -1 {
+		(*r) = make([]DirectoryPath, val2)
+		for val3 := 0; val3 < int(val2); val3++ {
+			if val5, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+				return err
+			} else if val5 == nil {
+				(*r)[val3] = nil
+			} else {
+				(*r)[val3] = val5.(DirectoryPath)
+			}
+		}
+	}
+
+	return err
+}
+
+var DirectoryPathsGobRegId int16
+
+func (r DirectoryPaths) GetTypeId() int16 {
+	return DirectoryPathsGobRegId
 }
 
 func (r basePath) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
@@ -6615,6 +7705,117 @@ func (r PhonyInfo) GetTypeId() int16 {
 }
 
 // end of phony.go
+
+// begin of provider_keys.go
+func init() {
+	AndroidDeviceInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(AndroidDeviceInfo) })
+	PrebuiltKernelModulesComplianceMetadataGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(PrebuiltKernelModulesComplianceMetadata) })
+}
+
+func (r AndroidDeviceInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = gobtools.EncodeBool(buf, r.Main_device); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r *AndroidDeviceInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	err = gobtools.DecodeBool(buf, &r.Main_device)
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
+var AndroidDeviceInfoGobRegId int16
+
+func (r AndroidDeviceInfo) GetTypeId() int16 {
+	return AndroidDeviceInfoGobRegId
+}
+
+func (r PrebuiltKernelModulesComplianceMetadata) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if r.Srcs == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r.Srcs)); err != nil {
+			return err
+		}
+		for val1 := 0; val1 < len(r.Srcs); val1++ {
+			if err = gobtools.EncodeString(buf, r.Srcs[val1]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if r.Dests == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r.Dests)); err != nil {
+			return err
+		}
+		for val2 := 0; val2 < len(r.Dests); val2++ {
+			if err = gobtools.EncodeString(buf, r.Dests[val2]); err != nil {
+				return err
+			}
+		}
+	}
+	return err
+}
+
+func (r *PrebuiltKernelModulesComplianceMetadata) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	var val2 int
+	err = gobtools.DecodeInt(buf, &val2)
+	if err != nil {
+		return err
+	}
+	if val2 != -1 {
+		r.Srcs = make([]string, val2)
+		for val3 := 0; val3 < int(val2); val3++ {
+			err = gobtools.DecodeString(buf, &r.Srcs[val3])
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	var val6 int
+	err = gobtools.DecodeInt(buf, &val6)
+	if err != nil {
+		return err
+	}
+	if val6 != -1 {
+		r.Dests = make([]string, val6)
+		for val7 := 0; val7 < int(val6); val7++ {
+			err = gobtools.DecodeString(buf, &r.Dests[val7])
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return err
+}
+
+var PrebuiltKernelModulesComplianceMetadataGobRegId int16
+
+func (r PrebuiltKernelModulesComplianceMetadata) GetTypeId() int16 {
+	return PrebuiltKernelModulesComplianceMetadataGobRegId
+}
+
+// end of provider_keys.go
 
 // begin of rule_builder.go
 func init() {
@@ -7257,7 +8458,74 @@ func (r SymbolicOutputInfos) GetTypeId() int16 {
 
 // begin of team.go
 func init() {
+	teamPropertiesGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(teamProperties) })
+	TeamInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(TeamInfo) })
 	TestModuleInformationGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(TestModuleInformation) })
+}
+
+func (r teamProperties) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	val1 := r.Trendy_team_id == nil
+	if err = gobtools.EncodeBool(buf, val1); err != nil {
+		return err
+	}
+	if !val1 {
+		if err = gobtools.EncodeString(buf, (*r.Trendy_team_id)); err != nil {
+			return err
+		}
+	}
+	return err
+}
+
+func (r *teamProperties) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	var val2 bool
+	if err = gobtools.DecodeBool(buf, &val2); err != nil {
+		return err
+	}
+	if !val2 {
+		var val1 string
+		err = gobtools.DecodeString(buf, &val1)
+		if err != nil {
+			return err
+		}
+		r.Trendy_team_id = &val1
+	}
+
+	return err
+}
+
+var teamPropertiesGobRegId int16
+
+func (r teamProperties) GetTypeId() int16 {
+	return teamPropertiesGobRegId
+}
+
+func (r TeamInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = r.Properties.Encode(ctx, buf); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r *TeamInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	if err = r.Properties.Decode(ctx, buf); err != nil {
+		return err
+	}
+
+	return err
+}
+
+var TeamInfoGobRegId int16
+
+func (r TeamInfo) GetTypeId() int16 {
+	return TeamInfoGobRegId
 }
 
 func (r TestModuleInformation) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
@@ -7763,3 +9031,72 @@ func (r TestSuiteInstallsInfo) GetTypeId() int16 {
 }
 
 // end of test_suites.go
+
+// begin of vintf_fragment.go
+func init() {
+	VintfFragmentInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(VintfFragmentInfo) })
+}
+
+func (r VintfFragmentInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = gobtools.EncodeInterface(ctx, buf, r.OutputFile); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r *VintfFragmentInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	if val2, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+		return err
+	} else if val2 == nil {
+		r.OutputFile = nil
+	} else {
+		r.OutputFile = val2.(Path)
+	}
+
+	return err
+}
+
+var VintfFragmentInfoGobRegId int16
+
+func (r VintfFragmentInfo) GetTypeId() int16 {
+	return VintfFragmentInfoGobRegId
+}
+
+// end of vintf_fragment.go
+
+// begin of visibility.go
+func init() {
+	PartitionTypeInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(PartitionTypeInfo) })
+}
+
+func (r PartitionTypeInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = gobtools.EncodeString(buf, r.PartitionType); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r *PartitionTypeInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	err = gobtools.DecodeString(buf, &r.PartitionType)
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
+var PartitionTypeInfoGobRegId int16
+
+func (r PartitionTypeInfo) GetTypeId() int16 {
+	return PartitionTypeInfoGobRegId
+}
+
+// end of visibility.go

@@ -22,6 +22,8 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 var String = proptools.String
 
 func init() {
@@ -33,6 +35,7 @@ func registerApexKeyBuildComponents(ctx android.RegistrationContext) {
 	ctx.RegisterParallelSingletonModuleType("all_apex_certs", allApexCertsFactory)
 }
 
+// @auto-generate: gob
 type ApexKeyInfo struct {
 	PublicKeyFile  android.Path
 	PrivateKeyFile android.Path

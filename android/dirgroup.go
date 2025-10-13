@@ -19,6 +19,8 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 func init() {
 	RegisterDirgroupBuildComponents(InitRegistrationContext)
 }
@@ -38,6 +40,7 @@ type dirGroup struct {
 	properties dirGroupProperties
 }
 
+// @auto-generate: gob
 type DirInfo struct {
 	Dirs DirectoryPaths
 }

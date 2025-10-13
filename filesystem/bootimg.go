@@ -25,6 +25,8 @@ import (
 	"android/soong/android"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 type bootimg struct {
 	android.ModuleBase
 
@@ -310,6 +312,7 @@ func (b *bootimg) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 
 var BootimgInfoProvider = blueprint.NewProvider[BootimgInfo]()
 
+// @auto-generate: gob
 type BootimgInfo struct {
 	Type                bootImageType
 	Cmdline             []string
@@ -323,6 +326,7 @@ type BootimgInfo struct {
 	IsPrebuilt          bool
 }
 
+// @auto-generate: gob
 type ramdiskFragmentInfo struct {
 	// Path to the vendor ramdisk fragment.
 	// Will be used as --vendor_ramdisk_fragment
@@ -336,6 +340,7 @@ type ramdiskFragmentInfo struct {
 	RootDir android.Path
 }
 
+// @auto-generate: gob
 type ramdiskFragmentsInfo []ramdiskFragmentInfo
 
 var ramdiskFragmentInfoProvider = blueprint.NewProvider[ramdiskFragmentInfo]()

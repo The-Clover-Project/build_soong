@@ -19,6 +19,8 @@ import (
 	"github.com/google/blueprint"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 // Properties for "aconfig_value"
 type ValuesModule struct {
 	android.ModuleBase
@@ -44,6 +46,7 @@ func ValuesFactory() android.Module {
 }
 
 // Provider published by aconfig_value_set
+// @auto-generate: gob
 type valuesProviderData struct {
 	// The package that this values module values
 	Package string
