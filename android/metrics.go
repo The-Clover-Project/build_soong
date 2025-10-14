@@ -72,6 +72,11 @@ func soongMetricsSingletonFactory() Singleton { return soongMetricsSingleton{} }
 
 type soongMetricsSingleton struct{}
 
+func (soongMetricsSingleton) IncrementalSupported() bool {
+	// always run this to collect metrics.
+	return false
+}
+
 func (soongMetricsSingleton) GenerateBuildActions(ctx SingletonContext) {
 	metrics := getSoongMetrics(ctx.Config())
 	ctx.VisitAllModuleProxies(func(m ModuleProxy) {
