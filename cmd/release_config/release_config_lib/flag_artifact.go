@@ -45,6 +45,9 @@ type FlagArtifact struct {
 	// This flag is redacted.  Set by UpdateValue when the FlagValue proto
 	// says to redact it.
 	Redacted bool
+
+	// True if this flag has duplicate definitions
+	Duplicate bool
 }
 
 // Key is flag name.
@@ -237,11 +240,15 @@ func (fa *FlagArtifact) Marshal() (*rc_proto.FlagArtifact, error) {
 	if fa.Redacted {
 		return nil, nil
 	}
-	return &rc_proto.FlagArtifact{
+	ret := &rc_proto.FlagArtifact{
 		FlagDeclaration: fa.FlagDeclaration,
 		Value:           fa.Value,
 		Traces:          fa.Traces,
-	}, nil
+	}
+	if fa.Duplicate {
+		ret.Duplicate = proto.Bool(true)
+	}
+	return ret, nil
 }
 
 // Marshal the FlagArtifact without Traces.
