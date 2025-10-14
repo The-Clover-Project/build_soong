@@ -1180,7 +1180,7 @@ func (f *filesystemCreator) createPrebuiltKernelModules(ctx android.LoadHookCont
 		Srcs                  []string
 		Src_filenames_to_load []string
 		Srcs_16k              []string
-		System_deps           []string
+		System_dep            *string
 		System_dlkm_specific  *bool
 		Vendor_dlkm_specific  *bool
 		Odm_dlkm_specific     *bool
@@ -1211,7 +1211,7 @@ func (f *filesystemCreator) createPrebuiltKernelModules(ctx android.LoadHookCont
 		props.Src_filenames_to_load = partitionVars.VendorKernelModulesLoad
 		props.Srcs_16k = android.ExistentPathsForSources(ctx, partitionVars.VendorKernelModules2ndStage16kbMode).Strings()
 		if len(partitionVars.SystemKernelModules) > 0 {
-			props.System_deps = []string{":" + generatedModuleName(ctx.Config(), "system_dlkm-kernel-modules") + "{.modules}"}
+			props.System_dep = proptools.StringPtr(":" + generatedModuleName(ctx.Config(), "system_dlkm-kernel-modules") + "{.modules.zip}")
 		}
 		props.Vendor_dlkm_specific = proptools.BoolPtr(true)
 		if blocklistFile := partitionVars.VendorKernelBlocklistFile; blocklistFile != "" {
