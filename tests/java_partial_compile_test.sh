@@ -5,9 +5,9 @@ set -o pipefail
 export BUILD_JAVA_LIBRARY="true"
 
 # This test checks partial_compile features
-source "$(dirname "$0")/lib.sh"
 source "$(dirname "$0")/java_partial_compile_setup.sh"
 source "$(dirname "$0")/compare_jars.sh"
+source "$(dirname "$0")/lib.sh"
 
 function test_add_new_file {
   setup
