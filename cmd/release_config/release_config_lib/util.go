@@ -339,7 +339,7 @@ func GetDefaultMapPaths(queryMaps bool) (defaultMapPaths StringList, err error) 
 	prodMaps = strings.TrimSpace(prodMaps)
 	productReleaseConfigMaps = &prodMaps
 	if len(prodMaps) > 0 {
-		defaultMapPaths = append(defaultMapPaths, strings.Split(prodMaps, " ")...)
+		defaultMapPaths = append(defaultMapPaths, strings.Fields(prodMaps)...)
 	}
 	return
 }
