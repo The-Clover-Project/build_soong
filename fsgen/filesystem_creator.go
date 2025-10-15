@@ -1509,6 +1509,10 @@ func generateFsProps(ctx android.EarlyModuleContext, partitions allGeneratedPart
 	fsProps.Rollback_index_location = avbInfo.avbRollbackIndexLocation
 	fsProps.Avb_hash_algorithm = avbInfo.avbHashAlgorithm
 
+	// Do not use a fixed timestamp.
+	// This prevents a full push on the first adb sync.
+	fsProps.No_use_fixed_timestamp = proptools.BoolPtr(true)
+
 	fsProps.Partition_name = proptools.StringPtr(partitionType)
 
 	switch partitionType {

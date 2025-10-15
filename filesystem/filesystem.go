@@ -214,6 +214,11 @@ type FilesystemProperties struct {
 	// Seconds since unix epoch to override timestamps of file entries
 	Fake_timestamp *string
 
+	// To produce hermetic filesystems, the timestamp of the file entries is pinned to a known
+	// timestamp by default.
+	// Setting `No_use_fixed_timestamp` to true will create unpinned timestamps.
+	No_use_fixed_timestamp *bool
+
 	// When set, passed to mkuserimg_mke2fs --mke2fs_uuid & --mke2fs_hash_seed.
 	// Otherwise, they'll be set as random which might cause indeterministic build output.
 	Uuid *string
@@ -1394,6 +1399,8 @@ func (f *filesystem) buildPropFile(ctx android.ModuleContext) (android.Path, and
 	if timestamp := proptools.String(f.properties.Fake_timestamp); timestamp != "" {
 		addStr("timestamp", timestamp)
 	} else if ctx.Config().Getenv("USE_FIXED_TIMESTAMP_IMG_FILES") == "true" {
+		addStr("use_fixed_timestamp", "true")
+	} else if !proptools.Bool(f.properties.No_use_fixed_timestamp) {
 		addStr("use_fixed_timestamp", "true")
 	}
 
