@@ -60,10 +60,11 @@ type prebuiltKernelModulesProperties struct {
 	// These files are ONLY loaded during the Second Boot Stage when the device is in 16k mode.
 	Srcs_16k []string `android:"path,arch_variant"`
 
-	// List of system_dlkm kernel modules that the local kernel modules depend on.
+	// List of system_dlkm prebuilt_kernel_modules that the local kernel modules
+	// depend on. Use `:module_name{.modules.zip}` here.
 	// The deps will be assembled into intermediates directory for running depmod
 	// but will not be added to the current module's installed files.
-	System_deps []string `android:"path,arch_variant"`
+	System_dep *string `android:"path,arch_variant"`
 
 	// If false, then srcs will not be included in modules.load.
 	// This feature is used by system_dlkm
@@ -114,9 +115,26 @@ func (pkm *prebuiltKernelModules) GenerateAndroidBuildActions(ctx android.Module
 	}
 
 	modules := android.PathsForModuleSrc(ctx, pkm.properties.Srcs.GetOrDefault(ctx, nil))
-	systemModules := android.PathsForModuleSrc(ctx, pkm.properties.System_deps)
+	systemModulesZip := android.OptionalPathForModuleSrc(ctx, pkm.properties.System_dep)
 
-	depmodOut := pkm.runDepmod(ctx, modules, systemModules)
+	modulesZip := android.PathForModuleOut(ctx, "modules.zip")
+	modulesZipList := android.PathForModuleOut(ctx, "modules.zip.list")
+	builder := android.NewRuleBuilder(pctx, ctx)
+	var moduleNames []string
+	for _, m := range modules {
+		moduleNames = append(moduleNames, m.Base())
+	}
+	builder.Command().Text("echo").
+		Flag("\"" + strings.Join(moduleNames, " ") + "\"").
+		Text("|").Text("tr").Flag("\" \"").Flag("\"\\n\"").
+		Text(">").Output(modulesZipList)
+	builder.Command().BuiltTool("soong_zip").
+		FlagWithOutput("-o ", modulesZip).
+		Flag("-j").
+		FlagForEachInput("-f ", modules)
+	builder.Build("zip_modules", "zip kernel modules")
+
+	depmodOut := pkm.runDepmod(ctx, modulesZip, modulesZipList, systemModulesZip)
 	if proptools.BoolDefault(pkm.properties.Strip_debug_symbols, true) {
 		modules = stripDebugSymbols(ctx, modules)
 	}
@@ -164,7 +182,7 @@ func (pkm *prebuiltKernelModules) GenerateAndroidBuildActions(ctx android.Module
 	pkm.installBlocklistFile(ctx, installDir, &srcs, &dests)
 	pkm.installOptionsFile(ctx, installDir, &srcs, &dests)
 
-	ctx.SetOutputFiles(modules, ".modules")
+	ctx.SetOutputFiles(android.Paths{modulesZip}, ".modules.zip")
 
 	android.SetProvider(ctx, android.PrebuiltKernelModulesComplianceMetadataProvider,
 		android.PrebuiltKernelModulesComplianceMetadata{
@@ -317,7 +335,7 @@ func (pkm *prebuiltKernelModules) validateSrcFilenamesToLoad(ctx android.ModuleC
 	}
 }
 
-func (pkm *prebuiltKernelModules) runDepmod(ctx android.ModuleContext, modules android.Paths, systemModules android.Paths) depmodOutputs {
+func (pkm *prebuiltKernelModules) runDepmod(ctx android.ModuleContext, modulesZip, modulesZipList android.Path, systemModulesZip android.OptionalPath) depmodOutputs {
 	baseDir := android.PathForModuleOut(ctx, "depmod").OutputPath
 	fakeVer := "0.0" // depmod demands this anyway
 	modulesDir := baseDir.Join(ctx, "lib", "modules", fakeVer)
@@ -326,29 +344,25 @@ func (pkm *prebuiltKernelModules) runDepmod(ctx android.ModuleContext, modules a
 	builder := android.NewRuleBuilder(pctx, ctx)
 
 	// Copy the module files to a temporary dir
-	moduleNames := map[string]bool{}
-	builder.Command().Text("rm").Flag("-rf").Text(modulesCpDir.String())
-	builder.Command().Text("mkdir").Flag("-p").Text(modulesCpDir.String())
-	for _, m := range modules {
-		builder.Command().Text("cp").Input(m).Text(modulesCpDir.String())
-		moduleNames[m.Base()] = true
-	}
+	builder.Command().BuiltTool("zipsync").
+		Flag("-d").Text(modulesCpDir.String()).
+		Input(modulesZip)
 
 	modulesDirForSystemDlkm := modulesDirForAndroidDlkm(ctx, modulesDir, true)
-	if len(systemModules) > 0 {
-		builder.Command().Text("rm").Flag("-rf").Text(modulesDirForSystemDlkm.String())
-		builder.Command().Text("mkdir").Flag("-p").Text(modulesDirForSystemDlkm.String())
-	}
-	for _, m := range systemModules {
+	if systemModulesZip.Valid() {
+		builder.Command().BuiltTool("zipsync").
+			Flag("-d").Text(modulesDirForSystemDlkm.String()).
+			Input(systemModulesZip.Path())
 		// https://source.corp.google.com/h/googleplex-android/platform/build/+/71d79d0a58e112f76ee2c2dfdebd331971145b4c:core/Makefile;l=480-487;bpv=1;bpt=0;drc=567ee7be9833ea96a65e36fb21d4bd783ff74f1c
 		// When there is a duplicate module present in both directories, we want modules in PRIVATE_MODULES to take
 		// precedence. Since depmod does not provide any guarantee about ordering of
 		// dependency resolution, we achieve this by maually removing any duplicate
 		// modules with lower priority.
-		if _, exists := moduleNames[m.Base()]; exists {
-			continue
-		}
-		builder.Command().Text("cp").Input(m).Text(modulesDirForSystemDlkm.String())
+		builder.Command().Text("for f in $(cd ").
+			Text(modulesCpDir.String()).
+			Text(" && ls); do rm -f ").
+			Text(modulesDirForSystemDlkm.String() + "/$f").
+			Text("; done")
 	}
 
 	// Enumerate modules to load
@@ -358,19 +372,16 @@ func (pkm *prebuiltKernelModules) runDepmod(ctx android.ModuleContext, modules a
 		builder.Command().Text("rm").Flag("-rf").Text(modulesLoad.String())
 		builder.Command().Text("touch").Output(modulesLoad)
 	} else {
-		var basenames []string
 		if len(pkm.properties.Src_filenames_to_load) > 0 {
 			pkm.validateSrcFilenamesToLoad(ctx)
-			basenames = append(basenames, pkm.properties.Src_filenames_to_load...)
+			builder.Command().
+				Text("echo").
+				Flag("\"" + strings.Join(pkm.properties.Src_filenames_to_load, " ") + "\"").
+				Text("|").Text("tr").Flag("\" \"").Flag("\"\\n\"").
+				Text(">").Output(modulesLoad)
 		} else {
-			for _, m := range modules {
-				basenames = append(basenames, filepath.Base(m.String()))
-			}
+			builder.Command().Text("cp").Input(modulesZipList).Output(modulesLoad)
 		}
-		builder.Command().
-			Text("echo").Flag("\"" + strings.Join(basenames, " ") + "\"").
-			Text("|").Text("tr").Flag("\" \"").Flag("\"\\n\"").
-			Text(">").Output(modulesLoad)
 	}
 
 	// Run depmod to build modules.dep/softdep/alias files
