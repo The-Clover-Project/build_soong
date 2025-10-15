@@ -504,7 +504,7 @@ func (b *BootclasspathFragmentModule) DepsMutator(ctx android.BottomUpMutatorCon
 	for _, additionalStubModule := range b.properties.Additional_stubs {
 		for _, apiScope := range hiddenAPISdkLibrarySupportedScopes {
 			// Add a dependency onto a possibly scope specific stub library.
-			scopeSpecificDependency := apiScope.scopeSpecificStubModule(ctx, additionalStubModule)
+			scopeSpecificDependency := apiScope.Value().scopeSpecificStubModule(ctx, additionalStubModule)
 			tag := hiddenAPIStubsDependencyTag{apiScope: apiScope, fromAdditionalDependency: true}
 			ctx.AddVariationDependencies(nil, tag, scopeSpecificDependency)
 		}
