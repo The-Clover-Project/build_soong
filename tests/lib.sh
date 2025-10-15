@@ -129,11 +129,9 @@ function create_mock_soong_for_java_lib {
 
   # Required for building java_library type modules.
   symlink_directory prebuilts/jdk
-  symlink_directory prebuilts/r8
   symlink_directory prebuilts/rust
   symlink_directory prebuilts/gcc
   symlink_directory external/turbine
-  symlink_directory external/jarjar
   symlink_directory external/rust
   symlink_directory external/gson
   symlink_directory external/ow2-asm
@@ -149,11 +147,15 @@ function create_mock_soong_for_java_lib {
   symlink_directory external/escapevelocity
   symlink_directory external/kotlinx.metadata
   symlink_directory external/kotlinc
-  symlink_directory prebuilts/misc/common/asm/
   symlink_directory system/logging/liblog
-  symlink_directory system/cros-codecs
-  symlink_directory tools/lint_checks
   symlink_directory external/abseil-cpp
+
+  mkdir -p "$MOCK_TOP"/tools/lint_checks
+  cat > "$MOCK_TOP"/tools/lint_checks/Android.bp <<EOF
+java_library_host {
+    name: "AndroidGlobalLintChecker",
+}
+EOF
 }
 
 function setup {
