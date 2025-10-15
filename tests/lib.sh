@@ -15,15 +15,16 @@ function make_mock_top {
   echo "$mock"
 }
 
+WARMED_UP_MOCK_TOP=$(mktemp -t soong_integration_tests_warmup.XXXXXX.tar.gz)
+MOCK_TOP_TO_CLEAN_UP=
 if [[ -n "$HARDWIRED_MOCK_TOP" ]]; then
   MOCK_TOP="$HARDWIRED_MOCK_TOP"
 else
   MOCK_TOP=$(make_mock_top)
-  trap cleanup_mock_top EXIT
+  MOCK_TOP_TO_CLEAN_UP="$MOCK_TOP"
 fi
 
-WARMED_UP_MOCK_TOP=$(mktemp -t soong_integration_tests_warmup.XXXXXX.tar.gz)
-trap 'rm -f "$WARMED_UP_MOCK_TOP"' EXIT
+trap cleanup_all EXIT
 
 function warmup_mock_top {
   info "Warming up mock top ..."
@@ -49,7 +50,14 @@ function warmup_mock_top {
 
 function cleanup_mock_top {
   cd /
-  rm -fr "$MOCK_TOP"
+  if [[ -d "$MOCK_TOP_TO_CLEAN_UP" ]]; then
+    rm -fr "$MOCK_TOP_TO_CLEAN_UP"
+  fi
+}
+
+function cleanup_all {
+  cleanup_mock_top
+  rm -f "$WARMED_UP_MOCK_TOP"
 }
 
 function info {
@@ -296,7 +304,7 @@ function move_mock_top {
   rm -rf $MOCK_TOP2
   mv $MOCK_TOP $MOCK_TOP2
   MOCK_TOP=$MOCK_TOP2
-  trap cleanup_mock_top EXIT
+  MOCK_TOP_TO_CLEAN_UP="$MOCK_TOP"
 }
 
 function assert_files_equal {
