@@ -7068,6 +7068,7 @@ func (r RROInfo) GetTypeId() int16 {
 func init() {
 	OptionalPathGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(OptionalPath) })
 	PathsGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(Paths) })
+	directoryPathGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(directoryPath) })
 	DirectoryPathsGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(DirectoryPaths) })
 	basePathGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(basePath) })
 	SourcePathGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(SourcePath) })
@@ -7169,6 +7170,31 @@ var PathsGobRegId int16
 
 func (r Paths) GetTypeId() int16 {
 	return PathsGobRegId
+}
+
+func (r directoryPath) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = r.basePath.Encode(ctx, buf); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r *directoryPath) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	if err = r.basePath.Decode(ctx, buf); err != nil {
+		return err
+	}
+
+	return err
+}
+
+var directoryPathGobRegId int16
+
+func (r directoryPath) GetTypeId() int16 {
+	return directoryPathGobRegId
 }
 
 func (r DirectoryPaths) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
