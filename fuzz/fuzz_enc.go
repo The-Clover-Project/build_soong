@@ -8,6 +8,7 @@ import (
 	"github.com/google/blueprint/gobtools"
 )
 
+// begin of fuzz_common.go
 func init() {
 	FuzzConfigInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(FuzzConfigInfo) })
 	FuzzPackagedModuleInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(FuzzPackagedModuleInfo) })
@@ -251,3 +252,5 @@ var FuzzPackagedModuleInfoGobRegId int16
 func (r FuzzPackagedModuleInfo) GetTypeId() int16 {
 	return FuzzPackagedModuleInfoGobRegId
 }
+
+// end of fuzz_common.go

@@ -9,6 +9,7 @@ import (
 	"github.com/google/blueprint/gobtools"
 )
 
+// begin of rust.go
 func init() {
 	LibraryInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(LibraryInfo) })
 	CompilerInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(CompilerInfo) })
@@ -753,3 +754,5 @@ var RustImplementationDepInfoGobRegId int16
 func (r RustImplementationDepInfo) GetTypeId() int16 {
 	return RustImplementationDepInfoGobRegId
 }
+
+// end of rust.go

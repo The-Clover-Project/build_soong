@@ -8,6 +8,7 @@ import (
 	"github.com/google/blueprint/gobtools"
 )
 
+// begin of providers.go
 func init() {
 	BaseTestProviderDataGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(BaseTestProviderData) })
 }
@@ -234,3 +235,5 @@ var BaseTestProviderDataGobRegId int16
 func (r BaseTestProviderData) GetTypeId() int16 {
 	return BaseTestProviderDataGobRegId
 }
+
+// end of providers.go

@@ -7,6 +7,7 @@ import (
 	"github.com/google/blueprint/gobtools"
 )
 
+// begin of apex_sdk_member.go
 func init() {
 	apexSdkMemberTypeGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(apexSdkMemberType) })
 }
@@ -35,3 +36,5 @@ var apexSdkMemberTypeGobRegId int16
 func (r apexSdkMemberType) GetTypeId() int16 {
 	return apexSdkMemberTypeGobRegId
 }
+
+// end of apex_sdk_member.go

@@ -8,6 +8,7 @@ import (
 	"github.com/google/blueprint/gobtools"
 )
 
+// begin of bloaty.go
 func init() {
 	measuredFilesGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(measuredFiles) })
 }
@@ -61,3 +62,5 @@ var measuredFilesGobRegId int16
 func (r measuredFiles) GetTypeId() int16 {
 	return measuredFilesGobRegId
 }
+
+// end of bloaty.go
