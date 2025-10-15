@@ -57,7 +57,7 @@ var (
 		// Allow `--extern force:foo` for dylib support
 		"-Z unstable-options",
 		"-Z stack-protector=strong",
-		"-Z remap-cwd-prefix=.",
+		"-Z remap-cwd-prefix=/proc/self/cwd",
 		"-C debuginfo=2",
 		"-C opt-level=3",
 		"-C overflow-checks=on",
