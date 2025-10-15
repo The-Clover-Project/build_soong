@@ -39,6 +39,7 @@ func main() {
 	var useBuildVar, allowMissing bool
 	var withVariant bool
 	var guard bool
+	var duplicateFlags bool
 
 	defaultProduct := os.Getenv("TARGET_PRODUCT")
 	defaultRelease := os.Getenv("TARGET_RELEASE")
@@ -69,6 +70,7 @@ func main() {
 	flag.BoolVar(&container, "container", false, "generate per-container build_flags.json artifacts")
 	flag.BoolVar(&guard, "guard", false, "obsolete")
 	flag.BoolVar(&withVariant, "with-variant", false, "include build variant in artifact names")
+	flag.BoolVar(&duplicateFlags, "duplicate-flags", false, "write duplicate flags artifact")
 
 	flag.Parse()
 
@@ -126,7 +128,7 @@ func main() {
 		}
 	}
 	// All of these artifacts require that we generate **ALL** release configs.
-	if allMake || inheritance || json || pb || textproto {
+	if allMake || inheritance || json || pb || textproto || duplicateFlags {
 		if err := configs.GenerateAllReleaseConfigs(targetRelease); err != nil {
 			panic(err)
 		}
@@ -167,6 +169,11 @@ func main() {
 		}
 		if textproto {
 			if err := configs.WriteArtifact(outputDir, product_variant, "textproto"); err != nil {
+				panic(err)
+			}
+		}
+		if duplicateFlags {
+			if err := configs.WriteDuplicateFlags(outputDir, product_variant, "pb"); err != nil {
 				panic(err)
 			}
 		}

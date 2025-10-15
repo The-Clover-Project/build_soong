@@ -95,6 +95,7 @@ type RcGenResp struct {
 	req                      *RcGenReq
 	AllReleaseConfigsPathMap map[string]string
 	InheritanceGraphPath     string
+	DuplicateFlagsArtifact   *rc_proto.DuplicateFlagsArtifact
 }
 
 type ArtifactInfo struct {
@@ -107,6 +108,9 @@ type ArtifactInfo struct {
 	AllReleaseConfigsMap map[string]string `json:"all_release_configs_map"`
 	// Inheritance graph for these products.
 	InheritanceGraphPath string `json:"inheritance_graph"`
+	// DuplicateFlagsArtifact from release-config.
+	// b/452033453: Consumed internally for validation.
+	duplicateFlagsArtifact *rc_proto.DuplicateFlagsArtifact
 }
 
 type ReleaseConfigInfo struct {
@@ -208,9 +212,14 @@ func main() {
 	errWg.Add(1)
 	go func() {
 		defer errWg.Done()
+		errMap := make(map[string]bool)
 		var errs []error
 		for e := range errCh {
-			errs = append(errs, e)
+			// Only output each error once.
+			if _, ok := errMap[e.Error()]; !ok {
+				errs = append(errs, e)
+				errMap[e.Error()] = true
+			}
 		}
 		if len(errs) > 1 {
 			errs = append(errs, fmt.Errorf("Total errors: %d", len(errs)))
@@ -366,7 +375,6 @@ func GenerateProductConfigs(flags Flags, errCh chan error) (mapsInfo MapsInfo) {
 			}
 			makeVarNames := []string{
 				"PRODUCT_RELEASE_CONFIG_MAPS",
-				"PLATFORM_RELEASE_VERSION",
 			}
 			if vars, err := DumpVars(makeVarNames, env); err != nil {
 				errCh <- fmt.Errorf("%s: %v", product, err)
@@ -432,11 +440,13 @@ func GenerateReleaseConfigs(flags Flags, mapsInfo MapsInfo, errCh chan error) {
 		for resp := range rcRespCh {
 			k := resp.req.Product
 			tag := resp.req.ArtifactTag
+			slices.Sort(mapsInfo[resp.req.Maps].Products)
 			info := ArtifactInfo{
 				Products:                 mapsInfo[resp.req.Maps].Products,
 				ProductReleaseConfigMaps: resp.req.Maps,
 				AllReleaseConfigsMap:     resp.AllReleaseConfigsPathMap,
 				InheritanceGraphPath:     resp.InheritanceGraphPath,
+				duplicateFlagsArtifact:   resp.DuplicateFlagsArtifact,
 			}
 			if m, ok := releaseConfigInfo.ArtifactMap[tag]; !ok {
 				releaseConfigInfo.ArtifactMap[tag] = info
@@ -468,11 +478,11 @@ func GenerateReleaseConfigs(flags Flags, mapsInfo MapsInfo, errCh chan error) {
 			}
 			commonArgs := []string{
 				"--product", product,
-				//"--quiet",
 				"--pb=true",
 				fmt.Sprintf("--textproto=%v", flags.Textproto),
 				fmt.Sprintf("--json=%v", flags.Json),
 			}
+			var loadWg sync.WaitGroup
 			// Run it for each of the build variants, since flag values change for
 			// any `workflow: MANUAL_BUILD_VARIANT` flags.
 			for idx, variant := range []string{"user", "userdebug", "eng"} {
@@ -481,6 +491,7 @@ func GenerateReleaseConfigs(flags Flags, mapsInfo MapsInfo, errCh chan error) {
 				args := append(commonArgs,
 					"--variant", variant,
 					"--out_dir", variantDir,
+					"--duplicate-flags",
 				)
 				if idx == 0 {
 					// Only generate the inheritance graph once.
@@ -489,6 +500,18 @@ func GenerateReleaseConfigs(flags Flags, mapsInfo MapsInfo, errCh chan error) {
 				if err = CommandRun("out/release-config", args, env); err != nil {
 					errCh <- fmt.Errorf("release-config %s failed with env=%s: %v", strings.Join(args, " "), strings.Join(env, " "), err)
 					break
+				}
+				if idx == 0 {
+					// We only need this for one of the variants since flag declarations are global.
+					loadWg.Add(1)
+					go func() {
+						defer loadWg.Done()
+						resp.DuplicateFlagsArtifact = &rc_proto.DuplicateFlagsArtifact{}
+						src := artifactPath("duplicate_flags-", product, ".pb", variantDir)
+						if err := rc_lib.LoadMessage(src, resp.DuplicateFlagsArtifact); err != nil {
+							errCh <- fmt.Errorf("Could not load %q: %v", src, err)
+						}
+					}()
 				}
 				if flags.Dist {
 					var dst string
@@ -533,6 +556,7 @@ func GenerateReleaseConfigs(flags Flags, mapsInfo MapsInfo, errCh chan error) {
 					}
 				}
 			}
+			loadWg.Wait()
 			if err == nil {
 				rcRespCh <- resp
 			}
@@ -555,6 +579,75 @@ func GenerateReleaseConfigs(flags Flags, mapsInfo MapsInfo, errCh chan error) {
 	rcGenWg.Wait()
 	close(rcRespCh)
 	rcRespWg.Wait()
+
+	// Look for any errors that span products, and are therefore missed in simple
+	// release config compilation.
+
+	// Duplicate declarations are bad.  Detect duplicates that don't ever co-exist in any
+	// PRODUCT_RELEASE_CONFIG_MAPS values in use.
+
+	// flagDeclsMap is: map[flag_name][decl_path]: allowlist_path
+	flagDeclsMap := make(map[string]map[string]string)
+
+	// First, record where all of the flags in the tree are declared.
+	// Note: this will miss any flag declarations that are not included in any of the
+	// products in this run.
+	for _, ai := range releaseConfigInfo.ArtifactMap {
+		for name, fa := range ai.duplicateFlagsArtifact.GetFlagArtifactMap() {
+			if _, ok := flagDeclsMap[name]; !ok {
+				flagDeclsMap[name] = make(map[string]string)
+			}
+			traces := fa.GetTraces()
+			for _, trace := range traces {
+				flagDeclsMap[name][*trace.Source] = ""
+			}
+		}
+	}
+	// Now examine all of the duplicate_allowlist.txt contents.  Detect:
+	// - allowed with no declaration anywhere.
+	// - allowed with no local declaration.
+	for _, ai := range releaseConfigInfo.ArtifactMap {
+		for _, allowlist := range ai.duplicateFlagsArtifact.GetDuplicateAllowlists() {
+			p := allowlist.GetPath()
+			for _, name := range allowlist.GetAllowed() {
+				if _, ok := flagDeclsMap[name]; !ok {
+					// The flag isn't actually declared anywhere, but it's allowed.
+					// Someone forgot to remove the flag from duplicate_allowlist.txt.
+					errCh <- fmt.Errorf("%s: Undeclared flag allowed in %q\n", name, p)
+					flagDeclsMap[name] = make(map[string]string)
+				}
+				declPath := fmt.Sprintf("%s/flag_declarations/%s.textproto", filepath.Dir(p), name)
+				if _, ok2 := flagDeclsMap[name][declPath]; !ok2 {
+					// The flag isn't actually declared here, but it's allowed.
+					// Someone forgot to remove the flag from duplicate_allowlist.txt.
+					errCh <- fmt.Errorf("%s: No declaration file %q\n", name, declPath)
+				} else {
+					flagDeclsMap[name][declPath] = p
+				}
+			}
+		}
+	}
+
+	// Finally, check to make sure that anything with more than one declaration (for any product) is
+	// allowed for the directory where the declaration is found.
+	badDecl := func(name, decl, allowlist string) {
+		decls := []string{}
+		for p := range flagDeclsMap[name] {
+			decls = append(decls, p)
+		}
+		errCh <- fmt.Errorf("%s: disallowed duplicate declaration %q.", name, decl)
+	}
+	for k, v := range flagDeclsMap {
+		// Only one declaration for this flag?  All done.
+		if len(v) <= 1 {
+			continue
+		}
+		for decl, allowlist := range v {
+			if allowlist == "" {
+				badDecl(k, decl, allowlist)
+			}
+		}
+	}
 
 	prci := &rc_proto.ProductReleaseConfigsInfo{
 		ProductToTagMap:  make(map[string]string),

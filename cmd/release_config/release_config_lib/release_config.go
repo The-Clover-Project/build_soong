@@ -380,7 +380,7 @@ func (config *ReleaseConfig) GenerateReleaseConfig(configs *ReleaseConfigs) erro
 	// Now remove any duplicates from the actual value of RELEASE_ACONFIG_VALUE_SETS
 	myAconfigValueSets := []string{}
 	myAconfigValueSetsMap := map[string]bool{}
-	for _, v := range strings.Split(releaseAconfigValueSets.Value.GetStringValue(), " ") {
+	for _, v := range strings.Fields(releaseAconfigValueSets.Value.GetStringValue()) {
 		if v == "" || myAconfigValueSetsMap[v] {
 			continue
 		}
@@ -480,7 +480,7 @@ func (config *ReleaseConfig) WriteMakefile(outFile, targetRelease string, config
 	var extraAconfigReleaseConfigs []string
 	if extraAconfigValueSetsValue, ok := config.FlagArtifacts["RELEASE_ACONFIG_EXTRA_RELEASE_CONFIGS"]; ok {
 		if val := MarshalValue(extraAconfigValueSetsValue.Value); len(val) > 0 {
-			extraAconfigReleaseConfigs = strings.Split(val, " ")
+			extraAconfigReleaseConfigs = strings.Fields(val)
 		}
 	}
 	for _, rcName := range extraAconfigReleaseConfigs {
