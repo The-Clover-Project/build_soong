@@ -41,6 +41,8 @@ function warmup_mock_top {
   else
     create_mock_soong
     run_soong
+    # Precompile androidmk for the tests in androidmk_test.sh.
+    run_ninja androidmk
   fi
   tar czf "$WARMED_UP_MOCK_TOP" *
 }
