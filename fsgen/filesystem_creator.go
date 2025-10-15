@@ -1568,14 +1568,16 @@ func getAvbInfo(config android.Config, partitionType string) avbInfo {
 				}
 				result.avbRollbackIndex = &parsed
 			}
+			// The global BoardAvbAlgorithm should only apply to vbmeta.
+			if partitionVars.BoardAvbAlgorithm != "" {
+				result.avbAlgorithm = proptools.StringPtr(partitionVars.BoardAvbAlgorithm)
+			}
 		}
 		if specificPartitionVars.BoardAvbKeyPath != "" {
 			result.avbKeyPath = proptools.StringPtr(specificPartitionVars.BoardAvbKeyPath)
 		}
 		if specificPartitionVars.BoardAvbAlgorithm != "" {
 			result.avbAlgorithm = proptools.StringPtr(specificPartitionVars.BoardAvbAlgorithm)
-		} else if partitionVars.BoardAvbAlgorithm != "" {
-			result.avbAlgorithm = proptools.StringPtr(partitionVars.BoardAvbAlgorithm)
 		}
 		if specificPartitionVars.BoardAvbRollbackIndex != "" {
 			parsed, err := strconv.ParseInt(specificPartitionVars.BoardAvbRollbackIndex, 10, 64)
