@@ -44,11 +44,12 @@ var (
 		}, &remoteexec.REParams{
 			// Until there's a "rust" tool, use clang. This interprets "-L" flags
 			// to help identify potential build dependencies.
-			Labels:       map[string]string{"type": "link", "tool": "clang"},
-			Inputs:       []string{"${out}.clang.rsp"},
-			RSPFiles:     []string{"$rbeRspFile"},
-			OutputFiles:  []string{"${out}.d", "${out}.d.raw", "${out}"},
-			ExecStrategy: "${config.RERustExecStrategy}",
+			Labels:               map[string]string{"type": "link", "tool": "clang"},
+			Inputs:               []string{"${out}.clang.rsp"},
+			RSPFiles:             []string{"$rbeRspFile"},
+			OutputFiles:          []string{"${out}.d", "${out}.d.raw", "${out}"},
+			ExecStrategy:         "${config.RERustExecStrategy}",
+			EnvironmentVariables: []string{"PWD"},
 			ToolchainInputs: []string{
 				"${rustcCmd}",
 				"${RustcLinkerCmd}",
