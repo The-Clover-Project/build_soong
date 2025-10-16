@@ -516,7 +516,8 @@ func (dbj *dexpreoptBootJars) DepsMutator(ctx android.BottomUpMutatorContext) {
 	}
 
 	imageConfigs := genBootImageConfigs(ctx)
-	for _, config := range imageConfigs {
+	for _, img := range android.SortedKeys(imageConfigs) {
+		config := imageConfigs[img]
 		if !config.isEnabled(ctx) {
 			continue
 		}
