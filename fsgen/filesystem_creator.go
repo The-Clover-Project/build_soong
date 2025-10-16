@@ -24,6 +24,7 @@ import (
 
 	"android/soong/android"
 	"android/soong/filesystem"
+	"android/soong/genrule"
 	"android/soong/kernel"
 
 	"github.com/google/blueprint"
@@ -159,6 +160,7 @@ func filesystemCreatorFactory() android.Module {
 		createFsGenState(ctx, generatedPrebuiltEtcModuleNames, avbpubkeyGenerated)
 		module.createAvbKeyFilegroups(ctx)
 		module.createMiscFilegroups(ctx)
+		module.createProductConfigDistGenrules(ctx)
 		module.createInternalModules(ctx)
 		module.createBackgroundPicturesForRecovery(ctx)
 	})
@@ -1162,6 +1164,54 @@ func (f *filesystemCreator) createMiscFilegroups(ctx android.LoadHookContext) {
 			}{
 				Name:       proptools.StringPtr("soong_generated_board_erofs_compress_hints_filegroup"),
 				Srcs:       []string{base},
+				Visibility: []string{"//visibility:public"},
+			},
+		)
+	}
+}
+
+// Creates genrules for dist rules defined in product config
+// One genrule will be created per goal.
+func (f *filesystemCreator) createProductConfigDistGenrules(ctx android.LoadHookContext) {
+	partitionVars := ctx.Config().ProductVariables().PartitionVarsForSoongMigrationOnlyDoNotUse
+
+	dstToSrcs := map[string]string{}
+	for _, entry := range partitionVars.AllDistSrcDstPairs {
+		split := strings.Split(entry, ":")
+		src, dst := split[0], split[1]
+		dstToSrcs[dst] = src
+	}
+	goalToDst := map[string][]string{}
+	goalToSrcs := map[string][]string{}
+	for _, entry := range partitionVars.AllDistGoalOutputPairs {
+		split := strings.Split(entry, ":")
+		goal, dst := split[0], split[1]
+		src := dstToSrcs[dst]
+		if !strings.HasPrefix(src, ctx.Config().OutDir()) {
+			// check src file is not under out/.
+			// Disting generated files is not supported at the moment (it will cause missing dependency errors).
+			goalToDst[goal] = append(goalToDst[goal], dst)
+			goalToSrcs[goal] = append(goalToSrcs[goal], dstToSrcs[dst])
+		}
+	}
+
+	for goal, srcs := range goalToSrcs {
+		ctx.CreateModuleInDirectory(
+			genrule.GenRuleFactory,
+			".",
+			&struct {
+				Name       *string
+				Srcs       []string
+				Out        []string
+				Cmd        *string
+				Dist       android.Dist
+				Visibility []string
+			}{
+				Name:       proptools.StringPtr("soong_generated_dist_genrule_for_goal_" + goal),
+				Srcs:       srcs,
+				Out:        goalToDst[goal],
+				Cmd:        proptools.StringPtr("in_files=($(in)); out_files=($(out)); for i in $${!in_files[@]}; do cp $${in_files[i]} $${out_files[i]}; done"),
+				Dist:       android.Dist{Targets: []string{goal}},
 				Visibility: []string{"//visibility:public"},
 			},
 		)
