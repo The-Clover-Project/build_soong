@@ -1040,6 +1040,7 @@ func (r ApexVariantReference) GetTypeId() int16 {
 func init() {
 	BootclasspathFragmentInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(BootclasspathFragmentInfo) })
 	BootclasspathFragmentApexContentInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(BootclasspathFragmentApexContentInfo) })
+	ClasspathFragmentValidationInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ClasspathFragmentValidationInfo) })
 }
 
 func (r BootclasspathFragmentInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
@@ -1292,6 +1293,62 @@ var BootclasspathFragmentApexContentInfoGobRegId int16
 
 func (r BootclasspathFragmentApexContentInfo) GetTypeId() int16 {
 	return BootclasspathFragmentApexContentInfoGobRegId
+}
+
+func (r ClasspathFragmentValidationInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = gobtools.EncodeString(buf, r.ClasspathFragmentModuleName); err != nil {
+		return err
+	}
+
+	if r.UnknownJars == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r.UnknownJars)); err != nil {
+			return err
+		}
+		for val1 := 0; val1 < len(r.UnknownJars); val1++ {
+			if err = gobtools.EncodeString(buf, r.UnknownJars[val1]); err != nil {
+				return err
+			}
+		}
+	}
+	return err
+}
+
+func (r *ClasspathFragmentValidationInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	err = gobtools.DecodeString(buf, &r.ClasspathFragmentModuleName)
+	if err != nil {
+		return err
+	}
+
+	var val3 int
+	err = gobtools.DecodeInt(buf, &val3)
+	if err != nil {
+		return err
+	}
+	if val3 != -1 {
+		r.UnknownJars = make([]string, val3)
+		for val4 := 0; val4 < int(val3); val4++ {
+			err = gobtools.DecodeString(buf, &r.UnknownJars[val4])
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return err
+}
+
+var ClasspathFragmentValidationInfoGobRegId int16
+
+func (r ClasspathFragmentValidationInfo) GetTypeId() int16 {
+	return ClasspathFragmentValidationInfoGobRegId
 }
 
 // end of bootclasspath_fragment.go

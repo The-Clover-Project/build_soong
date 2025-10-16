@@ -685,6 +685,7 @@ func (b *BootclasspathFragmentModule) configuredJars(ctx android.ModuleContext) 
 
 var ClasspathFragmentValidationInfoProvider = blueprint.NewProvider[ClasspathFragmentValidationInfo]()
 
+// @auto-generate: gob
 type ClasspathFragmentValidationInfo struct {
 	ClasspathFragmentModuleName string
 	UnknownJars                 []string

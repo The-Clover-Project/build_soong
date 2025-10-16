@@ -21,6 +21,8 @@ import (
 	"android/soong/android"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 type prebuiltRadioImg struct {
 	android.ModuleBase
 	properties PrebuiltRadioImgProperties
@@ -37,6 +39,7 @@ type PrebuiltRadioImgProperties struct {
 	Unpack_tool *string `android:"path"`
 }
 
+// @auto-generate: gob
 type radioInfo struct {
 	image android.Path
 }
