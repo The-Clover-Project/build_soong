@@ -65,7 +65,7 @@ func (l *StringList) ReadFromFile(fileName string) error {
 	for line := range strings.SplitSeq(strings.TrimSpace(string(data)), "\n") {
 		// Allow # comments on lines in the file.
 		line = strings.SplitN(line, "#", 2)[0]
-		for m := range strings.SplitSeq(strings.TrimSpace(line), " ") {
+		for _, m := range strings.Fields(line) {
 			l.Set(m)
 		}
 	}
