@@ -360,6 +360,7 @@ func transformSrctoCrate(ctx android.ModuleContext, main android.Path, deps Path
 
 	var inputs android.Paths
 	var implicits android.Paths
+	var validations android.Paths
 	var orderOnly android.Paths
 	var output buildOutput
 	var linkerScriptFlags, rustcFlags, linkFlags []string
@@ -517,8 +518,10 @@ func transformSrctoCrate(ctx android.ModuleContext, main android.Path, deps Path
 				OrderOnly:       orderOnly,
 				Args:            args,
 			})
-			// Declare the clippy build as an implicit dependency of the original crate.
-			implicits = append(implicits, clippyFile)
+			// Declare the clippy build as a validation dependency of the original crate.  It will
+			// be run in any build that builds the crate, but not block building the crate or anything
+			// that depends on the crate.
+			validations = append(validations, clippyFile)
 		}
 	}
 
@@ -565,6 +568,7 @@ func transformSrctoCrate(ctx android.ModuleContext, main android.Path, deps Path
 		Implicits:       implicits,
 		ImplicitOutputs: implicitOutputs,
 		OrderOnly:       orderOnly,
+		Validations:     validations,
 		Args:            args,
 	})
 
