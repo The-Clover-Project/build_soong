@@ -153,6 +153,10 @@ func singletonMakeVarsProviderAdapter(singleton SingletonMakeVarsProvider) MakeV
 	return func(ctx MakeVarsContext) { singleton.MakeVars(ctx) }
 }
 
+// @auto-generate: gob
+type ModuleMakeVarsInfo []ModuleMakeVarsValue
+
+// @auto-generate: gob
 type ModuleMakeVarsValue struct {
 	// Make variable name.
 	Name string
@@ -166,7 +170,7 @@ type ModuleMakeVarsProvider interface {
 	MakeVars(ctx MakeVarsModuleContext) []ModuleMakeVarsValue
 }
 
-var ModuleMakeVarsInfoProvider = blueprint.NewProvider[[]ModuleMakeVarsValue]()
+var ModuleMakeVarsInfoProvider = blueprint.NewProvider[ModuleMakeVarsInfo]()
 
 // /////////////////////////////////////////////////////////////////////////////
 

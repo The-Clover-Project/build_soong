@@ -19,6 +19,8 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 var (
 	removeComments = pctx.AndroidStaticRule("remove_comments",
 		blueprint.RuleParams{
@@ -50,6 +52,7 @@ type androidInfoModule struct {
 	properties AndroidInfoProperties
 }
 
+// @auto-generate: gob
 type AndroidInfo struct {
 	// Path to the android info prop file which is used to generate the vendor/build.prop
 	AndroidInfoProp Path

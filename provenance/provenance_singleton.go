@@ -22,6 +22,8 @@ import (
 	"github.com/google/blueprint"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 var (
 	pctx = android.NewPackageContext("android/soong/provenance")
 	rule = pctx.HostBinToolVariable("gen_provenance_metadata", "gen_provenance_metadata")
@@ -45,6 +47,7 @@ var (
 		})
 )
 
+// @auto-generate: gob
 type ProvenanceMetadataInfo struct {
 	ProvenanceMetaDataFile android.Path
 }

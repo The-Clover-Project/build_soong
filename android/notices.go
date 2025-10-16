@@ -22,6 +22,8 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 func modulesOutputDirs(ctx BuilderContext, modules ...ModuleProxy) []string {
 	dirs := make([]string, 0, len(modules))
 	for _, module := range modules {
@@ -62,12 +64,14 @@ func modulesLicenseMetadata(ctx OtherModuleProviderContext, modules ...ModulePro
 
 // All the information we need from a particular module to build its notice file entry.
 // Can be passed through providers, unlike the module itself.
+// @auto-generate: gob
 type NoticeModuleInfo struct {
 	Name                string
 	OutputDirs          []string
 	LicenseMetadataFile Path
 }
 
+// @auto-generate: gob
 type NoticeModuleInfos []NoticeModuleInfo
 
 func (i *NoticeModuleInfos) OutputDirs() []string {

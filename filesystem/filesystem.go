@@ -34,6 +34,8 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 var pctx = android.NewPackageContext("android/soong/filesystem")
 
 func init() {
@@ -483,17 +485,20 @@ func (t fsType) String() string {
 	panic(fmt.Errorf("unsupported fs type %d", t))
 }
 
+// @auto-generate: gob
 type InstalledFilesStruct struct {
 	Txt  android.Path
 	Json android.Path
 }
 
+// @auto-generate: gob
 type InstalledModuleInfo struct {
 	Name      string
 	Variation string
 	Prebuilt  bool
 }
 
+// @auto-generate: gob
 type FilesystemInfo struct {
 	// The built filesystem image
 	Output android.Path
@@ -567,6 +572,7 @@ type FilesystemInfo struct {
 // out/target/product/<device>/<partition>. This is essentially legacy behavior, maintained for
 // tools like adb sync and adevice, but we should update them to query the build system for the
 // installed files no matter where they are.
+// @auto-generate: gob
 type FullInstallPathInfo struct {
 	// RequiresFullInstall tells us if the origional module did the install to FullInstallPath
 	// already. If it's false, the android_device module needs to emit the install rule.
@@ -590,6 +596,7 @@ type FullInstallPathInfo struct {
 
 var FilesystemProvider = blueprint.NewProvider[FilesystemInfo]()
 
+// @auto-generate: gob
 type FilesystemDefaultsInfo struct{}
 
 var FilesystemDefaultsInfoProvider = blueprint.NewProvider[FilesystemDefaultsInfo]()

@@ -23,6 +23,8 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 func init() {
 	RegisterGenNoticeBuildComponents(InitRegistrationContext)
 }
@@ -115,6 +117,7 @@ type genNoticeModule struct {
 	missing []string
 }
 
+// @auto-generate: gob
 type GenNoticeInfo struct {
 	// For specifies the modules for which to generate a notice file.
 	For []string

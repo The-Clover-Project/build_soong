@@ -32,6 +32,9 @@ import (
 	"android/soong/android"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
+// @auto-generate: gob
 type PythonLibraryInfo struct {
 	SrcsPathMappings   []pathMapping
 	DataPathMappings   []pathMapping
@@ -96,6 +99,7 @@ type BaseProperties struct {
 }
 
 // Used to store files of current module after expanding dependencies
+// @auto-generate: gob
 type pathMapping struct {
 	dest string
 	src  android.Path

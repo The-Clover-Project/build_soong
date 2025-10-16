@@ -25,6 +25,8 @@ import (
 	"android/soong/android"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 var (
 	toRawBinary = pctx.AndroidStaticRule("toRawBinary",
 		blueprint.RuleParams{
@@ -41,6 +43,7 @@ func init() {
 	android.RegisterModuleType("raw_binary", rawBinaryFactory)
 }
 
+// @auto-generate: gob
 type RawBinaryInfo struct {
 	// symbols info of the raw binary src
 	SrcSymbolInfos android.SymbolicOutputInfos

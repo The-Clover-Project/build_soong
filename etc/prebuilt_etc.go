@@ -38,6 +38,8 @@ import (
 	"android/soong/android"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 var pctx = android.NewPackageContext("android/soong/etc")
 
 // TODO(jungw): Now that it handles more than the ones in etc/, consider renaming this file.
@@ -98,6 +100,7 @@ func RegisterPrebuiltEtcBuildComponents(ctx android.RegistrationContext) {
 
 }
 
+// @auto-generate: gob
 type PrebuiltEtcInfo struct {
 	// Returns the base install directory, such as "etc", "usr/share".
 	BaseDir string
@@ -108,6 +111,7 @@ type PrebuiltEtcInfo struct {
 var PrebuiltEtcInfoProvider = blueprint.NewProvider[PrebuiltEtcInfo]()
 
 // If this provider is set, it means this module was converted from PRODUCT_COPY_FILES
+// @auto-generate: gob
 type ProductCopyFilesModuleInfo struct {
 	// The entries as they would've appeared in PRODUCT_COPY_FILES, that is, src:dst
 	ProductCopyFileEntries []string

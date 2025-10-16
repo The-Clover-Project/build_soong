@@ -27,6 +27,8 @@ import (
 	"android/soong/tradefed"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 // sh_binary is for shell scripts (and batch files) that are installed as
 // executable files into .../bin/
 //
@@ -41,6 +43,7 @@ func init() {
 	registerShBuildComponents(android.InitRegistrationContext)
 }
 
+// @auto-generate: gob
 type ShBinaryInfo struct {
 	SubDir     string
 	OutputFile android.Path

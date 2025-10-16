@@ -783,6 +783,7 @@ func MinSdkVersionFromValue(ctx MinSdkVersionFromValueContext, value string) Api
 var ApexExportsInfoProvider = blueprint.NewProvider[ApexExportsInfo]()
 
 // ApexExportsInfo contains information about the artifacts provided by apexes to dexpreopt and hiddenapi
+// @auto-generate: gob
 type ApexExportsInfo struct {
 	// Canonical name of this APEX. Used to determine the path to the activated APEX on
 	// device (/apex/<apex_name>)

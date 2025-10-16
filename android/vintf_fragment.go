@@ -16,6 +16,8 @@ package android
 
 import "github.com/google/blueprint"
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 type vintfFragmentProperties struct {
 	// Vintf fragment XML file.
 	Src string `android:"path"`
@@ -39,6 +41,7 @@ func registerVintfFragmentComponents(ctx RegistrationContext) {
 	ctx.RegisterModuleType("vintf_fragment", vintfLibraryFactory)
 }
 
+// @auto-generate: gob
 type VintfFragmentInfo struct {
 	OutputFile Path
 }

@@ -33,6 +33,8 @@ import (
 	"android/soong/rust"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 type dependencyTag struct {
 	blueprint.BaseDependencyTag
 	name string
@@ -88,6 +90,7 @@ func init() {
 
 var SyspropLibraryInfoProvider = blueprint.NewProvider[SyspropLibraryInfo]()
 
+// @auto-generate: gob
 type SyspropLibraryInfo struct {
 	CheckApiFileTimeStamp android.WritablePath
 	CurrentApiFile        android.OptionalPath

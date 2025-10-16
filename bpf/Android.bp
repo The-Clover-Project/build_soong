@@ -23,6 +23,7 @@ bootstrap_go_package {
     pkgPath: "android/soong/bpf",
     deps: [
         "blueprint",
+        "blueprint-gobtools",
         "blueprint-proptools",
         "soong-android",
         "soong-cc",
@@ -30,6 +31,7 @@ bootstrap_go_package {
     ],
     srcs: [
         "bpf.go",
+        "bpf_enc.go",
     ],
     testSrcs: [
         "bpf_test.go",

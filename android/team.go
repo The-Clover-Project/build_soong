@@ -30,10 +30,12 @@ var PrepareForTestWithTeamBuildComponents = GroupFixturePreparers(
 	FixtureRegisterWithContext(RegisterTeamBuildComponents),
 )
 
+// @auto-generate: gob
 type teamProperties struct {
 	Trendy_team_id *string `json:"trendy_team_id"`
 }
 
+// @auto-generate: gob
 type TeamInfo struct {
 	Properties teamProperties
 }

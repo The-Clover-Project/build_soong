@@ -3,6 +3,7 @@
 package apex
 
 import (
+	"android/soong/android"
 	"bytes"
 	"github.com/google/blueprint/gobtools"
 )
@@ -38,3 +39,51 @@ func (r apexSdkMemberType) GetTypeId() int16 {
 }
 
 // end of apex_sdk_member.go
+
+// begin of key.go
+func init() {
+	ApexKeyInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ApexKeyInfo) })
+}
+
+func (r ApexKeyInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = gobtools.EncodeInterface(ctx, buf, r.PublicKeyFile); err != nil {
+		return err
+	}
+
+	if err = gobtools.EncodeInterface(ctx, buf, r.PrivateKeyFile); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r *ApexKeyInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	if val2, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+		return err
+	} else if val2 == nil {
+		r.PublicKeyFile = nil
+	} else {
+		r.PublicKeyFile = val2.(android.Path)
+	}
+
+	if val4, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+		return err
+	} else if val4 == nil {
+		r.PrivateKeyFile = nil
+	} else {
+		r.PrivateKeyFile = val4.(android.Path)
+	}
+
+	return err
+}
+
+var ApexKeyInfoGobRegId int16
+
+func (r ApexKeyInfo) GetTypeId() int16 {
+	return ApexKeyInfoGobRegId
+}
+
+// end of key.go
