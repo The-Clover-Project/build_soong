@@ -374,7 +374,7 @@ function compare_incremental_and_full_analysis() {
     cp -pr out/soong/*.mk out/soong/build.test_arm64*.ninja incremental
 
     touch Android.bp
-    run_soong "$@"
+    run_soong SOONG_INCREMENTAL_ANALYSIS=false "$@"
     mkdir full
     cp -pr out/soong/*.mk out/soong/build.test_arm64*.ninja full
 
