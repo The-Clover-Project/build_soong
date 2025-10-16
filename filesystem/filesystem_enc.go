@@ -297,6 +297,78 @@ func (r ramdiskFragmentsInfo) GetTypeId() int16 {
 
 // end of bootimg.go
 
+// begin of bootloader.go
+func init() {
+	bootloaderInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(bootloaderInfo) })
+}
+
+func (r bootloaderInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = gobtools.EncodeInterface(ctx, buf, r.bootloaderImg); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r *bootloaderInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	if val2, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+		return err
+	} else if val2 == nil {
+		r.bootloaderImg = nil
+	} else {
+		r.bootloaderImg = val2.(android.Path)
+	}
+
+	return err
+}
+
+var bootloaderInfoGobRegId int16
+
+func (r bootloaderInfo) GetTypeId() int16 {
+	return bootloaderInfoGobRegId
+}
+
+// end of bootloader.go
+
+// begin of dtboimg.go
+func init() {
+	DtboImgInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(DtboImgInfo) })
+}
+
+func (r DtboImgInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = gobtools.EncodeInterface(ctx, buf, r.PropFileForMiscInfo); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r *DtboImgInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	if val2, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+		return err
+	} else if val2 == nil {
+		r.PropFileForMiscInfo = nil
+	} else {
+		r.PropFileForMiscInfo = val2.(android.Path)
+	}
+
+	return err
+}
+
+var DtboImgInfoGobRegId int16
+
+func (r DtboImgInfo) GetTypeId() int16 {
+	return DtboImgInfoGobRegId
+}
+
+// end of dtboimg.go
+
 // begin of filesystem.go
 func init() {
 	InstalledFilesStructGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(InstalledFilesStruct) })

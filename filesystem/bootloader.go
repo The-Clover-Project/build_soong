@@ -21,6 +21,9 @@ import (
 	"android/soong/android"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
+// @auto-generate: gob
 type bootloaderInfo struct {
 	bootloaderImg android.Path
 }
