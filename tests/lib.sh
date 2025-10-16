@@ -321,21 +321,21 @@ function assert_files_equal {
 }
 
 function compare_incremental_files() {
-  local dir_before=$1; shift
-  local dir_after=$1; shift
+  local dir_full=$1; shift
+  local dir_incremental=$1; shift
   count=0
-  for file_before in ${dir_before}/*.mk; do
-    file_after="${dir_after}/$(basename "$file_before")"
+  for file_before in ${dir_full}/*.mk; do
+    file_after="${dir_incremental}/$(basename "$file_before")"
     assert_files_equal $file_before $file_after
     ((count++)) || true
   done
   echo "Compared $count mk files"
 
   count=0
-  for file_before in ${dir_before}/*.ninja; do
+  for file_before in ${dir_full}/*.ninja; do
     basename=$(basename "$file_before")
-    file_after="${dir_after}/${basename}"
-    # The after file should be a superset of the before one.
+    file_after="${dir_incremental}/${basename}"
+    # The incremental file should be a superset of the full one.
     if [[ "$basename" == "build.test_arm64.ninja" ]]; then
       echo "Performing superset check for $basename..."
       extra_lines=$(comm -23 <(sort "$file_before") <(sort "$file_after"))
@@ -370,13 +370,13 @@ function compare_files_parity() {
 # the tree is modified.
 function compare_incremental_and_full_analysis() {
     run_soong SOONG_INCREMENTAL_ANALYSIS=true "$@"
-    mkdir before
-    cp -pr out/soong/*.mk out/soong/build.test_arm64*.ninja before
+    mkdir incremental
+    cp -pr out/soong/*.mk out/soong/build.test_arm64*.ninja incremental
 
     touch Android.bp
     run_soong "$@"
-    mkdir after
-    cp -pr out/soong/*.mk out/soong/build.test_arm64*.ninja after
+    mkdir full
+    cp -pr out/soong/*.mk out/soong/build.test_arm64*.ninja full
 
-    compare_incremental_files before after
+    compare_incremental_files full incremental
 }
