@@ -953,6 +953,42 @@ func (r FilesystemDefaultsInfo) GetTypeId() int16 {
 
 // end of filesystem.go
 
+// begin of radio.go
+func init() {
+	radioInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(radioInfo) })
+}
+
+func (r radioInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = gobtools.EncodeInterface(ctx, buf, r.image); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r *radioInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	if val2, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+		return err
+	} else if val2 == nil {
+		r.image = nil
+	} else {
+		r.image = val2.(android.Path)
+	}
+
+	return err
+}
+
+var radioInfoGobRegId int16
+
+func (r radioInfo) GetTypeId() int16 {
+	return radioInfoGobRegId
+}
+
+// end of radio.go
+
 // begin of raw_binary.go
 func init() {
 	RawBinaryInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(RawBinaryInfo) })
