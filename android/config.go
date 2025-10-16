@@ -506,7 +506,7 @@ var allPartialCompileFlags = func() (flags partialCompileFlags) {
 }()
 
 // These are the flags when `SOONG_PARTIAL_COMPILE=default`.
-var defaultPartialCompileFlags = falsePartialCompileFlags
+var defaultPartialCompileFlags = truePartialCompileFlags
 
 type deviceConfig struct {
 	config *config
