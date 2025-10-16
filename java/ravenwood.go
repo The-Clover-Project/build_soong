@@ -36,6 +36,7 @@ func RegisterRavenwoodBuildComponents(ctx android.RegistrationContext) {
 }
 
 var ravenwoodLibContentTag = dependencyTag{name: "ravenwoodlibcontent"}
+var ravenwoodLibSubruntimeTag = dependencyTag{name: "ravenwoodlibsubruntime"}
 var ravenwoodUtilsTag = dependencyTag{name: "ravenwoodutils"}
 var ravenwoodRuntimeTag = dependencyTag{name: "ravenwoodruntime"}
 var ravenwoodTargetResourceApkTag = dependencyTag{name: "ravenwood-target-res-apk"}
@@ -410,6 +411,15 @@ type ravenwoodLibgroupProperties struct {
 
 	// We use this to copy font files to the ravenwood runtime directory.
 	Fonts []string `android:"path,arch_variant"`
+
+	// "ravenwood-runtime" uses it to specify "sub" runtimes,
+	// which allows partially updating ravenwood-runtime without
+	// rebuilding the downstream modules.
+	Subruntimes []string
+
+	// Subruntimes msut set it to "ravenwood-runtime" so that
+	// the output files will be installed in "ravenwood-runtime/".
+	Install_name *string
 }
 
 type ravenwoodLibgroup struct {
@@ -440,6 +450,10 @@ func (r *ravenwoodLibgroup) TestSuites() []string {
 	}
 }
 
+func (r *ravenwoodLibgroup) installName() string {
+	return proptools.StringDefault(r.ravenwoodLibgroupProperties.Install_name, r.BaseModuleName())
+}
+
 func (r *ravenwoodLibgroup) DepsMutator(ctx android.BottomUpMutatorContext) {
 	// Always depends on our underlying libs
 	for _, lib := range r.ravenwoodLibgroupProperties.Libs {
@@ -447,6 +461,9 @@ func (r *ravenwoodLibgroup) DepsMutator(ctx android.BottomUpMutatorContext) {
 	}
 	for _, lib := range r.ravenwoodLibgroupProperties.Jni_libs.GetOrDefault(ctx, nil) {
 		ctx.AddVariationDependencies(ctx.Config().BuildOSTarget.Variations(), jniLibTag, lib)
+	}
+	for _, lib := range r.ravenwoodLibgroupProperties.Subruntimes {
+		ctx.AddVariationDependencies(nil, ravenwoodLibSubruntimeTag, lib)
 	}
 
 	if r.Name() == ravenwoodRuntimeName {
@@ -457,6 +474,15 @@ func (r *ravenwoodLibgroup) DepsMutator(ctx android.BottomUpMutatorContext) {
 func (r *ravenwoodLibgroup) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	r.forceOSType = ctx.Config().BuildOS
 	r.forceArchType = ctx.Config().BuildArch
+
+	// We need to build subruntimes too, so collect their install files.
+	var installDeps android.InstallPaths
+	for _, subruntime := range ctx.GetDirectDepsProxyWithTag(ravenwoodLibSubruntimeTag) {
+		for _, installFile := range android.OtherModuleProviderOrDefault(
+			ctx, subruntime, android.InstallFilesProvider).InstallFiles {
+			installDeps = append(installDeps, installFile)
+		}
+	}
 
 	// Collect the JNI dependencies, including the transitive deps.
 	jniDepNames := make(map[string]bool)
@@ -471,12 +497,12 @@ func (r *ravenwoodLibgroup) GenerateAndroidBuildActions(ctx android.ModuleContex
 
 	install := func(to android.InstallPath, srcs ...android.Path) {
 		for _, s := range srcs {
-			ctx.InstallFile(to, s.Base(), s)
+			ctx.InstallFile(to, s.Base(), s, installDeps...)
 		}
 	}
 
 	// Install our runtime into expected location for packaging
-	installPath := android.PathForModuleInstall(ctx, r.BaseModuleName())
+	installPath := android.PathForModuleInstall(ctx, r.installName())
 	for _, lib := range r.ravenwoodLibgroupProperties.Libs {
 		libModule := ctx.GetDirectDepProxyWithTag(lib, ravenwoodLibContentTag)
 		if libModule.IsNil() {
@@ -488,9 +514,9 @@ func (r *ravenwoodLibgroup) GenerateAndroidBuildActions(ctx android.ModuleContex
 			continue
 		}
 		libJar := android.OutputFileForModule(ctx, libModule, "")
-		ctx.InstallFile(installPath, libJar.Base(), libJar)
+		install(installPath, libJar)
 	}
-	soInstallPath := android.PathForModuleInstall(ctx, r.BaseModuleName()).Join(ctx, getLibPath(r.forceArchType))
+	soInstallPath := android.PathForModuleInstall(ctx, r.installName()).Join(ctx, getLibPath(r.forceArchType))
 
 	for _, jniLib := range jniLibs {
 		install(soInstallPath, jniLib.path)

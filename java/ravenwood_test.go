@@ -79,6 +79,30 @@ var prepareRavenwoodRuntime = android.GroupFixturePreparers(
 			name: "Font.ttf",
 			src: "Font.ttf",
 		}
+		java_library {
+			name: "sub1-1",
+		}
+		java_library {
+			name: "sub2-1",
+		}
+		java_library {
+			name: "sub2-2",
+		}
+		android_ravenwood_libgroup {
+			name: "ravenwood-runtime.sub1",
+			libs: [
+				"sub1-1",
+			],
+			install_name: "ravenwood-runtime",
+		}
+		android_ravenwood_libgroup {
+			name: "ravenwood-runtime.sub2",
+			libs: [
+				"sub2-1",
+				"sub2-2",
+			],
+			install_name: "ravenwood-runtime",
+		}
 		android_ravenwood_libgroup {
 			name: "ravenwood-runtime",
 			libs: [
@@ -95,6 +119,10 @@ var prepareRavenwoodRuntime = android.GroupFixturePreparers(
 			],
 			fonts: [
 				":Font.ttf"
+			],
+			subruntimes: [
+				"ravenwood-runtime.sub1",
+				"ravenwood-runtime.sub2",
 			],
 		}
 		android_ravenwood_libgroup {
@@ -125,11 +153,14 @@ func TestRavenwoodRuntime(t *testing.T) {
 	CheckModuleHasDependency(t, ctx.TestContext, "ravenwood-runtime", "android_common", "framework-minus-apex.ravenwood")
 	CheckModuleHasDependency(t, ctx.TestContext, "ravenwood-runtime", "android_common", "framework-services.ravenwood")
 	CheckModuleHasDependency(t, ctx.TestContext, "ravenwood-runtime", "android_common", "ravenwood-runtime-jni")
+	CheckModuleHasDependency(t, ctx.TestContext, "ravenwood-runtime", "android_common", "sub1-1")
+	CheckModuleHasDependency(t, ctx.TestContext, "ravenwood-runtime", "android_common", "sub2-1")
+	CheckModuleHasDependency(t, ctx.TestContext, "ravenwood-runtime", "android_common", "sub2-2")
 	CheckModuleHasDependency(t, ctx.TestContext, "ravenwood-utils", "android_common", "framework-rules.ravenwood")
 
 	// Verify that we've emitted artifacts in expected location
 	runtime := ctx.ModuleForTests(t, "ravenwood-runtime", "android_common")
-	runtime.Output(installPathPrefix + "/ravenwood-runtime/framework-minus-apex.ravenwood.jar")
+	runtimeOutput := runtime.Output(installPathPrefix + "/ravenwood-runtime/framework-minus-apex.ravenwood.jar")
 	runtime.Output(installPathPrefix + "/ravenwood-runtime/framework-services.ravenwood.jar")
 	runtime.Output(installPathPrefix + "/ravenwood-runtime/runtime-extra.jar")
 	runtime.Output(installPathPrefix + "/ravenwood-runtime/lib64/ravenwood-runtime-jni1.so")
@@ -144,6 +175,20 @@ func TestRavenwoodRuntime(t *testing.T) {
 	runtime.Output(installPathPrefix + "/ravenwood-runtime/aconfig/metadata/aconfig/maps/all_aconfig_declarations.flag.map")
 	runtime.Output(installPathPrefix + "/ravenwood-runtime/aconfig/metadata/aconfig/boot/all_aconfig_declarations.flag.info")
 	runtime.Output(installPathPrefix + "/ravenwood-runtime/aconfig/metadata/aconfig/boot/all_aconfig_declarations.val")
+
+	// Check the output files from the subruntimes.
+	sub1 := ctx.ModuleForTests(t, "ravenwood-runtime.sub1", "android_common")
+	sub1.Output(installPathPrefix + "/ravenwood-runtime/sub1-1.jar")
+
+	sub2 := ctx.ModuleForTests(t, "ravenwood-runtime.sub2", "android_common")
+	sub2.Output(installPathPrefix + "/ravenwood-runtime/sub2-1.jar")
+	sub2.Output(installPathPrefix + "/ravenwood-runtime/sub2-2.jar")
+
+	// Make sure the ravenwood-runtime output files implicitly depend on output of subruntimes.
+	OrderOnly := runtimeOutput.OrderOnly.Strings()
+	android.AssertStringListContains(t, "OrderOnly", OrderOnly, installPathPrefix+"/ravenwood-runtime/sub1-1.jar")
+	android.AssertStringListContains(t, "OrderOnly", OrderOnly, installPathPrefix+"/ravenwood-runtime/sub2-1.jar")
+	android.AssertStringListContains(t, "OrderOnly", OrderOnly, installPathPrefix+"/ravenwood-runtime/sub2-1.jar")
 
 	utils := ctx.ModuleForTests(t, "ravenwood-utils", "android_common")
 	utils.Output(installPathPrefix + "/ravenwood-utils/framework-rules.ravenwood.jar")
