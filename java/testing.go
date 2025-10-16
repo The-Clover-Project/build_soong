@@ -209,6 +209,9 @@ var PrepareForTestWithJacocoInstrumentation = android.GroupFixturePreparers(
 				"//apex_available:platform",
 			],
 			compile_dex: true,
+			optimize: {
+				force_disabled_with_source_stubs: true,
+			},
 		}
 	`)),
 )
@@ -540,6 +543,9 @@ func gatherRequiredDepsForTest() string {
 				export_include_dirs: ["framework/aidl"],
 			},
 			compile_dex: true,
+			optimize: {
+				force_disabled_with_source_stubs: true,
+			},
 		}
 		java_library {
 			name: "framework-minus-apex",
@@ -550,6 +556,9 @@ func gatherRequiredDepsForTest() string {
 				export_include_dirs: ["framework/aidl"],
 			},
 			compile_dex: true,
+			optimize: {
+				force_disabled_with_source_stubs: true,
+			},
 		}
 
 		android_app {
