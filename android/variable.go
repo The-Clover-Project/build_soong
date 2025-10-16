@@ -820,6 +820,9 @@ type PartitionVariables struct {
 	VendorProductRestrictVendorFiles string   `json:",omitempty"`
 	VendorExceptionPaths             []string `json:",omitempty"`
 	VendorExceptionModules           []string `json:",omitempty"`
+
+	AllDistGoalOutputPairs []string `json:",omitempty"`
+	AllDistSrcDstPairs     []string `json:",omitempty"`
 }
 
 func boolPtr(v bool) *bool {
