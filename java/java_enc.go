@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"github.com/google/blueprint/gobtools"
 	"github.com/google/blueprint/uniquelist"
+	"unique"
 )
 
 // begin of aar.go
@@ -2231,12 +2232,14 @@ func (r HiddenAPIInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error 
 					return err
 				}
 				for val6, val7 := range val5 {
-					val8 := val6 == nil
+					val8 := val6 == unique.Handle[HiddenAPIScope]{}
 					if err = gobtools.EncodeBool(buf, val8); err != nil {
 						return err
 					}
 					if !val8 {
-						if err = (*val6).Encode(ctx, buf); err != nil {
+						if err = gobtools.EncodeReference(ctx, val6, buf, func(v unique.Handle[HiddenAPIScope], buf *bytes.Buffer) error {
+							return v.Value().Encode(ctx, buf)
+						}); err != nil {
 							return err
 						}
 					}
@@ -2314,27 +2317,34 @@ func (r *HiddenAPIInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error
 				return err
 			}
 			if val22 != -1 {
-				val19 = make(map[*HiddenAPIScope]android.Path, val22)
+				val19 = make(map[HiddenAPIScopeHandle]android.Path, val22)
 				for val23 := 0; val23 < int(val22); val23++ {
-					var val24 *HiddenAPIScope
+					var val24 HiddenAPIScopeHandle
 					var val25 android.Path
-					var val27 bool
-					if err = gobtools.DecodeBool(buf, &val27); err != nil {
+					var val28 bool
+					if err = gobtools.DecodeBool(buf, &val28); err != nil {
 						return err
 					}
-					if !val27 {
-						var val26 HiddenAPIScope
-						if err = val26.Decode(ctx, buf); err != nil {
+					if !val28 {
+						tmp, err := gobtools.DecodeReference(ctx, &val24, buf, func(value *unique.Handle[HiddenAPIScope], buf *bytes.Reader) error {
+							var val29 HiddenAPIScope
+							if err = val29.Decode(ctx, buf); err != nil {
+								return err
+							}
+							*value = unique.Make(val29)
+							return nil
+						})
+						if err != nil {
 							return err
 						}
-						val24 = &val26
+						val24 = *tmp
 					}
-					if val30, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+					if val31, err := gobtools.DecodeInterface(ctx, buf); err != nil {
 						return err
-					} else if val30 == nil {
+					} else if val31 == nil {
 						val25 = nil
 					} else {
-						val25 = val30.(android.Path)
+						val25 = val31.(android.Path)
 					}
 					val19[val24] = val25
 				}
@@ -2459,12 +2469,14 @@ func (r ModuleStubDexJars) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) er
 			return err
 		}
 		for val1, val2 := range r {
-			val3 := val1 == nil
+			val3 := val1 == unique.Handle[HiddenAPIScope]{}
 			if err = gobtools.EncodeBool(buf, val3); err != nil {
 				return err
 			}
 			if !val3 {
-				if err = (*val1).Encode(ctx, buf); err != nil {
+				if err = gobtools.EncodeReference(ctx, val1, buf, func(v unique.Handle[HiddenAPIScope], buf *bytes.Buffer) error {
+					return v.Value().Encode(ctx, buf)
+				}); err != nil {
 					return err
 				}
 			}
@@ -2485,27 +2497,34 @@ func (r *ModuleStubDexJars) Decode(ctx gobtools.EncContext, buf *bytes.Reader) e
 		return err
 	}
 	if val1 != -1 {
-		(*r) = make(map[*HiddenAPIScope]android.Path, val1)
+		(*r) = make(map[HiddenAPIScopeHandle]android.Path, val1)
 		for val2 := 0; val2 < int(val1); val2++ {
-			var val3 *HiddenAPIScope
+			var val3 HiddenAPIScopeHandle
 			var val4 android.Path
-			var val6 bool
-			if err = gobtools.DecodeBool(buf, &val6); err != nil {
+			var val7 bool
+			if err = gobtools.DecodeBool(buf, &val7); err != nil {
 				return err
 			}
-			if !val6 {
-				var val5 HiddenAPIScope
-				if err = val5.Decode(ctx, buf); err != nil {
+			if !val7 {
+				tmp, err := gobtools.DecodeReference(ctx, &val3, buf, func(value *unique.Handle[HiddenAPIScope], buf *bytes.Reader) error {
+					var val8 HiddenAPIScope
+					if err = val8.Decode(ctx, buf); err != nil {
+						return err
+					}
+					*value = unique.Make(val8)
+					return nil
+				})
+				if err != nil {
 					return err
 				}
-				val3 = &val5
+				val3 = *tmp
 			}
-			if val9, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+			if val10, err := gobtools.DecodeInterface(ctx, buf); err != nil {
 				return err
-			} else if val9 == nil {
+			} else if val10 == nil {
 				val4 = nil
 			} else {
-				val4 = val9.(android.Path)
+				val4 = val10.(android.Path)
 			}
 			(*r)[val3] = val4
 		}
