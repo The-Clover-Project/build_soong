@@ -208,6 +208,9 @@ message SoongEnvVars {
 
   // SOONG_INCREMENTAL_ANALYSIS
   optional string soong_incremental_analysis = 5;
+
+  // SOONG_NINJA
+  optional string soong_ninja = 6;
 }
 
 message SystemResourceInfo {
