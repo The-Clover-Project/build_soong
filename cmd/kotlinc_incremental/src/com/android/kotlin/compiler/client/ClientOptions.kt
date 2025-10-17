@@ -16,10 +16,11 @@
 
 package com.android.kotlin.compiler.client
 
+import com.android.kotlin.compiler.cli.FileDeltaOptions
 import com.android.kotlin.compiler.cli.Options
 import java.io.File
 
-class ClientOptions : Options {
+class ClientOptions : Options, FileDeltaOptions {
     var verbose = false
     var debug = false
 
@@ -81,7 +82,7 @@ class ClientOptions : Options {
         }
 
     private var _srcJarsDir: File? = null
-    var srcJarsDir: File
+    override var srcJarsDir: File
         get() {
             return _srcJarsDir
                 ?: throw IllegalStateException("Can not read srcJarsDir before it is set")
@@ -118,6 +119,14 @@ class ClientOptions : Options {
     var sourceDeltaFileName: String? = null
     val sourceDeltaFile: File?
         get() = if (sourceDeltaFileName != null) File(sourceDeltaFileName!!) else null
+
+    override val modifiedFiles: List<File>?
+        get() =
+            FileDeltaOptions.parseSourceChanges(sourceDeltaFile, srcJarsDirLocation)?.modifiedFiles
+
+    override val removedFiles: List<File>?
+        get() =
+            FileDeltaOptions.parseSourceChanges(sourceDeltaFile, srcJarsDirLocation)?.removedFiles
 
     var buildHistoryFileName: String = "build-history"
     val buildHistory: File

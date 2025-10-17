@@ -451,6 +451,83 @@ func TestKaptEncodeFlags(t *testing.T) {
 	}
 }
 
+func TestKsp(t *testing.T) {
+	t.Parallel()
+	bp := `
+		java_library {
+			name: "foo",
+			srcs: ["a.java", "b.kt"],
+			enable_ksp: true,
+			annotation_processor_flags: ["a=b", "c=d"],
+			plugins: ["bar", "baz"],
+			errorprone: {
+				extra_check_modules: ["my_check"],
+			},
+		}
+
+		java_plugin {
+			name: "bar",
+			processor_class: "com.bar",
+			srcs: ["b.java"],
+		}
+
+		java_plugin {
+			name: "baz",
+			processor_class: "com.baz",
+			srcs: ["b.java"],
+		}
+
+		java_plugin {
+			name: "my_check",
+			srcs: ["b.java"],
+		}`
+	t.Run("", func(t *testing.T) {
+		t.Parallel()
+		ctx, _ := testJava(t, bp)
+
+		buildOS := ctx.Config().BuildOS.String()
+
+		foo := ctx.ModuleForTests(t, "foo", "android_common")
+		kspStubs := foo.Rule("ksp")
+		kotlinc := foo.Rule("kotlinc")
+		javac := foo.Rule("javac")
+
+		bar := ctx.ModuleForTests(t, "bar", buildOS+"_common").Rule("javac").Output.String()
+		baz := ctx.ModuleForTests(t, "baz", buildOS+"_common").Rule("javac").Output.String()
+
+		// Test that the kotlin and java sources are passed to ksp and kotlinc
+		if len(kspStubs.Inputs) != 2 || kspStubs.Inputs[0].String() != "a.java" || kspStubs.Inputs[1].String() != "b.kt" {
+			t.Errorf(`foo ksp inputs %v != ["a.java", "b.kt"]`, kspStubs.Inputs)
+		}
+		if len(kotlinc.Inputs) != 2 || kotlinc.Inputs[0].String() != "a.java" || kotlinc.Inputs[1].String() != "b.kt" {
+			t.Errorf(`foo kotlinc inputs %v != ["a.java", "b.kt"]`, kotlinc.Inputs)
+		}
+
+		// Test that only the java sources are passed to javac
+		if len(javac.Inputs) != 1 || javac.Inputs[0].String() != "a.java" {
+			t.Errorf(`foo inputs %v != ["a.java"]`, javac.Inputs)
+		}
+
+		// Test that the processors are passed to ksp
+		expectedProcessorPath := bar + " " + baz
+		if kspStubs.Args["kspProcessorPath"] != expectedProcessorPath {
+			t.Errorf("expected kspProcessorPath %q, got %q", expectedProcessorPath, kspStubs.Args["kspProcessorPath"])
+		}
+		expectedProcessorOptions := "a=b:c=d"
+		if kspStubs.Args["processorOptions"] != expectedProcessorOptions {
+			t.Errorf("expected processorOptions %q, got %q", expectedProcessorOptions, kspStubs.Args["processorOptions"])
+		}
+
+		// Test that the processors are not passed to javac
+		if javac.Args["processorpath"] != "" {
+			t.Errorf("expected processorPath '', got %q", javac.Args["processorpath"])
+		}
+		if javac.Args["processor"] != "-proc:none" {
+			t.Errorf("expected processor '-proc:none', got %q", javac.Args["processor"])
+		}
+	})
+}
+
 func TestKotlinCompose(t *testing.T) {
 	t.Parallel()
 	result := android.GroupFixturePreparers(

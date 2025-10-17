@@ -18,6 +18,7 @@ package com.android.kotlin.compiler.client
 
 import com.android.kotlin.compiler.cli.CacheMarker
 import com.android.kotlin.compiler.cli.CacheMarkerError
+import com.android.kotlin.compiler.cli.FileDeltaOptions
 import com.android.kotlin.compiler.cli.HelpArgument
 import com.android.kotlin.compiler.cli.parseArgs
 import com.android.kotlin.compiler.snapshotter.fileToSnapshotFile
@@ -157,10 +158,9 @@ fun btaCompilation(opts: ClientOptions, cacheMarker: CacheMarker): CompilationRe
     return doBtaCompilation(
         opts.sources + opts.buildFileSources,
         opts.classPath + opts.buildFileClassPaths,
-        opts.srcJarsDir,
         opts.workingDir,
         opts.outputDir,
-        opts.sourceDeltaFile,
+        opts,
         kotlincArgs,
         opts.jvmArgs,
         Logger(opts.verbose, opts.debug),
@@ -171,10 +171,9 @@ fun btaCompilation(opts: ClientOptions, cacheMarker: CacheMarker): CompilationRe
 fun doBtaCompilation(
     sources: List<String>,
     classPath: List<String>,
-    srcJarsDirectory: File,
     workingDirectory: File,
     outputDirectory: File,
-    sourceDeltaFile: File?,
+    fileDeltaOptions: FileDeltaOptions,
     args: List<String>,
     jvmArgs: List<String>,
     logger: Logger,
@@ -213,8 +212,23 @@ fun doBtaCompilation(
     var sourceChanges: SourcesChanges = SourcesChanges.Unknown
     if (!outputDirectory.exists()) {
         incJvmCompilationConfig.forceNonIncrementalMode(true)
-    } else if (sourceDeltaFile != null) {
-        sourceChanges = parseSourceChanges(sourceDeltaFile, srcJarsDirectory.absolutePath)
+    } else {
+        val modifiedFiles = fileDeltaOptions.modifiedFiles
+        val removedFiles = fileDeltaOptions.removedFiles
+        if (modifiedFiles != null && removedFiles != null) {
+            sourceChanges = SourcesChanges.Known(modifiedFiles, removedFiles)
+
+            // If we've changed 95% or more of the files, don't bother with incremental.
+            // This may happen when a "version" change occurs in the tooling, meaning all input
+            // files
+            // are marked as changed and need to be recompiled.
+            // Better to leave some wiggle room here, rather than comparing the sizes exactly,
+            // in case of unforeseen edge cases.
+            // Setting this value to true _does_ generate incremental cache data for the next run.
+            if ((sourceChanges.modifiedFiles.size.toFloat() / sources.size.toFloat()) > 0.95) {
+                incJvmCompilationConfig.forceNonIncrementalMode(true)
+            }
+        }
     }
     compilationConfig.useIncrementalCompilation(
         workingDirectory,
@@ -263,66 +277,4 @@ fun getClasspathSnapshotParameters(
         newClasspathSnapshotFiles = cpsFiles,
         shrunkClasspathSnapshot = cps,
     )
-}
-
-enum class SourceChangeParseState {
-    STANDARD,
-    ZIP_FILE,
-    CONTENTS,
-}
-
-fun parseSourceChanges(sourceDeltaFile: File, zipSrcsDir: String): SourcesChanges.Known {
-    val modifiedList = mutableListOf<File>()
-    val removedList = mutableListOf<File>()
-    var state = SourceChangeParseState.STANDARD
-
-    for (entry in sourceDeltaFile.readText().split(" ")) {
-        if (entry.length < 1) {
-            continue
-        }
-
-        // Prepare the file name as it is used in different branches.
-        // Not that this file name is nonsense for a few entries, but won't be used for
-        // those entries.
-        var filename = entry.substring(1)
-        if (state == SourceChangeParseState.CONTENTS) {
-            filename = zipSrcsDir + File.separator + filename
-        }
-        when {
-            entry == "--file" -> {
-                state = SourceChangeParseState.ZIP_FILE
-                // We'll skip the next entry
-            }
-            entry == "--endfile" -> {
-                state = SourceChangeParseState.STANDARD
-            }
-            state == SourceChangeParseState.ZIP_FILE -> {
-                state = SourceChangeParseState.CONTENTS
-                // we now need to prefix our entries with the srcJars directory.
-            }
-            entry.startsWith("+") -> {
-                val f = File(filename)
-                if (f.extension == "kt") {
-                    if (!f.exists()) {
-                        throw RuntimeException(
-                            "Supplied file diff contains modified file that does not exist: $entry"
-                        )
-                    }
-                    modifiedList.add(f.absoluteFile)
-                }
-            }
-
-            entry.startsWith("-") -> {
-                val f = File(filename)
-                removedList.add(f.absoluteFile)
-            }
-
-            else -> {
-                throw RuntimeException(
-                    "Supplied file diff contains entry that can not be parsed: $entry"
-                )
-            }
-        }
-    }
-    return SourcesChanges.Known(modifiedFiles = modifiedList, removedFiles = removedList)
 }

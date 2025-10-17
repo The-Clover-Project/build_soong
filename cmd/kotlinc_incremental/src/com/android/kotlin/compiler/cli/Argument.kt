@@ -139,13 +139,13 @@ abstract class NoArgument<O : Options> : Argument<Boolean, O>() {
     }
 }
 
-abstract class SingleArgument<T, O : Options> : Argument<T, O>() {
+abstract class SingleArgument<T, O : Options>(val allowEmpty: Boolean = false) : Argument<T, O>() {
 
     override fun matches(arg: String) = arg.startsWith("-$argumentName=")
 
     override fun parse(arg: String, position: Iterator<String>, opts: O) {
         val splits = arg.split("=", limit = 2)
-        if (splits.size != 2 || splits[1].isEmpty()) {
+        if (splits.size != 2 || !allowEmpty && splits[1].isEmpty()) {
             error = "Required argument not supplied for $argumentName"
             return
         }
@@ -156,10 +156,70 @@ abstract class SingleArgument<T, O : Options> : Argument<T, O>() {
     abstract fun stringToType(arg: String): T
 }
 
-abstract class StringArgument<O : Options> : SingleArgument<String, O>() {
+abstract class BooleanArgument<O : Options> : SingleArgument<Boolean, O>() {
+    override fun stringToType(arg: String): Boolean {
+        val lower = arg.lowercase()
+        if (lower == "true" || lower == "1" || lower == "on") {
+            return true
+        } else if (lower == "false" || lower == "0" || lower == "off") {
+            return false
+        }
+
+        error = "Unrecognized option: $arg. Must be one of <true|1|on|false|0|off>."
+
+        return false
+    }
+}
+
+abstract class StringArgument<O : Options>(allowEmpty: Boolean = false) :
+    SingleArgument<String, O>(allowEmpty) {
     override fun stringToType(arg: String): String {
         return arg
     }
+}
+
+abstract class MapArgument<K, V, O : Options>(val separator: String) :
+    SingleArgument<Map<K, V>, O>() {
+    override fun stringToType(arg: String): Map<K, V> {
+        // TODO: this class handles no form of escaping
+        val kvs = arg.split(separator)
+        return kvs.associate {
+            val (k, v) = it.split("=")
+            kToType(k) to vToType(v)
+        }
+    }
+
+    abstract fun kToType(arg: String): K
+
+    abstract fun vToType(arg: String): V
+}
+
+abstract class StringMapArgument<O : Options>(separator: String) :
+    MapArgument<String, String, O>(separator) {
+    override fun kToType(arg: String) = arg
+
+    override fun vToType(arg: String) = arg
+}
+
+abstract class InputFileListArgument<O : Options>(allowEmpty: Boolean = true) :
+    StringArgument<O>(allowEmpty) {
+    override fun setOption(option: String, opts: O) {
+        val splitFiles = option.split(":")
+        val fileNames = mutableListOf<String>()
+        splitFiles.forEach {
+            if (it.startsWith("@")) {
+                val rspFile = File(it.substring(1))
+                val contents = rspFile.readText()
+                fileNames.addAll(contents.split(Regex("\\s+")).filter { it.isNotEmpty() })
+            } else if (it.isNotEmpty()) {
+                fileNames.add(it)
+            }
+        }
+        // TODO: validate files
+        setFiles(fileNames.map { File(it) }.toList(), opts)
+    }
+
+    abstract fun setFiles(files: List<File>, opts: O)
 }
 
 abstract class ReadableDirectoryArgument<O : Options> : StringArgument<O>() {
@@ -212,6 +272,32 @@ abstract class SubdirectoryArgument<O : Options> : StringArgument<O>() {
     }
 
     abstract fun setSubDirectory(dir: String, opts: O)
+}
+
+abstract class SourceDeltaArgument<O : Options> : StringArgument<O>() {
+    override val argumentName = "source-delta-file"
+    override val helpText =
+        """
+            Input file containing a list of added, modified, and deleted source files since the last
+            run. Additions and modifications should be the file name preceded by a +. Deletions should
+            be the file name preceded by a -. Files should be separated by white space.
+        """
+            .trimIndent()
+
+    override val default = null
+}
+
+abstract class SrcJarsDirArgument<O : Options> : ReadableDirectoryArgument<O>() {
+    override val argumentName = "src-jars-dir"
+    override val helpText =
+        """
+        Directory where src jars were unzipped into _before_ this client was invoked.
+        Any entries in the source-delta argument that are listed as being part of the
+        contents of another file should be located inside of here.
+        This option is REQUIRED.
+        """
+            .trimIndent()
+    override val default = null
 }
 
 fun isValidDirectoryForReading(filePath: String): String? {
