@@ -137,10 +137,8 @@ function create_mock_soong_for_java_lib {
 
   # Required for building java_library type modules.
   symlink_directory prebuilts/jdk
-  symlink_directory prebuilts/rust
   symlink_directory prebuilts/gcc
   symlink_directory external/turbine
-  symlink_directory external/rust
   symlink_directory external/gson
   symlink_directory external/ow2-asm
   symlink_directory external/protobuf
