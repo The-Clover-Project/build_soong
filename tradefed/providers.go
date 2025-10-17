@@ -6,7 +6,7 @@ import (
 	"github.com/google/blueprint"
 )
 
-//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+//go:generate go run ../../blueprint/gobtools/codegen
 
 // Data that test_module_config[_host] modules types will need from
 // their dependencies to write out build rules and AndroidMkEntries.

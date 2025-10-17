@@ -33,7 +33,7 @@ import (
 	"android/soong/java/config"
 )
 
-//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+//go:generate go run ../../blueprint/gobtools/codegen
 
 // This file contains the definition and the implementation of the base module that most
 // source-based Java module structs embed.

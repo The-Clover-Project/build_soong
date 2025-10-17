@@ -21,7 +21,7 @@ import (
 	"android/soong/android"
 )
 
-//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+//go:generate go run ../../blueprint/gobtools/codegen
 
 type prebuiltRadioImg struct {
 	android.ModuleBase

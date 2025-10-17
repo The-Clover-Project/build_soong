@@ -20,7 +20,7 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
-//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+//go:generate go run ../../blueprint/gobtools/codegen
 
 // This file contains support for using apex modules within an sdk.
 

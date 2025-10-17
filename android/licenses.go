@@ -24,7 +24,7 @@ import (
 	"github.com/google/blueprint"
 )
 
-//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+//go:generate go run ../../blueprint/gobtools/codegen
 
 // Adds cross-cutting licenses dependency to propagate license metadata through the build system.
 //

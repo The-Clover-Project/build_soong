@@ -23,7 +23,7 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
-//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+//go:generate go run ../../blueprint/gobtools/codegen
 
 var (
 	_ = pctx.HostBinToolVariable("licenseMetadataCmd", "build_license_metadata")

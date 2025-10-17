@@ -34,7 +34,7 @@ import (
 	"android/soong/rust/config"
 )
 
-//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+//go:generate go run ../../blueprint/gobtools/codegen
 
 var pctx = android.NewPackageContext("android/soong/rust")
 

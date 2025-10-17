@@ -22,7 +22,7 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
-//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+//go:generate go run ../../blueprint/gobtools/codegen
 
 func modulesOutputDirs(ctx BuilderContext, modules ...ModuleProxy) []string {
 	dirs := make([]string, 0, len(modules))

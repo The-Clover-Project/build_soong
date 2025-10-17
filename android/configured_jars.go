@@ -22,7 +22,7 @@ import (
 	"strings"
 )
 
-//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+//go:generate go run ../../blueprint/gobtools/codegen
 
 // The ConfiguredJarList struct provides methods for handling a list of (apex, jar) pairs.
 // Such lists are used in the build system for things like bootclasspath jars or system server jars.

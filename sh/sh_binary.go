@@ -27,7 +27,7 @@ import (
 	"android/soong/tradefed"
 )
 
-//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+//go:generate go run ../../blueprint/gobtools/codegen
 
 // sh_binary is for shell scripts (and batch files) that are installed as
 // executable files into .../bin/

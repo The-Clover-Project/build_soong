@@ -31,7 +31,7 @@ import (
 	"github.com/google/blueprint/uniquelist"
 )
 
-//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+//go:generate go run ../../blueprint/gobtools/codegen
 
 type AndroidLibraryDependency interface {
 	ExportPackage() android.Path

@@ -18,7 +18,7 @@ import (
 	"github.com/google/blueprint"
 )
 
-//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+//go:generate go run ../../blueprint/gobtools/codegen
 
 type TestSuiteModule interface {
 	Module

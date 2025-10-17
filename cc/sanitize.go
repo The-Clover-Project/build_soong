@@ -28,7 +28,7 @@ import (
 	"android/soong/etc"
 )
 
-//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+//go:generate go run ../../blueprint/gobtools/codegen
 
 var (
 	// Any C flags added by sanitizer which libTooling tools may not

@@ -30,7 +30,7 @@ import (
 	"android/soong/phony"
 )
 
-//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+//go:generate go run ../../blueprint/gobtools/codegen
 
 var (
 	pctx = android.NewPackageContext("android/soong/test_suites")

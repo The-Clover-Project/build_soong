@@ -33,7 +33,7 @@ import (
 	"android/soong/dexpreopt"
 )
 
-//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+//go:generate go run ../../blueprint/gobtools/codegen
 
 // A tag to associated a dependency with a specific api scope.
 type scopeDependencyTag struct {

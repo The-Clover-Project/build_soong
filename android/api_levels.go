@@ -21,7 +21,7 @@ import (
 	"strings"
 )
 
-//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+//go:generate go run ../../blueprint/gobtools/codegen
 
 func init() {
 	RegisterParallelSingletonType("api_levels", ApiLevelsSingleton)

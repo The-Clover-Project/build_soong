@@ -26,7 +26,7 @@ import (
 	"android/soong/android"
 )
 
-//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+//go:generate go run ../../blueprint/gobtools/codegen
 
 // Build rules and utilities to generate individual packages/modules/common/proto/classpaths.proto
 // config files based on build configuration to embed into /system and /apex on a device.

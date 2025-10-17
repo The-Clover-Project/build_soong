@@ -21,7 +21,7 @@ import (
 	"strings"
 )
 
-//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+//go:generate go run ../../blueprint/gobtools/codegen
 
 type SdkContext interface {
 	// SdkVersion returns SdkSpec that corresponds to the sdk_version property of the current module
