@@ -203,7 +203,7 @@ func main() {
 		if err != nil {
 			log.Fatal(err)
 		}
-		flags.Products = strings.Split(strings.TrimSpace(string(data)), "\n")
+		flags.Products = strings.Fields(string(data))
 	}
 
 	var errSummary error
@@ -242,7 +242,7 @@ func main() {
 func cleanMaps(s string) string {
 	used := make(map[string]bool)
 	maps := []string{}
-	for v := range strings.SplitSeq(s, " ") {
+	for _, v := range strings.Fields(s) {
 		v = filepath.Clean(v)
 		if v != "." && !used[v] {
 			used[v] = true
