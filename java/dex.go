@@ -297,6 +297,7 @@ var d8Inc, d8IncRE = pctx.MultiCommandRemoteStaticRules("d8Inc",
 			`. ${config.UsePartialCompileFile} && ` +
 			`${config.IncrementalDexInputCmd} ` +
 			`--classesJar $in --dexTarget $out --deps $d8Deps --outputDir $outDir --packageOutputDir $outDir/packages && ` +
+			`PATH=${config.JavaToolchain}:$$PATH ` +
 			`$d8Template${config.D8Cmd} ${config.D8Flags} $d8Flags --output $outDir --no-dex-input-jar $in --packages $out.rsp --mod-packages $out.inc.rsp --package-output $outDir/packages && ` +
 			`$zipTemplate${config.SoongZipCmd} $zipFlags -o $outDir/classes.dex.jar -C $outDir -f "$outDir/classes*.dex" && ` +
 			`${config.MergeZipsCmd} -D -stripFile "**/*.class" $mergeZipsFlags $out $outDir/classes.dex.jar $in && ` +
