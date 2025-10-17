@@ -15,11 +15,13 @@
 package android
 
 import (
+	"bytes"
 	"fmt"
 	"reflect"
 	"testing"
 
 	"github.com/google/blueprint"
+	"github.com/google/blueprint/gobtools"
 	"github.com/google/blueprint/proptools"
 )
 
@@ -1252,6 +1254,13 @@ type selectsTestProvider struct {
 	my_nonconfigurable_string_list []string
 }
 
+func (selectsTestProvider) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	return nil
+}
+
+func (selectsTestProvider) GetTypeId() int16 {
+	return -1
+}
 func (p *selectsTestProvider) String() string {
 	myBoolStr := "nil"
 	if p.my_bool != nil {
@@ -1292,6 +1301,14 @@ var selectsTestProviderKey = blueprint.NewProvider[selectsTestProvider]()
 
 type selectsTestInitializingProvider struct {
 	replacing_initialized_bool *bool
+}
+
+func (selectsTestInitializingProvider) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	return nil
+}
+
+func (selectsTestInitializingProvider) GetTypeId() int16 {
+	return -1
 }
 
 func (p *selectsTestInitializingProvider) String() string {
