@@ -25,6 +25,8 @@ var (
 	cpPreserveSymlinks = pctx.VariableConfigMethod("cpPreserveSymlinks",
 		Config.CpPreserveSymlinksFlags)
 
+	HostPrebuiltTag = pctx.VariableConfigMethod("HostPrebuiltTag", Config.PrebuiltOS)
+
 	// A phony rule that is not the built-in Ninja phony rule.  The built-in
 	// phony rule has special behavior that is sometimes not desired.  See the
 	// Ninja docs for more details.
@@ -60,6 +62,15 @@ var (
 		},
 		"cpFlags", "extraCmds")
 
+	// A copy rule wrapped with bash with bootstrapping
+	CpWithBashBootstrap = pctx.AndroidStaticRule("CpWithBashBootstrap",
+		blueprint.RuleParams{
+			Command:     "/bin/bash -c \"${rmSrc} -f $out && ${cpSrc} $cpFlags $cpPreserveSymlinks $in $out$extraCmds\"",
+			CommandDeps: []string{"${rmSrc}", "${cpSrc}", "${toybox}"},
+			Description: "cp $out",
+		},
+		"cpFlags", "extraCmds")
+
 	// A copy rule that doesn't preserve symlinks.
 	CpNoPreserveSymlink = pctx.AndroidStaticRule("CpNoPreserveSymlink",
 		blueprint.RuleParams{
@@ -87,6 +98,15 @@ var (
 	CpExecutableWithBash = pctx.AndroidStaticRule("CpExecutableWithBash",
 		blueprint.RuleParams{
 			Command:     "/bin/bash -c \"(rm -f $out && cp $cpFlags $cpPreserveSymlinks $in $out ) && (chmod +x $out$extraCmds )\"",
+			Description: "cp $out",
+		},
+		"cpFlags", "extraCmds")
+
+	// A copy executable rule wrapped with bash with bootstrapping
+	CpExecutableWithBashBootstrap = pctx.AndroidStaticRule("CpExecutableWithBashBootstrap",
+		blueprint.RuleParams{
+			Command:     "/bin/bash -c \"(${rmSrc} -f $out && ${cpSrc} $cpFlags $cpPreserveSymlinks $in $out ) && (${chmodSrc} +x $out$extraCmds )\"",
+			CommandDeps: []string{"${rmSrc}", "${cpSrc}", "${chmodSrc}", "${toybox}"},
 			Description: "cp $out",
 		},
 		"cpFlags", "extraCmds")
@@ -166,6 +186,76 @@ var (
 	highmemPool = blueprint.NewBuiltinPool("highmem_pool")
 )
 
+var commonToyboxSymlinks = []string{
+	"basename",
+	"cat",
+	"chmod",
+	"cmp",
+	"comm",
+	"cp",
+	"cut",
+	"date",
+	"dd",
+	"dirname",
+	"dos2unix",
+	"du",
+	"echo",
+	"egrep",
+	"env",
+	"file",
+	"find",
+	"getconf",
+	"getopt",
+	"grep",
+	"gzip",
+	"head",
+	"hostname",
+	"id",
+	"install",
+	"ln",
+	"ls",
+	"md5sum",
+	"mkdir",
+	"mktemp",
+	"mv",
+	"nl",
+	"od",
+	"paste",
+	"patch",
+	"printf",
+	"pwd",
+	"readlink",
+	"realpath",
+	"rm",
+	"rmdir",
+	"sed",
+	"seq",
+	"setsid",
+	"sha1sum",
+	"sha256sum",
+	"sha512sum",
+	"sleep",
+	"sort",
+	"stat",
+	"tail",
+	"tar",
+	"tee",
+	"test",
+	"timeout",
+	"touch",
+	"tr",
+	"true",
+	"truncate",
+	"uname",
+	"uniq",
+	"unix2dos",
+	"wc",
+	"which",
+	"whoami",
+	"xargs",
+	"xxd",
+}
+
 func init() {
 	pctx.Import("github.com/google/blueprint/bootstrap")
 
@@ -175,6 +265,18 @@ func init() {
 
 	pctx.HostBinToolVariable("MergeZipsCmd", "merge_zips")
 	pctx.HostBinToolVariable("AssembleVintf", "assemble_vintf")
+	pctx.SourcePathVariable("toybox", "prebuilts/build-tools/${HostPrebuiltTag}/bin/toybox")
+	pctx.SourcePathVariable("rmSrc", "prebuilts/build-tools/path/${HostPrebuiltTag}/rm")
+	pctx.SourcePathVariable("cpSrc", "prebuilts/build-tools/path/${HostPrebuiltTag}/cp")
+	pctx.SourcePathVariable("chmodSrc", "prebuilts/build-tools/path/${HostPrebuiltTag}/chmod")
+
+	hostBinToolVariables := func(names []string) {
+		for _, name := range names {
+			pctx.HostBinToolVariable(name, name)
+		}
+	}
+
+	hostBinToolVariables(commonToyboxSymlinks)
 }
 
 // CopyFileRule creates a ninja rule to copy path to outPath.
