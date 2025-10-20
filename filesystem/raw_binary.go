@@ -25,7 +25,7 @@ import (
 	"android/soong/android"
 )
 
-//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+//go:generate go run ../../blueprint/gobtools/codegen
 
 var (
 	toRawBinary = pctx.AndroidStaticRule("toRawBinary",

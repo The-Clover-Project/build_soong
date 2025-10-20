@@ -16,7 +16,7 @@ package android
 
 import "github.com/google/blueprint"
 
-//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+//go:generate go run ../../blueprint/gobtools/codegen
 
 // Providers of package filesystem
 // @auto-generate: gob

@@ -8,7 +8,7 @@ import (
 	"github.com/google/blueprint/depset"
 )
 
-//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+//go:generate go run ../../blueprint/gobtools/codegen
 
 // PlatformSanitizeable is an interface for sanitizing platform modules.
 type PlatformSanitizeable interface {

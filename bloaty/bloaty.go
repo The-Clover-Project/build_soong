@@ -22,7 +22,7 @@ import (
 	"github.com/google/blueprint"
 )
 
-//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+//go:generate go run ../../blueprint/gobtools/codegen
 
 const bloatyDescriptorExt = ".bloaty.csv"
 const protoFilename = "binary_sizes.pb.gz"

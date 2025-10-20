@@ -19,7 +19,7 @@ import (
 	"github.com/google/blueprint"
 )
 
-//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+//go:generate go run ../../blueprint/gobtools/codegen
 
 // MonolithicHiddenAPIInfo contains information needed/provided by the hidden API generation of the
 // monolithic hidden API files.

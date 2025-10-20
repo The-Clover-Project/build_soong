@@ -24,7 +24,7 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
-//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+//go:generate go run ../../blueprint/gobtools/codegen
 
 const allAconfigDeclarationsStorage = "all_aconfig_declarations_storage"
 
