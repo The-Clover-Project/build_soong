@@ -31,6 +31,12 @@ type TestSchedulingPlan struct {
 // @auto-generate: gob
 type TestSchedulingPlanProperties struct{}
 
+func (plan *TestSchedulingPlanProperties) Validate(ctx android.ModuleContext) {}
+
+func (plan *TestSchedulingPlanProperties) IsEmpty() bool {
+	return true
+}
+
 // @auto-generate: gob
 type TestSchedulingPlanInlinable struct {
 	TestSchedulingPlanProperties
@@ -40,6 +46,8 @@ type TestSchedulingPlanInlinable struct {
 var TestSchedulingPlanProvider = blueprint.NewProvider[TestSchedulingPlanProperties]()
 
 func (plan *TestSchedulingPlan) GenerateAndroidBuildActions(ctx android.ModuleContext) {
+	plan.configProperties.Validate(ctx)
+
 	// Create provider for TestSchedulingPlan information.
 	android.SetProvider(ctx, TestSchedulingPlanProvider, plan.configProperties)
 }

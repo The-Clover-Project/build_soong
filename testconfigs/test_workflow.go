@@ -34,9 +34,27 @@ type TestWorkflowProperties struct {
 	Scheduling_plan TestSchedulingPlanInlinable
 }
 
+func (workflow *TestWorkflowProperties) Validate(ctx android.ModuleContext) {
+	if workflow.Execution_plan.Name == "" {
+		ctx.ModuleErrorf("execution_plan must have a name")
+	}
+
+	if workflow.Scheduling_plan.Name == "" {
+		ctx.ModuleErrorf("scheduling_plan must have a name")
+	}
+
+	if workflow.Execution_plan.IsEmpty() && !ctx.OtherModuleExists(workflow.Execution_plan.Name) {
+		ctx.ModuleErrorf("failed to find referenced execution_plan %s", workflow.Execution_plan.Name)
+	} else {
+		workflow.Execution_plan.Validate(ctx)
+	}
+}
+
 var TestWorkflowProvider = blueprint.NewProvider[TestWorkflowProperties]()
 
 func (workflow *TestWorkflow) GenerateAndroidBuildActions(ctx android.ModuleContext) {
+	workflow.configProperties.Validate(ctx)
+
 	// Create provider for TestExecutionPlan information.
 	android.SetProvider(ctx, TestWorkflowProvider, workflow.configProperties)
 }

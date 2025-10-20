@@ -44,6 +44,15 @@ type TestTriggerInlineProperties struct {
 	Tests           []ModuleProperties
 }
 
+func (inline *TestTriggerInlineProperties) IsEmpty() bool {
+	if len(inline.Tests) > 0 ||
+		inline.Scheduling_plan.Name != "" ||
+		!inline.Scheduling_plan.IsEmpty() {
+		return false
+	}
+	return true
+}
+
 // @auto-generate: gob
 type TestTriggerInfo struct {
 	TestTriggerProperties
@@ -51,14 +60,42 @@ type TestTriggerInfo struct {
 	modulePath string
 }
 
+func (info *TestTriggerInfo) Validate(ctx android.ModuleContext) {
+	if info.TestTriggerInlineProperties.IsEmpty() {
+		// Reference mode.
+		for _, testWorkflow := range info.Test_workflows {
+			if !ctx.OtherModuleExists(testWorkflow) {
+				ctx.ModuleErrorf("failed to find referenced test_workflow %s", testWorkflow)
+			}
+		}
+	} else {
+		// Inline mode.
+		info.TestTriggerInlineProperties.Scheduling_plan.Validate(ctx)
+		testExecutionPlan := &TestExecutionPlanProperties{
+			Tests: info.TestTriggerInlineProperties.Tests,
+		}
+		testExecutionPlan.Validate(ctx)
+	}
+
+	for _, filePattern := range info.File_patterns {
+		locatedFiles := android.PathsForModuleSrc(ctx, []string{filePattern})
+		if len(locatedFiles) == 0 {
+			ctx.ModuleErrorf("test_trigger %s could not find any matches for file pattern '%s'", ctx.ModuleName(), filePattern)
+		}
+	}
+}
+
 var TestTriggerProvider = blueprint.NewProvider[TestTriggerInfo]()
 
 func (trigger *TestTrigger) GenerateAndroidBuildActions(ctx android.ModuleContext) {
-	// Create provider for TestTrigger information.
-	android.SetProvider(ctx, TestTriggerProvider, TestTriggerInfo{
+	info := TestTriggerInfo{
 		TestTriggerProperties: trigger.configProperties,
 		modulePath:            ctx.ModuleDir(),
-	})
+	}
+	info.Validate(ctx)
+
+	// Create provider for TestTrigger information.
+	android.SetProvider(ctx, TestTriggerProvider, info)
 }
 
 func TestTriggerFactory() android.Module {
