@@ -11,11 +11,11 @@ HARDWIRED_MOCK_TOP=
 REAL_TOP="$(readlink -f "$(dirname "$0")"/../../..)"
 
 function make_mock_top {
-  mock=$(mktemp -t -d st.XXXXX)
+  mock=$(mktemp -t -d st.XXXXXX)
   echo "$mock"
 }
 
-WARMED_UP_MOCK_TOP=$(mktemp -t soong_integration_tests_warmup.XXXXXX.tar.gz)
+WARMED_UP_MOCK_TOP=$(mktemp -t soong_integration_tests_warmup.tar.gz.XXXXXX)
 MOCK_TOP_TO_CLEAN_UP=
 if [[ -n "$HARDWIRED_MOCK_TOP" ]]; then
   MOCK_TOP="$HARDWIRED_MOCK_TOP"
@@ -50,7 +50,7 @@ function warmup_mock_top {
 
 function cleanup_mock_top {
   cd /
-  if [[ -d "$MOCK_TOP_TO_CLEAN_UP" ]]; then
+  if [[ -n "$MOCK_TOP_TO_CLEAN_UP" && -d "$MOCK_TOP_TO_CLEAN_UP" ]]; then
     rm -fr "$MOCK_TOP_TO_CLEAN_UP"
   fi
 }
@@ -137,10 +137,8 @@ function create_mock_soong_for_java_lib {
 
   # Required for building java_library type modules.
   symlink_directory prebuilts/jdk
-  symlink_directory prebuilts/rust
   symlink_directory prebuilts/gcc
   symlink_directory external/turbine
-  symlink_directory external/rust
   symlink_directory external/gson
   symlink_directory external/ow2-asm
   symlink_directory external/protobuf
@@ -374,7 +372,7 @@ function compare_incremental_and_full_analysis() {
     cp -pr out/soong/*.mk out/soong/build.test_arm64*.ninja incremental
 
     touch Android.bp
-    run_soong "$@"
+    run_soong SOONG_INCREMENTAL_ANALYSIS=false "$@"
     mkdir full
     cp -pr out/soong/*.mk out/soong/build.test_arm64*.ninja full
 
