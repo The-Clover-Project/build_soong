@@ -250,6 +250,11 @@ type BaseLinkerProperties struct {
 
 	// list of shared libs that should not be used to build this module
 	Exclude_shared_libs []string `android:"arch_variant"`
+
+	// Xom controls whether or not xom should be enabled for this module. Setting
+	// this to false will disable xom for all dependents which link this module
+	// statically.
+	Xom *bool
 }
 
 func (blp *BaseLinkerProperties) crt() bool {
@@ -294,6 +299,10 @@ func (linker *baseLinker) linkerProps() []interface{} {
 
 func (linker *baseLinker) baseLinkerProps() BaseLinkerProperties {
 	return linker.Properties
+}
+
+func (linker *baseLinker) Xom() *bool {
+	return linker.Properties.Xom
 }
 
 func CoalesceLibs(ctx android.BaseModuleContext, props *BaseLinkerProperties, deps Deps) Deps {
@@ -519,7 +528,9 @@ func CommonLinkerFlags(ctx android.ModuleContext, flags Flags, toolchain config.
 	if ctx.Host() && !ctx.Windows() && !staticLib {
 		flags.Global.LdFlags = append(flags.Global.LdFlags, RpathFlags(ctx)...)
 	}
-
+	if ctx.Device() {
+		flags.Local.LdFlags = append(flags.Local.LdFlags, XomFlags(ctx)...)
+	}
 	flags.Global.LdFlags = append(flags.Global.LdFlags, toolchain.ToolchainLdflags())
 	return flags
 }
@@ -764,4 +775,99 @@ func (linker *baseLinker) checkElfFile(ctx ModuleContext, sharedLibStem string, 
 	})
 
 	return outputFile
+}
+
+func XomFlags(ctx android.ModuleContext) []string {
+	flags := []string{}
+
+	// XOM is only supported on arm64 devices currently.
+	if ctx.Arch().ArchType != android.Arm64 {
+		return flags
+	}
+
+	// If XOM is explicitly false, do nothing
+	if XomDisabledByModule(ctx) {
+		return flags
+	}
+
+	// XOM is only supported on LinkableInterfaces (Rust and CC modules)
+	mod, ok := ctx.Module().(LinkableInterface)
+	if !ok {
+		return flags
+	}
+
+	enableXom := false
+	// If XOM is enabled by the config and it's not disabled by path, enable XOM for this module
+	if ctx.Config().EnableXOM() && !ctx.Config().XOMDisabledForPath(ctx.ModuleDir()) {
+		enableXom = true
+	}
+	// If XOM is explicitly true, enable it for this module.
+	if XomEnabledByModule(ctx) {
+		enableXom = true
+	}
+
+	// If any static dependencies have XOM disabled, we should disable XOM in this module (unless explicitly set),
+	// the assumption being if it's been explicitly disabled then there's probably incompatible
+	// code in the library which may get pulled in.
+	if enableXom {
+		ctx.VisitDirectDepsProxy(func(dep android.ModuleProxy) {
+			depInfo, hasLinkableInfo := android.OtherModuleProvider(ctx, dep, LinkableInfoProvider)
+
+			// If the dep isn't statically linked or isn't a Linkable, ignore
+			if !hasLinkableInfo || !(depInfo.Static || depInfo.Rlib) {
+				return
+			}
+
+			// If XOM is explicitly disabled, disable it for this module
+			if depInfo.Xom != nil && !*depInfo.Xom {
+				enableXom = false
+				return
+			}
+
+			// If XOM is disabled by path and XOM is not explicitly set to true, disable it for this module.
+			if depInfo.XomDisabledByPath && !Bool(depInfo.Xom) {
+				enableXom = false
+				return
+			}
+		})
+	}
+
+	// Enable execute-only if none of the dependencies disable it,
+	// or if it's explicitly set true (allows overriding deps or paths disabling it).
+	if enableXom || Bool(mod.Xom()) {
+		flags = append(flags,
+			"-Wl,--execute-only",
+			"-Wl,--rosegment",
+		)
+	}
+
+	return flags
+}
+
+// XomDisabledByModule returns true if XOM is explicitly disabled by the module
+// otherwise it returns false
+func XomDisabledByModule(ctx android.BaseModuleContext) bool {
+	c, ok := ctx.Module().(LinkableInterface)
+	if ok && c.Xom() != nil && !*c.Xom() {
+		return true
+	}
+	return false
+}
+
+// XomEnabledByModule returns true if XOM is explicitly enabled by the module
+// otherwise it returns false
+func XomEnabledByModule(ctx android.BaseModuleContext) bool {
+	c, ok := ctx.Module().(LinkableInterface)
+	if ok && c.Xom() != nil && *c.Xom() {
+		return true
+	}
+	return false
+}
+
+// XomEnabledForModule returns whether the module implicitly or explicitly has XOM
+// enabled. This differs from XomEnabledByModule, which checks if XOM is explicitly
+// enabled.
+func XomEnabledForModule(ctx android.BaseModuleContext) bool {
+	return ctx.Arch().ArchType == android.Arm64 && ctx.Config().EnableXOM() &&
+		!ctx.Config().XOMDisabledForPath(ctx.ModuleDir()) && !XomDisabledByModule(ctx)
 }

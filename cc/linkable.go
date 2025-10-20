@@ -275,6 +275,9 @@ type LinkableInterface interface {
 	// FuzzModule returns the fuzz.FuzzModule associated with the module.
 	FuzzModuleStruct() fuzz.FuzzModule
 	IsCrt() bool
+
+	// Xom returns the Xom *bool property value, nil if not explicitly set.
+	Xom() *bool
 }
 
 var (

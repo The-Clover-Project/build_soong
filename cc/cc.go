@@ -219,6 +219,7 @@ type LinkableInfo struct {
 	StaticExecutable     bool
 	Static               bool
 	Shared               bool
+	Rlib                 bool
 	Header               bool
 	HasStubsVariants     bool
 	StubsVersion         string
@@ -274,6 +275,9 @@ type LinkableInfo struct {
 	IsLLNDKMovedToApex       bool
 	ImplementationModuleName string
 	SelectedStl              string
+
+	Xom               *bool
+	XomDisabledByPath bool
 }
 
 // @auto-generate: gob
@@ -866,6 +870,8 @@ type linker interface {
 	defaultDistFiles() []android.Path
 
 	moduleInfoJSON(ctx ModuleContext, moduleInfoJSON *android.ModuleInfoJSON)
+
+	Xom() *bool
 }
 
 // specifiedDeps is a tuple struct representing dependencies of a linked binary owned by the linker.
@@ -2794,6 +2800,8 @@ func CreateCommonLinkableInfo(ctx android.ModuleContext, mod VersionedLinkableIn
 		Header:                          mod.Header(),
 		IsVndkPrebuiltLibrary:           mod.IsVndkPrebuiltLibrary(),
 		SelectedStl:                     mod.SelectedStl(),
+		Xom:                             mod.Xom(),
+		XomDisabledByPath:               ctx.Config().XOMDisabledForPath(ctx.ModuleDir()),
 	}
 
 	vi := mod.VersionedInterface()
@@ -4370,6 +4378,13 @@ func (c *Module) StaticExecutable() bool {
 		return b.static()
 	}
 	return false
+}
+
+func (c *Module) Xom() *bool {
+	if c.linker != nil {
+		return c.linker.Xom()
+	}
+	return nil
 }
 
 func (c *Module) Object() bool {

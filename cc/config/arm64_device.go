@@ -49,6 +49,7 @@ var (
 	}
 
 	arm64Ldflags = []string{
+		// Separate-code is required for XOM
 		"-Wl,-z,separate-code",
 		"-Wl,-z,separate-loadable-segments",
 	}

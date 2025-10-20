@@ -2203,6 +2203,10 @@ func (r LinkableInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		return err
 	}
 
+	if err = gobtools.EncodeBool(buf, r.Rlib); err != nil {
+		return err
+	}
+
 	if err = gobtools.EncodeBool(buf, r.Header); err != nil {
 		return err
 	}
@@ -2435,6 +2439,20 @@ func (r LinkableInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	if err = gobtools.EncodeString(buf, r.SelectedStl); err != nil {
 		return err
 	}
+
+	val7 := r.Xom == nil
+	if err = gobtools.EncodeBool(buf, val7); err != nil {
+		return err
+	}
+	if !val7 {
+		if err = gobtools.EncodeBool(buf, (*r.Xom)); err != nil {
+			return err
+		}
+	}
+
+	if err = gobtools.EncodeBool(buf, r.XomDisabledByPath); err != nil {
+		return err
+	}
 	return err
 }
 
@@ -2452,6 +2470,11 @@ func (r *LinkableInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error 
 	}
 
 	err = gobtools.DecodeBool(buf, &r.Shared)
+	if err != nil {
+		return err
+	}
+
+	err = gobtools.DecodeBool(buf, &r.Rlib)
 	if err != nil {
 		return err
 	}
@@ -2476,32 +2499,32 @@ func (r *LinkableInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error 
 		return err
 	}
 
-	if val9, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+	if val10, err := gobtools.DecodeInterface(ctx, buf); err != nil {
 		return err
-	} else if val9 == nil {
+	} else if val10 == nil {
 		r.UnstrippedOutputFile = nil
 	} else {
-		r.UnstrippedOutputFile = val9.(android.Path)
+		r.UnstrippedOutputFile = val10.(android.Path)
 	}
 
 	if err = r.OutputFile.Decode(ctx, buf); err != nil {
 		return err
 	}
 
-	var val13 int
-	err = gobtools.DecodeInt(buf, &val13)
+	var val14 int
+	err = gobtools.DecodeInt(buf, &val14)
 	if err != nil {
 		return err
 	}
-	if val13 != -1 {
-		r.CoverageFiles = make([]android.Path, val13)
-		for val14 := 0; val14 < int(val13); val14++ {
-			if val16, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+	if val14 != -1 {
+		r.CoverageFiles = make([]android.Path, val14)
+		for val15 := 0; val15 < int(val14); val15++ {
+			if val17, err := gobtools.DecodeInterface(ctx, buf); err != nil {
 				return err
-			} else if val16 == nil {
-				r.CoverageFiles[val14] = nil
+			} else if val17 == nil {
+				r.CoverageFiles[val15] = nil
 			} else {
-				r.CoverageFiles[val14] = val16.(android.Path)
+				r.CoverageFiles[val15] = val17.(android.Path)
 			}
 		}
 	}
@@ -2515,20 +2538,20 @@ func (r *LinkableInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error 
 		return err
 	}
 
-	var val21 int
-	err = gobtools.DecodeInt(buf, &val21)
+	var val22 int
+	err = gobtools.DecodeInt(buf, &val22)
 	if err != nil {
 		return err
 	}
-	if val21 != -1 {
-		r.SAbiDumpFiles = make([]android.Path, val21)
-		for val22 := 0; val22 < int(val21); val22++ {
-			if val24, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+	if val22 != -1 {
+		r.SAbiDumpFiles = make([]android.Path, val22)
+		for val23 := 0; val23 < int(val22); val23++ {
+			if val25, err := gobtools.DecodeInterface(ctx, buf); err != nil {
 				return err
-			} else if val24 == nil {
-				r.SAbiDumpFiles[val22] = nil
+			} else if val25 == nil {
+				r.SAbiDumpFiles[val23] = nil
 			} else {
-				r.SAbiDumpFiles[val22] = val24.(android.Path)
+				r.SAbiDumpFiles[val23] = val25.(android.Path)
 			}
 		}
 	}
@@ -2558,15 +2581,15 @@ func (r *LinkableInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error 
 		return err
 	}
 
-	var val31 int
-	err = gobtools.DecodeInt(buf, &val31)
+	var val32 int
+	err = gobtools.DecodeInt(buf, &val32)
 	if err != nil {
 		return err
 	}
-	if val31 != -1 {
-		r.ExportedCrateLinkDirs = make([]string, val31)
-		for val32 := 0; val32 < int(val31); val32++ {
-			err = gobtools.DecodeString(buf, &r.ExportedCrateLinkDirs[val32])
+	if val32 != -1 {
+		r.ExportedCrateLinkDirs = make([]string, val32)
+		for val33 := 0; val33 < int(val32); val33++ {
+			err = gobtools.DecodeString(buf, &r.ExportedCrateLinkDirs[val33])
 			if err != nil {
 				return err
 			}
@@ -2633,17 +2656,17 @@ func (r *LinkableInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error 
 		return err
 	}
 
-	var val47 bool
-	if err = gobtools.DecodeBool(buf, &val47); err != nil {
+	var val48 bool
+	if err = gobtools.DecodeBool(buf, &val48); err != nil {
 		return err
 	}
-	if !val47 {
-		var val46 bool
-		err = gobtools.DecodeBool(buf, &val46)
+	if !val48 {
+		var val47 bool
+		err = gobtools.DecodeBool(buf, &val47)
 		if err != nil {
 			return err
 		}
-		r.Installable = &val46
+		r.Installable = &val47
 	}
 
 	err = gobtools.DecodeString(buf, &r.RelativeInstallPath)
@@ -2676,15 +2699,15 @@ func (r *LinkableInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error 
 		return err
 	}
 
-	var val56 int
-	err = gobtools.DecodeInt(buf, &val56)
+	var val57 int
+	err = gobtools.DecodeInt(buf, &val57)
 	if err != nil {
 		return err
 	}
-	if val56 != -1 {
-		r.Symlinks = make([]string, val56)
-		for val57 := 0; val57 < int(val56); val57++ {
-			err = gobtools.DecodeString(buf, &r.Symlinks[val57])
+	if val57 != -1 {
+		r.Symlinks = make([]string, val57)
+		for val58 := 0; val58 < int(val57); val58++ {
+			err = gobtools.DecodeString(buf, &r.Symlinks[val58])
 			if err != nil {
 				return err
 			}
@@ -2695,15 +2718,15 @@ func (r *LinkableInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error 
 		return err
 	}
 
-	var val62 int
-	err = gobtools.DecodeInt(buf, &val62)
+	var val63 int
+	err = gobtools.DecodeInt(buf, &val63)
 	if err != nil {
 		return err
 	}
-	if val62 != -1 {
-		r.FuzzSharedLibraries = make([]InstallPair, val62)
-		for val63 := 0; val63 < int(val62); val63++ {
-			if err = r.FuzzSharedLibraries[val63].Decode(ctx, buf); err != nil {
+	if val63 != -1 {
+		r.FuzzSharedLibraries = make([]InstallPair, val63)
+		for val64 := 0; val64 < int(val63); val64++ {
+			if err = r.FuzzSharedLibraries[val64].Decode(ctx, buf); err != nil {
 				return err
 			}
 		}
@@ -2730,6 +2753,24 @@ func (r *LinkableInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error 
 	}
 
 	err = gobtools.DecodeString(buf, &r.SelectedStl)
+	if err != nil {
+		return err
+	}
+
+	var val72 bool
+	if err = gobtools.DecodeBool(buf, &val72); err != nil {
+		return err
+	}
+	if !val72 {
+		var val71 bool
+		err = gobtools.DecodeBool(buf, &val71)
+		if err != nil {
+			return err
+		}
+		r.Xom = &val71
+	}
+
+	err = gobtools.DecodeBool(buf, &r.XomDisabledByPath)
 	if err != nil {
 		return err
 	}

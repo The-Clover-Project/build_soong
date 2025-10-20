@@ -386,6 +386,13 @@ func (mod *Module) StaticExecutable() bool {
 	return mod.StaticallyLinked()
 }
 
+func (mod *Module) Xom() *bool {
+	if mod.compiler == nil {
+		return nil
+	}
+	return mod.compiler.Xom()
+}
+
 func (mod *Module) ApexExclude() bool {
 	if mod.compiler != nil {
 		if library, ok := mod.compiler.(libraryInterface); ok {
@@ -1228,6 +1235,7 @@ func (mod *Module) GenerateAndroidBuildActions(actx android.ModuleContext) {
 	linkableInfo := cc.CreateCommonLinkableInfo(ctx, mod)
 	linkableInfo.Static = mod.Static()
 	linkableInfo.Shared = mod.Shared()
+	linkableInfo.Rlib = mod.Rlib()
 	linkableInfo.CrateName = mod.CrateName()
 	linkableInfo.ExportedCrateLinkDirs = mod.ExportedCrateLinkDirs()
 	if lib, ok := mod.compiler.(cc.VersionedInterface); ok {
