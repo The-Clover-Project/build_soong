@@ -761,8 +761,10 @@ func (d *dexer) r8Flags(ctx android.ModuleContext, dexParams *compileDexParams, 
 	r8Deps = append(r8Deps, flagFiles...)
 
 	// TODO(b/70942988): This is included from build/make/core/proguard.flags
-	r8Deps = append(r8Deps, android.PathForSource(ctx,
-		"build/make/core/proguard_basic_keeps.flags"))
+	r8Deps = append(r8Deps,
+		android.PathForSource(ctx, "build/make/core/proguard_basic_keeps.flags"),
+		android.PathForSource(ctx, "build/make/core/proguard/kotlin.flags"),
+	)
 
 	r8Flags = append(r8Flags, opt.Proguard_flags.GetOrDefault(ctx, nil)...)
 
