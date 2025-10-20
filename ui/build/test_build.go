@@ -81,6 +81,8 @@ func testForDanglingRules(ctx Context, config Config) {
 	buildHostnameFilePath := filepath.Join(outDir, "soong", "build_hostname.txt")
 	buildNumberFilePath := filepath.Join(outDir, "soong", "build_number.txt")
 
+	partialCompileSource := config.DeviceUsePartialCompile()
+
 	// release-config files are generated from the initial lunch or Kati phase
 	// before running soong and ninja.
 	releaseConfigDir := filepath.Join(outDir, "soong", "release-config")
@@ -107,6 +109,7 @@ func testForDanglingRules(ctx Context, config Config) {
 			line == buildDatetimeFilePath ||
 			line == buildHostnameFilePath ||
 			line == buildNumberFilePath ||
+			line == partialCompileSource ||
 			line == config.BuildUUIDFile() ||
 			strings.HasPrefix(line, releaseConfigDir) ||
 			buildFingerprintFilePattern.MatchString(line) {
