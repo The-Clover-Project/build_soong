@@ -771,6 +771,11 @@ func runSoong(ctx Context, config Config, enforceNoSoongOutput bool) {
 	if !config.SkipKati() {
 		distGzipFile(ctx, config, config.SoongAndroidMk(), "soong_ui/soong")
 		distGzipFile(ctx, config, config.SoongMakeVarsMk(), "soong_ui/soong")
+	} else {
+		soongPhonyTargets := config.SoongPhonyTargets()
+		if ok, _ := fileExists(soongPhonyTargets); ok {
+			distGzipFile(ctx, config, soongPhonyTargets, "soong_ui/soong")
+		}
 	}
 
 	if config.JsonModuleGraph() {
