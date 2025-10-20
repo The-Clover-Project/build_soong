@@ -22,9 +22,12 @@ bootstrap_go_package {
     name: "soong-provenance",
     pkgPath: "android/soong/provenance",
     srcs: [
+        "provenance_enc.go",
         "provenance_singleton.go",
     ],
     deps: [
+        "blueprint",
+        "blueprint-gobtools",
         "soong-android",
     ],
     testSrcs: [

@@ -77,6 +77,8 @@ var (
 		// Making deprecated usages an error causes extreme pain when trying to
 		// deprecate anything.
 		"-Wno-error=deprecated-declarations",
+		// http://b/315246135 temporarily disabled
+		"-Wno-error=unused-variable",
 
 		// Warnings disabled by default.
 
@@ -237,7 +239,13 @@ var (
 	// These flags are appended after the module's cflags, so they cannot be
 	// overridden from Android.bp files.
 	//
-	// NOTE: if you need to disable a warning to unblock a compiler upgrade
+	// NOTE: Some warnings are disabled in this section (and
+	// noOverrideExternalGlobalCflags below). If they were disabled in
+	// commonGlobalCflags (and externalCflags below), these disabled flags will
+	// be overridden when modules that opt into`-Wall`, `-Wextra` in their
+	// `cflags`.  (TODO(b/444266638) to remove and forbid these flags from Android.bp.
+	//
+	// If you need to disable a warning to unblock a compiler upgrade
 	// and it is only triggered by third party code, add it to
 	// extraExternalCflags (if possible) or noOverrideExternalGlobalCflags
 	// (if the former doesn't work). If the new warning also occurs in first
@@ -280,12 +288,6 @@ var (
 		// Disable some warnings to unblock compiler upgrades. All of the flags below
 		// should eventually be removed or moved to other sections.
 
-		// http://b/161386391 adding -Werror=pointer-to-int-cast, which
-		// also controls -Wvoid-pointer-to-int-cast, -Wpointer-to-enum-cast
-		// and -Wvoid-pointer-to-enum-cast
-		"-Wno-pointer-to-int-cast",
-		// http://b/315246135 temporarily disabled
-		"-Wno-error=unused-variable",
 		// Disabled because it produces many false positives. http://b/323050926
 		"-Wno-missing-field-initializers",
 		// http://b/323050889
@@ -293,14 +295,13 @@ var (
 
 		// http://b/72331526 Disable -Wtautological-* until the instances detected by these
 		// new warnings are fixed.
-		"-Wno-tautological-constant-compare",
+		"-Wno-error=tautological-constant-compare",
 		// http://b/145211066
 		"-Wno-implicit-int-float-conversion",
 		// New warnings to be fixed after clang-r377782.
 		"-Wno-tautological-overlap-compare", // http://b/148815696
 		// New warnings to be fixed after clang-r383902.
 		"-Wno-deprecated-copy",                      // http://b/153746672
-		"-Wno-range-loop-construct",                 // http://b/153747076
 		"-Wno-zero-as-null-pointer-constant",        // http://b/68236239
 		"-Wno-deprecated-anon-enum-enum-conversion", // http://b/153746485
 		"-Wno-deprecated-enum-enum-conversion",
@@ -357,13 +358,13 @@ var (
 		"-Wno-unused",
 		"-Wno-unused-but-set-variable",
 		"-Wno-deprecated",
+		"-Wno-tautological-constant-compare",
 	}
 
-	// Similar to noOverrideGlobalCflags, but applies only to third-party code
-	// (see extraExternalCflags).
-	// This section can unblock compiler upgrades when a third party module that
-	// enables -Werror and some group of warnings explicitly triggers newly
-	// added warnings.
+	// This is similar to noOverrideGlobalCflags, but applies only to third-party
+	// code. This section can unblock compiler upgrades when a third party module
+	// that enables -Wall, -Wextra, or a particular warnings explicitly triggers
+	// newly added warnings. See note above noOverrideGlobalCflags.
 	noOverrideExternalGlobalCflags = []string{
 		// http://b/151457797
 		"-fcommon",
@@ -382,6 +383,11 @@ var (
 		"-Wno-array-parameter",
 		"-Wno-gnu-offsetof-extensions",
 		"-Wno-pessimizing-move",
+
+		// http://b/161386391 adding -Werror=pointer-to-int-cast, which
+		// also controls -Wvoid-pointer-to-int-cast, -Wpointer-to-enum-cast
+		// and -Wvoid-pointer-to-enum-cast
+		"-Wno-pointer-to-int-cast",
 	}
 
 	llvmNextExtraCommonGlobalCflags = []string{
@@ -408,7 +414,7 @@ var (
 	ClangDefaultBase = "prebuilts/clang/host"
 	// The Clang version used in the trunk branch.
 	// NOTE: This is deprecated and will be removed in a future version, use the getter function instead.
-	ClangDefaultVersion = "clang-r563880"
+	ClangDefaultVersion = "clang-r574158"
 	// The Clang short version used in the trunk branch.
 	// NOTE: This is deprecated and will be removed in a future version, use the getter function instead.
 	ClangDefaultShortVersion = "21"
@@ -488,6 +494,14 @@ func init() {
 
 	pctx.VariableFunc("NoOverrideGlobalCflags", func(ctx android.PackageVarContext) string {
 		flags := noOverrideGlobalCflags
+		if ClangVersionAtLeast(ctx, 574158) {
+			flags = append(flags, "-Wno-unterminated-string-initialization")
+			flags = append(flags, "-Wno-implicit-int-conversion-on-negation")
+			flags = append(flags, "-Wno-default-const-init-field-unsafe")
+			flags = append(flags, "-Wno-default-const-init-var-unsafe")
+			flags = append(flags, "-Wno-preferred-type-bitfield-enum-conversion")
+			flags = append(flags, "-Wno-implicit-enum-enum-cast")
+		}
 		if ctx.Config().IsEnvTrue("LLVM_NEXT") {
 			flags = append(noOverrideGlobalCflags, llvmNextExtraCommonGlobalCflags...)
 			IllegalFlags = []string{} // Don't fail build while testing a new compiler.

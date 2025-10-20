@@ -18,6 +18,9 @@ import (
 	"github.com/google/blueprint"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
+// @auto-generate: gob
 type LicenseInfo struct {
 	PackageName                *string
 	EffectiveLicenseText       NamedPaths

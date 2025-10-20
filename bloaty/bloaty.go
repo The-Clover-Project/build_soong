@@ -22,6 +22,8 @@ import (
 	"github.com/google/blueprint"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 const bloatyDescriptorExt = ".bloaty.csv"
 const protoFilename = "binary_sizes.pb.gz"
 
@@ -56,6 +58,7 @@ func init() {
 }
 
 // measuredFiles contains the paths of the files measured by a module.
+// @auto-generate: gob
 type measuredFiles struct {
 	paths []android.WritablePath
 }

@@ -22,7 +22,10 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/google/blueprint"
 	"github.com/google/blueprint/metrics"
+	"github.com/google/blueprint/proptools"
+
 	"google.golang.org/protobuf/proto"
 
 	soong_metrics_proto "android/soong/ui/metrics/metrics_proto"
@@ -31,11 +34,22 @@ import (
 var soongMetricsOnceKey = NewOnceKey("soong metrics")
 
 type soongMetrics struct {
-	modules              int
-	variants             int
-	incrementalSupported int
-	incrementalRestored  int
-	perfCollector        perfCollector
+	modules               int
+	variants              int
+	incrementalModules    incrementalMetrics
+	incrementalSingletons incrementalMetrics
+	perfCollector         perfCollector
+	incrementalAnalysis   bool
+	incrementalEnabled    bool
+}
+
+type incrementalMetrics struct {
+	supported              int
+	cacheHit               int
+	providersCached        map[string]int
+	providersRestored      map[string]int
+	totalProvidersCached   int
+	totalProvidersRestored int
 }
 
 type perfCollector struct {
@@ -45,17 +59,23 @@ type perfCollector struct {
 
 func getSoongMetrics(config Config) *soongMetrics {
 	return config.Once(soongMetricsOnceKey, func() interface{} {
-		return &soongMetrics{}
+		return &soongMetrics{
+			incrementalModules: incrementalMetrics{
+				providersCached:   make(map[string]int),
+				providersRestored: make(map[string]int),
+			},
+		}
 	}).(*soongMetrics)
-}
-
-func init() {
-	RegisterParallelSingletonType("soong_metrics", soongMetricsSingletonFactory)
 }
 
 func soongMetricsSingletonFactory() Singleton { return soongMetricsSingleton{} }
 
 type soongMetricsSingleton struct{}
+
+func (soongMetricsSingleton) IncrementalSupported() bool {
+	// always run this to collect metrics.
+	return false
+}
 
 func (soongMetricsSingleton) GenerateBuildActions(ctx SingletonContext) {
 	metrics := getSoongMetrics(ctx.Config())
@@ -63,27 +83,73 @@ func (soongMetricsSingleton) GenerateBuildActions(ctx SingletonContext) {
 		if ctx.PrimaryModuleProxy(m) == m {
 			metrics.modules++
 		}
-		supported, restored := m.IncrementalInfo()
-		if supported {
-			metrics.incrementalSupported++
+		info := m.IncrementalInfo()
+		if info.IncrementalSupported {
+			metrics.incrementalModules.supported++
 		}
-		if restored {
-			metrics.incrementalRestored++
+		if info.IncrementalRestored {
+			metrics.incrementalModules.cacheHit++
+
+			for i, unRestored := range info.HasUnrestoredProvider {
+				if info.ProviderInitialValueHashes[i] != proptools.ZeroHash && blueprint.ProviderMutator(i) == "" {
+					metrics.incrementalModules.providersCached[blueprint.ProviderType(i)]++
+					metrics.incrementalModules.totalProvidersCached++
+					if !unRestored {
+						metrics.incrementalModules.providersRestored[blueprint.ProviderType(i)]++
+						metrics.incrementalModules.totalProvidersRestored++
+					}
+				}
+			}
 		}
 		metrics.variants++
 	})
+
+	ctx.VisitAllSingletons(func(s blueprint.SingletonProxy) {
+		info := s.IncrementalInfo()
+		if info.IncrementalSupported {
+			metrics.incrementalSingletons.supported++
+		}
+		if info.IncrementalRestored {
+			metrics.incrementalSingletons.cacheHit++
+		}
+	})
+
+	metrics.incrementalAnalysis = ctx.GetIncrementalAnalysis()
+	metrics.incrementalEnabled = ctx.GetIncrementalEnabled()
 }
 
 func collectMetrics(config Config, eventHandler *metrics.EventHandler) *soong_metrics_proto.SoongBuildMetrics {
-	metrics := &soong_metrics_proto.SoongBuildMetrics{}
+	metrics := &soong_metrics_proto.SoongBuildMetrics{
+		IncrementalInfo: &soong_metrics_proto.IncrementalInfo{
+			ModuleMetrics: &soong_metrics_proto.IncrementalMetrics{
+				Providers: make(map[string]*soong_metrics_proto.ProviderMetrics),
+			},
+			SingletonMetrics: &soong_metrics_proto.IncrementalMetrics{},
+		},
+	}
 
 	soongMetrics := getSoongMetrics(config)
 	if soongMetrics.modules > 0 {
 		metrics.Modules = proto.Uint32(uint32(soongMetrics.modules))
 		metrics.Variants = proto.Uint32(uint32(soongMetrics.variants))
 	}
-	metrics.IncrementalSupported = proto.Uint32(uint32(soongMetrics.incrementalSupported))
-	metrics.IncrementalRestored = proto.Uint32(uint32(soongMetrics.incrementalRestored))
+	metrics.IncrementalInfo.IncrementalAnalysisUsed = proto.Bool(soongMetrics.incrementalAnalysis)
+	metrics.IncrementalInfo.IncrementalAnalysisEnabled = proto.Bool(soongMetrics.incrementalEnabled)
+	metrics.IncrementalInfo.ModuleMetrics.Supported = proto.Uint32(uint32(soongMetrics.incrementalModules.supported))
+	metrics.IncrementalInfo.ModuleMetrics.CacheHit = proto.Uint32(uint32(soongMetrics.incrementalModules.cacheHit))
+	for k, v := range soongMetrics.incrementalModules.providersCached {
+		metrics.IncrementalInfo.ModuleMetrics.Providers[k] = &soong_metrics_proto.ProviderMetrics{
+			ProvidersCached: proto.Uint32(uint32(v)),
+		}
+	}
+	for k, v := range soongMetrics.incrementalModules.providersRestored {
+		metrics.IncrementalInfo.ModuleMetrics.Providers[k].ProvidersRestored = proto.Uint32(uint32(v))
+	}
+	metrics.IncrementalInfo.ModuleMetrics.TotalProvidersCached = proto.Uint32(uint32(soongMetrics.incrementalModules.totalProvidersCached))
+	metrics.IncrementalInfo.ModuleMetrics.TotalProvidersRestored = proto.Uint32(uint32(soongMetrics.incrementalModules.totalProvidersRestored))
+
+	metrics.IncrementalInfo.SingletonMetrics.Supported = proto.Uint32(uint32(soongMetrics.incrementalSingletons.supported))
+	metrics.IncrementalInfo.SingletonMetrics.CacheHit = proto.Uint32(uint32(soongMetrics.incrementalSingletons.cacheHit))
 
 	soongMetrics.perfCollector.stop <- true
 	metrics.PerfCounters = soongMetrics.perfCollector.events

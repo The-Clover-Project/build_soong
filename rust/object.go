@@ -105,8 +105,10 @@ func (object *objectDecorator) compile(ctx ModuleContext, flags Flags, deps Path
 
 	flags.RustFlags = append(flags.RustFlags, deps.depFlags...)
 	object.baseCompiler.unstrippedOutputFile = outputFile
+	checkJsonFile := android.PathForModuleOut(ctx, outputFile.Base()+".checkJson")
+	object.checkJsonFile = android.OptionalPathForPath(checkJsonFile)
 
-	ret.kytheFile = TransformSrcToObject(ctx, crateRootPath, deps, flags, outputFile).kytheFile
+	ret.kytheFile = TransformSrcToObject(ctx, crateRootPath, deps, flags, outputFile, checkJsonFile).kytheFile
 	return ret
 }
 

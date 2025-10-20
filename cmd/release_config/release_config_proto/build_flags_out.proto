@@ -54,6 +54,9 @@ message FlagArtifact {
 
   // Trace of where the flag value was assigned.
   repeated Tracepoint traces = 8;
+
+  // Whether this flag has multiple declarations.
+  optional bool duplicate = 9;
 }
 
 message FlagArtifacts {
@@ -117,3 +120,19 @@ message ReleaseConfigsArtifact {
   map<string, ReleaseConfigMap> release_config_maps_map = 3;
 }
 
+message DuplicateAllowlist {
+  // The path to the duplicate_allowlist.txt file.
+  optional string path = 1;
+
+  // The allowed duplicates.
+  repeated string allowed = 2;
+}
+
+message DuplicateFlagsArtifact {
+  // All flags declared.
+  // key: flag name, value: FlagArtifact
+  map <string, FlagArtifact> flag_artifact_map = 1;
+
+  // Contents of duplicate_allowlist.txt files.
+  repeated DuplicateAllowlist duplicate_allowlists = 2;
+}

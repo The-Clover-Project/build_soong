@@ -328,7 +328,7 @@ func (c Config) ReleaseAconfigStorageVersion() string {
 
 // TODO: b/414412266 Remove this flag after feature released.
 func (c Config) ReleaseJarjarFlagsInFramework() bool {
-	return c.config.productVariables.GetBuildFlagBool("RELEASE_JARJAR_FLAGS_IN_FRAMEWORK")
+	return c.GetBuildFlagBool("RELEASE_JARJAR_FLAGS_IN_FRAMEWORK")
 }
 
 func (c Config) ReleaseMainlineBetaNamespaceConfig() string {
@@ -337,6 +337,10 @@ func (c Config) ReleaseMainlineBetaNamespaceConfig() string {
 	} else {
 		return ""
 	}
+}
+
+func (c Config) ReleaseRemoveBetaFlagsFromAconfigFlagsPb() bool {
+	return c.GetBuildFlagBool("RELEASE_REMOVE_BETA_FLAGS_FROM_ACONFIG_FLAGS_PB")
 }
 
 // A DeviceConfig object represents the configuration for a particular device
@@ -444,10 +448,14 @@ type config struct {
 	// modulesForTests stores the list of modules that exist during Soong tests.  It is nil
 	// when not running Soong tests.
 	modulesForTests *modulesForTests
+
+	buildUUIDFile string
 }
 
 type partialCompileFlags struct {
-	// Whether to use d8 instead of r8
+	// Whether to use d8 instead of r8.
+	// Known issue (b/428178183): Super Partition overflow is probable when
+	// many outputs are built with this flag.
 	Use_d8 bool
 
 	// Whether to disable stub validation for partial compile builds.
@@ -473,12 +481,12 @@ type partialCompileFlags struct {
 	// Add others as needed.
 }
 
-// These are the flags when `SOONG_PARTIAL_COMPILE=default`.
-var defaultPartialCompileFlags = partialCompileFlags{}
+// These are the flags when `SOONG_PARTIAL_COMPILE=false`.
+var falsePartialCompileFlags = partialCompileFlags{}
 
 // These are the flags when `SOONG_PARTIAL_COMPILE=true`.
-var enabledPartialCompileFlags = partialCompileFlags{
-	Use_d8:                         true,
+var truePartialCompileFlags = partialCompileFlags{
+	Use_d8:                         false,
 	Disable_stub_validation:        true,
 	Enable_inc_kotlin:              true,
 	Enable_inc_javac:               true,
@@ -488,15 +496,17 @@ var enabledPartialCompileFlags = partialCompileFlags{
 }
 
 // These are the flags when `SOONG_PARTIAL_COMPILE=all`.
-var allPartialCompileFlags = partialCompileFlags{
-	Use_d8:                         true,
-	Disable_stub_validation:        true,
-	Enable_inc_javac:               true,
-	Enable_inc_kotlin:              true,
-	Enable_inc_d8:                  true,
-	Enable_inc_kotlin_java_dep:     true,
-	Enable_inc_d8_outside_platform: true,
-}
+// Include everything from `SOONG_PARTIAL_COMPILE=true`, and flags
+// that have known issues.
+var allPartialCompileFlags = func() (flags partialCompileFlags) {
+	flags = truePartialCompileFlags
+	// b/428178183
+	flags.Use_d8 = true
+	return
+}()
+
+// These are the flags when `SOONG_PARTIAL_COMPILE=default`.
+var defaultPartialCompileFlags = truePartialCompileFlags
 
 type deviceConfig struct {
 	config *config
@@ -573,11 +583,11 @@ func (c *config) parsePartialCompileFlags(isEngBuild bool) (partialCompileFlags,
 		switch tok {
 		// Big toggle switches.
 		case "false":
-			ret = partialCompileFlags{}
+			ret = falsePartialCompileFlags
 		case "default":
 			ret = defaultPartialCompileFlags
 		case "true":
-			ret = enabledPartialCompileFlags
+			ret = truePartialCompileFlags
 		case "all":
 			ret = allPartialCompileFlags
 
@@ -771,6 +781,7 @@ func initConfig(cmdArgs CmdArgs, availableEnv map[string]string) (*config, error
 
 		katiEnabled: cmdArgs.KatiEnabled,
 	}
+
 	variant, ok := os.LookupEnv("TARGET_BUILD_VARIANT")
 	isEngBuild := !ok || variant == "eng"
 
@@ -867,6 +878,13 @@ func initConfig(cmdArgs CmdArgs, availableEnv map[string]string) (*config, error
 	newConfig.productVariables.Build_from_text_stub = boolPtr(newConfig.BuildFromTextStub())
 
 	newConfig.deviceNameToInstall = newConfig.productVariables.DeviceName
+
+	targetProduct := String(newConfig.productVariables.DeviceProduct)
+	buildUUIDFileSuffix := ""
+	if targetProduct != "" {
+		buildUUIDFileSuffix = "-" + targetProduct
+	}
+	newConfig.buildUUIDFile = "build_uuid" + buildUUIDFileSuffix + ".txt"
 
 	return newConfig, err
 }
@@ -1097,6 +1115,10 @@ func (c *config) TargetsJava21() bool {
 	return c.productVariables.GetBuildFlagBool("RELEASE_TARGET_JAVA_21")
 }
 
+func (c *config) BuildWithJdk25() bool {
+	return c.productVariables.GetBuildFlagBool("RELEASE_BUILD_WITH_JDK_25")
+}
+
 // EnvDeps returns the environment variables this build depends on. The first
 // call to this function blocks future reads from the environment.
 func (c *config) EnvDeps() map[string]string {
@@ -1133,6 +1155,12 @@ func (c *config) BuildFingerprintFile(ctx PathContext) Path {
 	return PathForArbitraryOutput(ctx, "target", "product", *c.deviceNameToInstall, String(c.productVariables.BuildFingerprintFile))
 }
 
+// BuildSystemFingerprintFile returns the path to a text file containing
+// metadata representing the current build's fingerprint for the system image.
+func (c *config) BuildSystemFingerprintFile(ctx PathContext) Path {
+	return PathForArbitraryOutput(ctx, "target", "product", *c.deviceNameToInstall, String(c.productVariables.BuildSystemFingerprintFile))
+}
+
 // BuildNumberFile returns the path to a text file containing metadata
 // representing the current build's number.
 //
@@ -1142,6 +1170,12 @@ func (c *config) BuildFingerprintFile(ctx PathContext) Path {
 // rebuild on every incremental build when the build number changes.
 func (c *config) BuildNumberFile(ctx PathContext) Path {
 	return PathForOutput(ctx, String(c.productVariables.BuildNumberFile))
+}
+
+// BuildUUIDFile returns the path to a text file containing metadata
+// representing the current build's UUID.
+func (c *config) BuildUUIDFile(ctx PathContext) Path {
+	return PathForOutput(ctx, c.buildUUIDFile)
 }
 
 // BuildHostnameFile returns the path to a text file containing metadata
@@ -1345,6 +1379,11 @@ func (c *config) DefaultAppTargetSdk(ctx EarlyModuleContext) ApiLevel {
 		panic("Platform_sdk_codename should not be REL when Platform_sdk_final is true")
 	}
 	return ApiLevelOrPanic(ctx, codename)
+}
+
+// This file is written by soong_ui, and sourced by rules that need a value for `SOONG_USE_PARTIAL_COMPILE`.
+func (c *config) UsePartialCompileFile(ctx PathContext) Path {
+	return PathForOutput(ctx, "use_partial_compile-"+*c.deviceNameToInstall+".sh")
 }
 
 func (c *config) PartialCompileFlags() partialCompileFlags {
@@ -1566,20 +1605,28 @@ func (c *config) UseRBE() bool {
 	return Bool(c.productVariables.UseRBE)
 }
 
+func (c *config) UseREWrapper() bool {
+	return Bool(c.productVariables.UseREWrapper)
+}
+
 func (c *config) UseRBEJAVAC() bool {
-	return Bool(c.productVariables.UseRBEJAVAC)
+	return Bool(c.productVariables.UseRBEJAVAC) && c.UseREWrapper()
+}
+
+func (c *config) RBEContainerImage() string {
+	return String(c.productVariables.RBEContainerImage)
 }
 
 func (c *config) UseRBER8() bool {
-	return Bool(c.productVariables.UseRBER8)
+	return Bool(c.productVariables.UseRBER8) && c.UseREWrapper()
 }
 
 func (c *config) UseRBED8() bool {
-	return Bool(c.productVariables.UseRBED8)
+	return Bool(c.productVariables.UseRBED8) && c.UseREWrapper()
 }
 
 func (c *config) UseRemoteBuild() bool {
-	return c.UseRBE()
+	return c.UseRBE() && c.UseREWrapper()
 }
 
 func (c *config) RunErrorProne() bool {
@@ -2441,6 +2488,10 @@ func (c *config) UseR8StoreStoreFenceConstructorInlining() bool {
 
 func (c *config) UseR8GlobalCheckNotNullFlags() bool {
 	return c.productVariables.GetBuildFlagBool("RELEASE_R8_GLOBAL_CHECK_NOT_NULL_FLAGS")
+}
+
+func (c *config) UseR8MinimizedSyntheticNames() bool {
+	return c.productVariables.GetBuildFlagBool("RELEASE_R8_MINIMIZE_SYNTHETIC_NAMES")
 }
 
 func (c *config) UseDexV41() bool {

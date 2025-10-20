@@ -26,6 +26,8 @@ import (
 	"android/soong/java/config"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 func init() {
 	RegisterDocsBuildComponents(android.InitRegistrationContext)
 }
@@ -43,7 +45,7 @@ func RegisterDocsBuildComponents(ctx android.RegistrationContext) {
 type JavadocProperties struct {
 	// list of source files used to compile the Java module.  May be .java, .logtags, .proto,
 	// or .aidl files.
-	Srcs []string `android:"path,arch_variant"`
+	Srcs proptools.Configurable[[]string] `android:"path,arch_variant"`
 
 	// list of source files that should not be used to build the Java module.
 	// This is most useful in the arch/multilib variants to remove non-common files
@@ -249,7 +251,7 @@ func JavadocHostFactory() android.Module {
 	return module
 }
 
-func (j *Javadoc) SdkVersion(ctx android.EarlyModuleContext) android.SdkSpec {
+func (j *Javadoc) SdkVersion(ctx android.ConfigContext) android.SdkSpec {
 	return android.SdkSpecFrom(ctx, String(j.properties.Sdk_version))
 }
 
@@ -257,7 +259,7 @@ func (j *Javadoc) SystemModules() string {
 	return proptools.String(j.properties.System_modules)
 }
 
-func (j *Javadoc) MinSdkVersion(ctx android.EarlyModuleContext) android.ApiLevel {
+func (j *Javadoc) MinSdkVersion(ctx android.MinSdkVersionFromValueContext) android.ApiLevel {
 	return j.SdkVersion(ctx).ApiLevel
 }
 
@@ -426,12 +428,12 @@ func (j *Javadoc) collectDeps(ctx android.ModuleContext) deps {
 	})
 	// do not pass exclude_srcs directly when expanding srcFiles since exclude_srcs
 	// may contain filegroup or genrule.
-	srcFiles := android.PathsForModuleSrcExcludes(ctx, j.properties.Srcs, j.properties.Exclude_srcs)
+	srcFiles := android.PathsForModuleSrcExcludes(ctx, j.properties.Srcs.GetOrDefault(ctx, nil), j.properties.Exclude_srcs)
 	j.implicits = append(j.implicits, srcFiles...)
 
 	// Module can depend on a java_aconfig_library module using the ":module_name{.tag}" syntax.
 	// Find the corresponding aconfig_declarations module name for such case.
-	for _, src := range j.properties.Srcs {
+	for _, src := range j.properties.Srcs.GetOrDefault(ctx, nil) {
 		if moduleName, tag := android.SrcIsModuleWithTag(src); moduleName != "" {
 			otherModule := android.GetModuleProxyFromPathDep(ctx, moduleName, tag)
 			if !otherModule.IsNil() {
@@ -880,6 +882,7 @@ type ExportedDroiddocDirProperties struct {
 	Path *string
 }
 
+// @auto-generate: gob
 type ExportedDroiddocDirInfo struct {
 	Deps android.Paths
 	Dir  android.Path

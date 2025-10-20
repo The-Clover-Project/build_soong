@@ -24,6 +24,8 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 const allAconfigDeclarationsStorage = "all_aconfig_declarations_storage"
 
 const AllAconfigModule = "all_aconfig_declarations"
@@ -50,6 +52,7 @@ var aconfigFlagArtifactsDistGoals = []string{
 // across the whole Android source tree. None of these files may be installed on the device.
 // They should only be used or consumed as artifacts from the build servers,
 // or used by host side tools/tests.
+// @auto-generate: gob
 type AllAconfigDeclarationsInfo struct {
 	// ParsedFlagsFile contains all flags in a binary proto format.
 	ParsedFlagsFile android.Path

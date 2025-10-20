@@ -1423,7 +1423,7 @@ func (library *libraryDecorator) linkLlndkSAbiDumpFiles(ctx ModuleContext,
 		library.llndkIncludeDirsForAbiCheck(ctx, deps),
 		android.OptionalPathForModuleSrc(ctx, library.Properties.Llndk.Symbol_file),
 		append([]string{"*_PLATFORM", "*_PRIVATE"}, excludeSymbolVersions...),
-		append([]string{"platform-only"}, excludeSymbolTags...),
+		append([]string{"platform-only", "draft"}, excludeSymbolTags...),
 		[]string{"llndk"}, sdkVersionForVendorApiLevel, false /* commonGlobalIncludes */)
 }
 
@@ -1436,7 +1436,7 @@ func (library *libraryDecorator) linkApexSAbiDumpFiles(ctx ModuleContext,
 		library.exportedIncludeDirsForAbiCheck(ctx),
 		android.OptionalPathForModuleSrc(ctx, library.Properties.Stubs.Symbol_file),
 		append([]string{"*_PLATFORM", "*_PRIVATE"}, excludeSymbolVersions...),
-		append([]string{"platform-only"}, excludeSymbolTags...),
+		append([]string{"platform-only", "draft"}, excludeSymbolTags...),
 		[]string{"apex", "systemapi"}, sdkVersion, requiresGlobalIncludes(ctx))
 }
 
@@ -2458,7 +2458,7 @@ func (versionTransitionMutator) Split(ctx android.BaseModuleContext) []string {
 			setStubsVersions(ctx, m)
 			return append(slices.Clone(m.VersionedInterface().AllStubsVersions()), "")
 		} else if m.SplitPerApiLevel() && m.IsSdkVariant() {
-			return perApiVersionVariations(ctx, m.MinSdkVersion())
+			return perApiVersionVariations(ctx, m.MinSdkVersion(ctx))
 		}
 	}
 
@@ -2536,7 +2536,7 @@ func (versionTransitionMutator) Mutate(ctx android.BottomUpMutatorContext, varia
 			}
 		}
 	} else if ok && m.SplitPerApiLevel() && m.IsSdkVariant() {
-		m.SetSdkVersion(variation)
+		m.SetSdkVersion(StringPtr(variation))
 		m.SetMinSdkVersion(variation)
 	}
 }

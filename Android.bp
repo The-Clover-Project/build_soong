@@ -177,6 +177,35 @@ rust_defaults {
     defaults_visibility: ["//visibility:public"],
 }
 
+// Equivalent to rust_baremetal_defaults, but applied to the no_std variant only
+rust_defaults {
+    name: "rust_baremetal_nostd_defaults",
+    arch: {
+        arm64: {
+            no_std: {
+                flags: [
+                    // There is no Rust flag that says "use baseline instruction set",
+                    // so we disable SVE specifically. This can be extended with more
+                    // problematic target features from rust/config/arm64_device.go
+                    // as needed.
+                    "-C target-feature=-sve2",
+                ],
+            },
+        },
+    },
+    defaults_visibility: ["//visibility:public"],
+}
+
+// Dependencies of ErrorProne need to disable ErrorProne checking, otherwise
+// there would be a circular dependency.
+java_defaults {
+    name: "error_prone_dependency_defaults",
+    errorprone: {
+        enabled: false,
+    },
+    defaults_visibility: ["//visibility:public"],
+}
+
 product_config {
     name: "product_config",
     visibility: [

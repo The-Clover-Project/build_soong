@@ -81,6 +81,7 @@ var (
 				`cat $srcJarList >> $out.rsp && ` +
 				`if [ -s $genAnnoSrcJarList ] ; then ` +
 				`echo >> $out.rsp && cat $genAnnoSrcJarList >> $out.rsp; fi && ` +
+				`. ${config.UsePartialCompileFile} && ` +
 				`${config.IncrementalJavacInputCmd} ` +
 				`--srcs $out.rsp --classDir $outDir --deps $javacDeps --javacTarget $out --srcDepsProto $out.proto --localHeaderJars $localHeaderJars --crossModuleJarList $crossModuleJars && ` +
 				`mkdir -p "$outDir" && ` +
@@ -450,7 +451,8 @@ func init() {
 }
 
 type javaBuilderFlags struct {
-	javacFlags string
+	javacFlags     string
+	javacFlagsDeps android.Paths
 
 	// bootClasspath is the list of jars that form the boot classpath (generally the java.* and
 	// android.* classes) for tools that still use it.  javac targeting 1.9 or higher uses
@@ -557,6 +559,7 @@ func emitXrefRule(ctx android.ModuleContext, xrefFile android.WritablePath, idx 
 
 	deps = append(deps, classpath...)
 	deps = append(deps, flags.processorPath...)
+	deps = append(deps, flags.javacFlagsDeps...)
 
 	processor := "-proc:none"
 	if len(flags.processors) > 0 {
@@ -644,6 +647,8 @@ func turbineFlags(ctx android.ModuleContext, flags javaBuilderFlags, dir string,
 		rbeInputs = append(rbeInputs, classpath...)
 	}
 
+	implicits = append(implicits, flags.javacFlagsDeps...)
+
 	turbineFlags := "--source_jars " + srcJarArgs + " " + bootClasspathFlags + " --classpath " + classpathFlags
 
 	return turbineFlags, implicits, rbeInputs, rspFiles
@@ -662,7 +667,7 @@ func TransformJavaToHeaderClasses(ctx android.ModuleContext, outputFile android.
 		"outputFlags":  "--output " + outputFile.String() + ".tmp",
 		"outputs":      outputFile.String(),
 	}
-	if ctx.Config().UseRBE() && ctx.Config().IsEnvTrue("RBE_TURBINE") {
+	if ctx.Config().UseREWrapper() && ctx.Config().IsEnvTrue("RBE_TURBINE") {
 		rule = turbineRE
 		args["rbeInputs"] = strings.Join(rbeInputs.Strings(), ",")
 		args["rbeOutputs"] = outputFile.String() + ".tmp"
@@ -701,7 +706,7 @@ func TurbineApt(ctx android.ModuleContext, outputSrcJar, outputResJar android.Wr
 		"outputFlags":  outputFlags,
 		"outputs":      strings.Join(outputs.Strings(), " "),
 	}
-	if ctx.Config().UseRBE() && ctx.Config().IsEnvTrue("RBE_TURBINE") {
+	if ctx.Config().UseREWrapper() && ctx.Config().IsEnvTrue("RBE_TURBINE") {
 		rule = turbineRE
 		args["rbeInputs"] = strings.Join(rbeInputs.Strings(), ",")
 		args["rbeOutputs"] = outputSrcJar.String() + ".tmp," + outputResJar.String() + ".tmp"
@@ -835,6 +840,8 @@ func transformJavaToClassesInc(ctx android.ModuleContext, outputFile android.Wri
 		},
 	})
 
+	deps = append(deps, flags.javacFlagsDeps...)
+
 	rule := javacInc
 	ctx.Build(pctx, android.BuildParams{
 		Rule:           rule,
@@ -842,7 +849,7 @@ func transformJavaToClassesInc(ctx android.ModuleContext, outputFile android.Wri
 		Output:         outputFile,
 		ImplicitOutput: annoSrcJar,
 		Inputs:         srcFiles,
-		Implicits:      deps,
+		Implicits:      append(deps, ctx.Config().UsePartialCompileFile(ctx)),
 		Args: map[string]string{
 			"javacFlags":        flags.javacFlags,
 			"bootClasspath":     bootClasspath,
@@ -926,7 +933,7 @@ func transformJavaToClasses(ctx android.ModuleContext, outputFile android.Writab
 	// if it is too long.
 	const classpathLimit = 64 * 1024
 	if len(classpathArg) > classpathLimit {
-		classpathRspFile := outputFile.ReplaceExtension(ctx, "classpath")
+		classpathRspFile := outputFile.AddExtension(ctx, "classpath")
 		android.WriteFileRule(ctx, classpathRspFile, classpathArg)
 		deps = append(deps, classpathRspFile)
 		classpathArg = "@" + classpathRspFile.String()
@@ -935,6 +942,7 @@ func transformJavaToClasses(ctx android.ModuleContext, outputFile android.Writab
 	deps = append(deps, javacClasspath...)
 	deps = append(deps, flags.processorPath...)
 	deps = append(deps, genAnnoSrcJars...)
+	deps = append(deps, flags.javacFlagsDeps...)
 
 	processor := "-proc:none"
 	if len(flags.processors) > 0 {
@@ -955,7 +963,7 @@ func transformJavaToClasses(ctx android.ModuleContext, outputFile android.Writab
 		annoDir = filepath.Join(shardDir, annoDir)
 	}
 	rule := javac
-	if ctx.Config().UseRBE() && ctx.Config().IsEnvTrue("RBE_JAVAC") {
+	if ctx.Config().UseREWrapper() && ctx.Config().IsEnvTrue("RBE_JAVAC") {
 		rule = javacRE
 	}
 	ctx.Build(pctx, android.BuildParams{
@@ -986,7 +994,7 @@ func TransformResourcesToJar(ctx android.ModuleContext, outputFile android.Writa
 	jarArgs []string, deps android.Paths) {
 
 	rule := jar
-	if ctx.Config().UseRBE() && ctx.Config().IsEnvTrue("RBE_JAR") {
+	if ctx.Config().UseREWrapper() && ctx.Config().IsEnvTrue("RBE_JAR") {
 		rule = jarRE
 	}
 	ctx.Build(pctx, android.BuildParams{

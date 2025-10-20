@@ -137,13 +137,15 @@ func (c *commonToSdkLibraryAndImport) exportableFromSourceStubsLibraryModuleName
 func (module *SdkLibrary) createImplLibrary(mctx android.DefaultableHookContext) {
 	visibility := childModuleVisibility(module.sdkLibraryProperties.Impl_library_visibility)
 
+	libs := module.properties.Libs.Clone()
+	libs.AppendSimpleValue(module.sdkLibraryProperties.Impl_only_libs)
 	staticLibs := module.properties.Static_libs.Clone()
 	staticLibs.AppendSimpleValue(module.sdkLibraryProperties.Impl_only_static_libs)
 	props := struct {
 		Name           *string
 		Enabled        proptools.Configurable[bool]
 		Visibility     []string
-		Libs           []string
+		Libs           proptools.Configurable[[]string]
 		Static_libs    proptools.Configurable[[]string]
 		Apex_available []string
 		Stem           *string
@@ -152,7 +154,7 @@ func (module *SdkLibrary) createImplLibrary(mctx android.DefaultableHookContext)
 		Enabled:    module.EnabledProperty(),
 		Visibility: visibility,
 
-		Libs: append(module.properties.Libs, module.sdkLibraryProperties.Impl_only_libs...),
+		Libs: libs,
 
 		Static_libs: staticLibs,
 		// Pass the apex_available settings down so that the impl library can be statically
@@ -199,7 +201,7 @@ func (module *SdkLibrary) createDroidstubs(mctx android.DefaultableHookContext, 
 		Name                             *string
 		Enabled                          proptools.Configurable[bool]
 		Visibility                       []string
-		Srcs                             []string
+		Srcs                             proptools.Configurable[[]string]
 		Installable                      *bool
 		Sdk_version                      *string
 		Api_surface                      *string
@@ -241,8 +243,8 @@ func (module *SdkLibrary) createDroidstubs(mctx android.DefaultableHookContext, 
 	props.Name = proptools.StringPtr(name)
 	props.Enabled = module.EnabledProperty()
 	props.Visibility = childModuleVisibility(module.sdkLibraryProperties.Stubs_source_visibility)
-	props.Srcs = append(props.Srcs, module.properties.Srcs...)
-	props.Srcs = append(props.Srcs, module.sdkLibraryProperties.Api_srcs...)
+	props.Srcs = module.properties.Srcs.Clone()
+	props.Srcs.AppendSimpleValue(module.sdkLibraryProperties.Api_srcs)
 	props.Sdk_version = module.deviceProperties.Sdk_version
 	props.Api_surface = module.getApiSurfaceForScope(apiScope)
 	props.System_modules = module.deviceProperties.System_modules
@@ -250,7 +252,7 @@ func (module *SdkLibrary) createDroidstubs(mctx android.DefaultableHookContext, 
 	// A droiddoc module has only one Libs property and doesn't distinguish between
 	// shared libs and static libs. So we need to add both of these libs to Libs property.
 	props.Libs = proptools.NewConfigurable[[]string](nil, nil)
-	props.Libs.AppendSimpleValue(module.properties.Libs)
+	props.Libs.Append(module.properties.Libs)
 	props.Libs.Append(module.properties.Static_libs)
 	props.Libs.AppendSimpleValue(module.sdkLibraryProperties.Stub_only_libs)
 	props.Libs.AppendSimpleValue(module.scopeToProperties[apiScope].Libs)
@@ -489,7 +491,7 @@ func (module *SdkLibrary) createApiLibrary(mctx android.DefaultableHookContext, 
 	// Ensure that stub-annotations is added to the classpath before any other libs
 	props.Libs = proptools.NewConfigurable[[]string](nil, nil)
 	props.Libs.AppendSimpleValue([]string{"stub-annotations"})
-	props.Libs.AppendSimpleValue(module.properties.Libs)
+	props.Libs.Append(module.properties.Libs)
 	props.Libs.Append(module.properties.Static_libs)
 	props.Libs.AppendSimpleValue(module.sdkLibraryProperties.Stub_only_libs)
 	props.Libs.AppendSimpleValue(module.scopeToProperties[apiScope].Libs)
@@ -574,6 +576,14 @@ func (module *SdkLibrary) createTopLevelExportableStubsLibrary(
 	mctx.CreateModule(LibraryFactory, &props, module.sdkComponentPropertiesForChildLibrary())
 }
 
+type removeListFromListPostProcessor struct {
+	toRemove []string
+}
+
+func (p removeListFromListPostProcessor) PostProcess(list []string) []string {
+	return android.RemoveListFromList(list, p.toRemove)
+}
+
 // Creates the [sdkLibraryXml] with ".xml" suffix.
 func (module *SdkLibrary) createXmlFile(mctx android.DefaultableHookContext) {
 	moduleMinApiLevel := module.Library.MinSdkVersion(mctx)
@@ -581,6 +591,9 @@ func (module *SdkLibrary) createXmlFile(mctx android.DefaultableHookContext) {
 	if moduleMinApiLevel == android.NoneApiLevel {
 		moduleMinApiLevelStr = "current"
 	}
+	libs := module.properties.Libs.Clone()
+	libs.AddPostProcessor(removeListFromListPostProcessor{config.FrameworkLibraries})
+
 	props := struct {
 		Name                      *string
 		Enabled                   proptools.Configurable[bool]
@@ -592,7 +605,7 @@ func (module *SdkLibrary) createXmlFile(mctx android.DefaultableHookContext) {
 		Max_device_sdk            *string
 		Sdk_library_min_api_level *string
 		Uses_libs                 proptools.Configurable[[]string]
-		Libs                      []string
+		Libs                      proptools.Configurable[[]string]
 		Impl_only_libs            []string
 	}{
 		Name:                      proptools.StringPtr(module.xmlPermissionsModuleName()),
@@ -605,7 +618,7 @@ func (module *SdkLibrary) createXmlFile(mctx android.DefaultableHookContext) {
 		Max_device_sdk:            module.commonSdkLibraryProperties.Max_device_sdk,
 		Sdk_library_min_api_level: &moduleMinApiLevelStr,
 		Uses_libs:                 module.usesLibraryProperties.Uses_libs.Clone(),
-		Libs:                      android.RemoveListFromList(module.properties.Libs, config.FrameworkLibraries),
+		Libs:                      libs,
 		Impl_only_libs:            module.sdkLibraryProperties.Impl_only_libs,
 	}
 
@@ -729,8 +742,6 @@ type sdkLibraryXml struct {
 	outputFilePath android.OutputPath
 	installDirPath android.InstallPath
 
-	hideApexVariantFromMake bool
-
 	usesLibrary
 }
 
@@ -771,7 +782,7 @@ type sdkLibraryXmlProperties struct {
 	Sdk_library_min_api_level *string
 
 	// List of java libraries that will be in the classpath.
-	Libs []string `android:"arch_variant"`
+	Libs proptools.Configurable[[]string] `android:"arch_variant"`
 
 	// List of Java libraries that will be in the classpath when building the implementation lib.
 	Impl_only_libs []string `android:"arch_variant"`
@@ -819,7 +830,7 @@ func (module *sdkLibraryXml) ApexAvailableFor() []string {
 
 func (module *sdkLibraryXml) DepsMutator(ctx android.BottomUpMutatorContext) {
 	module.usesLibrary.deps(ctx, false)
-	libDeps := ctx.AddVariationDependencies(nil, usesLibStagingTag, module.properties.Libs...)
+	libDeps := ctx.AddVariationDependencies(nil, usesLibStagingTag, module.properties.Libs.GetOrDefault(ctx, nil)...)
 	libDeps = append(libDeps, ctx.AddVariationDependencies(nil, usesLibStagingTag, module.properties.Impl_only_libs...)...)
 	module.usesLibrary.depsFromLibs(ctx, libDeps)
 }
@@ -948,7 +959,9 @@ func (module *sdkLibraryXml) permissionsContents(ctx android.ModuleContext) stri
 
 func (module *sdkLibraryXml) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	apexInfo, _ := android.ModuleProvider(ctx, android.ApexInfoProvider)
-	module.hideApexVariantFromMake = !apexInfo.IsForPlatform()
+	if !apexInfo.IsForPlatform() {
+		module.HideFromMake()
+	}
 
 	libName := proptools.String(module.properties.Lib_name)
 	module.selfValidate(ctx)
@@ -965,24 +978,17 @@ func (module *sdkLibraryXml) GenerateAndroidBuildActions(ctx android.ModuleConte
 	etc.SetCommonPrebuiltEtcInfo(ctx, module)
 }
 
-func (module *sdkLibraryXml) AndroidMkEntries() []android.AndroidMkEntries {
-	if module.hideApexVariantFromMake {
-		return []android.AndroidMkEntries{{
-			Disabled: true,
-		}}
-	}
-
-	return []android.AndroidMkEntries{{
+func (module *sdkLibraryXml) PrepareAndroidMKProviderInfo(config android.Config) *android.AndroidMkProviderInfo {
+	info := &android.AndroidMkProviderInfo{}
+	info.PrimaryInfo = android.AndroidMkInfo{
 		Class:      "ETC",
 		OutputFile: android.OptionalPathForPath(module.outputFilePath),
-		ExtraEntries: []android.AndroidMkExtraEntriesFunc{
-			func(ctx android.AndroidMkExtraEntriesContext, entries *android.AndroidMkEntries) {
-				entries.SetString("LOCAL_MODULE_TAGS", "optional")
-				entries.SetString("LOCAL_MODULE_PATH", module.installDirPath.String())
-				entries.SetString("LOCAL_INSTALLED_MODULE_STEM", module.outputFilePath.Base())
-			},
-		},
-	}}
+	}
+	info.PrimaryInfo.SetString("LOCAL_MODULE_TAGS", "optional")
+	info.PrimaryInfo.SetString("LOCAL_MODULE_PATH", module.installDirPath.String())
+	info.PrimaryInfo.SetString("LOCAL_INSTALLED_MODULE_STEM", module.outputFilePath.Base())
+
+	return info
 }
 
 func (module *sdkLibraryXml) selfValidate(ctx android.ModuleContext) {

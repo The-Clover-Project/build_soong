@@ -533,7 +533,7 @@ func PrebuiltSelectModuleMutator(ctx BottomUpMutatorContext) {
 		}
 		// Propagate the provider received from `all_apex_contributions`
 		// to the source module
-		ctx.VisitDirectDepsWithTag(AcDepTag, func(am Module) {
+		ctx.VisitDirectDepsProxyWithTag(AcDepTag, func(am ModuleProxy) {
 			psi, _ := OtherModuleProvider(ctx, am, PrebuiltSelectionInfoProvider)
 			SetProvider(ctx, PrebuiltSelectionInfoProvider, psi)
 		})
@@ -541,12 +541,12 @@ func PrebuiltSelectModuleMutator(ctx BottomUpMutatorContext) {
 	} else if s, ok := ctx.Module().(Module); ok {
 		// Use `all_apex_contributions` for source vs prebuilt selection.
 		psi := PrebuiltSelectionInfoMap{}
-		ctx.VisitDirectDepsWithTag(PrebuiltDepTag, func(am Module) {
+		ctx.VisitDirectDepsProxyWithTag(PrebuiltDepTag, func(am ModuleProxy) {
 			// The value of psi gets overwritten with the provider from the last visited prebuilt.
 			// But all prebuilts have the same value of the provider, so this should be idempontent.
 			psi, _ = OtherModuleProvider(ctx, am, PrebuiltSelectionInfoProvider)
 		})
-		ctx.VisitDirectDepsWithTag(PrebuiltDepTag, func(prebuiltModule Module) {
+		ctx.visitDirectDepsWithTag(PrebuiltDepTag, func(prebuiltModule Module) {
 			p := GetEmbeddedPrebuilt(prebuiltModule)
 			if p.usePrebuilt(ctx, s, prebuiltModule) {
 				// skip the check when the source module is `override_X` because it's only a placeholder
@@ -568,7 +568,7 @@ func PrebuiltSelectModuleMutator(ctx BottomUpMutatorContext) {
 		// Add source
 		allModules := []Module{s}
 		// Add each prebuilt
-		ctx.VisitDirectDepsWithTag(PrebuiltDepTag, func(prebuiltModule Module) {
+		ctx.visitDirectDepsWithTag(PrebuiltDepTag, func(prebuiltModule Module) {
 			allModules = append(allModules, prebuiltModule)
 		})
 		hideUnflaggedModules(ctx, psi, allModules)
@@ -593,6 +593,7 @@ type PrebuiltInfo struct {
 	UsePrebuilt          bool
 	// Whether the module has been replaced by a prebuilt
 	ReplacedByPrebuilt bool
+	PartitionTag       string
 }
 
 // prebuiltProviderMutator sets the PrebuiltInfoProvider.
@@ -605,6 +606,7 @@ func prebuiltProviderMutator(ctx BottomUpMutatorContext) {
 		info.IsPrebuilt = true
 		info.PrebuiltSourceExists = p.Prebuilt().SourceExists()
 		info.UsePrebuilt = p.Prebuilt().UsePrebuilt()
+		info.PartitionTag = p.PartitionTag(ctx.DeviceConfig())
 	}
 	info.ReplacedByPrebuilt = m.IsReplacedByPrebuilt()
 	SetProvider(ctx, PrebuiltInfoProvider, info)
@@ -771,7 +773,7 @@ func (p *Prebuilt) usePrebuilt(ctx BaseModuleContext, source Module, prebuilt Mo
 		// This is a source module, visit any of its prebuilts to get the info
 		psiDepTag = PrebuiltDepTag
 	}
-	ctx.VisitDirectDepsWithTag(psiDepTag, func(am Module) {
+	ctx.VisitDirectDepsProxyWithTag(psiDepTag, func(am ModuleProxy) {
 		psi, _ = OtherModuleProvider(ctx, am, PrebuiltSelectionInfoProvider)
 	})
 

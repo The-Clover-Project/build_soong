@@ -45,8 +45,8 @@ func runNinjaForBuild(ctx Context, config Config) {
 // environment variables. It's important to restrict the environment Ninja runs
 // for hermeticity reasons, and to avoid spurious rebuilds.
 func runNinja(ctx Context, config Config, ninjaArgs []string) {
-	ctx.BeginTrace(metrics.PrimaryNinja, "ninja")
-	defer ctx.EndTrace()
+	e := ctx.BeginTrace(metrics.PrimaryNinja, "ninja")
+	defer e.End()
 
 	// Sets up the FIFO status updater that reads the Ninja protobuf output, and
 	// translates it to the soong_ui status output, displaying real-time
@@ -57,6 +57,14 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 
 	var executable string
 	var args []string
+	var parallel int
+	if config.UseRemoteBuild() {
+		parallel = config.RemoteParallel()
+	} else {
+		parallel = config.Parallel()
+	}
+
+	sisoExperiments := []string{}
 	switch config.ninjaCommand {
 	case NINJA_N2:
 		executable = config.N2Bin()
@@ -67,18 +75,60 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 			//"-d", "keeprsp",
 			//"-d", "stats",
 			"--frontend-file", fifo,
+			"-j", strconv.Itoa(parallel),
 		}
 	case NINJA_SISO:
 		executable = config.SisoBin()
 		args = []string{
 			"ninja",
-			"--log_dir", config.SoongOutDir(),
 			// TODO: implement these features, or remove them.
 			//"-d", "trace",
 			//"-d", "keepdepfile",
 			//"-d", "keeprsp",
 			//"-d", "stats",
-			//"--frontend-file", fifo,
+			"--frontend_file", fifo,
+			"--local_jobs", strconv.Itoa(config.Parallel()),
+		}
+		if value := config.SisoConfigDir(); value != "" {
+			value = createSisoConfigDir(ctx, config, value)
+			args = append(args, fmt.Sprintf("--config_repo_dir=%s", value))
+		}
+		// b/374179435
+		if config.BuildBrokenMissingOutputs() {
+			// By default, Siso treats missing outputs as errors.
+			sisoExperiments = append(sisoExperiments, "ignore-missing-outputs")
+		}
+		sisoExperiments = append(sisoExperiments,
+			// b/430486641
+			"ignore-missing-out-in-depfile",
+		)
+		switch {
+		case config.StartReproxy():
+			ctx.Verbosef("with reclient\n")
+			args = append(args, "--config", "reclient")
+			if config.RemoteParallel() != 0 {
+				args = append(args, "--remote_jobs", strconv.Itoa(config.RemoteParallel()))
+			}
+			// Explicitly turn off reapi in Siso.
+			args = append(args, "--project=", "--reapi_address=", "--reapi_instance=")
+		case config.UseRBEproxy():
+			ctx.Verbosef("with rbeproxy\n")
+			if config.RemoteParallel() != 0 {
+				args = append(args, "--remote_jobs", strconv.Itoa(config.RemoteParallel()))
+			}
+			if project := getRBEProject(ctx, config); project != "" {
+				args = append(args, "--project", project)
+			}
+			if instance, ok := config.environ.Get("RBE_instance"); ok {
+				args = append(args, "--reapi_instance", instance)
+			}
+			if service, ok := config.environ.Get("RBE_service"); ok {
+				service = getRBEproxySocket(ctx, config)
+				args = append(args, "--reapi_address", service)
+			}
+			args = append(args, "--reapi_insecure")
+		default:
+			ctx.Verbosef("local only\n")
 		}
 	default:
 		// NINJA_NINJA or NINJA_NINJAGO.
@@ -91,34 +141,32 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 			"-o", "usesphonyoutputs=yes",
 			"-w", "dupbuild=err",
 			"-w", "missingdepfile=err",
+			"-j", strconv.Itoa(parallel),
+		}
+		// Missing outputs will be treated as errors.
+		// BUILD_BROKEN_MISSING_OUTPUTS can be used to bypass this check.
+		if !config.BuildBrokenMissingOutputs() {
+			args = append(args,
+				"-w", "missingoutfile=err",
+			)
+		}
+
+		if sandboxing, ok := config.Environment().Get("SOONG_ACTION_SANDBOXING"); ok && sandboxing == "nsjail" {
+			ninjaArgs = append(ninjaArgs, []string{
+				"-o", fmt.Sprintf("nsjail=%s", config.PrebuiltBuildTool("nsjail")),
+				"-o", fmt.Sprintf("nsjail_workdir=%s", filepath.Join(config.SoongOutDir(), "action_sandboxing_workdir")),
+			}...)
 		}
 	}
 	args = append(args, ninjaArgs...)
 
-	var parallel int
-	if config.UseRemoteBuild() {
-		parallel = config.RemoteParallel()
-	} else {
-		parallel = config.Parallel()
-	}
-	args = append(args, "-j", strconv.Itoa(parallel))
 	if config.keepGoing != 1 {
 		args = append(args, "-k", strconv.Itoa(config.keepGoing))
 	}
 
 	args = append(args, "-f", config.CombinedNinjaFile())
 
-	if !config.BuildBrokenMissingOutputs() {
-		// Missing outputs will be treated as errors.
-		// BUILD_BROKEN_MISSING_OUTPUTS can be used to bypass this check.
-		if config.ninjaCommand != NINJA_N2 {
-			args = append(args,
-				"-w", "missingoutfile=err",
-			)
-		}
-	}
-
-	cmd := Command(ctx, config, "ninja", executable, args...)
+	cmd := Command(ctx, config, e, "ninja", executable, args...)
 
 	// Set up the nsjail sandbox Ninja runs in.
 	cmd.Sandbox = ninjaSandbox
@@ -129,7 +177,8 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 	}
 
 	// TODO(b/346806126): implement this for the other ninjaCommand values.
-	if config.ninjaCommand == NINJA_NINJA {
+	switch config.ninjaCommand {
+	case NINJA_NINJA:
 		switch config.NinjaWeightListSource() {
 		case NINJA_LOG:
 			cmd.Args = append(cmd.Args, "-o", "usesninjalogasweightlist=yes")
@@ -143,6 +192,11 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 			ninjaWeightListPath := filepath.Join(config.OutDir(), ninjaWeightListFileName)
 			cmd.Args = append(cmd.Args, "-o", "usesweightlist="+ninjaWeightListPath)
 		}
+	case NINJA_SISO:
+		if expsValue, ok := cmd.Environment.Get("SISO_EXPERIMENTS"); ok {
+			sisoExperiments = append(sisoExperiments, expsValue)
+		}
+		cmd.Environment.Set("SISO_EXPERIMENTS", strings.Join(sisoExperiments, ","))
 	}
 
 	// Allow both NINJA_ARGS and NINJA_EXTRA_ARGS, since both have been
@@ -248,16 +302,24 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 			"RUST_BACKTRACE",
 			"RUST_LOG",
 
-			// SOONG_USE_PARTIAL_COMPILE only determines which half of the rule we execute.
-			// When it transitions true => false, we build phony target "partialcompileclean",
-			// which removes all files that could have been created while it was true.
-			"SOONG_USE_PARTIAL_COMPILE",
-
 			// Directory for ExecutionMetrics
 			"SOONG_METRICS_AGGREGATION_DIR",
 
+			// SISO experiments for bringup
+			"SISO_EXPERIMENTS",
+
 			// CIPD proxy
 			"CIPD_PROXY_URL",
+
+			// Standard GCE metadata flags
+			"GCE_METADATA_HOST",
+			"GCE_METADATA_IP",
+			"GCE_METADATA_ROOT",
+
+			// Siso
+			"SISO_PROJECT",
+			"SISO_CREDENTIAL_HELPER",
+			"SISO_LIMITS",
 		}, config.BuildBrokenNinjaUsesEnvVars()...)...)
 	}
 
@@ -319,7 +381,7 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 	}()
 
 	ctx.ExecutionMetrics.Start()
-	defer ctx.ExecutionMetrics.Finish(ctx)
+	defer ctx.ExecutionMetrics.Finish(ExecutionMetricsFinishAdaptor{ctx})
 	ctx.Status.Status("Starting ninja...")
 	cmd.RunAndStreamOrFatal()
 }
@@ -351,7 +413,7 @@ func (c *ninjaStucknessChecker) check(ctx Context, config Config) {
 		// ps second
 		commandText := fmt.Sprintf("pstree -palT %v || ps -ef", os.Getpid())
 
-		cmd := Command(ctx, config, "dump process tree", "bash", "-c", commandText)
+		cmd := Command(ctx, config, nil, "dump process tree", "bash", "-c", commandText)
 		output := cmd.CombinedOutputOrFatal()
 		ctx.Verbose(string(output))
 

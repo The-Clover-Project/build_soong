@@ -36,8 +36,8 @@ import (
 // NewSourceFinder returns a new Finder configured to search for source files.
 // Callers of NewSourceFinder should call <f.Shutdown()> when done
 func NewSourceFinder(ctx Context, config Config) (f *finder.Finder) {
-	ctx.BeginTrace(metrics.RunSetupTool, "find modules")
-	defer ctx.EndTrace()
+	e := ctx.BeginTrace(metrics.RunSetupTool, "find modules")
+	defer e.End()
 
 	// Set up the working directory for the Finder.
 	dir, err := os.Getwd()
@@ -247,7 +247,7 @@ func FindSources(ctx Context, config Config, f *finder.Finder) {
 	if config.Dist() {
 		f.WaitForDbDump()
 		// Dist the files.db plain text database.
-		distFile(ctx, config, f.DbPath, "module_paths")
+		distFile(ctx, config, f.DbPath, "soong_ui/module_paths")
 	}
 }
 
@@ -263,7 +263,7 @@ func dumpListToFile(ctx Context, config Config, list []string, filePath string) 
 		}
 	}
 
-	distFile(ctx, config, filePath, "module_paths")
+	distFile(ctx, config, filePath, "soong_ui/module_paths")
 
 	return nil
 }

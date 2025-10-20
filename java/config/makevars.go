@@ -50,7 +50,6 @@ func makeVarsProvider(ctx android.MakeVarsContext) {
 	ctx.Strict("TURBINE", "${TurbineJar}")
 
 	if ctx.Config().RunErrorProne() {
-		ctx.Strict("ERROR_PRONE_JARS", strings.Join(ErrorProneClasspath, " "))
 		ctx.Strict("ERROR_PRONE_FLAGS", "${ErrorProneFlags}")
 		ctx.Strict("ERROR_PRONE_CHECKS", "${ErrorProneChecks}")
 	}

@@ -92,9 +92,11 @@ type compiler interface {
 
 	stdLinkage(device bool) StdLinkage
 	noStdlibs() bool
+	forceStdlibs()
 
 	unstrippedOutputFilePath() android.Path
 	strippedOutputFilePath() android.OptionalPath
+	checkJsonFilePath() android.OptionalPath
 
 	crateRootPath(ctx ModuleContext) android.Path
 	crateSources(ctx ModuleContext) android.Paths
@@ -181,6 +183,9 @@ type BaseCompilerProperties struct {
 	// list of rust automatic crate dependencies.
 	// Rustlibs linkage is rlib for host targets and dylib for device targets.
 	Rustlibs proptools.Configurable[[]string] `android:"arch_variant"`
+
+	// list of no_std forced dependencies
+	No_std_rlibs proptools.Configurable[[]string] `android:"arch_variant"`
 
 	// list of rust proc_macro crate dependencies
 	Proc_macros proptools.Configurable[[]string] `android:"arch_variant"`
@@ -291,9 +296,10 @@ type baseCompiler struct {
 
 	// unstripped output file.
 	unstrippedOutputFile android.Path
-
 	// stripped output file.
 	strippedOutputFile android.OptionalPath
+	// checkJson output file.
+	checkJsonFile android.OptionalPath
 }
 
 func (compiler *baseCompiler) begin(ctx BaseModuleContext) {}
@@ -313,6 +319,10 @@ func (compiler *baseCompiler) SetDisabled() {
 
 func (compiler *baseCompiler) noStdlibs() bool {
 	return Bool(compiler.Properties.No_stdlibs)
+}
+
+func (compiler *baseCompiler) forceStdlibs() {
+	compiler.Properties.No_stdlibs = proptools.BoolPtr(false)
 }
 
 func (compiler *baseCompiler) preferRlib() bool {
@@ -530,9 +540,14 @@ func (compiler *baseCompiler) strippedOutputFilePath() android.OptionalPath {
 	return compiler.strippedOutputFile
 }
 
+func (compiler *baseCompiler) checkJsonFilePath() android.OptionalPath {
+	return compiler.checkJsonFile
+}
+
 func (compiler *baseCompiler) compilerDeps(ctx DepsContext, deps Deps) Deps {
 	deps.Rlibs = append(deps.Rlibs, compiler.Properties.Rlibs.GetOrDefault(ctx, nil)...)
 	deps.Rustlibs = append(deps.Rustlibs, compiler.Properties.Rustlibs.GetOrDefault(ctx, nil)...)
+	deps.NoStdRlibs = append(deps.NoStdRlibs, compiler.Properties.No_std_rlibs.GetOrDefault(ctx, nil)...)
 	deps.ProcMacros = append(deps.ProcMacros, compiler.Properties.Proc_macros.GetOrDefault(ctx, nil)...)
 	deps.StaticLibs = append(deps.StaticLibs, compiler.Properties.Static_libs.GetOrDefault(ctx, nil)...)
 	deps.WholeStaticLibs = append(deps.WholeStaticLibs, compiler.Properties.Whole_static_libs.GetOrDefault(ctx, nil)...)
@@ -672,9 +687,9 @@ func (compiler *baseCompiler) crateSources(ctx ModuleContext) android.Paths {
 	crateSources := android.PathsForModuleSrc(ctx, compiler.Properties.Srcs.GetOrDefault(ctx, nil))
 
 	// By default use an expansive set of required sources.
-	// Check for UseRBE here since this isn't necessary for local builds and can
+	// Check for UseREWrapper here since this isn't necessary for local builds and can
 	// break some tests as the MockFS doesn't support globbing in all instances.
-	if BoolDefault(compiler.Properties.Use_expansive_default_srcs, true) && ctx.Config().IsEnvTrue("RBE_RUST") {
+	if BoolDefault(compiler.Properties.Use_expansive_default_srcs, true) && ctx.Config().IsEnvTrue("RBE_RUST") && ctx.Config().IsEnvTrue("USE_REWRAPPER") {
 		crateSources = append(crateSources, android.PathsForModuleSrc(ctx,
 			[]string{
 				"*.md",

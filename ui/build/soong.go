@@ -298,8 +298,8 @@ func bootstrapEpochCleanup(ctx Context, config Config) {
 }
 
 func bootstrapBlueprint(ctx Context, config Config) {
-	ctx.BeginTrace(metrics.RunSoong, "blueprint bootstrap")
-	defer ctx.EndTrace()
+	e := ctx.BeginTrace(metrics.RunSoong, "blueprint bootstrap")
+	defer e.End()
 
 	st := ctx.Status.StartTool()
 	defer st.Finish()
@@ -327,6 +327,9 @@ func bootstrapBlueprint(ctx Context, config Config) {
 	}
 	if config.incrementalBuildActions {
 		mainSoongBuildExtraArgs = append(mainSoongBuildExtraArgs, "--incremental-build-actions")
+	}
+	if config.incrementalProviderTest {
+		mainSoongBuildExtraArgs = append(mainSoongBuildExtraArgs, "--incremental-provider-test")
 	}
 
 	pbfs := []PrimaryBuilderFactory{
@@ -513,6 +516,11 @@ func fixOutDirSymlinks(ctx Context, config Config, outDir string) error {
 
 	// Record the .top as the very last thing in the function.
 	tf := filepath.Join(outDir, ".top")
+	defer func() {
+		if err := os.WriteFile(tf, []byte(cwd), 0644); err != nil {
+			fmt.Fprintf(os.Stderr, "Unable to log CWD: %v", err)
+		}
+	}()
 
 	// Find the previous working directory if it was recorded.
 	var prevCWD string
@@ -543,10 +551,6 @@ func fixOutDirSymlinks(ctx Context, config Config, outDir string) error {
 	symlinkWg.Wait()
 	ctx.Println(fmt.Sprintf("Updated %d/%d symlinks in dir %v", numUpdated, numFound, outDir))
 
-	if err := os.WriteFile(tf, []byte(cwd), 0644); err != nil {
-		fmt.Fprintf(os.Stderr, "Unable to log CWD: %v", err)
-	}
-
 	return nil
 }
 
@@ -572,8 +576,8 @@ func migrateOutputSymlinks(ctx Context, config Config) error {
 }
 
 func runSoong(ctx Context, config Config, enforceNoSoongOutput bool) {
-	ctx.BeginTrace(metrics.RunSoong, "soong")
-	defer ctx.EndTrace()
+	e := ctx.BeginTrace(metrics.RunSoong, "soong")
+	defer e.End()
 
 	if err := migrateOutputSymlinks(ctx, config); err != nil {
 		ctx.Fatalf("failed to migrate output directory to current TOP dir: %v", err)
@@ -592,9 +596,6 @@ func runSoong(ctx Context, config Config, enforceNoSoongOutput bool) {
 	soongBuildEnv.Set("TOP", os.Getenv("TOP"))
 	soongBuildEnv.Set("LOG_DIR", config.LogsDir())
 
-	// Never pass SOONG_HONOR_USE_PARTIAL_COMPILE to Soong.
-	soongBuildEnv.Unset("SOONG_HONOR_USE_PARTIAL_COMPILE")
-
 	// For Soong bootstrapping tests
 	if os.Getenv("ALLOW_MISSING_DEPENDENCIES") == "true" {
 		soongBuildEnv.Set("ALLOW_MISSING_DEPENDENCIES", "true")
@@ -606,8 +607,8 @@ func runSoong(ctx Context, config Config, enforceNoSoongOutput bool) {
 	}
 
 	func() {
-		ctx.BeginTrace(metrics.RunSoong, "environment check")
-		defer ctx.EndTrace()
+		e := ctx.BeginTrace(metrics.RunSoong, "environment check")
+		defer e.End()
 
 		checkEnvironmentFile(ctx, soongBuildEnv, config.UsedEnvFile(soongBuildTag))
 
@@ -621,13 +622,14 @@ func runSoong(ctx Context, config Config, enforceNoSoongOutput bool) {
 	}()
 
 	ninja := func(targets ...string) {
-		ctx.BeginTrace(metrics.RunSoong, "bootstrap")
-		defer ctx.EndTrace()
+		e := ctx.BeginTrace(metrics.RunSoong, "bootstrap")
+		defer e.End()
 
 		fifo := filepath.Join(config.OutDir(), ".ninja_fifo")
 		nr := status.NewNinjaReader(ctx, ctx.Status.StartTool(), fifo)
 		func() {
 			defer nr.Close()
+			var ninjaEnv Environment
 			var ninjaCmd string
 			var ninjaArgs []string
 			switch config.ninjaCommand {
@@ -659,12 +661,32 @@ func runSoong(ctx Context, config Config, enforceNoSoongOutput bool) {
 					//"-w", "dupbuild=err",
 					//"-w", "outputdir=err",
 					//"-w", "missingoutfile=err",
-					"-v",
-					"-j", strconv.Itoa(config.Parallel()),
-					//"--frontend-file", fifo,
-					"--log_dir", config.SoongOutDir(),
+					"--local_jobs", strconv.Itoa(config.Parallel()),
+					//"--remote_jobs", strconv.Itoa(config.RemoteParallel()),
+					"--frontend_file", fifo,
 					"-f", filepath.Join(config.SoongOutDir(), "bootstrap.ninja"),
 				}
+				if value := config.SisoConfigDir(); value != "" {
+					value = createSisoConfigDir(ctx, config, value)
+					ninjaArgs = append(ninjaArgs, fmt.Sprintf("--config_repo_dir=%s", value))
+				}
+				sisoExperiments := []string{
+					"ignore-missing-out-in-depfile",
+					"fallback-on-exec-error",
+				}
+				if exps, ok := ninjaEnv.Get("SISO_EXPERIMENTS"); ok {
+					sisoExperiments = append(sisoExperiments, exps)
+				}
+				ninjaEnv.Set("SISO_EXPERIMENTS", strings.Join(sisoExperiments, ","))
+
+				// Output `siso version`.
+				vcmd := Command(ctx, config, nil, "siso version",
+					config.SisoBin(), "version")
+				versionOutput, err := vcmd.CombinedOutput()
+				if err != nil {
+					ctx.Fatalf("Failed to run siso version: %s\n", err)
+				}
+				ctx.Verbosef("%s", versionOutput)
 			default:
 				// NINJA_NINJA is the default.
 				ninjaCmd = config.NinjaBin()
@@ -689,10 +711,8 @@ func runSoong(ctx Context, config Config, enforceNoSoongOutput bool) {
 
 			ninjaArgs = append(ninjaArgs, targets...)
 
-			cmd := Command(ctx, config, "soong bootstrap",
+			cmd := Command(ctx, config, e, "soong bootstrap",
 				ninjaCmd, ninjaArgs...)
-
-			var ninjaEnv Environment
 
 			// This is currently how the command line to invoke soong_build finds the
 			// root of the source tree and the output root
@@ -739,22 +759,22 @@ func runSoong(ctx Context, config Config, enforceNoSoongOutput bool) {
 	loadSoongBuildMetrics(ctx, config, beforeSoongTimestamp)
 
 	soongNinjaFile := config.SoongNinjaFile()
-	distGzipFile(ctx, config, soongNinjaFile, "soong")
+	distGzipFile(ctx, config, soongNinjaFile, "soong_ui/soong")
 	for _, file := range blueprint.GetNinjaShardFiles(soongNinjaFile) {
 		if ok, _ := fileExists(file); ok {
-			distGzipFile(ctx, config, file, "soong")
+			distGzipFile(ctx, config, file, "soong_ui/soong")
 		}
 	}
-	distFile(ctx, config, config.SoongVarsFile(), "soong")
-	distFile(ctx, config, config.SoongExtraVarsFile(), "soong")
+	distFile(ctx, config, config.SoongVarsFile(), "soong_ui/soong")
+	distFile(ctx, config, config.SoongExtraVarsFile(), "soong_ui/soong")
 
 	if !config.SkipKati() {
-		distGzipFile(ctx, config, config.SoongAndroidMk(), "soong")
-		distGzipFile(ctx, config, config.SoongMakeVarsMk(), "soong")
+		distGzipFile(ctx, config, config.SoongAndroidMk(), "soong_ui/soong")
+		distGzipFile(ctx, config, config.SoongMakeVarsMk(), "soong_ui/soong")
 	}
 
 	if config.JsonModuleGraph() {
-		distGzipFile(ctx, config, config.ModuleGraphFile(), "soong")
+		distGzipFile(ctx, config, config.ModuleGraphFile(), "soong_ui/soong")
 	}
 }
 
@@ -773,8 +793,8 @@ func runSoong(ctx Context, config Config, enforceNoSoongOutput bool) {
 // globs, it only reruns globs whose dependencies are newer than the
 // time in the ".globs_time" file.
 func checkGlobs(ctx Context, finalOutFile string) error {
-	ctx.BeginTrace(metrics.RunSoong, "check_globs")
-	defer ctx.EndTrace()
+	e := ctx.BeginTrace(metrics.RunSoong, "check_globs")
+	defer e.End()
 	st := ctx.Status.StartTool()
 	st.Status("Running globs...")
 	defer st.Finish()
@@ -976,8 +996,8 @@ func loadSoongBuildMetrics(ctx Context, config Config, oldTimestamp time.Time) {
 }
 
 func runMicrofactory(ctx Context, config Config, name string, pkg string, mapping map[string]string) {
-	ctx.BeginTrace(metrics.RunSoong, name)
-	defer ctx.EndTrace()
+	e := ctx.BeginTrace(metrics.RunSoong, name)
+	defer e.End()
 	cfg := microfactory.Config{TrimPath: absPath(ctx, ".")}
 	for pkgPrefix, pathPrefix := range mapping {
 		cfg.Map(pkgPrefix, pathPrefix)

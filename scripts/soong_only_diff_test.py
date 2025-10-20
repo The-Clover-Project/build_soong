@@ -293,26 +293,12 @@ _INSTALLED_IMG_FILES = [
     "vendor_dlkm.img",
     "vendor.img",
     "vendor_kernel_boot.img",
-    "vendor_kernel_ramdisk.img",
     "vendor_ramdisk.img",
 ]
 
 # TODO (b/435530838): Remove this allowlist.
 _INSTALLED_IMG_FILES_SHA_DIFF_ALLOWLIST = [
-    "product.img",
-    "system_dlkm.img",
-    "system_ext.img",
-    "system_other.img",
-    "system.img",
     "userdata.img",
-    "vbmeta.img",
-    "vbmeta_system.img",
-    "vbmeta_vendor.img",
-    "vendor_boot.img",
-    "vendor_dlkm.img",
-    "vendor.img",
-    "vendor_kernel_ramdisk.img"
-    "vendor_ramdisk.img",
 ]
 
 def get_installed_img_sha(path: str) -> str:
@@ -362,6 +348,7 @@ def compare_installed_img_sha_maps(product: Product, soong_only_map: dict[str, s
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("products", nargs='+', help="one or more target product names")
+    parser.add_argument("--release", "-r", default="trunk_staging", help="the release to build for")
     return parser.parse_args()
 
 def main():
@@ -372,7 +359,7 @@ def main():
     products = [
         Product(
           p,
-          'trunk_staging',
+          args.release,
           'userdebug',
         ) for p in args.products
     ]

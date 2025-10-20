@@ -21,7 +21,6 @@ import (
 
 var (
 	// These will be filled out by external/error_prone/soong/error_prone.go if it is available
-	ErrorProneClasspath             []string
 	ErrorProneChecksError           []string
 	ErrorProneChecksWarning         []string
 	ErrorProneChecksDefaultDisabled []string
@@ -37,7 +36,6 @@ func errorProneVar(val *[]string, sep string) func(android.PackageVarContext) st
 }
 
 func init() {
-	pctx.VariableFunc("ErrorProneClasspath", errorProneVar(&ErrorProneClasspath, ":"))
 	pctx.VariableFunc("ErrorProneChecksError", errorProneVar(&ErrorProneChecksError, " "))
 	pctx.VariableFunc("ErrorProneChecksWarning", errorProneVar(&ErrorProneChecksWarning, " "))
 	pctx.VariableFunc("ErrorProneChecksDefaultDisabled", errorProneVar(&ErrorProneChecksDefaultDisabled, " "))

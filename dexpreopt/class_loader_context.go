@@ -24,6 +24,8 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 // This comment describes the following:
 //  1. the concept of class loader context (CLC) and its relation to classpath
 //  2. how PackageManager constructs CLC from shared libraries and their dependencies
@@ -189,6 +191,7 @@ import (
 // rule generation phase.
 //
 // ClassLoaderContext is a structure that represents CLC.
+// @auto-generate: gob
 type ClassLoaderContext struct {
 	// The name of the library.
 	Name string

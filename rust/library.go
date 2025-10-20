@@ -51,11 +51,15 @@ func init() {
 }
 
 type VariantLibraryProperties struct {
-	Enabled  *bool                            `android:"arch_variant"`
-	Srcs     proptools.Configurable[[]string] `android:"path,arch_variant"`
-	Features proptools.Configurable[[]string] `android:"arch_variant"`
-	Rustlibs proptools.Configurable[[]string] `android:"arch_variant"`
-	Cfgs     proptools.Configurable[[]string] `android:"arch_variant"`
+	Enabled           *bool                            `android:"arch_variant"`
+	Srcs              proptools.Configurable[[]string] `android:"path,arch_variant"`
+	Features          proptools.Configurable[[]string] `android:"arch_variant"`
+	Rustlibs          proptools.Configurable[[]string] `android:"arch_variant"`
+	Static_libs       proptools.Configurable[[]string] `android:"arch_variant"`
+	Whole_static_libs proptools.Configurable[[]string] `android:"arch_variant"`
+	Shared_libs       proptools.Configurable[[]string] `android:"arch_variant"`
+	Cfgs              proptools.Configurable[[]string] `android:"arch_variant"`
+	Flags             []string                         `android:"arch_variant"`
 }
 
 type LibraryCompilerProperties struct {
@@ -295,6 +299,8 @@ func (library *libraryDecorator) rlibStd() bool {
 }
 
 func (library *libraryDecorator) setRlibStd() {
+	library.forceStdlibs()
+	library.MutatedProperties.VariantIsNoStd = false
 	library.MutatedProperties.VariantIsStaticStd = true
 }
 
@@ -304,6 +310,8 @@ func (library *libraryDecorator) setNoStd() {
 }
 
 func (library *libraryDecorator) setDylibStd() {
+	library.forceStdlibs()
+	library.MutatedProperties.VariantIsNoStd = false
 	library.MutatedProperties.VariantIsStaticStd = false
 }
 
@@ -631,6 +639,11 @@ func (library *libraryDecorator) cfgFlags(ctx ModuleContext, flags Flags) Flags 
 // Common flags applied to all libraries irrespective of properties or variant should be included here
 func CommonLibraryCompilerFlags(ctx android.ModuleContext, flags Flags) Flags {
 	flags.RustFlags = append(flags.RustFlags, "-C metadata="+ctx.ModuleName())
+	if mod, ok := ctx.Module().(*Module); ok {
+		if lib, ok := mod.compiler.(*libraryDecorator); ok {
+			flags.RustFlags = append(flags.RustFlags, "-C metadata="+lib.stdLinkage(ctx.Device()).variationName())
+		}
+	}
 
 	return flags
 }
@@ -707,6 +720,8 @@ func (library *libraryDecorator) compile(ctx ModuleContext, flags Flags, deps Pa
 		library.strippedOutputFile = android.OptionalPathForPath(strippedOutputFile)
 	}
 	library.unstrippedOutputFile = outputFile
+	checkJsonFile := android.PathForModuleOut(ctx, outputFile.Base()+".checkJson")
+	library.checkJsonFile = android.OptionalPathForPath(checkJsonFile)
 
 	flags.RustFlags = append(flags.RustFlags, deps.depFlags...)
 	flags.LinkFlags = append(flags.LinkFlags, deps.depLinkFlags...)
@@ -763,13 +778,13 @@ func (library *libraryDecorator) compile(ctx ModuleContext, flags Flags, deps Pa
 		stubObjs := library.compileModuleLibApiStubs(ctx, ccFlags)
 		cc.BuildRustStubs(ctx, outputFile, stubObjs, ccFlags)
 	} else if library.rlib() {
-		ret.kytheFile = TransformSrctoRlib(ctx, crateRootPath, deps, flags, outputFile).kytheFile
+		ret.kytheFile = TransformSrctoRlib(ctx, crateRootPath, deps, flags, outputFile, checkJsonFile).kytheFile
 	} else if library.dylib() {
-		ret.kytheFile = TransformSrctoDylib(ctx, crateRootPath, deps, flags, outputFile).kytheFile
+		ret.kytheFile = TransformSrctoDylib(ctx, crateRootPath, deps, flags, outputFile, checkJsonFile).kytheFile
 	} else if library.static() {
-		ret.kytheFile = TransformSrctoStatic(ctx, crateRootPath, deps, flags, outputFile).kytheFile
+		ret.kytheFile = TransformSrctoStatic(ctx, crateRootPath, deps, flags, outputFile, checkJsonFile).kytheFile
 	} else if library.shared() {
-		ret.kytheFile = TransformSrctoShared(ctx, crateRootPath, deps, flags, outputFile).kytheFile
+		ret.kytheFile = TransformSrctoShared(ctx, crateRootPath, deps, flags, outputFile, checkJsonFile).kytheFile
 	}
 
 	// rlibs and dylibs propagate their shared, whole static, and rustlib dependencies
@@ -854,7 +869,7 @@ func (library *libraryDecorator) getApiStubsCcFlags(ctx ModuleContext) cc.Flags 
 	if ctx.Device() {
 		platformSdkVersion = ctx.Config().PlatformSdkVersion().String()
 	}
-	minSdkVersion := cc.MinSdkVersion(ctx.RustModule(), cc.CtxIsForPlatform(ctx), ctx.Device(), platformSdkVersion)
+	minSdkVersion := cc.MinSdkVersion(ctx, ctx.RustModule(), cc.CtxIsForPlatform(ctx), ctx.Device(), platformSdkVersion)
 
 	// Collect common CC compilation flags
 	ccFlags = cc.CommonLinkerFlags(ctx, ccFlags, toolchain, false)
@@ -900,7 +915,7 @@ func (library *libraryDecorator) rustdoc(ctx ModuleContext, flags Flags,
 	// (https://doc.rust-lang.org/rustdoc/advanced-features.html#cfgdoc-documenting-platform-specific-or-feature-specific-information),
 	// so we generate the rustdoc for only the primary module so that we have a
 	// single set of docs to refer to.
-	if ctx.Module() != ctx.PrimaryModule() {
+	if !ctx.IsPrimaryModule() {
 		return android.OptionalPath{}
 	}
 
@@ -1088,8 +1103,13 @@ func (libstdTransitionMutator) Split(ctx android.BaseModuleContext) []string {
 	if m, ok := ctx.Module().(*Module); ok && m.compiler != nil && !m.compiler.Disabled() {
 		// Only create a variant if a library is actually being built.
 		if library, ok := m.compiler.(libraryInterface); ok {
+			if ctx.Host() {
+				// Host builds don't have libcore available today
+				library.setRlibStd()
+			}
 			if library.sysroot() {
 				// Sysroot libraries have a trivial stdlinkage
+				library.setNoStd()
 				return []string{""}
 			}
 			if m.compiler.noStdlibs() {
@@ -1101,7 +1121,7 @@ func (libstdTransitionMutator) Split(ctx android.BaseModuleContext) []string {
 					return []string{"rlib-std"}
 				}
 				if library.buildNoStd() {
-					return []string{"rlib-std", "dylib-std", "rlib-core"}
+					return []string{"rlib-core", "rlib-std", "dylib-std"}
 				} else {
 					return []string{"rlib-std", "dylib-std"}
 				}
@@ -1180,6 +1200,7 @@ func (library *libraryDecorator) variantProperties() *VariantLibraryProperties {
 
 func (library *libraryDecorator) begin(ctx BaseModuleContext) {
 	library.baseCompiler.begin(ctx)
+
 	if overrides := library.variantProperties(); overrides != nil {
 		if err := proptools.ExtendMatchingProperties(ctx.Module().GetProperties(), overrides, nil, proptools.OrderReplace); err != nil {
 			panic(fmt.Errorf("unable to apply overrides: %v", err))

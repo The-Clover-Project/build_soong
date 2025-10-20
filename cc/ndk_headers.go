@@ -22,6 +22,8 @@ import (
 	"github.com/google/blueprint"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 var (
 	preprocessNdkHeader = pctx.AndroidStaticRule("preprocessNdkHeader",
 		blueprint.RuleParams{
@@ -80,6 +82,7 @@ type headerModule struct {
 	licensePath  android.Path
 }
 
+// @auto-generate: gob
 type NdkHeaderInfo struct {
 	SrcPaths     android.Paths
 	InstallPaths android.Paths

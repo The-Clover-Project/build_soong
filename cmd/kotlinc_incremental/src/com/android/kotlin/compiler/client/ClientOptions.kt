@@ -16,10 +16,11 @@
 
 package com.android.kotlin.compiler.client
 
+import com.android.kotlin.compiler.cli.FileDeltaOptions
 import com.android.kotlin.compiler.cli.Options
 import java.io.File
 
-class ClientOptions : Options {
+class ClientOptions : Options, FileDeltaOptions {
     var verbose = false
     var debug = false
 
@@ -80,6 +81,29 @@ class ClientOptions : Options {
             return File(rootDir, outputDirName)
         }
 
+    private var _srcJarsDir: File? = null
+    override var srcJarsDir: File
+        get() {
+            return _srcJarsDir
+                ?: throw IllegalStateException("Can not read srcJarsDir before it is set")
+        }
+        set(value) {
+            _srcJarsDir = value
+        }
+
+    var srcJarsDirLocation: String
+        get() {
+            return _srcJarsDir?.absolutePath
+                ?: throw IllegalStateException("Can not read srcJarsDirLocation before it is set")
+        }
+        set(value) {
+            if (value == "") {
+                _srcJarsDir = null
+            } else {
+                _srcJarsDir = File(value)
+            }
+        }
+
     var workingDirName: String = "work"
     val workingDir: File
         get() {
@@ -95,6 +119,14 @@ class ClientOptions : Options {
     var sourceDeltaFileName: String? = null
     val sourceDeltaFile: File?
         get() = if (sourceDeltaFileName != null) File(sourceDeltaFileName!!) else null
+
+    override val modifiedFiles: List<File>?
+        get() =
+            FileDeltaOptions.parseSourceChanges(sourceDeltaFile, srcJarsDirLocation)?.modifiedFiles
+
+    override val removedFiles: List<File>?
+        get() =
+            FileDeltaOptions.parseSourceChanges(sourceDeltaFile, srcJarsDirLocation)?.removedFiles
 
     var buildHistoryFileName: String = "build-history"
     val buildHistory: File
@@ -177,9 +209,11 @@ class ClientOptions : Options {
 
     var buildFileClassPaths: List<String> = emptyList()
 
-    var buildFileSources: List<String> = emptyList()
+    var buildFileFriendDirs: List<String> = emptyList()
 
     var buildFileJavaSources: List<String> = emptyList()
+
+    var buildFileSources: List<String> = emptyList()
 
     private var classpathSnapshotDir: String = "cpsnapshot"
     val classpathSnapshot: File

@@ -53,7 +53,7 @@ var (
 const configCacheFile = "config.cache"
 
 type ConfigCache struct {
-	EnvDepsHash                  uint64
+	EnvDepsHash                  proptools.Hash
 	ProductVariableFileTimestamp int64
 	SoongBuildFileTimestamp      int64
 }
@@ -89,6 +89,7 @@ func init() {
 	// the time to remove them yet
 	flag.BoolVar(&cmdlineArgs.RunGoTests, "t", false, "build and run go tests during bootstrap")
 	flag.BoolVar(&cmdlineArgs.IncrementalBuildActions, "incremental-build-actions", false, "generate build actions incrementally")
+	flag.BoolVar(&cmdlineArgs.IncrementalProviderTest, "incremental-provider-test", false, "test incremental providers restoring")
 	flag.StringVar(&cmdlineArgs.IncrementalDebugFile, "incremental-debug-file", "", "incremental debug file")
 
 	// Disable deterministic randomization in the protobuf package, so incremental
@@ -223,7 +224,10 @@ func incrementalValid(config android.Config, configCacheFile string) (*ConfigCac
 	var configCache ConfigCache
 	decoder := json.NewDecoder(file)
 	err = decoder.Decode(&configCache)
-	maybeQuit(err, "")
+	if err != nil {
+		fmt.Printf("Failed to parse config cache: %s.  Continuing with non-incremental analysis.", err.Error())
+		return &newConfigCache, false
+	}
 
 	return &newConfigCache, newConfigCache == configCache
 }
@@ -339,9 +343,11 @@ func main() {
 	var configCache *ConfigCache
 	configFile := filepath.Join(topDir, ctx.Config().OutDir(), configCacheFile)
 	incremental := false
-	ctx.SetIncrementalEnabled(cmdlineArgs.IncrementalBuildActions)
-	if cmdlineArgs.IncrementalBuildActions {
+	// Tie incremental analysis to soong-only for now.
+	ctx.SetIncrementalEnabled(cmdlineArgs.IncrementalBuildActions && !cmdlineArgs.KatiEnabled)
+	if ctx.GetIncrementalEnabled() {
 		configCache, incremental = incrementalValid(ctx.Config(), configFile)
+		ctx.SetIncrementalProviderTest(incremental && cmdlineArgs.IncrementalProviderTest)
 	}
 	ctx.SetIncrementalAnalysis(incremental)
 	ctx.SetIncrementalDebugFile(cmdlineArgs.IncrementalDebugFile)

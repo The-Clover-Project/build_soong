@@ -38,6 +38,8 @@ import (
 	"android/soong/android"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 var pctx = android.NewPackageContext("android/soong/etc")
 
 // TODO(jungw): Now that it handles more than the ones in etc/, consider renaming this file.
@@ -98,6 +100,7 @@ func RegisterPrebuiltEtcBuildComponents(ctx android.RegistrationContext) {
 
 }
 
+// @auto-generate: gob
 type PrebuiltEtcInfo struct {
 	// Returns the base install directory, such as "etc", "usr/share".
 	BaseDir string
@@ -108,6 +111,7 @@ type PrebuiltEtcInfo struct {
 var PrebuiltEtcInfoProvider = blueprint.NewProvider[PrebuiltEtcInfo]()
 
 // If this provider is set, it means this module was converted from PRODUCT_COPY_FILES
+// @auto-generate: gob
 type ProductCopyFilesModuleInfo struct {
 	// The entries as they would've appeared in PRODUCT_COPY_FILES, that is, src:dst
 	ProductCopyFileEntries []string
@@ -194,7 +198,7 @@ type prebuiltSubdirProperties struct {
 	Relative_install_path *string `android:"arch_variant"`
 }
 
-type prebuiltRootProperties struct {
+type PrebuiltRootProperties struct {
 	// Install this module to the root directory, without partition subdirs.  When this module is
 	// added to PRODUCT_PACKAGES, this module will be installed to $PRODUCT_OUT/root, which will
 	// then be copied to the root of system.img. When this module is packaged by other modules like
@@ -223,7 +227,7 @@ type PrebuiltEtc struct {
 
 	// rootProperties is used to return the value of the InstallInRoot() method. Currently, only
 	// prebuilt_avb and prebuilt_root modules use this.
-	rootProperties prebuiltRootProperties
+	rootProperties PrebuiltRootProperties
 
 	subdirProperties prebuiltSubdirProperties
 

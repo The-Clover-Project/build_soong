@@ -34,13 +34,17 @@ import (
 	"android/soong/rust/config"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 var pctx = android.NewPackageContext("android/soong/rust")
 
+// @auto-generate: gob
 type LibraryInfo struct {
 	Rlib  bool
 	Dylib bool
 }
 
+// @auto-generate: gob
 type CompilerInfo struct {
 	StdLinkageForDevice    StdLinkage
 	StdLinkageForNonDevice StdLinkage
@@ -51,19 +55,25 @@ type CompilerInfo struct {
 	Features               []string
 	CrateRootPath          android.Path
 	LibraryInfo            *LibraryInfo
+	BuildTarget            android.Path
+	CheckTarget            android.OptionalPath
 }
 
+// @auto-generate: gob
 type ProtobufDecoratorInfo struct{}
 
+// @auto-generate: gob
 type SourceProviderInfo struct {
 	Srcs                  android.Paths
 	ProtobufDecoratorInfo *ProtobufDecoratorInfo
 }
 
+// @auto-generate: gob
 type ProcMacroInfo struct {
 	Dylib android.Path
 }
 
+// @auto-generate: gob
 type RustInfo struct {
 	AndroidMkSuffix               string
 	RustSubName                   string
@@ -191,6 +201,9 @@ type BaseProperties struct {
 	// and one for apps.
 	Sdk_version *string
 
+	// If true, always create an sdk variant and don't create a platform variant.
+	Sdk_variant_only *bool
+
 	// Minimum OS API level supported by this C or C++ module. This property becomes the value
 	// of the __ANDROID_API__ macro. When the C or C++ module is included in an APEX or an APK,
 	// this property is also used to ensure that the min_sdk_version of the containing module is
@@ -202,6 +215,9 @@ type BaseProperties struct {
 
 	// Variant is an SDK variant created by sdkMutator
 	IsSdkVariant bool `blueprint:"mutated"`
+	// Set when both SDK and platform variants are exported to Make to trigger renaming the SDK
+	// variant to have a ".sdk" suffix.
+	SdkAndPlatformVariantVisibleToMake bool `blueprint:"mutated"`
 
 	// Set by factories of module types that can only be referenced from variants compiled against
 	// the SDK.
@@ -245,8 +261,6 @@ type Module struct {
 
 	docTimestampFile android.OptionalPath
 
-	hideApexVariantFromMake bool
-
 	// For apex variants, this is set as apex.min_sdk_version
 	apexSdkVersion android.ApiLevel
 
@@ -254,6 +268,10 @@ type Module struct {
 
 	// Shared flags among stubs build rules of this module
 	sharedFlags cc.SharedFlags
+}
+
+func (c *Module) IncrementalSupported() bool {
+	return true
 }
 
 func (mod *Module) Header() bool {
@@ -267,6 +285,7 @@ func (mod *Module) SetPreventInstall() {
 
 func (mod *Module) SetHideFromMake() {
 	mod.Properties.HideFromMake = true
+	mod.ModuleBase.HideFromMake()
 }
 
 func (mod *Module) HiddenFromMake() bool {
@@ -391,6 +410,9 @@ func (mod *Module) Toc() android.OptionalPath {
 }
 
 func (mod *Module) UseSdk() bool {
+	if cc.CanUseSdk(mod) {
+		return String(mod.Properties.Sdk_version) != ""
+	}
 	return false
 }
 
@@ -424,8 +446,7 @@ func (mod *Module) IsVendorPublicLibrary() bool {
 }
 
 func (mod *Module) SdkAndPlatformVariantVisibleToMake() bool {
-	// Rust modules to not provide Sdk variants
-	return false
+	return mod.Properties.SdkAndPlatformVariantVisibleToMake
 }
 
 func (c *Module) IsVndkPrivate() bool {
@@ -462,7 +483,7 @@ func (mod *Module) SdkVersion() string {
 }
 
 func (mod *Module) AlwaysSdk() bool {
-	return mod.Properties.AlwaysSdk
+	return mod.Properties.AlwaysSdk || Bool(mod.Properties.Sdk_variant_only)
 }
 
 func (mod *Module) IsSdkVariant() bool {
@@ -481,6 +502,7 @@ type Deps struct {
 	Dylibs          []string
 	Rlibs           []string
 	Rustlibs        []string
+	NoStdRlibs      []string
 	Stdlibs         []string
 	ProcMacros      []string
 	SharedLibs      []string
@@ -614,6 +636,7 @@ func NewFlagExporter() *flagExporter {
 	return &flagExporter{}
 }
 
+// @auto-generate: gob
 type RustFlagExporterInfo struct {
 	Flags                 []string
 	LinkDirs              []string
@@ -758,6 +781,13 @@ func (mod *Module) UnstrippedOutputFile() android.Path {
 	return nil
 }
 
+func (mod *Module) CheckJsonFilePath() android.OptionalPath {
+	if mod.compiler != nil {
+		return mod.compiler.checkJsonFilePath()
+	}
+	return android.OptionalPath{}
+}
+
 func (mod *Module) SetStatic() {
 	if mod.compiler != nil {
 		if library, ok := mod.compiler.(libraryInterface); ok {
@@ -887,7 +917,9 @@ func (mod *Module) installable(apexInfo android.ApexInfo) bool {
 	if !proptools.BoolDefault(mod.Installable(), mod.EverInstallable()) {
 		return false
 	}
-
+	if mod.PreventInstall() {
+		return false
+	}
 	// The apex variant is not installable because it is included in the APEX and won't appear
 	// in the system partition as a standalone file.
 	if !apexInfo.IsForPlatform() {
@@ -1018,8 +1050,16 @@ func (mod *Module) SetStl(s string) {
 	// STL is a CC concept; do nothing for Rust
 }
 
-func (mod *Module) SetSdkVersion(s string) {
-	mod.Properties.Sdk_version = StringPtr(s)
+func (mod *Module) SetSdkVersion(s *string) {
+	mod.Properties.Sdk_version = s
+}
+
+func (mod *Module) SetSdkAndPlatformVariantVisibleToMake() {
+	mod.Properties.SdkAndPlatformVariantVisibleToMake = true
+}
+
+func (mod *Module) SetSdkVariant() {
+	mod.Properties.IsSdkVariant = true
 }
 
 func (mod *Module) SetMinSdkVersion(s string) {
@@ -1071,7 +1111,7 @@ func (mod *Module) GenerateAndroidBuildActions(actx android.ModuleContext) {
 
 	apexInfo, _ := android.ModuleProvider(actx, android.ApexInfoProvider)
 	if !apexInfo.IsForPlatform() {
-		mod.hideApexVariantFromMake = true
+		mod.SetHideFromMake()
 	}
 
 	toolchain := mod.toolchain(ctx)
@@ -1213,6 +1253,8 @@ func (mod *Module) GenerateAndroidBuildActions(actx android.ModuleContext) {
 			CrateRootPath:          mod.compiler.crateRootPath(ctx),
 			StdLinkageForDevice:    mod.compiler.stdLinkage(true),
 			StdLinkageForNonDevice: mod.compiler.stdLinkage(false),
+			BuildTarget:            mod.compiler.unstrippedOutputFilePath(),
+			CheckTarget:            mod.compiler.checkJsonFilePath(),
 		}
 		if lib, ok := mod.compiler.(libraryInterface); ok {
 			rustInfo.CompilerInfo.LibraryInfo = &LibraryInfo{
@@ -1329,7 +1371,7 @@ func (mod *Module) getSymbolInfo(ctx android.ModuleContext, t any, info *cc.Symb
 }
 
 func (mod *Module) setSymbolsInfoProvider(ctx android.ModuleContext) {
-	if !mod.Properties.HideFromMake && !mod.hideApexVariantFromMake {
+	if !mod.Properties.HideFromMake {
 		infos := &cc.SymbolInfos{}
 		if mod.compiler != nil && !mod.compiler.Disabled() {
 			infos.AppendSymbols(mod.getSymbolInfo(ctx, mod.compiler, mod.baseSymbolInfo(ctx)))
@@ -1414,6 +1456,7 @@ func (mod *Module) deps(ctx DepsContext) Deps {
 	deps.Rlibs = android.LastUniqueStrings(deps.Rlibs)
 	deps.Dylibs = android.LastUniqueStrings(deps.Dylibs)
 	deps.Rustlibs = android.LastUniqueStrings(deps.Rustlibs)
+	deps.NoStdRlibs = android.LastUniqueStrings(deps.NoStdRlibs)
 	deps.ProcMacros = android.LastUniqueStrings(deps.ProcMacros)
 	deps.SharedLibs = android.LastUniqueStrings(deps.SharedLibs)
 	deps.StaticLibs = android.LastUniqueStrings(deps.StaticLibs)
@@ -2076,6 +2119,26 @@ func (mod *Module) stdLinkageOptions(ctx DepsContext) [][]blueprint.Variation {
 	}
 }
 
+func (mod *Module) addNoStdDep(ctx DepsContext, lib string) {
+	variations := []blueprint.Variation{RlibCore.variation(), rlibDepTag.libraryVariation()}
+
+	if ctx.OtherModuleDependencyVariantExists(variations, lib) {
+		ctx.AddVariationDependencies(variations, rlibDepTag, lib)
+		return
+	}
+	// To allow migration of custom nostd modules to no_std variants, temporarily support
+	// stripping _nostd suffixes if the library is not present.
+	// This is made safe by the enforcement that no_std libraries can no longer depend on
+	// stdful libraries, which works transitively.
+	if strings.HasSuffix(lib, "_nostd") {
+		mod.addNoStdDep(ctx, strings.TrimSuffix(lib, "_nostd"))
+		return
+	}
+	if !ctx.Config().AllowMissingDependencies() {
+		ctx.ModuleErrorf("unable to find no_std variation for lib %#v", lib)
+	}
+}
+
 func (mod *Module) addVariantDep(ctx DepsContext, depTags []dependencyTag, lib string) {
 	// Preference order is to get the preferred depTag, then to get preferred stdLinkage.
 	for _, depTag := range depTags {
@@ -2087,6 +2150,14 @@ func (mod *Module) addVariantDep(ctx DepsContext, depTags []dependencyTag, lib s
 				return
 			}
 		}
+	}
+	// To allow migration of custom nostd modules to no_std variants, temporarily support
+	// stripping _nostd suffixes if the library is not present.
+	// This is made safe by the enforcement that no_std libraries can no longer depend on
+	// stdful libraries, which works transitively.
+	if strings.HasSuffix(lib, "_nostd") {
+		mod.addVariantDep(ctx, depTags, strings.TrimSuffix(lib, "_nostd"))
+		return
 	}
 	if !ctx.Config().AllowMissingDependencies() {
 		ctx.ModuleErrorf("unable to find allowed variation for lib %#v - stdLinkage %v depTags %v", lib, mod.stdLinkageOptions(ctx), depTags)
@@ -2101,8 +2172,9 @@ func (mod *Module) DepsMutator(actx android.BottomUpMutatorContext) {
 	deps := mod.deps(ctx)
 	var commonDepVariations []blueprint.Variation
 
+	variantNdkLibs := []string{}
 	if ctx.Os() == android.Android {
-		deps.SharedLibs, _ = cc.FilterNdkLibs(mod, ctx.Config(), deps.SharedLibs)
+		deps.SharedLibs, variantNdkLibs = cc.FilterNdkLibs(mod, ctx.Config(), deps.SharedLibs)
 	}
 
 	// rlibs
@@ -2144,6 +2216,12 @@ func (mod *Module) DepsMutator(actx android.BottomUpMutatorContext) {
 					actx.AddVariationDependencies(srcProviderVariations, sourceDepTag, lib)
 				}
 			}
+		}
+	}
+
+	if deps.NoStdRlibs != nil {
+		for _, lib := range deps.NoStdRlibs {
+			mod.addNoStdDep(ctx, lib)
 		}
 	}
 
@@ -2202,6 +2280,17 @@ func (mod *Module) DepsMutator(actx android.BottomUpMutatorContext) {
 	actx.AddVariationDependencies([]blueprint.Variation{
 		{Mutator: "link", Variation: "shared"},
 	}, dataLibDepTag, deps.DataLibs...)
+
+	version := ""
+	if ctx.Device() {
+		version = String(mod.Properties.Sdk_version)
+	}
+
+	ndkStubDepTag := cc.NdkSharedLibDepTag(version)
+	actx.AddVariationDependencies([]blueprint.Variation{
+		{Mutator: "version", Variation: version},
+		{Mutator: "link", Variation: "shared"},
+	}, ndkStubDepTag, variantNdkLibs...)
 
 	actx.AddVariationDependencies(nil, dataBinDepTag, deps.DataBins...)
 
@@ -2269,13 +2358,13 @@ func (m *Module) CanHaveApexVariants() bool {
 	}
 }
 
-func (mod *Module) MinSdkVersion() string {
+func (mod *Module) MinSdkVersion(ctx android.ConfigurableEvaluatorContext) string {
 	return String(mod.Properties.Min_sdk_version)
 }
 
 // Implements android.ApexModule
 func (mod *Module) MinSdkVersionSupported(ctx android.BaseModuleContext) android.ApiLevel {
-	minSdkVersion := mod.MinSdkVersion()
+	minSdkVersion := mod.MinSdkVersion(ctx)
 	if minSdkVersion == "apex_inherit" {
 		return android.MinApiLevel
 	}
@@ -2403,6 +2492,7 @@ func (c *Module) Partition() string {
 	return ""
 }
 
+// @auto-generate: gob
 type RustImplementationDepInfo struct {
 	NonApexImplementationDeps depset.DepSet[android.Path]
 }

@@ -15,13 +15,16 @@
 package java
 
 import (
-	"android/soong/android"
 	"fmt"
 	"slices"
 	"strings"
 
+	"android/soong/android"
+
 	"github.com/google/blueprint"
 )
+
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
 
 func init() {
 	android.InitRegistrationContext.RegisterParallelSingletonType("apkcerts_singleton", apkCertsSingletonFactory)
@@ -30,6 +33,7 @@ func init() {
 // Info that should be included into the apkcerts.txt file.
 // The info can be provided as either a text file containing a subset of the final apkcerts.txt,
 // or as a certificate and name. The text file will be preferred if it exists
+// @auto-generate: gob
 type ApkCertInfo struct {
 	ApkCertsFile android.Path
 
@@ -43,6 +47,7 @@ type ApkCertInfo struct {
 
 var ApkCertInfoProvider = blueprint.NewProvider[ApkCertInfo]()
 
+// @auto-generate: gob
 type ApkCertsInfo []ApkCertInfo
 
 var ApkCertsInfoProvider = blueprint.NewProvider[ApkCertsInfo]()
@@ -59,9 +64,6 @@ func (a *apkCertsSingleton) GenerateBuildActions(ctx android.SingletonContext) {
 	ctx.VisitAllModuleProxies(func(m android.ModuleProxy) {
 		commonInfo, ok := android.OtherModuleProvider(ctx, m, android.CommonModuleInfoProvider)
 		if !ok || commonInfo.SkipAndroidMkProcessing {
-			return
-		}
-		if info, ok := android.OtherModuleProvider(ctx, m, android.HideApexVariantFromMakeProvider); ok && info.HideApexVariantFromMake {
 			return
 		}
 

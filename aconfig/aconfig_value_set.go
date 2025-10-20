@@ -23,6 +23,8 @@ import (
 	"github.com/google/blueprint"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 // Properties for "aconfig_value_set"
 type ValueSetModule struct {
 	android.ModuleBase
@@ -55,6 +57,7 @@ type valueSetType struct {
 var valueSetTag = valueSetType{}
 
 // Provider published by aconfig_value_set
+// @auto-generate: gob
 type valueSetProviderData struct {
 	// The package of each of the
 	// (map of package --> aconfig_module)

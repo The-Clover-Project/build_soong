@@ -247,6 +247,11 @@ func (rawFilesSingleton) GenerateBuildActions(ctx SingletonContext) {
 		// Nothing to do when running in tests, no temporary files were created.
 		return
 	}
+	if ctx.GetIncrementalAnalysis() {
+		// Don't try to delete the raw files for incremental build, otherwise all the
+		// raw files that were originally created by the skipped build actions will be lost.
+		return
+	}
 	rawFileSet := getRawFileSet(ctx.Config())
 	rawFilesDir := PathForOutput(ctx, "raw"+proptools.String(ctx.Config().productVariables.Make_suffix)).String()
 	absRawFilesDir := absolutePath(rawFilesDir)
@@ -271,7 +276,7 @@ func (rawFilesSingleton) GenerateBuildActions(ctx SingletonContext) {
 		// Checking that the path matches allows changing the structure of the raw directory, for example to increase
 		// the sharding.
 		rawFileInfo, written := rawFileSet.Load(key)
-		if !ctx.GetIncrementalAnalysis() && (!written || rawFileInfo.relPath != relPath) {
+		if !written || rawFileInfo.relPath != relPath {
 			os.Remove(path)
 		}
 		return nil

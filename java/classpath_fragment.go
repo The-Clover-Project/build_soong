@@ -26,6 +26,8 @@ import (
 	"android/soong/android"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 // Build rules and utilities to generate individual packages/modules/common/proto/classpaths.proto
 // config files based on build configuration to embed into /system and /apex on a device.
 //
@@ -212,23 +214,21 @@ func writeClasspathsTextproto(ctx android.ModuleContext, output android.Writable
 	android.WriteFileRule(ctx, output, content.String())
 }
 
-// Returns AndroidMkEntries objects to install generated classpath.proto.
+// Returns AndroidMkInfo objects to install generated classpath.proto.
 // Do not use this to install into APEXes as the injection of the generated files happen separately for APEXes.
-func (c *ClasspathFragmentBase) androidMkEntries() []android.AndroidMkEntries {
-	return []android.AndroidMkEntries{{
+func (c *ClasspathFragmentBase) androidMkInfo() android.AndroidMkInfo {
+	info := android.AndroidMkInfo{
 		Class:      "ETC",
 		OutputFile: android.OptionalPathForPath(c.outputFilepath),
-		ExtraEntries: []android.AndroidMkExtraEntriesFunc{
-			func(ctx android.AndroidMkExtraEntriesContext, entries *android.AndroidMkEntries) {
-				entries.SetString("LOCAL_MODULE_PATH", c.installDirPath.String())
-				entries.SetString("LOCAL_INSTALLED_MODULE_STEM", c.outputFilepath.Base())
-			},
-		},
-	}}
+	}
+	info.SetString("LOCAL_MODULE_PATH", c.installDirPath.String())
+	info.SetString("LOCAL_INSTALLED_MODULE_STEM", c.outputFilepath.Base())
+	return info
 }
 
 var ClasspathFragmentProtoContentInfoProvider = blueprint.NewProvider[ClasspathFragmentProtoContentInfo]()
 
+// @auto-generate: gob
 type ClasspathFragmentProtoContentInfo struct {
 	// Whether the classpaths.proto config is generated for the fragment.
 	ClasspathFragmentProtoGenerated bool
@@ -249,6 +249,6 @@ type ClasspathFragmentProtoContentInfo struct {
 	// use android.InstallPath#Rel().
 	//
 	// This is only relevant for APEX modules as they perform their own installation; while regular
-	// system files are installed via ClasspathFragmentBase#androidMkEntries().
+	// system files are installed via ClasspathFragmentBase#androidMkInfo().
 	ClasspathFragmentProtoInstallDir android.InstallPath
 }

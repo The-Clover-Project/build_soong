@@ -23,6 +23,8 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 // Contains code that is common to both platform_bootclasspath and bootclasspath_fragment.
 
 // addDependencyOntoApexVariants adds dependencies onto the appropriate apex specific variants of
@@ -202,6 +204,7 @@ func gatherApexModulePairDepsWithTag(ctx android.BaseModuleContext,
 }
 
 // ApexVariantReference specifies a particular apex variant of a module.
+// @auto-generate: gob
 type ApexVariantReference struct {
 	android.BpPrintableBase
 
@@ -306,8 +309,8 @@ type BootclasspathAPIProperties struct {
 
 // apiScopeToStubLibs calculates the stub library modules for each relevant *HiddenAPIScope from the
 // Stub_libs properties.
-func (p BootclasspathAPIProperties) apiScopeToStubLibs(ctx android.BaseModuleContext) map[*HiddenAPIScope][]string {
-	m := map[*HiddenAPIScope][]string{}
+func (p BootclasspathAPIProperties) apiScopeToStubLibs(ctx android.BaseModuleContext) map[HiddenAPIScopeHandle][]string {
+	m := map[HiddenAPIScopeHandle][]string{}
 	for _, apiScope := range hiddenAPISdkLibrarySupportedScopes {
 		m[apiScope] = p.Api.Stub_libs.GetOrDefault(ctx, nil)
 	}

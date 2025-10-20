@@ -104,8 +104,6 @@ type AndroidAppImport struct {
 	usesLibrary usesLibrary
 
 	installPath android.InstallPath
-
-	hideApexVariantFromMake bool
 }
 
 type AndroidAppImportProperties struct {
@@ -387,7 +385,9 @@ func (a *AndroidAppImport) generateAndroidBuildActions(ctx android.ModuleContext
 
 	apexInfo, _ := android.ModuleProvider(ctx, android.ApexInfoProvider)
 	if !apexInfo.IsForPlatform() {
-		a.hideApexVariantFromMake = true
+		// The non-platform variant is placed inside APEX. No reason to
+		// make it available to Make.
+		a.HideFromMake()
 	}
 
 	if a.properties.Preprocessed.GetOrDefault(ctx, false) {
@@ -658,11 +658,11 @@ func (m AppImportDepInSameApexChecker) OutgoingDepIsInSameApex(tag blueprint.Dep
 	return false
 }
 
-func (a *AndroidAppImport) SdkVersion(ctx android.EarlyModuleContext) android.SdkSpec {
+func (a *AndroidAppImport) SdkVersion(ctx android.ConfigContext) android.SdkSpec {
 	return android.SdkSpecPrivate
 }
 
-func (a *AndroidAppImport) MinSdkVersion(ctx android.EarlyModuleContext) android.ApiLevel {
+func (a *AndroidAppImport) MinSdkVersion(ctx android.MinSdkVersionFromValueContext) android.ApiLevel {
 	return android.SdkSpecPrivate.ApiLevel
 }
 

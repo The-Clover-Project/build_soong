@@ -15,8 +15,10 @@
 package release_config_lib
 
 import (
+	"bytes"
 	"cmp"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -76,6 +78,11 @@ type ReleaseConfig struct {
 
 	// Unmarshalled flag artifacts
 	FlagArtifacts FlagArtifacts
+
+	// Flags with no declaration that have value overrides.
+	// This is used by `build-flag` to indicate that there are flag
+	// values, but they are being ignored.
+	IgnoredFlags map[string]bool
 
 	// Generated release config
 	ReleaseConfigArtifact *rc_proto.ReleaseConfigArtifact
@@ -149,6 +156,7 @@ func ReleaseConfigFactory(name string, index int) (c *ReleaseConfig) {
 	return &ReleaseConfig{
 		Name:             name,
 		DeclarationIndex: index,
+		IgnoredFlags:     make(map[string]bool),
 		PriorStagesMap:   make(map[string]bool),
 		inheritNamesMap:  make(map[string]bool),
 	}
@@ -186,6 +194,7 @@ func (config *ReleaseConfig) InheritConfig(iConfig *ReleaseConfig) error {
 			myFa.Value = fa.Value
 		}
 	}
+	maps.Copy(config.IgnoredFlags, iConfig.IgnoredFlags)
 	return nil
 }
 
@@ -305,7 +314,9 @@ func (config *ReleaseConfig) GenerateReleaseConfig(configs *ReleaseConfigs) erro
 			name := *value.proto.Name
 			fa, ok := config.FlagArtifacts[name]
 			if !ok {
-				return fmt.Errorf("Setting value for undefined flag %s in %s\n", name, value.path)
+				// b/450252549: Ignore flag values where the flag declaration has been deleted.
+				configs.IgnoredFlags[name] = true
+				continue
 			}
 			// Record that flag declarations from fa.DeclarationIndex were included in this release config.
 			myDirsMap[fa.DeclarationIndex] = true
@@ -369,7 +380,7 @@ func (config *ReleaseConfig) GenerateReleaseConfig(configs *ReleaseConfigs) erro
 	// Now remove any duplicates from the actual value of RELEASE_ACONFIG_VALUE_SETS
 	myAconfigValueSets := []string{}
 	myAconfigValueSetsMap := map[string]bool{}
-	for _, v := range strings.Split(releaseAconfigValueSets.Value.GetStringValue(), " ") {
+	for _, v := range strings.Fields(releaseAconfigValueSets.Value.GetStringValue()) {
 		if v == "" || myAconfigValueSetsMap[v] {
 			continue
 		}
@@ -469,7 +480,7 @@ func (config *ReleaseConfig) WriteMakefile(outFile, targetRelease string, config
 	var extraAconfigReleaseConfigs []string
 	if extraAconfigValueSetsValue, ok := config.FlagArtifacts["RELEASE_ACONFIG_EXTRA_RELEASE_CONFIGS"]; ok {
 		if val := MarshalValue(extraAconfigValueSetsValue.Value); len(val) > 0 {
-			extraAconfigReleaseConfigs = strings.Split(val, " ")
+			extraAconfigReleaseConfigs = strings.Fields(val)
 		}
 	}
 	for _, rcName := range extraAconfigReleaseConfigs {
@@ -527,27 +538,29 @@ func (config *ReleaseConfig) WriteMakefile(outFile, targetRelease string, config
 	//   _ALL_RELEASE_FLAGS.PARTITIONS.*
 	//   all _ALL_RELEASE_FLAGS.*, sorted by name
 	//   Final flag values, sorted by name.
-	data := fmt.Sprintf("# TARGET_RELEASE=%s\n", config.Name)
+	var sb bytes.Buffer
+
+	fmt.Fprintf(&sb, "# TARGET_RELEASE=%s\n", config.Name)
 	if targetRelease != config.Name {
-		data += fmt.Sprintf("# User specified TARGET_RELEASE=%s\n", targetRelease)
+		fmt.Fprintf(&sb, "# User specified TARGET_RELEASE=%s\n", targetRelease)
 	}
 	// As it stands this list is not per-product, but conceptually it is, and will be.
-	data += fmt.Sprintf("ALL_RELEASE_CONFIGS_FOR_PRODUCT :=$= %s\n", strings.Join(configs.GetAllReleaseNames(), " "))
+	fmt.Fprintf(&sb, "ALL_RELEASE_CONFIGS_FOR_PRODUCT :=$= %s\n", strings.Join(configs.GetAllReleaseNames(), " "))
 	if config.DisallowLunchUse {
-		data += fmt.Sprintf("_disallow_lunch_use :=$= true\n")
+		fmt.Fprintf(&sb, "_disallow_lunch_use :=$= true\n")
 	}
-	data += fmt.Sprintf("_ALL_RELEASE_FLAGS :=$= %s\n", strings.Join(names, " "))
+	fmt.Fprintf(&sb, "_ALL_RELEASE_FLAGS :=$= %s\n", strings.Join(names, " "))
 	for _, pName := range pNames {
-		data += fmt.Sprintf("_ALL_RELEASE_FLAGS.PARTITIONS.%s :=$= %s\n", pName, strings.Join(partitions[pName], " "))
+		fmt.Fprintf(&sb, "_ALL_RELEASE_FLAGS.PARTITIONS.%s :=$= %s\n", pName, strings.Join(partitions[pName], " "))
 	}
 	for _, vName := range vNames {
-		data += fmt.Sprintf("%s :=$= %s\n", vName, makeVars[vName])
+		fmt.Fprintf(&sb, "%s :=$= %s\n", vName, makeVars[vName])
 	}
-	data += "\n\n# Values for all build flags\n"
+	fmt.Fprintf(&sb, "\n\n# Values for all build flags\n")
 	for _, name := range names {
-		data += fmt.Sprintf("%s :=$= %s\n", name, makeVars[name])
+		fmt.Fprintf(&sb, "%s :=$= %s\n", name, makeVars[name])
 	}
-	return os.WriteFile(outFile, []byte(data), 0644)
+	return os.WriteFile(outFile, sb.Bytes(), 0644)
 }
 
 func (config *ReleaseConfig) WritePartitionBuildFlags(product string, outDir string) error {

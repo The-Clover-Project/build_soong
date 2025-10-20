@@ -17,6 +17,7 @@ package java
 import (
 	"fmt"
 	"strings"
+	"unique"
 
 	"android/soong/android"
 	"android/soong/dexpreopt"
@@ -24,11 +25,14 @@ import (
 	"github.com/google/blueprint"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 // Contains support for processing hiddenAPI in a modular fashion.
 
 // HiddenAPIScope encapsulates all the information that the hidden API processing needs about API
 // scopes, i.e. what is called android.SdkKind and apiScope. It does not just use those as they do
 // not provide the information needed by hidden API processing.
+// @auto-generate: gob
 type HiddenAPIScope struct {
 	// The name of the scope, used for debug purposes.
 	name string
@@ -52,8 +56,10 @@ type HiddenAPIScope struct {
 	nonUpdatablePrebuiltModule string
 }
 
+type HiddenAPIScopeHandle = unique.Handle[HiddenAPIScope]
+
 // initHiddenAPIScope initializes the scope.
-func initHiddenAPIScope(apiScope *HiddenAPIScope) *HiddenAPIScope {
+func initHiddenAPIScope(apiScope *HiddenAPIScope) HiddenAPIScopeHandle {
 	sdkKind := apiScope.sdkKind
 	// The platform does not provide a core platform API.
 	if sdkKind != android.SdkCorePlatform {
@@ -78,12 +84,12 @@ func initHiddenAPIScope(apiScope *HiddenAPIScope) *HiddenAPIScope {
 		apiScope.nonUpdatablePrebuiltModule = prebuiltModuleName(nonUpdatableModule, kindAsString)
 	}
 
-	return apiScope
+	return unique.Make(*apiScope)
 }
 
 // android-non-updatable takes the name of a module and returns a possibly scope specific name of
 // the module.
-func (l *HiddenAPIScope) scopeSpecificStubModule(ctx android.BaseModuleContext, name string) string {
+func (l HiddenAPIScope) scopeSpecificStubModule(ctx android.BaseModuleContext, name string) string {
 	// The android-non-updatable is not a java_sdk_library but there are separate stub libraries for
 	// each scope.
 	// TODO(b/192067200): Remove special handling of android-non-updatable.
@@ -104,7 +110,7 @@ func (l *HiddenAPIScope) scopeSpecificStubModule(ctx android.BaseModuleContext, 
 	}
 }
 
-func (l *HiddenAPIScope) String() string {
+func (l HiddenAPIScope) String() string {
 	return fmt.Sprintf("HiddenAPIScope{%s}", l.name)
 }
 
@@ -150,7 +156,7 @@ var (
 	// is neither wider or narrower than the module-lib or core platform APIs. However, this works
 	// well enough at the moment.
 	// TODO(b/191644675): Correctly reflect the sub/superset relationships between APIs.
-	hiddenAPIScopes = []*HiddenAPIScope{
+	hiddenAPIScopes = []HiddenAPIScopeHandle{
 		PublicHiddenAPIScope,
 		SystemHiddenAPIScope,
 		TestHiddenAPIScope,
@@ -162,7 +168,7 @@ var (
 	//
 	// CorePlatformHiddenAPIScope is not used as the java_sdk_library does not have special support
 	// for core_platform API, instead it is implemented as a customized form of PublicHiddenAPIScope.
-	hiddenAPISdkLibrarySupportedScopes = []*HiddenAPIScope{
+	hiddenAPISdkLibrarySupportedScopes = []HiddenAPIScopeHandle{
 		PublicHiddenAPIScope,
 		SystemHiddenAPIScope,
 		TestHiddenAPIScope,
@@ -170,7 +176,7 @@ var (
 	}
 
 	// The HiddenAPIScope instances that are supported by the `hiddenapi list`.
-	hiddenAPIFlagScopes = []*HiddenAPIScope{
+	hiddenAPIFlagScopes = []HiddenAPIScopeHandle{
 		PublicHiddenAPIScope,
 		SystemHiddenAPIScope,
 		TestHiddenAPIScope,
@@ -182,7 +188,7 @@ type hiddenAPIStubsDependencyTag struct {
 	blueprint.BaseDependencyTag
 
 	// The api scope for which this dependency was added.
-	apiScope *HiddenAPIScope
+	apiScope HiddenAPIScopeHandle
 
 	// Indicates that the dependency is not for an API provided by the current bootclasspath fragment
 	// but is an additional API provided by a module that is not part of the current bootclasspath
@@ -232,7 +238,7 @@ var _ android.SdkMemberDependencyTag = hiddenAPIStubsDependencyTag{}
 
 // hiddenAPIComputeMonolithicStubLibModules computes the set of module names that provide stubs
 // needed to produce the hidden API monolithic stub flags file.
-func hiddenAPIComputeMonolithicStubLibModules(config android.Config) map[*HiddenAPIScope][]string {
+func hiddenAPIComputeMonolithicStubLibModules(config android.Config) map[HiddenAPIScopeHandle][]string {
 	var publicStubModules []string
 	var systemStubModules []string
 	var testStubModules []string
@@ -275,7 +281,7 @@ func hiddenAPIComputeMonolithicStubLibModules(config android.Config) map[*Hidden
 		testStubModules = append(testStubModules, "jacoco-stubs")
 	}
 
-	m := map[*HiddenAPIScope][]string{}
+	m := map[HiddenAPIScopeHandle][]string{}
 	m[PublicHiddenAPIScope] = publicStubModules
 	m[SystemHiddenAPIScope] = systemStubModules
 	m[TestHiddenAPIScope] = testStubModules
@@ -286,7 +292,7 @@ func hiddenAPIComputeMonolithicStubLibModules(config android.Config) map[*Hidden
 // hiddenAPIAddStubLibDependencies adds dependencies onto the modules specified in
 // apiScopeToStubLibModules. It adds them in a well known order and uses a HiddenAPIScope specific
 // tag to identify the source of the dependency.
-func hiddenAPIAddStubLibDependencies(ctx android.BottomUpMutatorContext, apiScopeToStubLibModules map[*HiddenAPIScope][]string) {
+func hiddenAPIAddStubLibDependencies(ctx android.BottomUpMutatorContext, apiScopeToStubLibModules map[HiddenAPIScopeHandle][]string) {
 	module := ctx.Module()
 	for _, apiScope := range hiddenAPIScopes {
 		modules := apiScopeToStubLibModules[apiScope]
@@ -363,7 +369,7 @@ func buildRuleToGenerateHiddenAPIStubFlagsFile(ctx android.BuilderContext, name,
 		paths = append(paths, input.AdditionalStubDexJarsByScope.StubDexJarsForScope(apiScope)...)
 		paths = append(paths, input.StubDexJarsByScope.StubDexJarsForScope(apiScope)...)
 		if len(paths) > 0 {
-			option := apiScope.hiddenAPIListOption
+			option := apiScope.Value().hiddenAPIListOption
 			command.FlagWithInputList(option+"=", paths, ":")
 		}
 	}
@@ -545,6 +551,7 @@ var HiddenAPIFlagFileCategories = hiddenAPIFlagFileCategories{
 }
 
 // FlagFilesByCategory maps a hiddenAPIFlagFileCategory to the paths to the files in that category.
+// @auto-generate: gob
 type FlagFilesByCategory map[hiddenAPIFlagFileCategory]android.Paths
 
 // append the supplied flags files to the corresponding category in this map.
@@ -565,6 +572,7 @@ func (s FlagFilesByCategory) sort() {
 //
 // That includes paths resolved from HiddenAPIFlagFileProperties and also generated by hidden API
 // processing.
+// @auto-generate: gob
 type HiddenAPIInfo struct {
 	// FlagFilesByCategory maps from the flag file category to the paths containing information for
 	// that category.
@@ -617,6 +625,7 @@ var HiddenAPIInfoProvider = blueprint.NewProvider[HiddenAPIInfo]()
 //
 // That includes paths resolved from HiddenAPIFlagFileProperties and also generated by hidden API
 // processing.
+// @auto-generate: gob
 type HiddenAPIInfoForSdk struct {
 	// FlagFilesByCategory maps from the flag file category to the paths containing information for
 	// that category.
@@ -633,7 +642,8 @@ var HiddenAPIInfoForSdkProvider = blueprint.NewProvider[HiddenAPIInfoForSdk]()
 //
 // It maps a *HiddenAPIScope to the path to stub dex jars appropriate for that scope. See
 // hiddenAPIScopes for a list of the acceptable *HiddenAPIScope values.
-type ModuleStubDexJars map[*HiddenAPIScope]android.Path
+// @auto-generate: gob
+type ModuleStubDexJars map[HiddenAPIScopeHandle]android.Path
 
 // stubDexJarForWidestAPIScope returns the stub dex jars for the widest API scope provided by this
 // map.
@@ -656,7 +666,7 @@ func (s ModuleStubDexJars) stubDexJarForWidestAPIScope() android.Path {
 type StubDexJarsByModule map[string]ModuleStubDexJars
 
 // addStubDexJar adds a stub dex jar path provided by the specified module for the specified scope.
-func (s StubDexJarsByModule) addStubDexJar(ctx android.ModuleContext, module android.ModuleProxy, scope *HiddenAPIScope, stubDexJar android.Path) {
+func (s StubDexJarsByModule) addStubDexJar(ctx android.ModuleContext, module android.ModuleProxy, scope HiddenAPIScopeHandle, stubDexJar android.Path) {
 	name := android.RemoveOptionalPrebuiltPrefix(module.Name())
 
 	// Each named module provides one dex jar for each scope. However, in some cases different API
@@ -665,7 +675,8 @@ func (s StubDexJarsByModule) addStubDexJar(ctx android.ModuleContext, module and
 	// public version is provided by the art.module.public.api module. In those cases it is necessary
 	// to treat all those modules as they were the same name, otherwise it will result in multiple
 	// definitions of a single class being passed to hidden API processing which will cause an error.
-	if name == scope.nonUpdatablePrebuiltModule || name == scope.nonUpdatableSourceModule || name == scope.nonUpdatableFromTextModule {
+	scopeValue := scope.Value()
+	if name == scopeValue.nonUpdatablePrebuiltModule || name == scopeValue.nonUpdatableSourceModule || name == scopeValue.nonUpdatableFromTextModule {
 		// Treat all *android-non-updatable* modules as if they were part of an android-non-updatable
 		// java_sdk_library.
 		// TODO(b/192067200): Remove once android-non-updatable is a java_sdk_library or equivalent.
@@ -731,7 +742,7 @@ func (s StubDexJarsByModule) StubDexJarsForWidestAPIScope() android.Paths {
 //
 // If a module does not provide a stub dex jar for the supplied scope then it does not contribute to
 // the returned list.
-func (s StubDexJarsByModule) StubDexJarsForScope(scope *HiddenAPIScope) android.Paths {
+func (s StubDexJarsByModule) StubDexJarsForScope(scope HiddenAPIScopeHandle) android.Paths {
 	stubDexJars := android.Paths{}
 	modules := android.SortedKeys(s)
 	for _, module := range modules {
@@ -745,6 +756,7 @@ func (s StubDexJarsByModule) StubDexJarsForScope(scope *HiddenAPIScope) android.
 	return stubDexJars
 }
 
+// @auto-generate: gob
 type HiddenAPIPropertyInfo struct {
 	// FlagFilesByCategory contains the flag files that override the initial flags that are derived
 	// from the stub dex files.
@@ -846,8 +858,8 @@ func newHiddenAPIFlagInput() HiddenAPIFlagInput {
 //
 // That includes paths to the stub dex jars as well as paths to the *removed.txt files.
 func (i *HiddenAPIFlagInput) gatherStubLibInfo(ctx android.ModuleContext, contents []android.ModuleProxy) {
-	addFromModule := func(ctx android.ModuleContext, module android.ModuleProxy, apiScope *HiddenAPIScope) {
-		sdkKind := apiScope.sdkKind
+	addFromModule := func(ctx android.ModuleContext, module android.ModuleProxy, apiScope HiddenAPIScopeHandle) {
+		sdkKind := apiScope.Value().sdkKind
 		dexJar := hiddenAPIRetrieveDexJarBuildPath(ctx, module, sdkKind)
 		if dexJar != nil {
 			i.StubDexJarsByScope.addStubDexJar(ctx, module, apiScope, dexJar)
@@ -874,7 +886,7 @@ func (i *HiddenAPIFlagInput) gatherStubLibInfo(ctx android.ModuleContext, conten
 		if hiddenAPIStubsTag, ok := tag.(hiddenAPIStubsDependencyTag); ok {
 			apiScope := hiddenAPIStubsTag.apiScope
 			if hiddenAPIStubsTag.fromAdditionalDependency {
-				dexJar := hiddenAPIRetrieveDexJarBuildPath(ctx, module, apiScope.sdkKind)
+				dexJar := hiddenAPIRetrieveDexJarBuildPath(ctx, module, apiScope.Value().sdkKind)
 				if dexJar != nil {
 					i.AdditionalStubDexJarsByScope.addStubDexJar(ctx, module, apiScope, dexJar)
 				}
@@ -896,6 +908,7 @@ func (i *HiddenAPIFlagInput) transitiveStubDexJarsByScope() StubDexJarsByModule 
 
 // HiddenAPIFlagOutput contains paths to output files from the hidden API flag generation for a
 // bootclasspath_fragment module.
+// @auto-generate: gob
 type HiddenAPIFlagOutput struct {
 	// The path to the generated annotation-flags.csv file.
 	AnnotationFlagsPath android.Path
@@ -1033,6 +1046,7 @@ func buildRuleToGenerateHiddenApiFlags(ctx android.BuilderContext, name, desc st
 
 // SignatureCsvSubset describes a subset of a monolithic flags file, i.e. either
 // out/soong/hiddenapi/hiddenapi-stub-flags.txt or out/soong/hiddenapi/hiddenapi-flags.csv
+// @auto-generate: gob
 type SignatureCsvSubset struct {
 	// The path to the CSV file containing hidden API flags.
 	//
@@ -1046,6 +1060,7 @@ type SignatureCsvSubset struct {
 	SignaturePatternsFile android.Path
 }
 
+// @auto-generate: gob
 type SignatureCsvSubsets []SignatureCsvSubset
 
 func (s SignatureCsvSubsets) RelativeToTop() []string {

@@ -15,6 +15,7 @@
 package config
 
 import "strings"
+import "android/soong/android"
 
 var (
 	KotlinStdlibJar     = "external/kotlinc/lib/kotlin-stdlib.jar"
@@ -27,6 +28,7 @@ var (
 
 func init() {
 	pctx.HostBinToolVariable("KotlinIncrementalClientBinary", "kotlin-incremental-client")
+	pctx.HostBinToolVariable("KotlinKspClientBinary", "kotlin-ksp-client")
 	pctx.HostBinToolVariable("KotlinJarSnapshotterBinary", "kotlin-jar-snapshotter")
 	pctx.SourcePathVariable("KotlincCmd", "external/kotlinc/bin/kotlinc")
 	pctx.SourcePathVariable("KotlinCompilerJar", "external/kotlinc/lib/kotlin-compiler.jar")
@@ -48,10 +50,28 @@ func init() {
 		"-J--add-opens=java.base/sun.net.www.protocol.jar=ALL-UNNAMED",
 	}, " "))
 
-	// These flags silence "Illegal reflective access" warnings when running kotlinc in OpenJDK9+
-	pctx.StaticVariable("KotlincSuppressJDK9Warnings", strings.Join([]string{
-		"-J--add-opens=java.base/java.util=ALL-UNNAMED", // https://youtrack.jetbrains.com/issue/KT-43704
-	}, " "))
+	pctx.StaticVariable("KotlincHeapSize", "8192M")
+	pctx.StaticVariable("KotlincHeapFlags", "-J-Xmx${KotlincHeapSize}")
+
+	// These flags silence warnings seen when running kotlinc in OpenJDK9+
+	pctx.VariableFunc("KotlincSuppressJDK9Warnings", func(ctx android.PackageVarContext) string {
+		suppressWarningsFlags := []string{
+			// "Illegal reflective access"
+			"-J--add-opens=java.base/java.util=ALL-UNNAMED", // https://youtrack.jetbrains.com/issue/KT-43704
+		}
+
+		if ctx.Config().BuildWithJdk25() {
+			suppressWarningsFlags = append(suppressWarningsFlags,
+				// restricted method in java.lang.System
+				"-J--enable-native-access=ALL-UNNAMED", // b/445166084
+				// deprecated sun.misc.Unsafe::objectFieldOffset
+				"-J--sun-misc-unsafe-memory-access=allow", // b/445162494, https://youtrack.jetbrains.com/issue/IJPL-191435
+				// annotation applied to the value parameter only
+				"-Xannotation-default-target=first-only", // b/445163990, https://youtrack.jetbrains.com/issue/KT-73255
+			)
+		}
+		return strings.Join(suppressWarningsFlags, " ")
+	})
 
 	pctx.StaticVariable("KotlincGlobalFlags", strings.Join([]string{}, " "))
 	// Use KotlincKytheGlobalFlags to prevent kotlinc version skew issues between android and

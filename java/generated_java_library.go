@@ -67,7 +67,7 @@ func (module *GeneratedJavaLibraryModule) AddSharedLibrary(name string) {
 	if module.depsMutatorDone {
 		panic("GeneratedJavaLibraryModule.AddLibrary called after DepsMutator")
 	}
-	module.Library.properties.Libs = append(module.Library.properties.Libs, name)
+	module.Library.properties.Libs.AppendSimpleValue([]string{name})
 }
 
 func (module *GeneratedJavaLibraryModule) DepsMutator(ctx android.BottomUpMutatorContext) {
@@ -85,7 +85,7 @@ func checkPropertyEmpty(ctx android.ModuleContext, module *GeneratedJavaLibraryM
 func (module *GeneratedJavaLibraryModule) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	// These modules are all-generated, so disallow these properties to keep it simple.
 	// No additional sources
-	checkPropertyEmpty(ctx, module, "srcs", module.Library.properties.Srcs)
+	checkPropertyEmpty(ctx, module, "srcs", module.Library.properties.Srcs.GetOrDefault(ctx, nil))
 	checkPropertyEmpty(ctx, module, "common_srcs", module.Library.properties.Common_srcs)
 	checkPropertyEmpty(ctx, module, "exclude_srcs", module.Library.properties.Exclude_srcs)
 	checkPropertyEmpty(ctx, module, "java_resource_dirs", module.Library.properties.Java_resource_dirs)

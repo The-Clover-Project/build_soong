@@ -53,6 +53,7 @@ func (l *StringList) String() string {
 
 // Read the stringlist from a file containing one or more lines which contain
 // space separated values to add to the StringList.
+// Processing of a line stops if a "#" is found.
 func (l *StringList) ReadFromFile(fileName string) error {
 	// Do not include this file as part of the hash.  Reading the StringList from
 	// a file is a shorthand for command line arguments, which are not part of the
@@ -62,7 +63,9 @@ func (l *StringList) ReadFromFile(fileName string) error {
 		return err
 	}
 	for line := range strings.SplitSeq(strings.TrimSpace(string(data)), "\n") {
-		for m := range strings.SplitSeq(strings.TrimSpace(line), " ") {
+		// Allow # comments on lines in the file.
+		line = strings.SplitN(line, "#", 2)[0]
+		for _, m := range strings.Fields(line) {
 			l.Set(m)
 		}
 	}
@@ -336,7 +339,7 @@ func GetDefaultMapPaths(queryMaps bool) (defaultMapPaths StringList, err error) 
 	prodMaps = strings.TrimSpace(prodMaps)
 	productReleaseConfigMaps = &prodMaps
 	if len(prodMaps) > 0 {
-		defaultMapPaths = append(defaultMapPaths, strings.Split(prodMaps, " ")...)
+		defaultMapPaths = append(defaultMapPaths, strings.Fields(prodMaps)...)
 	}
 	return
 }

@@ -7,6 +7,7 @@ bootstrap_go_package {
     pkgPath: "android/soong/aconfig/build_flags",
     deps: [
         "blueprint",
+        "blueprint-gobtools",
         "blueprint-pathtools",
         "sbox_proto",
         "soong",
@@ -14,6 +15,7 @@ bootstrap_go_package {
     ],
     srcs: [
         "build_flags.go",
+        "build_flags_enc.go",
         "build_flags_singleton.go",
         "declarations.go",
         "init.go",

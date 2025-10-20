@@ -20,11 +20,15 @@ bootstrap_go_package {
     name: "soong-aidl-library",
     pkgPath: "android/soong/aidl_library",
     deps: [
+        "blueprint",
         "blueprint-depset",
+        "blueprint-gobtools",
+        "blueprint-proptools",
         "soong-android",
     ],
     srcs: [
         "aidl_library.go",
+        "aidl_library_enc.go",
     ],
     testSrcs: [
         "aidl_library_test.go",

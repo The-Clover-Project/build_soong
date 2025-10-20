@@ -7,6 +7,8 @@ bootstrap_go_package {
     pkgPath: "android/soong/tradefed",
     deps: [
         "blueprint",
+        "blueprint-gobtools",
+        "blueprint-proptools",
         "soong-android",
     ],
     srcs: [
@@ -14,6 +16,7 @@ bootstrap_go_package {
         "config.go",
         "makevars.go",
         "providers.go",
+        "tradefed_enc.go",
     ],
     pluginFor: ["soong_build"],
 }

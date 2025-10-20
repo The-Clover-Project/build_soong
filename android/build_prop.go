@@ -142,7 +142,9 @@ func (p *buildPropModule) GenerateAndroidBuildActions(ctx ModuleContext) {
 
 	cmd.FlagWithInput("--build-hostname-file=", config.BuildHostnameFile(ctx))
 	cmd.FlagWithInput("--build-number-file=", config.BuildNumberFile(ctx))
+	cmd.FlagWithInput("--build-uuid-file=", config.BuildUUIDFile(ctx))
 	cmd.FlagWithInput("--build-fingerprint-file=", config.BuildFingerprintFile(ctx))
+	cmd.FlagWithInput("--build-system-fingerprint-file=", config.BuildSystemFingerprintFile(ctx))
 	// Export build thumbprint only if the product has specified at least one oem fingerprint property
 	// b/17888863
 	if shouldAddBuildThumbprint(config) {

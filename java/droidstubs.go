@@ -29,6 +29,9 @@ import (
 	"android/soong/remoteexec"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
+// @auto-generate: gob
 type StubsInfo struct {
 	ApiVersionsXml android.Path
 	AnnotationsZip android.Path
@@ -36,21 +39,37 @@ type StubsInfo struct {
 	RemovedApiFile android.Path
 }
 
+// @auto-generate: gob
 type DroidStubsInfo struct {
-	AconfigProtoFiles   android.Paths
-	CurrentApiTimestamp android.Path
-	EverythingStubsInfo StubsInfo
-	ExportableStubsInfo StubsInfo
+	CheckedInApiFile        android.Path
+	CheckedInRemovedApiFile android.Path
+	AconfigProtoFiles       android.Paths
+	CurrentApiTimestamp     android.Path
+	EverythingStubsInfo     StubsInfo
+	ExportableStubsInfo     StubsInfo
 }
 
 var DroidStubsInfoProvider = blueprint.NewProvider[DroidStubsInfo]()
 
+// @auto-generate: gob
 type StubsSrcInfo struct {
 	EverythingStubsSrcJar android.Path
 	ExportableStubsSrcJar android.Path
 }
 
 var StubsSrcInfoProvider = blueprint.NewProvider[StubsSrcInfo]()
+
+// Marker provider that indicates this module has files to update on an `m update-api`.
+// @auto-generate: gob
+type UpdateApiInfo struct {
+	Name                 string
+	SourceApiFile        android.Path
+	GeneratedApiFile     android.Path
+	SourceRemovedFile    android.Path
+	GeneratedRemovedFile android.Path
+}
+
+var UpdateApiProvider = blueprint.NewProvider[UpdateApiInfo]()
 
 // The values allowed for Droidstubs' Api_levels_sdk_type
 var allowedApiLevelSdkTypes = []string{"public", "system", "module-lib", "system-server"}
@@ -74,6 +93,17 @@ func (s StubsType) String() string {
 		return "exportable"
 	default:
 		return ""
+	}
+}
+
+func (s StubsType) OutputTagPrefix() string {
+	switch s {
+	case Everything:
+		return ""
+	case Exportable:
+		return ".exportable"
+	default:
+		panic("Unsupported StubsType for OutputTagPrefix")
 	}
 }
 
@@ -101,6 +131,8 @@ func RegisterStubsBuildComponents(ctx android.RegistrationContext) {
 	ctx.RegisterModuleType("droidstubs_host", DroidstubsHostFactory)
 
 	ctx.RegisterModuleType("prebuilt_stubs_sources", PrebuiltStubsSourcesFactory)
+
+	ctx.RegisterParallelSingletonType("update_api_singleton", UpdateApiSingletonFactory)
 }
 
 type stubsArtifacts struct {
@@ -121,7 +153,6 @@ type Droidstubs struct {
 	removedApiFile android.Path
 
 	checkCurrentApiTimestamp      android.WritablePath
-	updateCurrentApiTimestamp     android.WritablePath
 	checkLastReleasedApiTimestamp android.WritablePath
 	apiLintTimestamp              android.WritablePath
 	apiLintReport                 android.WritablePath
@@ -244,10 +275,6 @@ type ApiStubsProvider interface {
 	RemovedApiFilePath(StubsType) (android.Path, error)
 
 	ApiStubsSrcProvider
-}
-
-type currentApiTimestampProvider interface {
-	CurrentApiTimestamp() android.Path
 }
 
 type annotationFlagsParams struct {
@@ -753,8 +780,8 @@ func (d *Droidstubs) apiCompatibilityFlags(ctx android.ModuleContext, cmd *andro
 	}
 }
 
-func metalavaUseRbe(ctx android.ModuleContext) bool {
-	return ctx.Config().UseRBE() && ctx.Config().IsEnvTrue("RBE_METALAVA")
+func metalavaUseRewrapper(ctx android.ModuleContext) bool {
+	return ctx.Config().UseREWrapper() && ctx.Config().IsEnvTrue("RBE_METALAVA")
 }
 
 func metalavaCmd(ctx android.ModuleContext, rule *android.RuleBuilder, srcs android.Paths,
@@ -766,7 +793,7 @@ func metalavaCmd(ctx android.ModuleContext, rule *android.RuleBuilder, srcs andr
 	cmd := rule.Command()
 	cmd.FlagWithArg("ANDROID_PREFS_ROOT=", homeDir.String())
 
-	if metalavaUseRbe(ctx) {
+	if metalavaUseRewrapper(ctx) {
 		rule.Remoteable(android.RemoteRuleSupports{RBE: true})
 		execStrategy := ctx.Config().GetenvWithDefault("RBE_METALAVA_EXEC_STRATEGY", remoteexec.LocalExecStrategy)
 		compare := ctx.Config().IsEnvTrue("RBE_METALAVA_COMPARE")
@@ -806,6 +833,9 @@ func metalavaCmd(ctx android.ModuleContext, rule *android.RuleBuilder, srcs andr
 	addMetalavaConfigFilesToCmd(cmd, configFiles)
 
 	addOptionalApiSurfaceToCmd(cmd, apiSurface)
+
+	// Support using @android.annotation.Hide instead of @hide
+	cmd.Flag("--hide-annotation").Flag("android.annotation.Hide")
 
 	return cmd
 }
@@ -1013,7 +1043,7 @@ func (d *Droidstubs) everythingStubCmd(ctx android.ModuleContext, params stubsCo
 	}
 
 	// TODO(b/183630617): rewrapper doesn't support restat rules
-	if !metalavaUseRbe(ctx) {
+	if !metalavaUseRewrapper(ctx) {
 		rule.Restat()
 	}
 
@@ -1051,7 +1081,7 @@ func (d *Droidstubs) everythingOptionalCmd(ctx android.ModuleContext, cmd *andro
 		if d.Name() != "android.car-system-stubs-docs" &&
 			d.Name() != "android.car-stubs-docs" {
 			treatDocumentationIssuesAsErrors = true
-			cmd.Flag("--warnings-as-errors") // Most lints are actually warnings.
+			cmd.Flag("--treat-as-error").Flag("warning") // Most lints are actually warnings.
 		}
 
 		baselineFile := android.OptionalPathForModuleSrc(ctx, d.properties.Check_api.Api_lint.Baseline_file)
@@ -1236,7 +1266,7 @@ func (d *Droidstubs) optionalStubCmd(ctx android.ModuleContext, params stubsComm
 	}
 
 	// TODO(b/183630617): rewrapper doesn't support restat rules
-	if !metalavaUseRbe(ctx) {
+	if !metalavaUseRewrapper(ctx) {
 		rule.Restat()
 	}
 
@@ -1257,10 +1287,6 @@ func (d *Droidstubs) setPhonyRules(ctx android.ModuleContext) {
 	if d.checkCurrentApiTimestamp != nil {
 		ctx.Phony(fmt.Sprintf("%s-check-current-api", d.Name()), d.checkCurrentApiTimestamp)
 		ctx.Phony("checkapi", d.checkCurrentApiTimestamp)
-	}
-	if d.updateCurrentApiTimestamp != nil {
-		ctx.Phony(fmt.Sprintf("%s-update-current-api", d.Name()), d.updateCurrentApiTimestamp)
-		ctx.Phony("update-api", d.updateCurrentApiTimestamp)
 	}
 	if d.checkLastReleasedApiTimestamp != nil {
 		ctx.Phony(fmt.Sprintf("%s-check-last-released-api", d.Name()), d.checkLastReleasedApiTimestamp)
@@ -1351,14 +1377,16 @@ func (d *Droidstubs) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		rule.Build("nullabilityWarningsCheck", "nullability warnings check")
 	}
 
+	var apiFile, removedApiFile android.Path
+
 	if apiCheckEnabled(ctx, d.properties.Check_api.Current, "current") {
 
 		if len(d.Javadoc.properties.Out) > 0 {
 			ctx.PropertyErrorf("out", "out property may not be combined with check_api")
 		}
 
-		apiFile := android.PathForModuleSrc(ctx, String(d.properties.Check_api.Current.Api_file))
-		removedApiFile := android.PathForModuleSrc(ctx, String(d.properties.Check_api.Current.Removed_api_file))
+		apiFile = android.PathForModuleSrc(ctx, proptools.String(d.properties.Check_api.Current.Api_file))
+		removedApiFile = android.PathForModuleSrc(ctx, proptools.String(d.properties.Check_api.Current.Removed_api_file))
 		baselineFile := android.OptionalPathForModuleSrc(ctx, d.properties.Check_api.Current.Baseline_file)
 
 		if baselineFile.Valid() {
@@ -1418,34 +1446,13 @@ func (d *Droidstubs) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		}
 		rule.Build("metalavaCurrentApiCheck", "check current API")
 
-		d.updateCurrentApiTimestamp = android.PathForModuleOut(ctx, Everything.String(), "update_current_api.timestamp")
-
-		// update API rule
-		rule = android.NewRuleBuilder(pctx, ctx)
-
-		rule.Command().Text("( true")
-
-		rule.Command().
-			Text("cp").Flag("-f").
-			Input(d.apiFile).Flag(apiFile.String())
-
-		rule.Command().
-			Text("cp").Flag("-f").
-			Input(d.removedApiFile).Flag(removedApiFile.String())
-
-		msg = "failed to update public API"
-		if ctx.Config().GetBuildFlagBool("RELEASE_SRC_DIR_IS_READ_ONLY") {
-			msg += ". You may need `BUILD_BROKEN_SRC_DIR_IS_WRITABLE=true`"
-		}
-
-		rule.Command().
-			Text("touch").Output(d.updateCurrentApiTimestamp).
-			Text(") || (").
-			Text("echo").Flag("-e").Flag(`"` + msg + `"`).
-			Text("; exit 38").
-			Text(")")
-
-		rule.Build("metalavaCurrentApiUpdate", "update current API")
+		android.SetProvider(ctx, UpdateApiProvider, UpdateApiInfo{
+			Name:                 d.Name(),
+			SourceApiFile:        apiFile,
+			GeneratedApiFile:     d.apiFile,
+			SourceRemovedFile:    removedApiFile,
+			GeneratedRemovedFile: d.removedApiFile,
+		})
 	}
 
 	droidInfo := DroidStubsInfo{
@@ -1454,6 +1461,14 @@ func (d *Droidstubs) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		EverythingStubsInfo: StubsInfo{},
 		ExportableStubsInfo: StubsInfo{},
 	}
+
+	if apiFile != nil {
+		droidInfo.CheckedInApiFile = apiFile
+	}
+	if removedApiFile != nil {
+		droidInfo.CheckedInRemovedApiFile = removedApiFile
+	}
+
 	setDroidInfo(ctx, d, &droidInfo.EverythingStubsInfo, Everything)
 	setDroidInfo(ctx, d, &droidInfo.ExportableStubsInfo, Exportable)
 	android.SetProvider(ctx, DroidStubsInfoProvider, droidInfo)
@@ -1508,28 +1523,24 @@ func setDroidInfo(ctx android.ModuleContext, d *Droidstubs, info *StubsInfo, typ
 // xml file. For unsupported combinations, the default everything output file
 // is returned.
 func (d *Droidstubs) setOutputFiles(ctx android.ModuleContext) {
-	tagToOutputFileFunc := map[string]func(StubsType) (android.Path, error){
-		"":                     d.StubsSrcJar,
-		".docs.zip":            d.DocZip,
-		".api.txt":             d.ApiFilePath,
-		android.DefaultDistTag: d.ApiFilePath,
-		".removed-api.txt":     d.RemovedApiFilePath,
-		".annotations.zip":     d.AnnotationsZip,
-		".api_versions.xml":    d.ApiVersionsXmlFilePath,
-	}
-	stubsTypeToPrefix := map[StubsType]string{
-		Everything: "",
-		Exportable: ".exportable",
-	}
-	for _, tag := range android.SortedKeys(tagToOutputFileFunc) {
-		for _, stubType := range android.SortedKeys(stubsTypeToPrefix) {
-			tagWithPrefix := stubsTypeToPrefix[stubType] + tag
-			outputFile, err := tagToOutputFileFunc[tag](stubType)
-			if err == nil && outputFile != nil {
-				ctx.SetOutputFiles(android.Paths{outputFile}, tagWithPrefix)
-			}
+	addOutputFilesForStubType := func(tag string, getter func(StubsType) (android.Path, error), stubType StubsType) {
+		outputFile, err := getter(stubType)
+		if err == nil && outputFile != nil {
+			ctx.SetOutputFiles(android.Paths{outputFile}, stubType.OutputTagPrefix()+tag)
 		}
 	}
+	addOutputFiles := func(tag string, getter func(StubsType) (android.Path, error)) {
+		addOutputFilesForStubType(tag, getter, Everything)
+		addOutputFilesForStubType(tag, getter, Exportable)
+	}
+
+	addOutputFiles("", d.StubsSrcJar)
+	addOutputFiles(".docs.zip", d.DocZip)
+	addOutputFiles(".api.txt", d.ApiFilePath)
+	addOutputFiles(android.DefaultDistTag, d.ApiFilePath)
+	addOutputFiles(".removed-api.txt", d.RemovedApiFilePath)
+	addOutputFiles(".annotations.zip", d.AnnotationsZip)
+	addOutputFiles(".api_versions.xml", d.ApiVersionsXmlFilePath)
 }
 
 func (d *Droidstubs) createApiContribution(ctx android.DefaultableHookContext) {
@@ -1550,26 +1561,6 @@ func (d *Droidstubs) createApiContribution(ctx android.DefaultableHookContext) {
 
 	ctx.CreateModule(ApiContributionFactory, &props)
 }
-
-// TODO (b/262014796): Export the API contributions of CorePlatformApi
-// A map to populate the api surface of a droidstub from a substring appearing in its name
-// This map assumes that droidstubs (either checked-in or created by java_sdk_library)
-// use a strict naming convention
-var (
-	droidstubsModuleNamingToSdkKind = map[string]android.SdkKind{
-		// public is commented out since the core libraries use public in their java_sdk_library names
-		"intracore":     android.SdkIntraCore,
-		"intra.core":    android.SdkIntraCore,
-		"system_server": android.SdkSystemServer,
-		"system-server": android.SdkSystemServer,
-		"system":        android.SdkSystem,
-		"module_lib":    android.SdkModule,
-		"module-lib":    android.SdkModule,
-		"platform.api":  android.SdkCorePlatform,
-		"test":          android.SdkTest,
-		"toolchain":     android.SdkToolchain,
-	}
-)
 
 func StubsDefaultsFactory() android.Module {
 	module := &DocDefaults{}
@@ -1701,4 +1692,38 @@ func PrebuiltStubsSourcesFactory() android.Module {
 	android.InitPrebuiltModule(module, &module.properties.Srcs)
 	InitDroiddocModule(module, android.HostAndDeviceSupported)
 	return module
+}
+
+func UpdateApiSingletonFactory() android.Singleton {
+	return &updateApiSingleton{}
+}
+
+type updateApiSingleton struct{}
+
+func (u *updateApiSingleton) GenerateBuildActions(ctx android.SingletonContext) {
+	updateApiModulesFile := android.PathForOutput(ctx, "update_api.txt")
+
+	// Write an update_api.txt file that has essentially the value of all the UpdateApiInfos.
+	// Soong_ui will read this file after the build finishes and copy the generated api files
+	// to the source tree, as the source tree is read-only during the build.
+	var modulesFileBuilder strings.Builder
+	ctx.VisitAllModuleProxies(func(m android.ModuleProxy) {
+		if info, ok := android.OtherModuleProvider(ctx, m, UpdateApiProvider); ok {
+			ctx.Phony(fmt.Sprintf("%s-update-current-api", info.Name), info.GeneratedApiFile, info.GeneratedRemovedFile, updateApiModulesFile)
+			ctx.Phony("update-api", info.GeneratedApiFile, info.GeneratedRemovedFile)
+			modulesFileBuilder.WriteString(info.Name)
+			modulesFileBuilder.WriteString("\n")
+			modulesFileBuilder.WriteString(info.GeneratedApiFile.String())
+			modulesFileBuilder.WriteString("\n")
+			modulesFileBuilder.WriteString(info.SourceApiFile.String())
+			modulesFileBuilder.WriteString("\n")
+			modulesFileBuilder.WriteString(info.GeneratedRemovedFile.String())
+			modulesFileBuilder.WriteString("\n")
+			modulesFileBuilder.WriteString(info.SourceRemovedFile.String())
+			modulesFileBuilder.WriteString("\n")
+		}
+	})
+
+	android.WriteFileRuleVerbatim(ctx, updateApiModulesFile, modulesFileBuilder.String())
+	ctx.Phony("update-api", updateApiModulesFile)
 }

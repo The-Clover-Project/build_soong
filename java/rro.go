@@ -24,6 +24,8 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 func init() {
 	RegisterRuntimeResourceOverlayBuildComponents(android.InitRegistrationContext)
 }
@@ -34,6 +36,7 @@ func RegisterRuntimeResourceOverlayBuildComponents(ctx android.RegistrationConte
 	ctx.RegisterModuleType("override_runtime_resource_overlay", OverrideRuntimeResourceOverlayModuleFactory)
 }
 
+// @auto-generate: gob
 type RuntimeResourceOverlayInfo struct {
 	OutputFile                    android.Path
 	Certificate                   Certificate
@@ -83,7 +86,7 @@ type RuntimeResourceOverlayProperties struct {
 
 	// if not blank, set the minimum version of the sdk that the compiled artifacts will run against.
 	// Defaults to sdk_version if not set.
-	Min_sdk_version *string
+	Min_sdk_version proptools.Configurable[string] `android:"replace_instead_of_append"`
 
 	// list of android_library modules whose resources are extracted and linked against statically
 	Static_libs proptools.Configurable[[]string]
@@ -223,7 +226,7 @@ func (r *RuntimeResourceOverlay) GenerateAndroidBuildActions(ctx android.ModuleC
 	buildComplianceMetadata(ctx)
 }
 
-func (r *RuntimeResourceOverlay) SdkVersion(ctx android.EarlyModuleContext) android.SdkSpec {
+func (r *RuntimeResourceOverlay) SdkVersion(ctx android.ConfigContext) android.SdkSpec {
 	return android.SdkSpecFrom(ctx, String(r.properties.Sdk_version))
 }
 
@@ -231,9 +234,10 @@ func (r *RuntimeResourceOverlay) SystemModules() string {
 	return ""
 }
 
-func (r *RuntimeResourceOverlay) MinSdkVersion(ctx android.EarlyModuleContext) android.ApiLevel {
-	if r.properties.Min_sdk_version != nil {
-		return android.ApiLevelFrom(ctx, *r.properties.Min_sdk_version)
+func (r *RuntimeResourceOverlay) MinSdkVersion(ctx android.MinSdkVersionFromValueContext) android.ApiLevel {
+	minSdkVersion := r.properties.Min_sdk_version.Get(r.ConfigurableEvaluator(ctx))
+	if minSdkVersion.IsPresent() {
+		return android.ApiLevelFrom(ctx, minSdkVersion.Get())
 	}
 	return r.SdkVersion(ctx).ApiLevel
 }
@@ -444,7 +448,7 @@ func (a *AutogenRuntimeResourceOverlay) GenerateAndroidBuildActions(ctx android.
 	})
 }
 
-func (a *AutogenRuntimeResourceOverlay) SdkVersion(ctx android.EarlyModuleContext) android.SdkSpec {
+func (a *AutogenRuntimeResourceOverlay) SdkVersion(ctx android.ConfigContext) android.SdkSpec {
 	return android.SdkSpecFrom(ctx, String(a.properties.Sdk_version))
 }
 
@@ -452,7 +456,7 @@ func (a *AutogenRuntimeResourceOverlay) SystemModules() string {
 	return ""
 }
 
-func (a *AutogenRuntimeResourceOverlay) MinSdkVersion(ctx android.EarlyModuleContext) android.ApiLevel {
+func (a *AutogenRuntimeResourceOverlay) MinSdkVersion(ctx android.MinSdkVersionFromValueContext) android.ApiLevel {
 	return a.SdkVersion(ctx).ApiLevel
 }
 

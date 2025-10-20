@@ -21,6 +21,8 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 var PrepareForTestWithAidlLibrary = android.FixtureRegisterWithContext(func(ctx android.RegistrationContext) {
 	registerAidlLibraryBuildComponents(ctx)
 })
@@ -55,6 +57,7 @@ type AidlLibrary struct {
 	properties aidlLibraryProperties
 }
 
+// @auto-generate: gob
 type AidlLibraryInfo struct {
 	// The direct aidl files of the module
 	Srcs android.Paths

@@ -26,6 +26,8 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 // =================================================================================================
 // WIP - see http://b/177892522 for details
 //
@@ -494,9 +496,13 @@ type dexpreoptBootJars struct {
 	dexpreoptConfigForMake android.WritablePath
 
 	// Build path to the boot framework profile.
-	// This is used as the `OutputFile` in `AndroidMkEntries`.
-	// A non-nil value ensures that this singleton module does not get skipped in AndroidMkEntries processing.
+	// This is used as the `OutputFile` in `PrepareAndroidMKProviderInfo`.
+	// A non-nil value ensures that this singleton module does not get skipped in PrepareAndroidMKProviderInfo processing.
 	bootFrameworkProfile android.WritablePath
+
+	// Install path of the unstrippped primary boot image in $ANDROID_PRODUCT_OUT/symbols.
+	// This will be used for building symbols.zip file.
+	defaultBootImageSymbolInstalls android.Paths
 }
 
 func (dbj *dexpreoptBootJars) DepsMutator(ctx android.BottomUpMutatorContext) {
@@ -510,7 +516,8 @@ func (dbj *dexpreoptBootJars) DepsMutator(ctx android.BottomUpMutatorContext) {
 	}
 
 	imageConfigs := genBootImageConfigs(ctx)
-	for _, config := range imageConfigs {
+	for _, img := range android.SortedKeys(imageConfigs) {
+		config := imageConfigs[img]
 		if !config.isEnabled(ctx) {
 			continue
 		}
@@ -629,6 +636,7 @@ func (d *dexpreoptBootJars) GenerateAndroidBuildActions(ctx android.ModuleContex
 	d.otherImages = make([]*bootImageConfig, 0, len(imageConfigs)-1)
 	var profileInstalls android.RuleBuilderInstalls
 	var artBootImageHostInstalls android.RuleBuilderInstalls
+	var symbolicOutputInfos android.SymbolicOutputInfos
 	for _, name := range getImageNames() {
 		config := imageConfigs[name]
 		if config != d.defaultBootImage {
@@ -661,7 +669,7 @@ func (d *dexpreoptBootJars) GenerateAndroidBuildActions(ctx android.ModuleContex
 		symbolsInstallHostDir := android.PathForHostInstall(ctx, "", "symbols")
 		for _, variant := range config.variants {
 			for _, install := range variant.unstrippedInstalls {
-				var dst android.WritablePath
+				var dst android.InstallPath
 				if variant.target.Os.Class == android.Host {
 					dst = symbolsInstallHostDir.Join(ctx, strings.TrimPrefix(install.To, "/"))
 				} else {
@@ -674,9 +682,23 @@ func (d *dexpreoptBootJars) GenerateAndroidBuildActions(ctx android.ModuleContex
 				})
 				// Add the install to dexpreopt_bootjar.$name_$arch phony
 				ctx.Phony(fmt.Sprintf("dexpreopt_bootjar.%s_%s", config.name, variant.target.Arch.ArchType), dst)
+				// Add the device variant of the primary boot image to symbols.zip
+				if config.name == "boot" && variant.target.Os.Class == android.Device {
+					// This struct will be used for Make symbols.zip
+					d.defaultBootImageSymbolInstalls = append(
+						d.defaultBootImageSymbolInstalls,
+						dst,
+					)
+					// This struct will be used for Soong symbols.zip
+					symbolicOutputInfos = append(symbolicOutputInfos, &android.SymbolicOutputInfo{
+						UnstrippedOutputFile: install.From,
+						SymbolicOutputPath:   dst,
+					})
+				}
 			}
 		}
 	}
+	android.SetProvider(ctx, android.SymbolInfosProvider, symbolicOutputInfos)
 	if len(profileInstalls) > 0 {
 		android.SetProvider(ctx, profileInstallInfoProvider, profileInstallInfo{
 			profileInstalls:            profileInstalls,
@@ -1196,6 +1218,7 @@ var artBootImageHostInfoProvider = blueprint.NewProvider[artBootImageHostInfo]()
 
 // artBootImageHostInfo contains the install locations of the host variant of ART boot image
 // this contains both the primary and secondary arch locations
+// @auto-generate: gob
 type artBootImageHostInfo struct {
 	installs android.RuleBuilderInstalls
 }
@@ -1474,6 +1497,7 @@ func bootImageProfileRuleCommon(ctx android.ModuleContext, name string, dexFiles
 	return profile
 }
 
+// @auto-generate: gob
 type profileInstallInfo struct {
 	// Rules which should be used in make to install the outputs.
 	profileInstalls android.RuleBuilderInstalls
@@ -1552,6 +1576,7 @@ func dumpOatRules(ctx android.ModuleContext, image *bootImageConfig) {
 			FlagWithArg("--image=", strings.Join(imageLocationsOnHost, ":")).Implicits(image.imagesDeps.Paths()).
 			FlagWithOutput("--output=", output).
 			FlagWithArg("--instruction-set=", arch.String())
+		cmd.Text("$(cat").Input(globalSoong.ProfileCodeFlag).Text(")")
 		if image.target.Os == android.Android {
 			cmd.Text("$(cat").Input(globalSoong.UffdGcFlag).Text(")")
 		}
@@ -1629,11 +1654,20 @@ func (d *dexpreoptBootJars) MakeVars(ctx android.MakeVarsContext) {
 
 // Add one of the outputs in `OutputFile`
 // This ensures that this singleton module does not get skipped when writing out/soong/Android-*.mk
-func (d *dexpreoptBootJars) AndroidMkEntries() []android.AndroidMkEntries {
-	return []android.AndroidMkEntries{{
+func (d *dexpreoptBootJars) PrepareAndroidMKProviderInfo(config android.Config) *android.AndroidMkProviderInfo {
+	info := &android.AndroidMkProviderInfo{}
+	info.PrimaryInfo = android.AndroidMkInfo{
 		Class:      "ETC",
 		OutputFile: android.OptionalPathForPath(d.bootFrameworkProfile),
-	}}
+	}
+	info.PrimaryInfo.FooterStrings = append(info.PrimaryInfo.FooterStrings,
+		fmt.Sprintf(
+			"ALL_MODULES.%s.SYMBOLIC_OUTPUT_PATH := %s",
+			d.Name(),
+			strings.Join(d.defaultBootImageSymbolInstalls.Strings(), " "),
+		))
+
+	return info
 }
 
 // artBootImages is a thin wrapper around `dex_bootjars`.
@@ -1643,6 +1677,12 @@ type artBootImages struct {
 
 	// A non-empty file that will be written as `LOCAL_SOONG_INSTALLED_MODULE` in out/soong/Android-*.mk
 	outputFile android.OptionalPath
+
+	// The list of installed files.
+	installedFiles android.Paths
+
+	// The path to the zip file containing the installed files.
+	zipFile android.WritablePath
 }
 
 func artBootImagesFactory() android.Module {
@@ -1660,6 +1700,8 @@ func (dbj *artBootImages) DepsMutator(ctx android.BottomUpMutatorContext) {
 }
 
 func (d *artBootImages) GenerateAndroidBuildActions(ctx android.ModuleContext) {
+	d.zipFile = android.PathForModuleOut(ctx, "art_boot_images.zip")
+
 	ctx.VisitDirectDepsProxy(func(m android.ModuleProxy) {
 		tag := ctx.OtherModuleDependencyTag(m)
 		if bcpTag, ok := tag.(bootclasspathDependencyTag); ok && bcpTag.typ == dexpreoptBootJar {
@@ -1671,17 +1713,54 @@ func (d *artBootImages) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 				ctx.ModuleErrorf("Could not find information about the host variant of ART boot image")
 			}
 			installs := d.installFile(ctx, hostInstallsInfo.installs)
-			if len(installs) > 0 {
+			d.installedFiles = installs
+
+			var filesToZip android.Paths
+			for _, install := range hostInstallsInfo.installs {
+				filesToZip = append(filesToZip, install.From)
+			}
+
+			if len(hostInstallsInfo.installs) > 0 {
 				d.outputFile = android.OptionalPathForPath(installs[0])
 				// Create a phony target that can ART run-tests can depend on.
 				ctx.Phony(d.Name(), installs...)
+
+				rule := android.NewRuleBuilder(pctx, ctx)
+				cmd := rule.Command().
+					Tool(ctx.Config().HostToolPath(ctx, "soong_zip")).
+					FlagWithOutput("-o ", d.zipFile)
+
+				for _, install := range hostInstallsInfo.installs {
+					// The `To` path is the path inside the zip. It usually starts with a '/', which we need to remove.
+					// We also need to prepend a specific directory structure for the test environment.
+					prefix := "host/testcases/art_common/out/host/linux-x86"
+					basePath := strings.TrimPrefix(install.To, "/")
+					pathInZip := filepath.Join(prefix, basePath)
+					// The `From` path is the source file on disk.
+					pathOnDisk := install.From
+					cmd.Flag("-e")
+					cmd.Text(pathInZip)
+					cmd.Flag("-f")
+					cmd.Input(pathOnDisk)
+				}
+
+				rule.Build("zip_art_boot_images", "zipping art boot images for "+ctx.Arch().String())
 			} else {
 				// this might be true e.g. when building with `WITH_DEXPREOPT=false`
 				// create an empty file so that the `art_boot_images` is known to the packaging system.
 				d.outputFile = android.OptionalPathForPath(android.PathForModuleOut(ctx, "undefined_art_boot_images"))
+				// Create a valid, empty zip file.
+				rule := android.NewRuleBuilder(pctx, ctx)
+				rule.Command().
+					Tool(ctx.Config().HostToolPath(ctx, "soong_zip")).
+					FlagWithOutput("-o ", d.zipFile)
+				rule.Build("create_empty_art_boot_images_zip", "creating empty art boot images zip for "+ctx.Arch().String())
 			}
 		}
 	})
+
+	ctx.SetOutputFiles(d.installedFiles, "")
+	ctx.SetOutputFiles(android.Paths{d.zipFile}, ".zip")
 }
 
 // Creates an installation rule for host variant of ART boot image files.
@@ -1705,9 +1784,11 @@ func (d *artBootImages) installFile(ctx android.ModuleContext, ruleBuilderInstal
 }
 
 // Set `OutputFile` expclitly so that this module does not get elided when generating out/soong/Android-*.mk
-func (d *artBootImages) AndroidMkEntries() []android.AndroidMkEntries {
-	return []android.AndroidMkEntries{{
+func (d *artBootImages) PrepareAndroidMKProviderInfo(config android.Config) *android.AndroidMkProviderInfo {
+	info := &android.AndroidMkProviderInfo{}
+	info.PrimaryInfo = android.AndroidMkInfo{
 		Class:      "ETC",
 		OutputFile: d.outputFile,
-	}}
+	}
+	return info
 }

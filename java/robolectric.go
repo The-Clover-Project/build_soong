@@ -25,10 +25,13 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 func init() {
 	RegisterRobolectricBuildComponents(android.InitRegistrationContext)
 }
 
+// @auto-generate: gob
 type RobolectricRuntimesInfo struct {
 	Runtimes []android.InstallPath
 }
@@ -315,18 +318,20 @@ func generateSameDirRoboTestConfigJar(ctx android.ModuleContext, outputFile andr
 	rule.Build("generate_test_config_samedir", "generate test_config.properties")
 }
 
-func (r *robolectricTest) AndroidMkEntries() []android.AndroidMkEntries {
-	entriesList := r.Library.AndroidMkEntries()
-	entries := &entriesList[0]
-	entries.ExtraEntries = append(entries.ExtraEntries,
-		func(ctx android.AndroidMkExtraEntriesContext, entries *android.AndroidMkEntries) {
-			entries.SetBool("LOCAL_UNINSTALLABLE_MODULE", true)
-			entries.AddStrings("LOCAL_COMPATIBILITY_SUITE", "robolectric-tests")
-			if r.testConfig != nil {
-				entries.SetPath("LOCAL_FULL_TEST_CONFIG", r.testConfig)
-			}
-		})
-	return entriesList
+func (r *robolectricTest) PrepareAndroidMKProviderInfo(config android.Config) *android.AndroidMkProviderInfo {
+	info := r.Library.prepareAndroidMKProviderInfo(config)
+
+	if info.PrimaryInfo.OutputFile.Valid() {
+		info.PrimaryInfo.SetBool("LOCAL_UNINSTALLABLE_MODULE", true)
+		info.PrimaryInfo.AddStrings("LOCAL_COMPATIBILITY_SUITE", "robolectric-tests")
+		if r.testConfig != nil {
+			info.PrimaryInfo.SetPath("LOCAL_FULL_TEST_CONFIG", r.testConfig)
+		}
+	}
+
+	r.addHostDexAndroidMkInfo(info)
+
+	return info
 }
 
 // An android_robolectric_test module compiles tests against the Robolectric framework that can run on the local host

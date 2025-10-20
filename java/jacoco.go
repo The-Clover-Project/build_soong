@@ -29,6 +29,8 @@ import (
 	"android/soong/java/config"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 func init() {
 	android.InitRegistrationContext.RegisterParallelSingletonType("device_tests_jacoco_zip", deviceTestsJacocoZipSingletonFactory)
 }
@@ -173,13 +175,17 @@ func jacocoFilterToSpec(filter string) (string, error) {
 	return spec, nil
 }
 
+// @auto-generate: gob
 type JacocoInfo struct {
 	ReportClassesFile android.Path
 	Class             string
 	ModuleName        string
 }
 
-var ApexJacocoInfoProvider = blueprint.NewProvider[[]JacocoInfo]()
+// @auto-generate: gob
+type JacocoInfos []JacocoInfo
+
+var ApexJacocoInfoProvider = blueprint.NewProvider[JacocoInfos]()
 
 type BuildJacocoZipContext interface {
 	android.BuilderContext

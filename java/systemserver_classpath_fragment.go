@@ -22,6 +22,8 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 func init() {
 	registerSystemserverClasspathBuildComponents(android.InitRegistrationContext)
 
@@ -62,8 +64,10 @@ func (m *platformSystemServerClasspathModule) UniqueApexVariations() bool {
 	return true
 }
 
-func (p *platformSystemServerClasspathModule) AndroidMkEntries() (entries []android.AndroidMkEntries) {
-	return p.classpathFragmentBase().androidMkEntries()
+func (p *platformSystemServerClasspathModule) PrepareAndroidMKProviderInfo(config android.Config) *android.AndroidMkProviderInfo {
+	info := &android.AndroidMkProviderInfo{}
+	info.PrimaryInfo = p.classpathFragmentBase().androidMkInfo()
+	return info
 }
 
 func (p *platformSystemServerClasspathModule) GenerateAndroidBuildActions(ctx android.ModuleContext) {
@@ -97,6 +101,7 @@ type SystemServerClasspathModule struct {
 
 var _ android.ApexModule = (*SystemServerClasspathModule)(nil)
 
+// @auto-generate: gob
 type SystemServerClasspathInfo struct {
 	Contents           []string
 	StandaloneContents []string
@@ -155,6 +160,7 @@ func (s *SystemServerClasspathModule) GenerateAndroidBuildActions(ctx android.Mo
 }
 
 // Map of java library name to their install partition.
+// @auto-generate: gob
 type LibraryNameToPartitionInfo struct {
 	LibraryNameToPartition map[string]string
 }

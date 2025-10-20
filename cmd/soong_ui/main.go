@@ -130,6 +130,13 @@ func main() {
 
 	buildStarted := time.Now()
 
+	// Resolve Soong environment variable values.
+	// If any defaults are provided for ${TARGET_RELEASE}, use them for any unset variables.
+	err := build.ResolveSoongEnvVars()
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error resolving `soong` environment: %s.\n", err)
+		os.Exit(1)
+	}
 	c, args, err := getCommand(os.Args)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error parsing `soong` args: %s.\n", err)
@@ -205,8 +212,11 @@ func main() {
 	}
 
 	defer func() {
-		emet.Finish(buildCtx)
+		emet.Finish(build.ExecutionMetricsFinishAdaptor{buildCtx})
 		stat.Finish()
+		for _, str := range buildCtx.FinalStdout {
+			fmt.Fprint(c.stdio().Stdout(), str)
+		}
 		criticalPath.WriteToMetrics(met)
 		met.Dump(soongMetricsFile)
 		emet.Dump(executionMetricsFile, args)

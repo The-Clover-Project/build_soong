@@ -33,6 +33,8 @@ import (
 	"android/soong/tradefed"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 func init() {
 	RegisterAppBuildComponents(android.InitRegistrationContext)
 	pctx.HostBinToolVariable("ModifyAllowlistCmd", "modify_permissions_allowlist")
@@ -46,6 +48,7 @@ var (
 		}, "packageName")
 )
 
+// @auto-generate: gob
 type FlagsPackages struct {
 	// Paths to the aconfig dump output text files that are consumed by aapt2
 	AconfigTextFiles android.Paths
@@ -62,6 +65,7 @@ func RegisterAppBuildComponents(ctx android.RegistrationContext) {
 	ctx.RegisterModuleType("override_android_test", OverrideAndroidTestModuleFactory)
 }
 
+// @auto-generate: gob
 type AppInfo struct {
 	// Updatable is set to the value of the updatable property
 	Updatable bool
@@ -235,8 +239,6 @@ type AndroidApp struct {
 
 	android.ApexBundleDepsInfo
 
-	javaApiUsedByOutputFile android.ModuleOutPath
-
 	privAppAllowlist android.OptionalPath
 
 	requiredModuleNames []string
@@ -246,7 +248,7 @@ func (a *AndroidApp) IsInstallable() bool {
 	return Bool(a.properties.Installable)
 }
 
-func (a *AndroidApp) ResourcesNodeDepSet() depset.DepSet[*resourcesNode] {
+func (a *AndroidApp) ResourcesNodeDepSet() depset.DepSet[resourcesNode] {
 	return a.aapt.resourcesNodesDepSet
 }
 
@@ -268,6 +270,7 @@ func (a *AndroidApp) PrivAppAllowlist() android.OptionalPath {
 
 var _ AndroidLibraryDependency = (*AndroidApp)(nil)
 
+// @auto-generate: gob
 type Certificate struct {
 	Pem, Key  android.Path
 	presigned bool
@@ -537,7 +540,7 @@ func (a *AndroidApp) checkAppSdkVersions(ctx android.ModuleContext) {
 		if !a.SdkVersion(ctx).Stable() {
 			ctx.PropertyErrorf("sdk_version", "Updatable apps must use stable SDKs, found %v", a.SdkVersion(ctx))
 		}
-		if String(a.overridableProperties.Min_sdk_version) == "" {
+		if a.overridableProperties.Min_sdk_version.GetOrDefault(ctx, "") == "" {
 			ctx.PropertyErrorf("updatable", "updatable apps must set min_sdk_version.")
 		}
 
@@ -739,7 +742,7 @@ func (a *AndroidApp) aaptBuildActions(ctx android.ModuleContext) {
 	}
 
 	// Use non final ids if we are doing optimized shrinking and are using R8.
-	nonFinalIds := a.dexProperties.optimizedResourceShrinkingEnabled(ctx) && a.dexer.effectiveOptimizeEnabled(ctx)
+	nonFinalIds := a.dexer.optimizedResourceShrinkingEnabled(ctx) && a.dexer.effectiveOptimizeEnabled(ctx)
 
 	aconfigTextFilePaths := getAconfigFilePaths(ctx)
 
@@ -777,7 +780,7 @@ func (a *AndroidApp) proguardBuildActions(ctx android.ModuleContext) {
 	staticLibProguardFlagFiles = android.FirstUniquePaths(staticLibProguardFlagFiles)
 
 	a.Module.extraProguardFlagsFiles = append(a.Module.extraProguardFlagsFiles, staticLibProguardFlagFiles...)
-	if !(a.dexProperties.optimizedResourceShrinkingEnabled(ctx)) {
+	if !(a.dexer.optimizedResourceShrinkingEnabled(ctx)) {
 		// When using the optimized shrinking the R8 enqueuer will traverse the xml files that become
 		// live for code references and (transitively) mark these as live.
 		// In this case we explicitly don't wan't the aapt2 generated keep files (which would keep the now
@@ -816,7 +819,7 @@ func (a *AndroidApp) dexBuildActions(ctx android.ModuleContext) (android.Path, a
 
 	javaInfo := &JavaInfo{}
 	if ctx.ModuleName() != "framework-res" {
-		if a.dexProperties.resourceShrinkingEnabled(ctx) {
+		if a.dexer.resourceShrinkingEnabled(ctx) {
 			protoFile := android.PathForModuleOut(ctx, packageResources.Base()+".proto.apk")
 			aapt2Convert(ctx, protoFile, packageResources, "proto")
 			a.dexer.resourcesInput = android.OptionalPathForPath(protoFile)
@@ -836,7 +839,7 @@ func (a *AndroidApp) dexBuildActions(ctx android.ModuleContext) (android.Path, a
 		}
 
 		javaInfo = a.Module.compile(ctx)
-		if a.dexProperties.resourceShrinkingEnabled(ctx) {
+		if a.dexer.resourceShrinkingEnabled(ctx) {
 			binaryResources := android.PathForModuleOut(ctx, packageResources.Base()+".binary.out.apk")
 			aapt2Convert(ctx, binaryResources, a.dexer.resourcesOutput.Path(), "binary")
 			packageResources = binaryResources
@@ -983,11 +986,8 @@ func (a *AndroidApp) generateAndroidBuildActions(ctx android.ModuleContext) {
 
 	apexInfo, _ := android.ModuleProvider(ctx, android.ApexInfoProvider)
 	if !apexInfo.IsForPlatform() {
-		a.hideApexVariantFromMake = true
+		a.HideFromMake()
 	}
-	android.SetProvider(ctx, android.HideApexVariantFromMakeProvider, android.HideApexVariantFromMakeInfo{
-		HideApexVariantFromMake: a.hideApexVariantFromMake,
-	})
 
 	a.aapt.useEmbeddedNativeLibs = a.useEmbeddedNativeLibs(ctx)
 	a.aapt.useEmbeddedDex = Bool(a.appProperties.Use_embedded_dex)
@@ -1206,7 +1206,7 @@ func (a *AndroidApp) generateAndroidBuildActions(ctx android.ModuleContext) {
 		complianceMetadataInfo.AddBuiltFiles(a.outputFile.String())
 	}
 
-	if !a.hideApexVariantFromMake && !a.IsHideFromMake() {
+	if !a.IsHideFromMake() {
 		if a.embeddedJniLibs {
 			cc.CopySymbolsAndSetSymbolsInfoProvider(ctx, &cc.SymbolInfos{
 				Symbols: a.GetJniSymbolInfos(ctx, a.installPathForJNISymbols),
@@ -1230,8 +1230,8 @@ func (a *AndroidApp) setOutputFiles(ctx android.ModuleContext) {
 }
 
 type appDepsInterface interface {
-	SdkVersion(ctx android.EarlyModuleContext) android.SdkSpec
-	MinSdkVersion(ctx android.EarlyModuleContext) android.ApiLevel
+	SdkVersion(ctx android.ConfigContext) android.SdkSpec
+	MinSdkVersion(ctx android.MinSdkVersionFromValueContext) android.ApiLevel
 	RequiresStableAPIs(ctx android.BaseModuleContext) bool
 }
 
@@ -1475,7 +1475,7 @@ func AndroidAppFactory() android.Module {
 	module := &AndroidApp{}
 
 	module.Module.dexProperties.Optimize.EnabledByDefault = true
-	module.Module.dexProperties.Optimize.Shrink = proptools.NewSimpleConfigurable(true)
+	module.Module.dexProperties.Optimize.ShrinkByDefault = true
 	module.Module.dexProperties.Optimize.Proguard_compatibility = proptools.BoolPtr(false)
 
 	module.Module.properties.Instrument = true
@@ -1966,6 +1966,7 @@ type AndroidAppCertificateProperties struct {
 	Certificate *string
 }
 
+// @auto-generate: gob
 type AndroidAppCertificateInfo struct {
 	Certificate Certificate
 }
@@ -2321,6 +2322,7 @@ func setCommonAppInfo(appInfo *AppInfo, m androidApp) {
 	appInfo.PrivAppAllowlist = m.PrivAppAllowlist()
 }
 
+// @auto-generate: gob
 type BundleInfo struct {
 	Bundle android.Path
 }

@@ -45,15 +45,20 @@ func cipdPath(config Config) string {
 	return filepath.Join("prebuilts/cipd", config.HostPrebuiltTag(), "cipd")
 }
 
-func shouldRunCIPDProxy(config Config) bool {
+func shouldRunCIPDProxy(ctx Context, config Config) bool {
 	if runtime.GOOS == "darwin" {
 		// Disable CIPD proxy on Mac until we have it working, see b/425932171.
+		ctx.Verbosef("Disabling CIPD proxy server on Mac for b/425932171")
 		return false
 	}
 
 	cipdPath := cipdPath(config)
 	_, err := os.Stat(cipdPath)
-	return err == nil
+	if err != nil {
+		ctx.Verbosef("cipd binary not found at %v, disabling proxy", cipdPath)
+		return false
+	}
+	return true
 }
 
 func startCIPDProxyServer(ctx Context, config Config) *cipdProxy {
@@ -72,6 +77,18 @@ func startCIPDProxyServer(ctx Context, config Config) *cipdProxy {
 		"-log-level", "warning",
 		"-unix-socket", unixsock,
 	}
+
+	// RBE instructions for non-corp machines set both RBE_credentials_helper and
+	// RBE_use_application_default_credentials, so check explicitly for the latter.
+	// Even if USE_RBE=false, CIPD can still use ADC.
+	useAdc := false
+	if useAdcStr, ok := config.environ.Get("RBE_use_application_default_credentials"); ok {
+		parsedVal, err := strconv.ParseBool(useAdcStr)
+		if err == nil && parsedVal {
+			useAdc = true
+		}
+	}
+
 	adcFlagAdded := false
 
 	// Determine RBE authentication mechanism and propagate to CIPD flags.
@@ -93,6 +110,8 @@ func startCIPDProxyServer(ctx Context, config Config) *cipdProxy {
 			for _, arg := range argList {
 				credHelperArgsParts = append(credHelperArgsParts, fmt.Sprintf("args:%q", arg))
 			}
+		} else if useAdc {
+			credHelperArgsParts = append(credHelperArgsParts, fmt.Sprintf("args:%q", "--auth_source=gcloud"))
 		} else {
 			credHelperArgsParts = append(credHelperArgsParts, fmt.Sprintf("args:%q", "--auth_source=automaticAuth"))
 			credHelperArgsParts = append(credHelperArgsParts, fmt.Sprintf("args:%q", "--gcert_refresh_timeout=20"))
@@ -106,22 +125,14 @@ func startCIPDProxyServer(ctx Context, config Config) *cipdProxy {
 		adcFlagAdded = true
 	}
 
-	if !adcFlagAdded {
-		// RBE instructions for non-corp machines set both RBE_credentials_helper and
-		// RBE_use_application_default_credentials. Pass that along to CIPD as well.
-		// Even if USE_RBE=false, CIPD can still use ADC.
-		if useAdcStr, ok := config.environ.Get("RBE_use_application_default_credentials"); ok {
-			parsedVal, err := strconv.ParseBool(useAdcStr)
-			if err == nil && parsedVal {
-				cipdArgs = append(cipdArgs, "-application-default-credentials=always")
-			}
-		}
+	if !adcFlagAdded && useAdc {
+		cipdArgs = append(cipdArgs, "-application-default-credentials=always")
 	}
 
 	cipdCmd := fmt.Sprintf("cipd %s", strings.Join(cipdArgs, " "))
 	ctx.Verbosef("Starting CIPD proxy server with: %s", cipdCmd)
 
-	cmd := Command(ctx, config, "cipd", cipdPath(config), cipdArgs...)
+	cmd := Command(ctx, config, nil, "cipd", cipdPath(config), cipdArgs...)
 	stdout, err := cmd.StdoutPipe()
 	if err != nil {
 		log.Fatal(err)

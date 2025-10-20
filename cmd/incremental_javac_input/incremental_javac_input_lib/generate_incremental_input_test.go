@@ -3,6 +3,7 @@ package incremental_javac_input_lib
 import (
 	"archive/zip"
 	"fmt"
+	"maps"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -18,7 +19,7 @@ import (
 
 // --- Tests for `getUsages` ---
 func TestGetUsages(t *testing.T) {
-	usageMap := map[string]UsageMap{
+	globalUsageMap := map[string]UsageMap{
 		"file1.java":   {Usages: []string{"file3.java", "file4.java"}},
 		"file2.java":   {Usages: []string{"file3.java"}},
 		"file3.java":   {Usages: []string{}},
@@ -36,6 +37,7 @@ func TestGetUsages(t *testing.T) {
 		deletedClasses  []string
 		expected        []string
 		expectedAll     bool
+		usageMap        map[string]UsageMap
 	}{
 		{
 			name:            "Basic",
@@ -109,10 +111,26 @@ func TestGetUsages(t *testing.T) {
 			expected:        nil,
 			expectedAll:     false,
 		},
+		{
+			name:            "DeletedFileDependency",
+			modifiedFiles:   []string{"modified.java"},
+			deletedFiles:    []string{"deleted.java", "another_deleted.java"},
+			modifiedClasses: []string{},
+			deletedClasses:  []string{},
+			expected:        []string{"modified.java"},
+			expectedAll:     false,
+			usageMap: map[string]UsageMap{
+				"deleted.java": {Usages: []string{"another_deleted.java"}},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
+			// Prepare the usage map by appending tc specific additions to globalUsageMap.
+			usageMap := maps.Clone(globalUsageMap)
+			maps.Insert(usageMap, maps.All(tc.usageMap))
+
 			actual, all := getUsages(usageMap, tc.modifiedFiles, tc.deletedFiles, tc.modifiedClasses, tc.deletedClasses)
 			if all != tc.expectedAll {
 				t.Errorf("getUsages() all sources; expected %v, got %v", tc.expectedAll, all)
@@ -249,8 +267,11 @@ func TestReadRspFile(t *testing.T) {
 
 func TestFlattenChanges(t *testing.T) {
 	fileList := &fid_lib.FileList{
-		Additions: []string{"add1.java", "add2.java"},
-		Deletions: []string{"del1.java"},
+		Additions: []fid_lib.FileList{
+			fid_lib.FileList{Name: "add1.java"},
+			fid_lib.FileList{Name: "add2.java"},
+		},
+		Deletions: []fid_lib.FileList{fid_lib.FileList{Name: "del1.java"}},
 		Changes: []fid_lib.FileList{
 			{Name: "change1.java"},
 			{Name: "change2.java"},

@@ -200,12 +200,14 @@ type ProductVariables struct {
 	// Suffix to add to generated Makefiles
 	Make_suffix *string `json:",omitempty"`
 
-	BuildId              *string `json:",omitempty"`
-	BuildFingerprintFile *string `json:",omitempty"`
-	BuildNumberFile      *string `json:",omitempty"`
-	BuildHostnameFile    *string `json:",omitempty"`
-	BuildThumbprintFile  *string `json:",omitempty"`
-	DisplayBuildNumber   *bool   `json:",omitempty"`
+	BuildId                    *string `json:",omitempty"`
+	BuildFingerprintFile       *string `json:",omitempty"`
+	BuildNumberFile            *string `json:",omitempty"`
+	BuildUUIDFile              *string `json:",omitempty"`
+	BuildHostnameFile          *string `json:",omitempty"`
+	BuildSystemFingerprintFile *string `json:",omitempty"`
+	BuildThumbprintFile        *string `json:",omitempty"`
+	DisplayBuildNumber         *bool   `json:",omitempty"`
 
 	Platform_display_version_name          *string  `json:",omitempty"`
 	Platform_version_name                  *string  `json:",omitempty"`
@@ -299,9 +301,11 @@ type ProductVariables struct {
 	Binder32bit                  *bool    `json:",omitempty"`
 	UseABFS                      *bool    `json:",omitempty"`
 	UseRBE                       *bool    `json:",omitempty"`
+	UseREWrapper                 *bool    `json:",omitempty"`
 	UseRBEJAVAC                  *bool    `json:",omitempty"`
 	UseRBER8                     *bool    `json:",omitempty"`
 	UseRBED8                     *bool    `json:",omitempty"`
+	RBEContainerImage            *string  `json:",omitempty"`
 	Debuggable                   *bool    `json:",omitempty"`
 	Eng                          *bool    `json:",omitempty"`
 	Treble_linker_namespaces     *bool    `json:",omitempty"`
@@ -547,8 +551,6 @@ type ProductVariables struct {
 	OdmManifestFiles       []string `json:",omitempty"`
 	OdmManifestSkus        []string `json:",omitempty"`
 
-	UseSoongNoticeXML *bool `json:",omitempty"`
-
 	StripByDefault *bool `json:",omitempty"`
 
 	CompatibilityTestcases map[string]CompatibilityTestcaseJSON
@@ -574,6 +576,7 @@ type PartitionQualifiedVariablesType struct {
 	BoardErofsCompressor        string `json:",omitempty"`
 	BoardErofsCompressHints     string `json:",omitempty"`
 	BoardErofsPclusterSize      string `json:",omitempty"`
+	BoardErofsBlockSize         string `json:",omitempty"`
 	BoardExtfsInodeCount        string `json:",omitempty"`
 	BoardExtfsRsvPct            string `json:",omitempty"`
 	BoardF2fsSloadCompressFlags string `json:",omitempty"`
@@ -637,6 +640,7 @@ type PartitionVariables struct {
 	BoardErofsCompressor           string `json:",omitempty"`
 	BoardErofsCompressorHints      string `json:",omitempty"`
 	BoardErofsPclusterSize         string `json:",omitempty"`
+	BoardErofsBlockSize            string `json:",omitempty"`
 	BoardErofsShareDupBlocks       string `json:",omitempty"`
 	BoardErofsUseLegacyCompression string `json:",omitempty"`
 	BoardExt4ShareDupBlocks        string `json:",omitempty"`
@@ -679,17 +683,20 @@ type PartitionVariables struct {
 	BoardPrebuiltDtboImage16kb        string   `json:",omitempty"`
 	BoardDtboPartitionSize            string   `json:",omitempty"`
 	Board16kOtaUseIncremental         bool     `json:",omitempty"`
+	Board16kOtaMoveVendor             bool     `json:",omitempty"`
 	BoardPrebuiltDtbDir               string   `json:",omitempty"`
 	BoardKernelModules16K             []string `json:",omitempty"`
 	BoardKernelModulesLoad16K         []string `json:",omitempty"`
 	BuildingDebugBootImage            bool     `json:",omitempty"`
 	BuildingDebugVendorBootImage      bool     `json:",omitempty"`
+	BoardVendorRamdiskFragments       []string `json:",omitempty"`
 
 	// Radio stuff
-	AbOtaRadioPartitions      []string `json:",omitempty"`
-	BootloaderFilePath        string   `json:",omitempty"`
-	AbOtaBootloaderPartitions []string `json:",omitempty"`
-	BoardRadioImagePath       string   `json:",omitempty"`
+	AbOtaRadioPartitions       []string `json:",omitempty"`
+	BootloaderFilePath         string   `json:",omitempty"`
+	AbOtaBootloaderPartitions  []string `json:",omitempty"`
+	BoardRadioImagePath        string   `json:",omitempty"`
+	BoardPrebuiltTzswImagePath string   `json:",omitempty"`
 
 	// pvmfw stuff
 	BoardUsesPvmfwImage              bool   `json:",omitempty"`
@@ -744,8 +751,14 @@ type PartitionVariables struct {
 	EnforceArtifactPathRequirements             string              `json:",omitempty"`
 	ArtifactPathRequirementAllowedList          []string            `json:",omitempty"`
 	ArtifactPathRequirementProducts             []string            `json:",omitempty"`
+	ArtifactPathRequirementSyspropAllowedList   []string            `json:",omitempty"`
+	ProductSystemProperties                     []string            `json:",omitempty"`
+	ProductSystemDefaultProperties              []string            `json:",omitempty"`
 	ArtifactPathRequirementsOfMakefile          map[string][]string `json:",omitempty"`
 	ArtifactPathAllowedListOfMakefile           map[string][]string `json:",omitempty"`
+	SystemPropertiesOfMakefile                  map[string][]string `json:",omitempty"`
+	SystemDefaultPropertiesOfMakefile           map[string][]string `json:",omitempty"`
+	DeviceFcmFileOfMakefile                     map[string][]string `json:",omitempty"`
 	ArtifactPathRequirementsIsRelaxedOfMakefile map[string]bool     `json:",omitempty"`
 
 	BuildingSystemDlkmImage             bool     `json:",omitempty"`
@@ -798,6 +811,18 @@ type PartitionVariables struct {
 	TargetRecoveryFstabDefault string `json:",omitempty"`
 
 	VendorBlobsLicense string `json:",omitempty"`
+
+	MinimalFontFootprint bool `json:",omitempty"`
+
+	CustomImagesPartitions []string `json:",omitempty"`
+
+	ProductRestrictVendorFiles       string   `json:",omitempty"`
+	VendorProductRestrictVendorFiles string   `json:",omitempty"`
+	VendorExceptionPaths             []string `json:",omitempty"`
+	VendorExceptionModules           []string `json:",omitempty"`
+
+	AllDistGoalOutputPairs []string `json:",omitempty"`
+	AllDistSrcDstPairs     []string `json:",omitempty"`
 }
 
 func boolPtr(v bool) *bool {

@@ -25,6 +25,8 @@ import (
 	"android/soong/android"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 type prebuiltDtboImg struct {
 	android.ModuleBase
 	properties prebuiltDtboImgProperties
@@ -44,6 +46,7 @@ func PrebuiltDtboImgFactory() android.Module {
 	return module
 }
 
+// @auto-generate: gob
 type DtboImgInfo struct {
 	PropFileForMiscInfo android.Path
 }

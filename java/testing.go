@@ -65,6 +65,14 @@ var PrepareForTestWithJavaBuildComponents = android.GroupFixturePreparers(
 		"build/make/target/product/security": nil,
 		// Required to generate Java used-by API coverage
 		"build/soong/scripts/gen_java_usedby_apex.sh": nil,
+		"external/error_prone/Android.bp": []byte(`
+			java_plugin {
+				name: "error_prone_plugin",
+				errorprone: {
+					enabled: false,
+				},
+			}
+			`),
 		// Needed for the global lint checks provided from tools/lint_checks
 		"tools/lint_checks/global/Android.bp": []byte(`
 			java_library_host {
@@ -201,6 +209,9 @@ var PrepareForTestWithJacocoInstrumentation = android.GroupFixturePreparers(
 				"//apex_available:platform",
 			],
 			compile_dex: true,
+			optimize: {
+				force_disabled_with_source_stubs: true,
+			},
 		}
 	`)),
 )
@@ -532,6 +543,9 @@ func gatherRequiredDepsForTest() string {
 				export_include_dirs: ["framework/aidl"],
 			},
 			compile_dex: true,
+			optimize: {
+				force_disabled_with_source_stubs: true,
+			},
 		}
 		java_library {
 			name: "framework-minus-apex",
@@ -542,6 +556,9 @@ func gatherRequiredDepsForTest() string {
 				export_include_dirs: ["framework/aidl"],
 			},
 			compile_dex: true,
+			optimize: {
+				force_disabled_with_source_stubs: true,
+			},
 		}
 
 		android_app {
@@ -625,7 +642,7 @@ func CheckModuleHasDependency(t *testing.T, ctx *android.TestContext, name, vari
 func CheckModuleHasDependencyWithTag(t *testing.T, ctx *android.TestContext, name, variant string, desiredTag blueprint.DependencyTag, expected string) bool {
 	module := ctx.ModuleForTests(t, name, variant).Module()
 	found := false
-	ctx.VisitDirectDepsWithTags(module, func(m blueprint.Module, tag blueprint.DependencyTag) {
+	ctx.VisitDirectDepsProxiesWithTags(module, func(m blueprint.ModuleProxy, tag blueprint.DependencyTag) {
 		if tag == desiredTag && m.Name() == expected {
 			found = true
 		}

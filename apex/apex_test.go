@@ -37,6 +37,7 @@ import (
 	prebuilt_etc "android/soong/etc"
 	"android/soong/filesystem"
 	"android/soong/java"
+	"android/soong/kernel"
 	"android/soong/rust"
 	"android/soong/sh"
 )
@@ -126,6 +127,7 @@ var prepareForApexTest = android.GroupFixturePreparers(
 	rust.PrepareForTestWithRustDefaultModules,
 	sh.PrepareForTestWithShBuildComponents,
 	codegen.PrepareForTestWithAconfigBuildComponents,
+	kernel.PrepareForTestWithPrebuiltKernelModules,
 
 	PrepareForTestWithApexBuildComponents,
 
@@ -2419,169 +2421,6 @@ func TestApexMinSdkVersion_InVendorApex(t *testing.T) {
 	android.AssertStringDoesContain(t, "cflags", cflags, "-target aarch64-linux-android29")
 }
 
-func TestTrackAllowedDepsForAndroidApex(t *testing.T) {
-	t.Parallel()
-	ctx := testApex(t, `
-		apex {
-			name: "com.android.myapex",
-			key: "myapex.key",
-			updatable: true,
-			native_shared_libs: [
-				"mylib",
-				"yourlib",
-			],
-			min_sdk_version: "29",
-		}
-
-		apex {
-			name: "myapex2",
-			key: "myapex.key",
-			updatable: false,
-			native_shared_libs: ["yourlib"],
-		}
-
-		apex_key {
-			name: "myapex.key",
-			public_key: "testkey.avbpubkey",
-			private_key: "testkey.pem",
-		}
-
-		cc_library {
-			name: "mylib",
-			srcs: ["mylib.cpp"],
-			shared_libs: ["libbar", "libbar_rs"],
-			min_sdk_version: "29",
-			apex_available: ["com.android.myapex"],
-		}
-
-		cc_library {
-			name: "libbar",
-			stubs: { versions: ["29", "30"] },
-		}
-
-		rust_ffi {
-			name: "libbar_rs",
-			crate_name: "bar_rs",
-			srcs: ["bar.rs"],
-			stubs: { versions: ["29", "30"] },
-		}
-
-		cc_library {
-			name: "yourlib",
-			srcs: ["mylib.cpp"],
-			min_sdk_version: "29",
-			apex_available: ["com.android.myapex", "myapex2", "//apex_available:platform"],
-		}
-	`, withFiles(android.MockFS{
-		"packages/modules/common/build/allowed_deps.txt": nil,
-	}),
-		android.FixtureMergeMockFs(android.MockFS{
-			"system/sepolicy/apex/com.android.myapex-file_contexts": nil,
-		}))
-
-	depsinfo := ctx.SingletonForTests(t, "apex_depsinfo_singleton")
-	inputs := depsinfo.Rule("generateApexDepsInfoFilesRule").BuildParams.Inputs.Strings()
-	android.AssertStringListContains(t, "updatable com.android.myapex should generate depsinfo file", inputs,
-		"out/soong/.intermediates/com.android.myapex/android_common_com.android.myapex/depsinfo/flatlist.txt")
-	android.AssertStringListDoesNotContain(t, "non-updatable myapex2 should not generate depsinfo file", inputs,
-		"out/soong/.intermediates/myapex2/android_common_myapex2/depsinfo/flatlist.txt")
-
-	myapex := ctx.ModuleForTests(t, "com.android.myapex", "android_common_com.android.myapex")
-	flatlist := strings.Split(android.ContentFromFileRuleForTests(t, ctx,
-		myapex.Output("depsinfo/flatlist.txt")), "\n")
-	android.AssertStringListContains(t, "deps with stubs should be tracked in depsinfo as external dep",
-		flatlist, "libbar(minSdkVersion:(no version)) (external)")
-	android.AssertStringListContains(t, "deps with stubs should be tracked in depsinfo as external dep",
-		flatlist, "libbar_rs(minSdkVersion:(no version)) (external)")
-	android.AssertStringListDoesNotContain(t, "do not track if not available for platform",
-		flatlist, "mylib:(minSdkVersion:29)")
-	android.AssertStringListContains(t, "track platform-available lib",
-		flatlist, "yourlib(minSdkVersion:29)")
-}
-
-func TestNotTrackAllowedDepsForNonAndroidApex(t *testing.T) {
-	t.Parallel()
-	ctx := testApex(t, `
-		apex {
-			name: "myapex",
-			key: "myapex.key",
-			updatable: true,
-			native_shared_libs: [
-				"mylib",
-				"yourlib",
-			],
-			min_sdk_version: "29",
-		}
-
-		apex {
-			name: "myapex2",
-			key: "myapex.key",
-			updatable: false,
-			native_shared_libs: ["yourlib"],
-		}
-
-		apex_key {
-			name: "myapex.key",
-			public_key: "testkey.avbpubkey",
-			private_key: "testkey.pem",
-		}
-
-		cc_library {
-			name: "mylib",
-			srcs: ["mylib.cpp"],
-			shared_libs: ["libbar"],
-			min_sdk_version: "29",
-			apex_available: ["myapex"],
-		}
-
-		cc_library {
-			name: "libbar",
-			stubs: { versions: ["29", "30"] },
-		}
-
-		cc_library {
-			name: "yourlib",
-			srcs: ["mylib.cpp"],
-			min_sdk_version: "29",
-			apex_available: ["myapex", "myapex2", "//apex_available:platform"],
-		}
-	`, withFiles(android.MockFS{
-		"packages/modules/common/build/allowed_deps.txt": nil,
-	}))
-
-	depsinfo := ctx.SingletonForTests(t, "apex_depsinfo_singleton")
-	inputs := depsinfo.Rule("generateApexDepsInfoFilesRule").BuildParams.Inputs.Strings()
-	android.AssertStringListDoesNotContain(t, "updatable myapex should generate depsinfo file", inputs,
-		"out/soong/.intermediates/myapex/android_common_myapex/depsinfo/flatlist.txt")
-	android.AssertStringListDoesNotContain(t, "non-updatable myapex2 should not generate depsinfo file", inputs,
-		"out/soong/.intermediates/myapex2/android_common_myapex2/depsinfo/flatlist.txt")
-}
-
-func TestTrackAllowedDeps_SkipWithoutAllowedDepsTxt(t *testing.T) {
-	t.Parallel()
-	ctx := testApex(t, `
-		apex {
-			name: "com.android.myapex",
-			key: "myapex.key",
-			updatable: true,
-			min_sdk_version: "29",
-		}
-
-		apex_key {
-			name: "myapex.key",
-			public_key: "testkey.avbpubkey",
-			private_key: "testkey.pem",
-		}
-	`,
-		android.FixtureMergeMockFs(android.MockFS{
-			"system/sepolicy/apex/com.android.myapex-file_contexts": nil,
-		}))
-	depsinfo := ctx.SingletonForTests(t, "apex_depsinfo_singleton")
-	if nil != depsinfo.MaybeRule("generateApexDepsInfoFilesRule").Output {
-		t.Error("apex_depsinfo_singleton shouldn't run when allowed_deps.txt doesn't exist")
-	}
-}
-
 func TestPlatformUsesLatestStubsFromApexes(t *testing.T) {
 	t.Parallel()
 	ctx := testApex(t, `
@@ -3548,6 +3387,40 @@ func TestApex_withPrebuiltFirmware(t *testing.T) {
 			})
 		})
 	}
+}
+
+func TestApex_withPrebuiltKernelModules(t *testing.T) {
+	t.Parallel()
+	ctx := testApex(t, `
+		apex {
+			name: "myapex",
+			key: "myapex.key",
+			kernel_modules: ["mykernelmodules"],
+			updatable: false,
+			vendor: true,
+		}
+		apex_key {
+			name: "myapex.key",
+			public_key: "testkey.avbpubkey",
+			private_key: "testkey.pem",
+		}
+		prebuilt_kernel_modules {
+			name: "mykernelmodules",
+			srcs: ["*.ko"],
+		}
+	`,
+		withFiles(android.MockFS{
+			"mod1.ko": nil,
+			"mod2.ko": nil,
+		}))
+	ensureExactContents(t, ctx, "myapex", "android_common_myapex", []string{
+		"lib/modules/mod1.ko",
+		"lib/modules/mod2.ko",
+		"lib/modules/modules.alias",
+		"lib/modules/modules.dep",
+		"lib/modules/modules.load",
+		"lib/modules/modules.softdep",
+	})
 }
 
 func TestAndroidMk_VendorApexRequired(t *testing.T) {
@@ -9557,7 +9430,8 @@ func TestPrebuiltStubLibDep(t *testing.T) {
 			for _, otherApexEnabled := range test.otherApexEnabled {
 				t.Run("otherapex_enabled_"+otherApexEnabled, func(t *testing.T) {
 					t.Parallel()
-					ctx := testApex(t, fmt.Sprintf(bpBase, otherApexEnabled)+test.stublibBp)
+					ctx := testApex(t, fmt.Sprintf(bpBase, otherApexEnabled)+test.stublibBp,
+						android.PrepareForTestWithAndroidMk)
 
 					type modAndMkEntries struct {
 						mod       *cc.Module
@@ -9579,9 +9453,6 @@ func TestPrebuiltStubLibDep(t *testing.T) {
 							ents := []android.AndroidMkInfo{info.PrimaryInfo}
 							ents = append(ents, info.ExtraInfo...)
 							for _, ent := range ents {
-								if ent.Disabled {
-									continue
-								}
 								entries = append(entries, &modAndMkEntries{
 									mod:       mod,
 									mkEntries: ent,
@@ -9908,9 +9779,10 @@ func TestApexOutputFileProducer(t *testing.T) {
 				`,
 				android.FixtureModifyProductVariables(func(variables android.FixtureProductVariables) {
 					variables.CompressedApex = proptools.BoolPtr(true)
-				}))
+				}),
+				android.PrepareForTestWithAndroidMk)
 			javaTest := ctx.ModuleForTests(t, tc.name, "android_common").Module().(*java.Test)
-			data := android.AndroidMkEntriesForTest(t, ctx, javaTest)[0].EntryMap["LOCAL_COMPATIBILITY_SUPPORT_FILES"]
+			data := android.AndroidMkInfoForTest(t, ctx, javaTest).PrimaryInfo.EntryMap["LOCAL_COMPATIBILITY_SUPPORT_FILES"]
 			android.AssertStringPathsRelativeToTopEquals(t, "data", ctx.Config(), tc.expected_data, data)
 		})
 	}
@@ -11745,9 +11617,7 @@ func TestMultiplePrebuiltsWithSameBase(t *testing.T) {
 			src: "myprebuilt",
 			filename: "myfilename",
 		}
-	`, withFiles(android.MockFS{
-		"packages/modules/common/build/allowed_deps.txt": nil,
-	}))
+	`)
 
 	ab := ctx.ModuleForTests(t, "myapex", "android_common_myapex").Module().(*apexBundle)
 	data := android.AndroidMkDataForTest(t, ctx, ab)

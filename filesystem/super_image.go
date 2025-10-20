@@ -28,6 +28,8 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 func init() {
 	android.RegisterModuleType("super_image", SuperImageFactory)
 }
@@ -119,6 +121,7 @@ type SuperImagePartitionNameProperties struct {
 	Odm_dlkm_partition *string
 }
 
+// @auto-generate: gob
 type SuperImageInfo struct {
 	// The built super.img file, which contains the sub-partitions
 	SuperImage android.Path

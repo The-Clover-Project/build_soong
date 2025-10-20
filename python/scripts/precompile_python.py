@@ -13,7 +13,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-from __future__ import print_function
 import argparse
 import py_compile
 import os
@@ -21,8 +20,6 @@ import sys
 import shutil
 import tempfile
 import zipfile
-
-# This file needs to support both python 2 and 3.
 
 
 def process_one_file(name, infile, outzip):
@@ -45,12 +42,9 @@ def process_one_file(name, infile, outzip):
         out_name = tmp.name
     try:
         # Ensure a deterministic .pyc output by using the hash rather than the timestamp.
-        # Only works on Python 3.7+
         # See https://docs.python.org/3/library/py_compile.html#py_compile.PycInvalidationMode
-        if sys.version_info >= (3, 7):
-            py_compile.compile(in_name, out_name, info.filename, doraise=True, invalidation_mode=py_compile.PycInvalidationMode.CHECKED_HASH)
-        else:
-            py_compile.compile(in_name, out_name, info.filename, doraise=True)
+        py_compile.compile(in_name, out_name, info.filename, doraise=True, invalidation_mode=py_compile.PycInvalidationMode.CHECKED_HASH)
+
         with open(out_name, 'rb') as f:
             info.filename = info.filename + 'c'
             outzip.writestr(info, f.read())

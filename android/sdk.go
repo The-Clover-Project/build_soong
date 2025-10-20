@@ -178,6 +178,7 @@ type BpPrintable interface {
 
 // BpPrintableBase must be embedded within any struct that is added as a
 // property value.
+// @auto-generate: gob
 type BpPrintableBase struct {
 }
 
@@ -868,6 +869,7 @@ type SdkMemberContext interface {
 // it as that would result in duplicate modules when attempting to use the snapshot. e.g. a snapshot
 // that included the java_sdk_library_import "foo" and also a java_import "foo.stubs" would fail
 // as there would be two modules called "foo.stubs".
+// @auto-generate: gob
 type ExportedComponentsInfo struct {
 	// The names of the exported components.
 	Components []string
@@ -876,8 +878,29 @@ type ExportedComponentsInfo struct {
 var ExportedComponentsInfoProvider = blueprint.NewProvider[ExportedComponentsInfo]()
 
 // AdditionalSdkInfo contains additional properties to add to the generated SDK info file.
+// @auto-generate: gob
 type AdditionalSdkInfo struct {
-	Properties map[string]interface{}
+	Properties AdditionalSdkInfoProperties
+}
+
+// @auto-generate: gob
+type AdditionalSdkInfoProperties struct {
+	Nested     map[string]AdditionalSdkInfoProperties
+	Properties map[string]string
+}
+
+func (a *AdditionalSdkInfoProperties) ToMap() map[string]any {
+	if a.Nested == nil && a.Properties == nil {
+		return nil
+	}
+	ret := make(map[string]any)
+	for k, v := range a.Nested {
+		ret[k] = v.ToMap()
+	}
+	for k, v := range a.Properties {
+		ret[k] = v
+	}
+	return ret
 }
 
 var AdditionalSdkInfoProvider = blueprint.NewProvider[AdditionalSdkInfo]()

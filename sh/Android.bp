@@ -7,6 +7,8 @@ bootstrap_go_package {
     pkgPath: "android/soong/sh",
     deps: [
         "blueprint",
+        "blueprint-gobtools",
+        "blueprint-proptools",
         "soong",
         "soong-android",
         "soong-cc",
@@ -15,6 +17,7 @@ bootstrap_go_package {
     ],
     srcs: [
         "sh_binary.go",
+        "sh_enc.go",
     ],
     testSrcs: [
         "sh_binary_test.go",

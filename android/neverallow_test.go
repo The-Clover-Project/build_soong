@@ -412,6 +412,19 @@ var neverallowTests = []struct {
 			`module type not allowed to be defined in bp file`,
 		},
 	},
+	{
+		name: "unchecked module not allowed",
+		fs: map[string][]byte{
+			"my/dir/Android.bp": []byte(`
+				cc_library {
+					name: "foo",
+					unchecked_module: true,
+				}`),
+		},
+		expectedErrors: []string{
+			regexp.QuoteMeta("module \"foo\": violates neverallow requirements. Not allowed:\n\tproperties matching: \"Unchecked_module\" matches: .is-set"),
+		},
+	},
 }
 
 var prepareForNeverAllowTest = GroupFixturePreparers(

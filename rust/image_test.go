@@ -183,8 +183,6 @@ func checkInstallPartition(t *testing.T, ctx *android.TestContext, name, variant
 }
 
 func TestInstallPartition(t *testing.T) {
-	t.Parallel()
-	t.Helper()
 	ctx := testRust(t, `
 		rust_binary {
 			name: "sample_system",

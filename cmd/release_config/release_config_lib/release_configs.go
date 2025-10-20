@@ -19,6 +19,7 @@ import (
 	"errors"
 	"fmt"
 	"io/fs"
+	"maps"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -29,6 +30,13 @@ import (
 	rc_proto "android/soong/cmd/release_config/release_config_proto"
 
 	"google.golang.org/protobuf/proto"
+)
+
+var (
+	// Allowlist: these flags may have duplicate (identical) declarations
+	// without generating an error.  This will be removed once all such
+	// declarations have been fixed.
+	DuplicateDeclarationAllowlist = map[string]bool{}
 )
 
 // A single release_config_map.textproto and its associated data.
@@ -70,6 +78,11 @@ type ReleaseConfigs struct {
 	// Dictionary of flag_name:FlagDeclaration, with no overrides applied.
 	FlagArtifacts FlagArtifacts
 
+	// Flags with no declaration that have value overrides.
+	// This is used by `build-flag` to indicate that there are flag
+	// values, but they are being ignored.
+	IgnoredFlags map[string]bool
+
 	// Containers used by build flags.
 	BuildFlagContainers []string
 
@@ -100,6 +113,16 @@ type ReleaseConfigs struct {
 
 	// Hash of all the paths used and their contents.
 	FilesUsedHash []byte
+
+	// Any duplicate declarations that we found (and allowed).
+	// Key is flag name, value is a list of flag_declarations files.
+	DuplicateFlags map[string][]*string
+
+	// The list of duplicate_allowlist.txt files that we read, and their contents.
+	DuplicateAllowlists map[string]map[string]bool
+
+	// Generated DuplicateFlagsArtifact
+	DuplicateFlagsArtifact *rc_proto.DuplicateFlagsArtifact
 }
 
 func (configs *ReleaseConfigs) WriteInheritanceGraph(outFile string) error {
@@ -195,20 +218,40 @@ func (configs *ReleaseConfigs) WriteArtifact(outDir, product, format string) err
 		configs.Artifact)
 }
 
+func (configs *ReleaseConfigs) WriteDuplicateFlags(outDir, product, format string) error {
+	if err := configs.GenerateDuplicateFlagsArtifact(); err != nil {
+		return err
+	}
+	return WriteMessage(
+		configs.DuplicateFlagsPath(outDir, product, format),
+		configs.DuplicateFlagsArtifact)
+}
+
 func (configs *ReleaseConfigs) AllReleaseConfigsPath(outDir, product, format string) string {
-	return filepath.Join(outDir, fmt.Sprintf("all_release_configs-%s.%s", product, format))
+	return configs.artifactPath(outDir, "all_release_configs", product, format)
+}
+
+func (configs *ReleaseConfigs) DuplicateFlagsPath(outDir, product, format string) string {
+	return configs.artifactPath(outDir, "duplicate_flags", product, format)
+}
+
+func (configs *ReleaseConfigs) artifactPath(outDir, base, product, format string) string {
+	return filepath.Join(outDir, fmt.Sprintf("%s-%s.%s", base, product, format))
 }
 
 func ReleaseConfigsFactory(allowMissing bool, targetBuildVariant string) (c *ReleaseConfigs) {
 	configs := ReleaseConfigs{
 		Aliases:              make(map[string]*string),
 		FlagArtifacts:        make(map[string]*FlagArtifact),
+		IgnoredFlags:         make(map[string]bool),
 		ReleaseConfigs:       make(map[string]*ReleaseConfig),
 		releaseConfigMapsMap: make(map[string]*ReleaseConfigMap),
 		configDirs:           []string{},
 		configDirIndexes:     make(ReleaseConfigDirMap),
 		allowMissing:         allowMissing,
 		targetBuildVariant:   targetBuildVariant,
+		DuplicateFlags:       make(map[string][]*string),
+		DuplicateAllowlists:  make(map[string]map[string]bool),
 	}
 	workflowManual := rc_proto.Workflow(rc_proto.Workflow_MANUAL)
 	releaseAconfigValueSets := FlagArtifact{
@@ -344,23 +387,19 @@ type loadContext struct {
 	// WaitGroup for threads processing a directory.
 	dirReaderWg sync.WaitGroup
 
-	// Requests to read a flag_declarations/ file and send it to declHandlerChan.
+	// Requests to read a flag_declarations/ file and send it to infoHandlerChan.
 	declReaderChan chan *declReq
 	declReaderWg   sync.WaitGroup
-	//declHandlerChan chan *declInfo
 
-	// Requests to read a release_configs/ file and send it to contribHandlerChan
+	// Requests to read a release_configs/ file and send it to infoHandlerChan
 	contribReaderChan chan *contribReq
 	contribReaderWg   sync.WaitGroup
-	//contribHandlerChan chan *contribInfo
 
-	// Requests to read flag_values/ file and send it to valueHandlerChan
+	// Requests to read flag_values/ file and send it to infoHandlerChan
 	valueReaderChan chan *valueReq
 	valueReaderWg   sync.WaitGroup
-	//valueHandlerChan chan *valueInfo
 
-	// Reads and processes data from declHandlerChan, contribHandlerChan, and
-	// valueHandlerChan.
+	// Reads and processes data from infoHandlerChan.
 	infoHandlerWg   sync.WaitGroup
 	infoHandlerChan chan *fileInfo
 }
@@ -452,6 +491,7 @@ func (ctx *loadContext) infoHandler() {
 			rcc.FlagValues[*info.value.Value.proto.Name] = info.value.Value
 		} else {
 			ctx.errorsChan <- fmt.Errorf("Unparsable read result: %v", *info)
+			continue
 		}
 	}
 }
@@ -506,16 +546,23 @@ func (configs *ReleaseConfigs) LoadReleaseConfigMap(ctx *loadContext, path strin
 	// Temporarily allowlist duplicate flag declaration files to prevent
 	// more from entering the tree while we work to clean up the duplicates
 	// that already exist.
-	dupFlagFile := filepath.Join(dir, "duplicate_allowlist.txt")
+	dupFlagFile := filepath.Join(filepath.Dir(m.path), "duplicate_allowlist.txt")
 	data, err := ReadTrackedFile(dupFlagFile)
-	if err == nil {
+	switch {
+	case err == nil:
+		configs.DuplicateAllowlists[dupFlagFile] = make(map[string]bool)
 		for _, flag := range strings.Split(string(data), "\n") {
 			flag = strings.TrimSpace(flag)
-			if strings.HasPrefix(flag, "//") || strings.HasPrefix(flag, "#") {
+			if flag == "" || strings.HasPrefix(flag, "//") || strings.HasPrefix(flag, "#") {
 				continue
 			}
+			configs.DuplicateAllowlists[dupFlagFile][flag] = true
 			DuplicateDeclarationAllowlist[flag] = true
 		}
+	case os.IsNotExist(err):
+		// No action needed here.
+	default:
+		ctx.errorsChan <- fmt.Errorf("Failed to read %q: %v", dupFlagFile, err)
 	}
 
 	err = WalkTextprotoFiles(dir, "flag_declarations", func(path string, d fs.DirEntry, err error) error {
@@ -597,6 +644,9 @@ func (configs *ReleaseConfigs) getReleaseConfig(name string, allow_missing bool,
 		var err error
 		if generate {
 			err = config.GenerateReleaseConfig(configs)
+			if err == nil {
+				maps.Copy(configs.IgnoredFlags, config.IgnoredFlags)
+			}
 		}
 		return config, err
 	}
@@ -636,6 +686,7 @@ func (configs *ReleaseConfigs) GenerateAllReleaseConfigs(targetRelease string) e
 		if err != nil {
 			return err
 		}
+		maps.Copy(configs.IgnoredFlags, c.IgnoredFlags)
 		if c.Name != releaseConfig.Name {
 			orc = append(orc, c.ReleaseConfigArtifact)
 		}
@@ -648,6 +699,47 @@ func (configs *ReleaseConfigs) GenerateAllReleaseConfigs(targetRelease string) e
 			ret := make(map[string]*rc_proto.ReleaseConfigMap)
 			for k, v := range configs.releaseConfigMapsMap {
 				ret[k] = &v.proto
+			}
+			return ret
+		}(),
+	}
+	return nil
+}
+func (configs *ReleaseConfigs) GenerateDuplicateFlagsArtifact() error {
+	if configs.Artifact == nil {
+		return fmt.Errorf("all_release_configs artifact has not been generated yet")
+	}
+
+	flagArtifactMap := make(map[string]*rc_proto.FlagArtifact)
+	for k, fa := range configs.FlagArtifacts {
+		var err error
+		flagArtifactMap[k], err = fa.Marshal()
+		if err != nil {
+			return fmt.Errorf("%s: Failed to marshal flag artifact: %v", *fa.FlagDeclaration.Name, err)
+		}
+	}
+
+	configs.DuplicateFlagsArtifact = &rc_proto.DuplicateFlagsArtifact{
+		FlagArtifactMap: flagArtifactMap,
+		DuplicateAllowlists: func() []*rc_proto.DuplicateAllowlist {
+			ret := []*rc_proto.DuplicateAllowlist{}
+			paths := []string{}
+			for p := range configs.DuplicateAllowlists {
+				paths = append(paths, p)
+			}
+			slices.Sort(paths)
+			for _, p := range paths {
+				ret = append(ret, &rc_proto.DuplicateAllowlist{
+					Path: proto.String(p),
+					Allowed: func() []string {
+						ret := []string{}
+						for k := range configs.DuplicateAllowlists[p] {
+							ret = append(ret, k)
+						}
+						slices.Sort(ret)
+						return ret
+					}(),
+				})
 			}
 			return ret
 		}(),
@@ -704,6 +796,7 @@ func ReadReleaseConfigMaps(releaseConfigMapPaths StringList, targetRelease, vari
 		m, err := configs.LoadReleaseConfigMap(ctx, releaseConfigMapPath, idx, declarationsOnly)
 		if err != nil {
 			ctx.errorsChan <- err
+			continue
 		}
 		configs.ReleaseConfigMaps = append(configs.ReleaseConfigMaps, m)
 		configs.releaseConfigMapsMap[configDir] = m
@@ -751,11 +844,32 @@ func (configs *ReleaseConfigs) Finalize(ctx *loadContext, targetRelease string) 
 					*configs.FlagArtifacts[name].DeclarationPath)
 				continue
 			} else {
-				// Note the second definition in the trace.
+				// Note the additional declaration.
 				configs.FlagArtifacts[name].Traces = append(configs.FlagArtifacts[name].Traces, fa.Traces...)
+				if configs.DuplicateFlags[name] == nil {
+					configs.DuplicateFlags[name] = []*string{configs.FlagArtifacts[name].Traces[0].Source}
+				}
+				configs.DuplicateFlags[name] = append(configs.DuplicateFlags[name], fa.Traces[0].Source)
 			}
 			for container := range m.BuildFlagContainersMap {
 				buildFlagContainersMap[container] = true
+			}
+		}
+
+		// Look for flag values for release configs that are not declared in `release_configs/`.
+		for k, names := range m.FlagValueDirs {
+			for _, rcName := range names {
+				// Legacy directory.  We can remove this once the directory has been deleted.
+				if strings.HasSuffix(rcName, "_ro_snapshot") {
+					continue
+				}
+				rcc, ok := m.ReleaseConfigContributions[rcName]
+				if !ok || rcc.path == "" {
+					rcPath := filepath.Join(dirName, "release_configs", fmt.Sprintf("%s.textproto", rcName))
+					ctx.errorsChan <- fmt.Errorf("%q exists but %q does not contribute to %q (create %q)",
+						filepath.Join(dirName, k, rcName), dirName, rcName, rcPath)
+					continue
+				}
 			}
 		}
 
@@ -765,8 +879,13 @@ func (configs *ReleaseConfigs) Finalize(ctx *loadContext, targetRelease string) 
 				configs.ReleaseConfigs[name].ReleaseConfigType = rcc.proto.GetReleaseConfigType()
 			}
 			config := configs.ReleaseConfigs[name]
-			if config.ReleaseConfigType != *rcc.proto.ReleaseConfigType {
-				ctx.errorsChan <- fmt.Errorf("%s mismatching ReleaseConfigType value %s", rcc.path, *rcc.proto.ReleaseConfigType)
+			if rcc.path == "" {
+				// There is no `release_configs/{name}.textproto`, but we have flag value overrides.
+				// That error message was generated when we iterated over m.FlagValueDirs above.
+				continue
+			}
+			if config.ReleaseConfigType != rcc.proto.GetReleaseConfigType() {
+				ctx.errorsChan <- fmt.Errorf("%s mismatching ReleaseConfigType value %s", rcc.path, rcc.proto.GetReleaseConfigType())
 				continue
 			}
 
@@ -780,19 +899,6 @@ func (configs *ReleaseConfigs) Finalize(ctx *loadContext, targetRelease string) 
 			config.DisallowLunchUse = config.DisallowLunchUse || rcc.proto.GetDisallowLunchUse()
 			config.Contributions = append(config.Contributions, rcc)
 		}
-		// Look for flag values for release configs that are not declared in `release_configs/`.
-		for k, names := range m.FlagValueDirs {
-			for _, rcName := range names {
-				if strings.HasSuffix(rcName, "_ro_snapshot") {
-					continue
-				}
-				rcPath := filepath.Join(dirName, "release_configs", fmt.Sprintf("%s.textproto", rcName))
-				if _, err := os.Stat(rcPath); err != nil {
-					ctx.errorsChan <- fmt.Errorf("%s exists but %s does not contribute to %s",
-						filepath.Join(dirName, k, rcName), dirName, rcName)
-				}
-			}
-		}
 	}
 	for k := range buildFlagContainersMap {
 		configs.BuildFlagContainers = append(configs.BuildFlagContainers, k)
@@ -804,10 +910,12 @@ func (configs *ReleaseConfigs) Finalize(ctx *loadContext, targetRelease string) 
 	for aliasName, aliasTarget := range configs.Aliases {
 		if _, ok := configs.ReleaseConfigs[aliasName]; ok {
 			ctx.errorsChan <- fmt.Errorf("Alias %s is a declared release config", aliasName)
+			continue
 		}
 		if _, ok := configs.ReleaseConfigs[*aliasTarget]; !ok {
 			if _, ok2 := configs.Aliases[*aliasTarget]; !ok2 {
 				ctx.errorsChan <- fmt.Errorf("Alias %s points to non-existing config %s", aliasName, *aliasTarget)
+				continue
 			}
 		}
 		otherNames[*aliasTarget] = append(otherNames[*aliasTarget], aliasName)

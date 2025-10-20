@@ -48,7 +48,7 @@ const (
 	// Environment variables used to modify behavior of this singleton.
 	envVariableGenerateCompdb          = "SOONG_GEN_COMPDB"
 	envVariableGenerateCompdbDebugInfo = "SOONG_GEN_COMPDB_DEBUG"
-	envVariableCompdbLink              = "SOONG_LINK_COMPDB_TO"
+	envVariableCompdbModules           = "SOONG_GEN_COMPDB_MODULES"
 )
 
 // A compdb entry. The compile_commands.json file is a list of these.
@@ -67,11 +67,24 @@ func (c *compdbGeneratorSingleton) GenerateBuildActions(ctx android.SingletonCon
 	// Instruct the generator to indent the json file for easier debugging.
 	outputCompdbDebugInfo := ctx.Config().IsEnvTrue(envVariableGenerateCompdbDebugInfo)
 
+	modules := ctx.Config().Getenv(envVariableCompdbModules)
+	var moduleMap map[string]bool
+	if modules != "" {
+		moduleMap = make(map[string]bool)
+		for _, target := range strings.Fields(modules) {
+			moduleMap[target] = true
+		}
+	}
+
 	// We only want one entry per file. We don't care what module/isa it's from
 	m := make(map[string]compDbEntry)
 	ctx.VisitAllModuleProxies(func(module android.ModuleProxy) {
 		if ccModule, ok := android.OtherModuleProvider(ctx, module, CcInfoProvider); ok {
 			if ccModule.CompilerInfo != nil {
+				// Empty map matches any
+				if len(moduleMap) > 0 && !moduleMap[module.Name()] {
+					return
+				}
 				generateCompdbProject(ctx, module, ccModule, m)
 			}
 		}
@@ -102,14 +115,6 @@ func (c *compdbGeneratorSingleton) GenerateBuildActions(ctx android.SingletonCon
 	}
 	if err := w.Encode(v); err != nil {
 		log.Fatalf("Failed to encode: %s", err)
-	}
-
-	if finalLinkDir := ctx.Config().Getenv(envVariableCompdbLink); finalLinkDir != "" {
-		finalLinkPath := filepath.Join(finalLinkDir, compdbFilename)
-		os.Remove(finalLinkPath)
-		if err := os.Symlink(compDBFile.String(), finalLinkPath); err != nil {
-			log.Fatalf("Unable to symlink %s to %s: %s", compDBFile, finalLinkPath, err)
-		}
 	}
 }
 
@@ -203,7 +208,7 @@ func generateCompdbProject(ctx android.SingletonContext, module android.ModulePr
 func evalAndSplitVariable(ctx android.SingletonContext, str string) ([]string, error) {
 	evaluated, err := ctx.Eval(pctx, str)
 	if err == nil {
-		return strings.Fields(evaluated), nil
+		return strings.Fields(strings.Trim(evaluated, "'")), nil
 	}
 	return []string{""}, err
 }

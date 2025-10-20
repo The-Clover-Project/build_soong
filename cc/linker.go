@@ -444,6 +444,9 @@ func (linker *baseLinker) linkerDeps(ctx DepsContext, deps Deps) Deps {
 		if linker.Properties.libCrt() && !ctx.header() {
 			deps.UnexportedStaticLibs = append(deps.UnexportedStaticLibs, config.BuiltinsRuntimeLibrary())
 		}
+	} else if ctx.Os() == android.Linux && !ctx.header() && !ctx.static() {
+		// TODO(b/440132952): This should be handled by the clang driver once we use --rtlib=compiler-rt
+		deps.UnexportedStaticLibs = append(deps.UnexportedStaticLibs, config.BuiltinsRuntimeLibrary())
 	}
 
 	deps.LateSharedLibs = append(deps.LateSharedLibs, deps.SystemSharedLibs...)
@@ -711,7 +714,7 @@ func (linker *baseLinker) injectVersionSymbol(ctx ModuleContext, in android.Path
 
 var checkElfFileRule = pctx.AndroidStaticRule("checkElfFile",
 	blueprint.RuleParams{
-		Command: "${checkElfFileCmd} --skip-bad-elf-magic --skip-unknown-elf-machine $args" +
+		Command: "${checkElfFileCmd} --skip-unknown-elf-machine $args" +
 			" --llvm-readobj=${config.ClangBin}/llvm-readobj $in" +
 			" && touch $out",
 		CommandDeps: []string{"$checkElfFileCmd", "${config.ClangBin}/llvm-readobj"},

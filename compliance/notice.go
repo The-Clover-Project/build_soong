@@ -63,8 +63,6 @@ type NoticeXmlModule struct {
 
 	props noticeXmlProperties
 
-	disabled bool
-
 	outputFile android.OutputPath
 }
 
@@ -79,7 +77,7 @@ func (nx *NoticeXmlModule) UseGenericConfig() bool {
 func (nx *NoticeXmlModule) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	// No build action needs to be done in notice_xml module type if notice xml generation is disabled
 	if ctx.Config().DisableNoticeXmlGeneration() {
-		nx.disabled = true
+		nx.HideFromMake()
 		return
 	}
 
@@ -106,10 +104,11 @@ func (nx *NoticeXmlModule) GenerateAndroidBuildActions(ctx android.ModuleContext
 	ctx.InstallFile(installPath, "NOTICE.xml.gz", nx.outputFile)
 }
 
-func (nx *NoticeXmlModule) AndroidMkEntries() []android.AndroidMkEntries {
-	return []android.AndroidMkEntries{{
+func (nx *NoticeXmlModule) PrepareAndroidMKProviderInfo(config android.Config) *android.AndroidMkProviderInfo {
+	info := &android.AndroidMkProviderInfo{}
+	info.PrimaryInfo = android.AndroidMkInfo{
 		Class:      "ETC",
 		OutputFile: android.OptionalPathForPath(nx.outputFile),
-		Disabled:   nx.disabled,
-	}}
+	}
+	return info
 }

@@ -51,6 +51,8 @@ def parse_args():
   parser.add_argument("--build-fingerprint-file", required=True, type=argparse.FileType("r"))
   parser.add_argument("--build-hostname-file", required=True, type=argparse.FileType("r"))
   parser.add_argument("--build-number-file", required=True, type=argparse.FileType("r"))
+  parser.add_argument("--build-uuid-file", required=True, type=argparse.FileType("r"))
+  parser.add_argument("--build-system-fingerprint-file", required=True, type=argparse.FileType("r"))
   parser.add_argument("--build-thumbprint-file", type=argparse.FileType("r"))
   parser.add_argument("--build-username", required=True)
   parser.add_argument("--date-file", required=True, type=argparse.FileType("r"))
@@ -80,8 +82,10 @@ def parse_args():
   config["BuildVariant"] = get_build_variant(config)
 
   config["BuildFingerprint"] = args.build_fingerprint_file.read().strip()
+  config["BuildSystemFingerprint"] = args.build_system_fingerprint_file.read().strip()
   config["BuildHostname"] = args.build_hostname_file.read().strip()
   config["BuildNumber"] = args.build_number_file.read().strip()
+  config["BuildUUID"] = args.build_uuid_file.read().strip()
   config["BuildUsername"] = args.build_username
 
   build_version_tags_list = config["BuildVersionTags"]
@@ -157,8 +161,16 @@ def generate_common_build_props(args):
   # Allow optional assignments for ARC forward-declarations (b/249168657)
   # TODO: Remove any tag-related inconsistencies once the goals from
   # go/arc-android-sigprop-changes have been achieved.
+  ######
+  # Temporarily disable the system fingerprint until the allow listing pipeline
+  # is updated. (b/445722292)
+  # TODO (b/437803910): Enable the system fingerprint again.
+  # if partition == "system":
+  #   print(f"ro.{partition}.build.fingerprint?={config['BuildSystemFingerprint']}")
+  # else:
   print(f"ro.{partition}.build.fingerprint?={config['BuildFingerprint']}")
   print(f"ro.{partition}.build.id?={config['BuildId']}")
+  print(f"ro.{partition}.build.uuid?={config['BuildUUID']}")
   print(f"ro.{partition}.build.tags?={config['BuildVersionTags']}")
   print(f"ro.{partition}.build.type={config['BuildVariant']}")
   print(f"ro.{partition}.build.version.incremental={config['BuildNumber']}")
@@ -178,6 +190,7 @@ def generate_build_info(args):
   build_flags = config["BuildFlags"]
 
   print(f"ro.build.id?={config['BuildId']}")
+  print(f"ro.build.uuid?={config['BuildUUID']}")
 
   # ro.build.display.id is shown under Settings -> About Phone
   if config["BuildVariant"] == "user":
@@ -412,6 +425,9 @@ def append_additional_vendor_props(args):
   if config["RecoveryPixelFormat"]:
     props.append(f"ro.minui.pixel_format={config['RecoveryPixelFormat']}")
 
+  if "RecoveryNoInitialModsetFlush" in config:
+    props.append(f"ro.minui.no_initial_modset_flush={'true' if config['RecoveryNoInitialModsetFlush'] else 'false'}")
+
   if "UseDynamicPartitions" in config:
     props.append(f"ro.boot.dynamic_partitions={'true' if config['UseDynamicPartitions'] else 'false'}")
 
@@ -462,6 +478,9 @@ def append_additional_vendor_props(args):
 
   config["ADDITIONAL_VENDOR_PROPERTIES"] = props
 
+  # Add the 16K developer args if it is defined for the product.
+  config["ADDITIONAL_VENDOR_PROPERTIES"].append(f"ro.product.build.16k_page.enabled={'true' if config['Product16KDeveloperOption'] else 'false'}")
+
 def append_additional_product_props(args):
   props = []
 
@@ -470,9 +489,6 @@ def append_additional_product_props(args):
   # Add the system server compiler filter if they are specified for the product.
   if config["SystemServerCompilerFilter"]:
     props.append(f"dalvik.vm.systemservercompilerfilter={config['SystemServerCompilerFilter']}")
-
-  # Add the 16K developer args if it is defined for the product.
-  props.append(f"ro.product.build.16k_page.enabled={'true' if config['Product16KDeveloperOption'] else 'false'}")
 
   props.append(f"ro.product.page_size={16384 if config['TargetBoots16K'] else 4096}")
 

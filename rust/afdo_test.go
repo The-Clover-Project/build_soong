@@ -23,6 +23,7 @@ import (
 )
 
 func TestAfdoEnabled(t *testing.T) {
+	t.Parallel()
 	bp := `
 	rust_binary {
 		name: "foo",
@@ -60,6 +61,7 @@ func TestAfdoEnabled(t *testing.T) {
 }
 
 func TestAfdoEnabledWithMultiArchs(t *testing.T) {
+	t.Parallel()
 	bp := `
 	rust_binary {
 		name: "foo",

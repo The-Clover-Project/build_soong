@@ -20,6 +20,8 @@ import (
 	"github.com/google/blueprint"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 // Provides support for interacting with the `deapexer` module to which a `prebuilt_apex` module
 // will delegate the work to export files from a prebuilt '.apex` file.
 //
@@ -153,6 +155,7 @@ type RequiredFilesFromPrebuiltApex interface {
 	UseProfileGuidedDexpreopt() bool
 }
 
+// @auto-generate: gob
 type RequiredFilesFromPrebuiltApexInfo struct {
 	// RequiredFilesFromPrebuiltApex contains a list of the file paths (relative to the root of the
 	// APEX's contents) that the implementing module requires from within a prebuilt .apex file.

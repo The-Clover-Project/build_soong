@@ -15,7 +15,10 @@
 package build
 
 import (
+	"crypto/sha256"
+	"encoding/base64"
 	"fmt"
+	"io"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -32,6 +35,7 @@ func SetupOutDir(ctx Context, config Config) {
 	ensureEmptyFileExists(ctx, filepath.Join(config.OutDir(), "Android.mk"))
 	ensureEmptyFileExists(ctx, filepath.Join(config.OutDir(), "CleanSpec.mk"))
 	ensureDirectoriesExist(ctx, config.SoongOutDir())
+	ensureDirectoriesExist(ctx, filepath.Join(config.SoongOutDir(), "action_sandboxing_workdir"))
 
 	// The ninja_build file is used by our buildbots to understand that the output
 	// can be parsed as ninja output.
@@ -61,19 +65,19 @@ func SetupOutDir(ctx Context, config Config) {
 	// causes unnecessary rebuilds for local development.
 	buildNumber, ok := config.environ.Get("BUILD_NUMBER")
 	if ok {
-		writeValueIfChanged(ctx, config, config.OutDir(), "file_name_tag.txt", buildNumber)
+		writeValueIfChanged(ctx, filepath.Join(config.OutDir(), "file_name_tag.txt"), buildNumber)
 	} else {
 		var username string
 		if username, ok = config.environ.Get("BUILD_USERNAME"); !ok {
 			ctx.Fatalln("Missing BUILD_USERNAME")
 		}
 		buildNumber = fmt.Sprintf("eng.%.6s", username)
-		writeValueIfChanged(ctx, config, config.OutDir(), "file_name_tag.txt", username)
+		writeValueIfChanged(ctx, filepath.Join(config.OutDir(), "file_name_tag.txt"), username)
 	}
 	// Write the build number to a file so it can be read back in
 	// without changing the command line every time.  Avoids rebuilds
 	// when using ninja.
-	writeValueIfChanged(ctx, config, config.SoongOutDir(), "build_number.txt", buildNumber)
+	writeValueIfChanged(ctx, filepath.Join(config.SoongOutDir(), "build_number.txt"), buildNumber)
 
 	hostname, ok := config.environ.Get("BUILD_HOSTNAME")
 	if !ok {
@@ -84,7 +88,30 @@ func SetupOutDir(ctx Context, config Config) {
 			hostname = "unknown"
 		}
 	}
-	writeValueIfChanged(ctx, config, config.SoongOutDir(), "build_hostname.txt", hostname)
+	writeValueIfChanged(ctx, filepath.Join(config.SoongOutDir(), "build_hostname.txt"), hostname)
+
+	buildTargetName, ok := config.environ.Get("BUILD_TARGET_NAME")
+	if targetProduct, err := config.TargetProductOrErr(); !ok && err == nil {
+		buildTargetName = targetProduct
+	}
+
+	buildUUID := buildUUID(buildTargetName, buildNumber)
+	buildUUIDFile := config.BuildUUIDFile()
+	writeValueIfChanged(ctx, buildUUIDFile, buildUUID)
+	distFileToFile(ctx, config, buildUUIDFile, "BUILD_UUID")
+}
+
+// Compute a UUID based on the hash of the build name and the build number.
+func buildUUID(targetName, number string) string {
+	h := sha256.New()
+	must := func(n int, err error) {
+		if err != nil {
+			panic(err)
+		}
+	}
+	must(io.WriteString(h, targetName))
+	must(io.WriteString(h, number))
+	return base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(h.Sum(nil))
 }
 
 // SetupTempDir makes sure config.TempDir() exists and is empty.
@@ -188,7 +215,7 @@ func checkCaseSensitivity(ctx Context, config Config) {
 
 // help prints a help/usage message, via the build/make/help.sh script.
 func help(ctx Context, config Config) {
-	cmd := Command(ctx, config, "help.sh", "build/make/help.sh")
+	cmd := Command(ctx, config, nil, "help.sh", "build/make/help.sh")
 	cmd.Sandbox = dumpvarsSandbox
 	cmd.RunAndPrintOrFatal()
 }
@@ -221,7 +248,7 @@ func abfsBuildStarted(ctx Context, config Config) {
 	abfsBox := config.PrebuiltBuildTool("abfsbox")
 	cmdArgs := []string{"build-started", "--"}
 	cmdArgs = append(cmdArgs, config.Arguments()...)
-	cmd := Command(ctx, config, "abfsbox", abfsBox, cmdArgs...)
+	cmd := Command(ctx, config, nil, "abfsbox", abfsBox, cmdArgs...)
 	cmd.Sandbox = noSandbox
 	cmd.RunAndPrintOrFatal()
 }
@@ -234,7 +261,7 @@ func abfsBuildFinished(ctx Context, config Config, finished bool) {
 	abfsBox := config.PrebuiltBuildTool("abfsbox")
 	cmdArgs := []string{"build-finished", "-e", errMsg, "--"}
 	cmdArgs = append(cmdArgs, config.Arguments()...)
-	cmd := Command(ctx, config, "abfsbox", abfsBox, cmdArgs...)
+	cmd := Command(ctx, config, nil, "abfsbox", abfsBox, cmdArgs...)
 	cmd.RunAndPrintOrFatal()
 }
 
@@ -245,8 +272,8 @@ func Build(ctx Context, config Config) {
 	ctx.Verboseln("Starting build with args:", config.Arguments())
 	ctx.Verboseln("Environment:", config.Environment().Environ())
 
-	ctx.BeginTrace(metrics.Total, "total")
-	defer ctx.EndTrace()
+	e := ctx.BeginTrace(metrics.Total, "total")
+	defer e.End()
 
 	if config.UseABFS() {
 		abfsBuildStarted(ctx, config)
@@ -296,13 +323,13 @@ func Build(ctx Context, config Config) {
 	checkCaseSensitivity(ctx, config)
 
 	SetupPath(ctx, config)
-	mapsCh := QueryProductReleaseConfigMaps(ctx, config)
+	mapsCh := QueryEarlyReleaseConfig(ctx, config)
 
 	what := evaluateWhatToRun(config, ctx.Verboseln)
 
 	rbeCh := make(chan bool)
 	var rbePanic any
-	if config.StartRBE() {
+	if config.StartReproxy() {
 		cleanupRBELogsDir(ctx, config)
 		checkRBERequirements(ctx, config)
 		go func() {
@@ -310,19 +337,30 @@ func Build(ctx Context, config Config) {
 				rbePanic = recover()
 				close(rbeCh)
 			}()
-			startRBE(ctx, config)
+			startReproxy(ctx, config)
+		}()
+		defer DumpRBEMetrics(ctx, config, filepath.Join(config.LogsDir(), "rbe_metrics.pb"))
+	} else if config.StartRBEproxy() {
+		cleanupRBELogsDir(ctx, config)
+		checkRBERequirements(ctx, config)
+		go func() {
+			defer func() {
+				rbePanic = recover()
+				close(rbeCh)
+			}()
+			startRBEproxy(ctx, config)
 		}()
 		defer DumpRBEMetrics(ctx, config, filepath.Join(config.LogsDir(), "rbe_metrics.pb"))
 	} else {
 		close(rbeCh)
 	}
 
-	if config.RunCIPDProxyServer() && shouldRunCIPDProxy(config) {
+	if config.RunCIPDProxyServer() && shouldRunCIPDProxy(ctx, config) {
 		cipdProxy := startCIPDProxyServer(ctx, config)
 		defer cipdProxy.Stop(ctx)
 	}
 
-	SetProductReleaseConfigMaps(ctx, config, mapsCh)
+	CollectEarlyReleaseConfig(ctx, config, mapsCh)
 	if what&RunProductConfig != 0 {
 		runMakeProductConfig(ctx, config)
 
@@ -332,6 +370,12 @@ func Build(ctx Context, config Config) {
 	}
 
 	// Everything below here depends on product config.
+
+	// Write SOONG_USE_PARTIAL_COMPILE so it can be sourced by rules that use it.
+	shFile := config.DeviceUsePartialCompile()
+	ensureDirectoriesExist(ctx, filepath.Dir(shFile))
+	value, _ := config.environ.Get("SOONG_USE_PARTIAL_COMPILE")
+	writeValueIfChanged(ctx, shFile, fmt.Sprintf("\nexport SOONG_USE_PARTIAL_COMPILE=%s\n", value))
 
 	if inList("installclean", config.Arguments()) ||
 		inList("install-clean", config.Arguments()) {
@@ -377,7 +421,7 @@ func Build(ctx Context, config Config) {
 	// Write combined ninja file
 	createCombinedBuildNinjaFile(ctx, config)
 
-	distGzipFile(ctx, config, config.CombinedNinjaFile())
+	distGzipFile(ctx, config, config.CombinedNinjaFile(), "soong_ui")
 
 	if what&RunBuildTests != 0 {
 		testForDanglingRules(ctx, config)
@@ -385,7 +429,7 @@ func Build(ctx Context, config Config) {
 
 	<-rbeCh
 	if rbePanic != nil {
-		// If there was a ctx.Fatal in startRBE, rethrow it.
+		// If there was a ctx.Fatal in startReproxy, rethrow it.
 		panic(rbePanic)
 	}
 
@@ -396,6 +440,10 @@ func Build(ctx Context, config Config) {
 		partialCompileCleanIfNecessary(ctx, config)
 		runNinjaForBuild(ctx, config)
 		updateBuildIdDir(ctx, config)
+
+		runUpdateApi(ctx, config)
+		runUpdateAidlApi(ctx, config)
+		createCompDbSymlink(ctx, config)
 	}
 
 	if what&RunDistActions != 0 {
@@ -404,9 +452,20 @@ func Build(ctx Context, config Config) {
 	done = true
 }
 
+func createCompDbSymlink(ctx Context, config Config) {
+	if finalLinkDir, ok := config.environ.Get("SOONG_LINK_COMPDB_TO"); ok && finalLinkDir != "" {
+		finalLinkPath := filepath.Join(finalLinkDir, "compile_commands.json")
+		os.Remove(finalLinkPath)
+		compDBFilePath := filepath.Join(config.SoongOutDir(), "development/ide/compdb/compile_commands.json")
+		if err := os.Symlink(compDBFilePath, finalLinkPath); err != nil {
+			ctx.Printf("Unable to symlink %s to %s: %s", compDBFilePath, finalLinkPath, err)
+		}
+	}
+}
+
 func updateBuildIdDir(ctx Context, config Config) {
-	ctx.BeginTrace(metrics.RunShutdownTool, "update_build_id_dir")
-	defer ctx.EndTrace()
+	e := ctx.BeginTrace(metrics.RunShutdownTool, "update_build_id_dir")
+	defer e.End()
 
 	symbolsDir := filepath.Join(config.ProductOut(), "symbols")
 	if err := elf.UpdateBuildIdDir(symbolsDir); err != nil {
@@ -470,8 +529,8 @@ var distWaitGroup sync.WaitGroup
 
 // waitForDist waits for all backgrounded distGzipFile and distFile writes to finish
 func waitForDist(ctx Context) {
-	ctx.BeginTrace("soong_ui", "dist")
-	defer ctx.EndTrace()
+	e := ctx.BeginTrace("soong_ui", "dist")
+	defer e.End()
 
 	distWaitGroup.Wait()
 }
@@ -507,7 +566,18 @@ func distFile(ctx Context, config Config, src string, subDirs ...string) {
 	}
 
 	subDir := filepath.Join(subDirs...)
-	destDir := filepath.Join(config.RealDistDir(), "soong_ui", subDir)
+	distFileToFile(ctx, config, src, subDir, filepath.Base(src))
+}
+
+// distFileToFile writes a copy of src to dest in distDir if dist is enabled.  Failures are printed but
+// non-fatal. Uses the distWaitGroup func for backgrounding (optimization).
+func distFileToFile(ctx Context, config Config, src string, destParts ...string) {
+	if !config.Dist() {
+		return
+	}
+
+	dest := filepath.Join(config.RealDistDir(), filepath.Join(destParts...))
+	destDir := filepath.Dir(dest)
 
 	if err := os.MkdirAll(destDir, 0777); err != nil { // a+rwx
 		ctx.Printf("failed to mkdir %s: %s", destDir, err.Error())
@@ -516,7 +586,7 @@ func distFile(ctx Context, config Config, src string, subDirs ...string) {
 	distWaitGroup.Add(1)
 	go func() {
 		defer distWaitGroup.Done()
-		if _, err := copyFile(src, filepath.Join(destDir, filepath.Base(src))); err != nil {
+		if _, err := copyFile(src, dest); err != nil {
 			ctx.Printf("failed to dist %s: %s", filepath.Base(src), err.Error())
 		}
 	}()

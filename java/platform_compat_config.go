@@ -23,6 +23,8 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 func init() {
 	registerPlatformCompatConfigBuildComponents(android.InitRegistrationContext)
 
@@ -43,6 +45,7 @@ func registerPlatformCompatConfigBuildComponents(ctx android.RegistrationContext
 	ctx.RegisterModuleType("global_compat_config", globalCompatConfigFactory)
 }
 
+// @auto-generate: gob
 type PlatformCompatConfigInfo struct {
 	CompatConfig         android.OutputPath
 	SubDir               string
@@ -145,11 +148,13 @@ func (p *platformCompatConfig) GenerateAndroidBuildActions(ctx android.ModuleCon
 	})
 }
 
-func (p *platformCompatConfig) AndroidMkEntries() []android.AndroidMkEntries {
-	return []android.AndroidMkEntries{android.AndroidMkEntries{
+func (p *platformCompatConfig) PrepareAndroidMKProviderInfo(config android.Config) *android.AndroidMkProviderInfo {
+	info := &android.AndroidMkProviderInfo{}
+	info.PrimaryInfo = android.AndroidMkInfo{
 		Class:      "ETC",
 		OutputFile: android.OptionalPathForPath(p.configFile),
-	}}
+	}
+	return info
 }
 
 func PlatformCompatConfigFactory() android.Module {

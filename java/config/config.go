@@ -19,8 +19,6 @@ import (
 	"runtime"
 	"strings"
 
-	_ "github.com/google/blueprint/bootstrap"
-
 	"android/soong/android"
 	"android/soong/remoteexec"
 )
@@ -78,8 +76,6 @@ var (
 )
 
 func init() {
-	pctx.Import("github.com/google/blueprint/bootstrap")
-
 	pctx.StaticVariable("JavacHeapSize", "4096M")
 	pctx.StaticVariable("JavacHeapFlags", "-J-Xmx${JavacHeapSize}")
 
@@ -135,6 +131,9 @@ func init() {
 
 	pctx.VariableConfigMethod("hostPrebuiltTag", android.Config.PrebuiltOS)
 
+	pctx.VariableFunc("UsePartialCompileFile", func(ctx android.PackageVarContext) string {
+		return ctx.Config().UsePartialCompileFile(ctx).String()
+	})
 	pctx.VariableFunc("JavaHome", func(ctx android.PackageVarContext) string {
 		// This is set up and guaranteed by soong_ui
 		return ctx.Config().Getenv("ANDROID_JAVA_HOME")
@@ -142,6 +141,9 @@ func init() {
 	pctx.VariableFunc("JlinkVersion", func(ctx android.PackageVarContext) string {
 		if override := ctx.Config().Getenv("OVERRIDE_JLINK_VERSION_NUMBER"); override != "" {
 			return override
+		}
+		if ctx.Config().BuildWithJdk25() {
+			return "25"
 		}
 		return "21"
 	})
@@ -232,6 +234,18 @@ func init() {
 	// TODO(ccross): this should come from the signapk dependencies, but we don't have any way
 	// to express host JNI dependencies yet.
 	hostJNIToolVariableWithSdkToolsPrebuilt("SignapkJniLibrary", "libconscrypt_openjdk_jni")
+
+	pctx.VariableFunc("ResourceProcessorBusyBoxSuppressJDKWarnings", func(ctx android.PackageVarContext) string {
+		suppressWarningsFlags := []string{}
+
+		if ctx.Config().BuildWithJdk25() {
+			suppressWarningsFlags = append(suppressWarningsFlags,
+				// deprecated sun.misc.Unsafe::objectFieldOffset
+				"--sun-misc-unsafe-memory-access=allow", // b/447118055
+			)
+		}
+		return strings.Join(suppressWarningsFlags, " ")
+	})
 }
 
 func hostBinToolVariableWithSdkToolsPrebuilt(name, tool string) {

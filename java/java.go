@@ -255,13 +255,15 @@ type ProguardSpecInfo struct {
 
 var ProguardSpecInfoProvider = blueprint.NewProvider[ProguardSpecInfo]()
 
+// @auto-generate: gob
 type AndroidLibraryDependencyInfo struct {
 	ExportPackage       android.Path
-	ResourcesNodeDepSet depset.DepSet[*resourcesNode]
+	ResourcesNodeDepSet depset.DepSet[resourcesNode]
 	RRODirsDepSet       depset.DepSet[rroDir]
 	ManifestsDepSet     depset.DepSet[android.Path]
 }
 
+// @auto-generate: gob
 type UsesLibraryDependencyInfo struct {
 	DexJarInstallPath   android.Path
 	ClassLoaderContexts dexpreopt.ClassLoaderContextMap
@@ -272,19 +274,18 @@ func (u *UsesLibraryDependencyInfo) GetClassLoaderContexts() dexpreopt.ClassLoad
 	return u.ClassLoaderContexts.DeepCopy()
 }
 
+// @auto-generate: gob
 type ProvidesUsesLibInfo struct {
 	ProvidesUsesLib *string
 }
 
-type ModuleWithUsesLibraryInfo struct {
-	UsesLibrary *usesLibrary
-}
-
+// @auto-generate: gob
 type ModuleWithSdkDepInfo struct {
 	SdkLinkType sdkLinkType
 	Stubs       bool
 }
 
+// @auto-generate: gob
 type ApexDependencyInfo struct {
 	// These fields can be different from the ones in JavaInfo, for example, for sdk_library
 	// the following fields are set since sdk_library inherits the implementations of
@@ -294,6 +295,7 @@ type ApexDependencyInfo struct {
 }
 
 // JavaInfo contains information about a java module for use by modules that depend on it.
+// @auto-generate: gob
 type JavaInfo struct {
 	// HeaderJars is a list of jars that can be passed as the javac classpath in order to link
 	// against this module.  If empty, ImplementationJars should be used instead.
@@ -458,19 +460,20 @@ type JavaInfo struct {
 
 	DexpreopterInfo *DexpreopterInfo
 
-	XrefJavaFiles         android.Paths
-	XrefKotlinFiles       android.Paths
-	OverrideMinSdkVersion *string
-	CompileDex            *bool
-	SystemModules         string
-	Installable           bool
-	ApexDependencyInfo    *ApexDependencyInfo
+	XrefJavaFiles            android.Paths
+	XrefKotlinFiles          android.Paths
+	HasOverrideMinSdkVersion bool
+	CompileDex               *bool
+	SystemModules            string
+	Installable              bool
+	ApexDependencyInfo       *ApexDependencyInfo
 
 	MaxSdkVersion android.ApiLevel
 }
 
 var JavaInfoProvider = blueprint.NewProvider[*JavaInfo]()
 
+// @auto-generate: gob
 type DexpreopterInfo struct {
 	// The path to the profile on host that dexpreopter generates. This is used as the input for
 	// dex2oat.
@@ -484,6 +487,7 @@ type DexpreopterInfo struct {
 	ApexSystemServerDexJars android.Paths
 }
 
+// @auto-generate: gob
 type JavaLibraryInfo struct {
 	Prebuilt          bool
 	PermittedPackages []string
@@ -491,12 +495,14 @@ type JavaLibraryInfo struct {
 
 var JavaLibraryInfoProvider = blueprint.NewProvider[JavaLibraryInfo]()
 
+// @auto-generate: gob
 type JavaDexImportInfo struct{}
 
 var JavaDexImportInfoProvider = blueprint.NewProvider[JavaDexImportInfo]()
 
 // SyspropPublicStubInfo contains info about the sysprop public stub library that corresponds to
 // the sysprop implementation library.
+// @auto-generate: gob
 type SyspropPublicStubInfo struct {
 	// JavaInfo is the JavaInfoProvider of the sysprop public stub library that corresponds to
 	// the sysprop implementation library.
@@ -711,6 +717,7 @@ func (s sdkDep) hasFrameworkLibs() bool {
 	return !s.noStandardLibs && !s.noFrameworksLibs
 }
 
+// @auto-generate: gob
 type jniLib struct {
 	name           string
 	path           android.Path
@@ -721,18 +728,18 @@ type jniLib struct {
 	installPaths   android.InstallPaths
 }
 
-func sdkDeps(ctx android.BottomUpMutatorContext, sdkContext android.SdkContext, d dexer) {
+func sdkDeps(ctx android.BottomUpMutatorContext, sdkContext android.SdkContext, addR8DexDeps bool) {
 	sdkDep := decodeSdkDep(ctx, sdkContext)
 	if sdkDep.useModule {
 		ctx.AddVariationDependencies(nil, bootClasspathTag, sdkDep.bootclasspath...)
 		ctx.AddVariationDependencies(nil, java9LibTag, sdkDep.java9Classpath...)
 		ctx.AddVariationDependencies(nil, sdkLibTag, sdkDep.classpath...)
-		if d.effectiveOptimizeEnabled(ctx) && sdkDep.hasStandardLibs() {
+		if addR8DexDeps && sdkDep.hasStandardLibs() {
 			ctx.AddVariationDependencies(nil, proguardRaiseTag,
 				config.LegacyCorePlatformBootclasspathLibraries...,
 			)
 		}
-		if d.effectiveOptimizeEnabled(ctx) && sdkDep.hasFrameworkLibs() {
+		if addR8DexDeps && sdkDep.hasFrameworkLibs() {
 			ctx.AddVariationDependencies(nil, proguardRaiseTag, config.FrameworkLibraries...)
 		}
 	}
@@ -827,6 +834,7 @@ const (
 	JAVA_VERSION_11          = 11
 	JAVA_VERSION_17          = 17
 	JAVA_VERSION_21          = 21
+	JAVA_VERSION_25          = 25
 )
 
 func (v javaVersion) String() string {
@@ -847,6 +855,8 @@ func (v javaVersion) String() string {
 		return "17"
 	case JAVA_VERSION_21:
 		return "21"
+	case JAVA_VERSION_25:
+		return "25"
 	default:
 		return "unsupported"
 	}
@@ -891,6 +901,8 @@ func normalizeJavaVersion(ctx android.BaseModuleContext, javaVersion string) jav
 		return JAVA_VERSION_17
 	case "21":
 		return JAVA_VERSION_21
+	case "25":
+		return JAVA_VERSION_25
 	case "10", "12", "13", "14", "15", "16":
 		ctx.PropertyErrorf("java_version", "Java language level %s is not supported", javaVersion)
 		return JAVA_VERSION_UNSUPPORTED
@@ -1151,7 +1163,8 @@ func (j *Library) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 
 	// Check min_sdk_version of the transitive dependencies if this module is created from
 	// java_sdk_library.
-	if j.overridableProperties.Min_sdk_version != nil && j.SdkLibraryName() != nil {
+	overridableMinSdkVersion := j.overridableProperties.Min_sdk_version.Get(ctx)
+	if overridableMinSdkVersion.IsPresent() && j.SdkLibraryName() != nil {
 		j.CheckDepsMinSdkVersion(ctx)
 	}
 
@@ -1179,7 +1192,7 @@ func (j *Library) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 
 	apexInfo, _ := android.ModuleProvider(ctx, android.ApexInfoProvider)
 	if !apexInfo.IsForPlatform() {
-		j.hideApexVariantFromMake = true
+		j.HideFromMake()
 	}
 
 	j.checkSdkVersions(ctx)
@@ -1249,6 +1262,18 @@ func (j *Library) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 			ClassesJar:         j.implementationAndResourcesJar,
 		})
 	}
+
+	if ctx.Os() == android.Windows {
+		// Make does not support Windows Java modules
+		j.HideFromMake()
+	} else if !j.ApexModuleBase.AvailableFor(android.AvailableToPlatform) && !j.hostDexNeeded() {
+		// Platform variant.  If not available for the platform, we don't need Make module, unless
+		// hostdex is enabled, in which case only the hostdex variant is visible to make.
+		j.HideFromMake()
+	} else if proptools.Bool(j.properties.Headers_only) {
+		// If generating headers only then don't expose to Make.
+		j.HideFromMake()
+	}
 }
 
 func (j *Library) javaLibraryModuleInfoJSON(ctx android.ModuleContext) *android.ModuleInfoJSON {
@@ -1270,9 +1295,6 @@ func (j *Library) javaLibraryModuleInfoJSON(ctx android.ModuleContext) *android.
 		hostDexModuleInfoJSON.SupportedVariantsOverride = []string{"HOST"}
 	}
 
-	if j.hideApexVariantFromMake {
-		moduleInfoJSON.Disabled = true
-	}
 	return moduleInfoJSON
 }
 
@@ -1375,6 +1397,7 @@ func (j *Library) createApiXmlFile(ctx android.ModuleContext) {
 			Output: j.apiXmlFile,
 		})
 		ctx.DistForGoal("dist_files", j.apiXmlFile)
+		ctx.SetOutputFiles(android.Paths{j.apiXmlFile}, ".api.xml")
 	}
 }
 
@@ -1463,7 +1486,7 @@ func (p *librarySdkMemberProperties) PopulateFromVariant(ctx android.SdkMemberCo
 
 	// If the min_sdk_version was set then add the canonical representation of the API level to the
 	// snapshot.
-	if javaInfo.OverrideMinSdkVersion != nil {
+	if javaInfo.HasOverrideMinSdkVersion {
 		canonical, err := android.ReplaceFinalizedCodenames(mctx.Config(), commonInfo.MinSdkVersion.ApiLevel.String())
 		if err != nil {
 			ctx.ModuleErrorf("%s", err)
@@ -1728,6 +1751,7 @@ type JavaTestImport struct {
 	dexJarFile android.Path
 }
 
+// @auto-generate: gob
 type JavaTestInfo struct {
 	TestConfig android.Path
 }
@@ -1918,7 +1942,7 @@ func (j *Test) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 func (j *Test) generateAndroidBuildActionsWithConfig(ctx android.ModuleContext, configs []tradefed.Config) {
 	if j.testProperties.Test_options.Unit_test == nil && ctx.Host() {
 		// TODO(b/): Clean temporary heuristic to avoid unexpected onboarding.
-		defaultUnitTest := !inList("tradefed", j.properties.Libs) && !inList("cts", j.testProperties.Test_suites)
+		defaultUnitTest := !inList("tradefed", j.properties.Libs.GetOrDefault(ctx, nil)) && !inList("cts", j.testProperties.Test_suites)
 		j.testProperties.Test_options.Unit_test = proptools.BoolPtr(defaultUnitTest)
 	}
 	j.testConfig = tradefed.AutoGenTestConfig(ctx, tradefed.AutoGenTestConfigOptions{
@@ -2429,6 +2453,7 @@ func ApiContributionFactory() android.Module {
 	return module
 }
 
+// @auto-generate: gob
 type JavaApiImportInfo struct {
 	ApiFile    android.Path
 	ApiSurface string
@@ -2573,7 +2598,7 @@ func metalavaStubCmd(ctx android.ModuleContext, rule *android.RuleBuilder,
 	cmd := rule.Command()
 	cmd.FlagWithArg("ANDROID_PREFS_ROOT=", homeDir.String())
 
-	if metalavaUseRbe(ctx) {
+	if metalavaUseRewrapper(ctx) {
 		rule.Remoteable(android.RemoteRuleSupports{RBE: true})
 		execStrategy := ctx.Config().GetenvWithDefault("RBE_METALAVA_EXEC_STRATEGY", remoteexec.LocalExecStrategy)
 		labels := map[string]string{"type": "tool", "name": "metalava"}
@@ -2942,12 +2967,12 @@ func (al *ApiLibrary) ClassLoaderContexts() dexpreopt.ClassLoaderContextMap {
 // Most java_api_library constitues the sdk, but there are some java_api_library that
 // does not contribute to the api surface. Such modules are allowed to set sdk_version
 // other than "none"
-func (al *ApiLibrary) SdkVersion(ctx android.EarlyModuleContext) android.SdkSpec {
+func (al *ApiLibrary) SdkVersion(ctx android.ConfigContext) android.SdkSpec {
 	return android.SdkSpecFrom(ctx, proptools.String(al.properties.Sdk_version))
 }
 
 // java_api_library is always at "current". Return FutureApiLevel
-func (al *ApiLibrary) MinSdkVersion(ctx android.EarlyModuleContext) android.ApiLevel {
+func (al *ApiLibrary) MinSdkVersion(ctx android.MinSdkVersionFromValueContext) android.ApiLevel {
 	return al.SdkVersion(ctx).ApiLevel
 }
 
@@ -3003,7 +3028,7 @@ type ImportProperties struct {
 
 	// The minimum version of the SDK that this module supports. Defaults to sdk_version if not
 	// specified.
-	Min_sdk_version *string
+	Min_sdk_version proptools.Configurable[string] `android:"replace_instead_of_append"`
 
 	// The max sdk version placeholder used to replace maxSdkVersion attributes on permission
 	// and uses-permission tags in manifest_fixer.
@@ -3015,7 +3040,7 @@ type ImportProperties struct {
 	Permitted_packages []string
 
 	// List of shared java libs that this module has dependencies to
-	Libs []string
+	Libs proptools.Configurable[[]string]
 
 	// List of static java libs that this module has dependencies to
 	Static_libs proptools.Configurable[[]string]
@@ -3079,8 +3104,6 @@ type Import struct {
 
 	kSnapshotFiles map[string]android.Path
 
-	hideApexVariantFromMake bool
-
 	sdkVersion    android.SdkSpec
 	minSdkVersion android.ApiLevel
 
@@ -3093,7 +3116,7 @@ func (j *Import) PermittedPackagesForUpdatableBootJars() []string {
 	return j.properties.Permitted_packages
 }
 
-func (j *Import) SdkVersion(ctx android.EarlyModuleContext) android.SdkSpec {
+func (j *Import) SdkVersion(ctx android.ConfigContext) android.SdkSpec {
 	return android.SdkSpecFrom(ctx, String(j.properties.Sdk_version))
 }
 
@@ -3101,9 +3124,10 @@ func (j *Import) SystemModules() string {
 	return "none"
 }
 
-func (j *Import) MinSdkVersion(ctx android.EarlyModuleContext) android.ApiLevel {
-	if j.properties.Min_sdk_version != nil {
-		return android.ApiLevelFrom(ctx, *j.properties.Min_sdk_version)
+func (j *Import) MinSdkVersion(ctx android.MinSdkVersionFromValueContext) android.ApiLevel {
+	minSdkVersion := j.properties.Min_sdk_version.Get(j.ConfigurableEvaluator(ctx))
+	if minSdkVersion.IsPresent() {
+		return android.ApiLevelFrom(ctx, minSdkVersion.Get())
 	}
 	return j.SdkVersion(ctx).ApiLevel
 }
@@ -3145,11 +3169,14 @@ func (j *Import) CreatedByJavaSdkLibraryName() *string {
 }
 
 func (j *Import) DepsMutator(ctx android.BottomUpMutatorContext) {
-	ctx.AddVariationDependencies(nil, libTag, j.properties.Libs...)
+	ctx.AddVariationDependencies(nil, libTag, j.properties.Libs.GetOrDefault(ctx, nil)...)
 	ctx.AddVariationDependencies(nil, staticLibTag, j.properties.Static_libs.GetOrDefault(ctx, nil)...)
 
+	j.setOptimizeForceDisabled(proptools.Bool(j.properties.Is_stubs_module))
+
 	if ctx.Device() && Bool(j.dexProperties.Compile_dex) {
-		sdkDeps(ctx, android.SdkContext(j), j.dexer)
+		addR8DexDeps := !j.isOptimizeForceDisabled(ctx)
+		sdkDeps(ctx, android.SdkContext(j), addR8DexDeps)
 	}
 
 	j.EmbeddableSdkLibraryComponent.setComponentDependencyInfoProvider(ctx)
@@ -3161,7 +3188,7 @@ func (j *Import) commonBuildActions(ctx android.ModuleContext) {
 
 	apexInfo, _ := android.ModuleProvider(ctx, android.ApexInfoProvider)
 	if !apexInfo.IsForPlatform() {
-		j.hideApexVariantFromMake = true
+		j.HideFromMake()
 	}
 
 	if ctx.Windows() {
@@ -3618,8 +3645,6 @@ type DexImport struct {
 	dexJarFile OptionalDexJarPath
 
 	dexpreopter
-
-	hideApexVariantFromMake bool
 }
 
 func (j *DexImport) Prebuilt() *android.Prebuilt {
@@ -3649,7 +3674,7 @@ func (j *DexImport) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 
 	apexInfo, _ := android.ModuleProvider(ctx, android.ApexInfoProvider)
 	if !apexInfo.IsForPlatform() {
-		j.hideApexVariantFromMake = true
+		j.HideFromMake()
 	}
 
 	j.dexpreopter.installPath = j.dexpreopter.getInstallPath(

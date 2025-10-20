@@ -17,8 +17,8 @@ package rust
 import (
 	"encoding/json"
 	"fmt"
-
 	"github.com/google/blueprint/proptools"
+	"strings"
 
 	"android/soong/android"
 	"android/soong/rust/config"
@@ -30,13 +30,14 @@ import (
 // called.  This singleton is enabled only if SOONG_GEN_RUST_PROJECT is set.
 // For example,
 //
-//   $ SOONG_GEN_RUST_PROJECT=1 m nothing
+//   $ SOONG_GEN_RUST_PROJECT=1 SOONG_LINK_RUST_PROJECT_TO=${ANDROID_BUILD_TOP} m nothing
 
 const (
 	// Environment variables used to control the behavior of this singleton.
 	envVariableCollectRustDeps = "SOONG_GEN_RUST_PROJECT"
 	envVariableUseKythe        = "XREF_CORPUS"
 	rustProjectJsonFileName    = "rust-project.json"
+	rustTargetMappingFileName  = "rust-target-mapping.json"
 )
 
 // The format of rust-project.json is not yet finalized. A current description is available at:
@@ -48,19 +49,37 @@ type rustProjectDep struct {
 }
 
 type rustProjectCrate struct {
-	DisplayName    string            `json:"display_name"`
-	RootModule     string            `json:"root_module"`
-	Edition        string            `json:"edition,omitempty"`
-	Deps           []rustProjectDep  `json:"deps"`
-	Cfg            []string          `json:"cfg"`
-	Env            map[string]string `json:"env"`
-	ProcMacro      bool              `json:"is_proc_macro"`
-	ProcMacroDylib *string           `json:"proc_macro_dylib_path"`
+	DisplayName    string                 `json:"display_name"`
+	RootModule     string                 `json:"root_module"`
+	Edition        string                 `json:"edition,omitempty"`
+	Deps           []rustProjectDep       `json:"deps"`
+	Cfg            []string               `json:"cfg"`
+	Env            map[string]string      `json:"env"`
+	ProcMacro      bool                   `json:"is_proc_macro"`
+	ProcMacroDylib *string                `json:"proc_macro_dylib_path"`
+	Source         rustProjectIncludeDirs `json:"source"`
 }
 
 type rustProjectJson struct {
 	Sysroot string             `json:"sysroot"`
 	Crates  []rustProjectCrate `json:"crates"`
+}
+
+type rustTargetMappingsJson []rustTargetMappingJson
+
+type rustTargetMappingJson struct {
+	Name               string `json:"name"`
+	BuildTarget        string `json:"build_target"`
+	CheckTarget        string `json:"check_target"`
+	SourceDir          string `json:"source_dir"`
+	TargetProduct      string `json:"TARGET_PRODUCT"`
+	TargetRelease      string `json:"TARGET_RELEASE"`
+	TargetBuildVariant string `json:"TARGET_BUILD_VARIANT"`
+}
+
+type rustProjectIncludeDirs struct {
+	Include_dirs []string `json:"include_dirs"`
+	Exclude_dirs []string `json:"exclude_dirs"`
 }
 
 // crateInfo is used during the processing to keep track of the known crates.
@@ -71,8 +90,9 @@ type crateInfo struct {
 }
 
 type projectGeneratorSingleton struct {
-	project     rustProjectJson
-	knownCrates map[string]crateInfo // Keys are module names.
+	project        rustProjectJson
+	targetMappings rustTargetMappingsJson
+	knownCrates    map[string]crateInfo // Keys are module names.
 }
 
 func rustProjectGeneratorSingleton() android.Singleton {
@@ -146,21 +166,30 @@ func (singleton *projectGeneratorSingleton) addCrate(ctx android.SingletonContex
 		procMacroDylib = proptools.StringPtr(procMacro.Dylib.String())
 	}
 
+	var rootmodule = rustInfo.CompilerInfo.CrateRootPath.String()
+	include_dir := []string{ctx.ModuleDir(module)}
+	// Aidl generates rust files so we include those files in the include_dir parameter.
+	if strings.Contains(rootmodule, "aidl") {
+		include_dir = append(include_dir, rootmodule)
+	}
 	crate := rustProjectCrate{
 		DisplayName:    module.Name(),
-		RootModule:     rustInfo.CompilerInfo.CrateRootPath.String(),
+		RootModule:     rootmodule,
 		Edition:        rustInfo.CompilerInfo.Edition,
 		Deps:           make([]rustProjectDep, 0),
 		Cfg:            make([]string, 0),
 		Env:            make(map[string]string),
 		ProcMacro:      procMacroDylib != nil,
 		ProcMacroDylib: procMacroDylib,
+		Source: rustProjectIncludeDirs{
+			Include_dirs: include_dir,
+			Exclude_dirs: []string{},
+		}, // TODO: What should this value be?
 	}
 
 	if cargoOutDir := rustInfo.CompilerInfo.CargoOutDir; cargoOutDir.Valid() {
 		crate.Env["OUT_DIR"] = cargoOutDir.String()
 	}
-
 	for _, feature := range rustInfo.CompilerInfo.Features {
 		crate.Cfg = append(crate.Cfg, "feature=\""+feature+"\"")
 	}
@@ -176,6 +205,15 @@ func (singleton *projectGeneratorSingleton) addCrate(ctx android.SingletonContex
 		singleton.project.Crates = append(singleton.project.Crates, crate)
 	}
 	singleton.knownCrates[module.Name()] = crateInfo{Idx: idx, Deps: deps, Device: commonInfo.Target.Os.Class == android.Device}
+	if rustInfo.CompilerInfo.BuildTarget != nil {
+		mapping := rustTargetMappingJson{
+			Name:        module.Name(),
+			BuildTarget: rustInfo.CompilerInfo.BuildTarget.String(),
+			CheckTarget: rustInfo.CompilerInfo.CheckTarget.String(),
+			SourceDir:   ctx.ModuleDir(module),
+		}
+		singleton.targetMappings = append(singleton.targetMappings, mapping)
+	}
 	return idx, true
 }
 
@@ -218,6 +256,7 @@ func (singleton *projectGeneratorSingleton) GenerateBuildActions(ctx android.Sin
 	err := createJsonFile(singleton.project, path)
 	if err != nil {
 		ctx.Errorf(err.Error())
+
 	}
 	if ctx.Config().XrefCorpusName() != "" {
 		rule := android.NewRuleBuilder(pctx, ctx)
@@ -228,21 +267,27 @@ func (singleton *projectGeneratorSingleton) GenerateBuildActions(ctx android.Sin
 			FlagWithInput("-project_json ", jsonPath).
 			FlagWithOutput("-output ", kzipPath).
 			FlagWithArg("-corpus ", ctx.Config().XrefCorpusName()).
-			FlagWithArg("-root ", "$PWD").
+			FlagWithArg("-root ", ".").
 			FlagWithInput("-vnames_json_path ", vnames)
 		ruleName := "rust3-extraction"
 		rule.Build(ruleName, "Turning Rust project into kzips")
 		ctx.Phony("xref_rust", kzipPath)
 	}
+
+	rustTargetMappingPath := android.PathForOutput(ctx, rustTargetMappingFileName)
+	if err := createJsonFile(singleton.targetMappings, rustTargetMappingPath); err != nil {
+		ctx.Errorf(err.Error())
+	}
+
 }
 
-func createJsonFile(project rustProjectJson, rustProjectPath android.WritablePath) error {
+func createJsonFile(project any, rustProjectPath android.WritablePath) error {
 	buf, err := json.MarshalIndent(project, "", "  ")
 	if err != nil {
-		return fmt.Errorf("JSON marshal of rustProjectJson failed: %s", err)
+		return fmt.Errorf("JSON marshal failed: %s", err)
 	}
-	err = android.WriteFileToOutputDir(rustProjectPath, buf, 0666)
-	if err != nil {
+
+	if err := android.WriteFileToOutputDir(rustProjectPath, buf, 0666); err != nil {
 		return fmt.Errorf("Writing rust-project to %s failed: %s", rustProjectPath.String(), err)
 	}
 	return nil

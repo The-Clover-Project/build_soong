@@ -29,6 +29,8 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 func init() {
 	RegisterMakeVarsProvider(pctx, androidMakeVarsProvider)
 }
@@ -151,6 +153,10 @@ func singletonMakeVarsProviderAdapter(singleton SingletonMakeVarsProvider) MakeV
 	return func(ctx MakeVarsContext) { singleton.MakeVars(ctx) }
 }
 
+// @auto-generate: gob
+type ModuleMakeVarsInfo []ModuleMakeVarsValue
+
+// @auto-generate: gob
 type ModuleMakeVarsValue struct {
 	// Make variable name.
 	Name string
@@ -164,7 +170,7 @@ type ModuleMakeVarsProvider interface {
 	MakeVars(ctx MakeVarsModuleContext) []ModuleMakeVarsValue
 }
 
-var ModuleMakeVarsInfoProvider = blueprint.NewProvider[[]ModuleMakeVarsValue]()
+var ModuleMakeVarsInfoProvider = blueprint.NewProvider[ModuleMakeVarsInfo]()
 
 // /////////////////////////////////////////////////////////////////////////////
 
@@ -207,10 +213,13 @@ type phony struct {
 	deps []string
 }
 
+// @auto-generate: gob
 type dist struct {
 	goals []string
 	paths distCopies
 }
+
+var SingletonDistInfoProvider = blueprint.NewSingletonProvider[DistInfo]()
 
 func (s *makeVarsSingleton) GenerateBuildActions(ctx SingletonContext) {
 	if !ctx.Config().KatiEnabled() {
@@ -253,10 +262,11 @@ func (s *makeVarsSingleton) GenerateBuildActions(ctx SingletonContext) {
 		phonies = append(phonies, mctx.phonies...)
 	}
 
-	singletonDists := getSingletonDists(ctx.Config())
-	singletonDists.lock.Lock()
-	dists = append(dists, singletonDists.dists...)
-	singletonDists.lock.Unlock()
+	ctx.VisitAllSingletons(func(s blueprint.SingletonProxy) {
+		if info, ok := OtherSingletonProvider(ctx, s, SingletonDistInfoProvider); ok {
+			dists = append(dists, info.Dists...)
+		}
+	})
 
 	ctx.VisitAllModuleProxies(func(m ModuleProxy) {
 		commonInfo := OtherModulePointerProviderOrDefault(ctx, m, CommonModuleInfoProvider)

@@ -141,9 +141,11 @@ const (
 )
 
 // lintSets defines the categories of linting for Android and their mapping to lintConfigs.
+// TODO(jamesfarrell): If we stick with disabling clippy for vendor code,
+// eliminate clippyVendor, CLIPPY_VENDOR_LINTS, etc.
 var lintSets = map[string]lintConfig{
 	androidLints: {rustcDefault, true, clippyDefault},
-	vendorLints:  {rustcVendor, true, clippyVendor},
+	vendorLints:  {rustcVendor, false, clippyVendor},
 	noneLints:    {rustcAllowAll, false, noLint},
 }
 

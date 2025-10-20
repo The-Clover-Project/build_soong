@@ -21,23 +21,12 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
-var (
-	copyStagingDirRule = pctx.AndroidStaticRule("copy_staging_dir", blueprint.RuleParams{
-		Command: "rsync -a --checksum $dir/ $dest && touch $out",
-	}, "dir", "dest")
-)
-
-func (a *androidDevice) copyToProductOut(ctx android.ModuleContext, builder *android.RuleBuilder, src android.Path, dest string) {
-	destPath := android.PathForModuleInPartitionInstall(ctx, "").Join(ctx, dest)
-	builder.Command().Text("rsync").Flag("-a").Flag("--checksum").Input(src).Text(destPath.String())
-}
-
 func (a *androidDevice) copyFilesToProductOutForSoongOnly(ctx android.ModuleContext) android.Path {
 	filesystemInfos := a.getFsInfos(ctx)
 
 	var deps android.Paths
 	var depsNoImg android.Paths // subset of deps without any img files. used for sbom creation.
-
+	installedFilesMap := make(map[android.Path]bool)
 	for _, partition := range android.SortedKeys(filesystemInfos) {
 		info := filesystemInfos[partition]
 		imgInstallPath := android.PathForModuleInPartitionInstall(ctx, "", partition+".img")
@@ -92,10 +81,15 @@ func (a *androidDevice) copyFilesToProductOutForSoongOnly(ctx android.ModuleCont
 				}
 				ctx.Phony(info.ModuleName, fip.FullInstallPath)
 				ctx.Phony(partition, fip.FullInstallPath)
-				deps = append(deps, fip.FullInstallPath)
-				depsNoImg = append(depsNoImg, fip.FullInstallPath)
 				ctx.Phony("sync_"+partition, fip.FullInstallPath)
 				ctx.Phony("sync", fip.FullInstallPath)
+
+				if info.Prebuilt {
+					continue
+				}
+
+				deps = append(deps, fip.FullInstallPath)
+				depsNoImg = append(depsNoImg, fip.FullInstallPath)
 			}
 		}
 
@@ -103,7 +97,7 @@ func (a *androidDevice) copyFilesToProductOutForSoongOnly(ctx android.ModuleCont
 
 		// Copy installed-files(.txt|.json) to staging dir for makepush
 		for _, installedFiles := range info.InstalledFilesDepSet.ToList() {
-			if installedFiles.Json != nil {
+			if _, exists := installedFilesMap[installedFiles.Json]; !exists && installedFiles.Json != nil {
 				installPath := android.PathForModuleInPartitionInstall(ctx, "", installedFiles.Json.Base())
 				ctx.Build(pctx, android.BuildParams{
 					Rule:   android.Cp,
@@ -111,8 +105,9 @@ func (a *androidDevice) copyFilesToProductOutForSoongOnly(ctx android.ModuleCont
 					Output: installPath,
 				})
 				deps = append(deps, installPath)
+				installedFilesMap[installedFiles.Json] = true
 			}
-			if installedFiles.Txt != nil {
+			if _, exists := installedFilesMap[installedFiles.Txt]; !exists && installedFiles.Txt != nil {
 				installPath := android.PathForModuleInPartitionInstall(ctx, "", installedFiles.Txt.Base())
 				ctx.Build(pctx, android.BuildParams{
 					Rule:   android.Cp,
@@ -120,6 +115,7 @@ func (a *androidDevice) copyFilesToProductOutForSoongOnly(ctx android.ModuleCont
 					Output: installPath,
 				})
 				deps = append(deps, installPath)
+				installedFilesMap[installedFiles.Txt] = true
 			}
 		}
 	}
@@ -127,9 +123,13 @@ func (a *androidDevice) copyFilesToProductOutForSoongOnly(ctx android.ModuleCont
 	a.createComplianceMetadataTimestamp(ctx, depsNoImg)
 
 	// List all individual files to be copied to PRODUCT_OUT here
-	if a.deviceProps.Bootloader != nil {
-		bootloader := ctx.GetDirectDepProxyWithTag(*a.deviceProps.Bootloader, bootloaderDepTag)
-		files := android.OutputFilesForModule(ctx, bootloader, "")
+	bootloaderDepTags := []blueprint.DependencyTag{bootloaderDepTag, tzswDepTag}
+	ctx.VisitDirectDepsProxy(func(child android.ModuleProxy) {
+		tag := ctx.OtherModuleDependencyTag(child)
+		if !android.InList(tag, bootloaderDepTags) {
+			return
+		}
+		files := android.OutputFilesForModule(ctx, child, "")
 		for _, file := range files {
 			installPath := android.PathForModuleInPartitionInstall(ctx, "", file.Base())
 			ctx.Build(pctx, android.BuildParams{
@@ -139,7 +139,19 @@ func (a *androidDevice) copyFilesToProductOutForSoongOnly(ctx android.ModuleCont
 			})
 			deps = append(deps, installPath)
 		}
-	}
+
+		// Copy the unpacked bootloader partitions to a location expected by incremental flashstation.
+		bootloaderPartitionFiles := android.OutputFilesForModule(ctx, child, "bootloader_partitions")
+		for _, file := range bootloaderPartitionFiles {
+			installPath := android.PathForModuleInPartitionInstall(ctx, "obj", "PACKAGING", "unpacked", file.Base())
+			ctx.Build(pctx, android.BuildParams{
+				Rule:   android.Cp,
+				Input:  file,
+				Output: installPath,
+			})
+			deps = append(deps, installPath)
+		}
+	})
 
 	copyBootImg := func(prop *string, type_ string) {
 		if proptools.String(prop) != "" {
@@ -162,6 +174,21 @@ func (a *androidDevice) copyFilesToProductOutForSoongOnly(ctx android.ModuleCont
 	copyBootImg(a.partitionProps.Boot_partition_name, "boot")
 	copyBootImg(a.partitionProps.Vendor_boot_partition_name, "vendor_boot")
 	copyBootImg(a.partitionProps.Vendor_kernel_boot_partition_name, "vendor_kernel_boot")
+
+	// vendor bootconfig
+	// https://cs.android.com/android/platform/superproject/main/+/main:build/make/core/Makefile;l=1672;drc=a951ebf0198006f7fd38073a05c442d0eb92f97b
+	if a.partitionProps.Vendor_boot_partition_name != nil {
+		partition := ctx.GetDirectDepProxyWithTag(*a.partitionProps.Vendor_boot_partition_name, filesystemDepTag)
+		if info, ok := android.OtherModuleProvider(ctx, partition, BootimgInfoProvider); ok && info.Bootconfig != nil {
+			installPath := android.PathForModuleInPartitionInstall(ctx, "", "vendor-bootconfig.img")
+			ctx.Build(pctx, android.BuildParams{
+				Rule:   android.Cp,
+				Input:  info.Bootconfig,
+				Output: installPath,
+			})
+			deps = append(deps, installPath)
+		}
+	}
 
 	// pvmfw
 	if a.deviceProps.Pvmfw.Image != nil {
@@ -265,6 +292,16 @@ func (a *androidDevice) copyFilesToProductOutForSoongOnly(ctx android.ModuleCont
 			Input:       a.androidInfoTxt,
 			Output:      installPath,
 			Validations: validations,
+		})
+		deps = append(deps, installPath)
+	}
+
+	for _, pair := range a.stageDeviceFiles {
+		installPath := android.PathForModuleInPartitionInstall(ctx, "", pair.dst)
+		ctx.Build(pctx, android.BuildParams{
+			Rule:   android.Cp,
+			Input:  pair.src,
+			Output: installPath,
 		})
 		deps = append(deps, installPath)
 	}

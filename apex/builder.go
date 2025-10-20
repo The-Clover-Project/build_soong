@@ -236,6 +236,13 @@ var (
 		CommandDeps: []string{"${apex_elf_checker}", "${deapexer}", "${debugfs}", "${fsck_erofs}", "${config.ClangBin}/llvm-readelf"},
 		Description: "run apex_elf_checker --unwanted",
 	}, "tool_path", "unwanted")
+
+	apexAconfigFlagsPbRule = pctx.StaticRule("apexAconfigFlagsPbRule", blueprint.RuleParams{
+		Command: `${aconfig} dump-cache --dedup --format protobuf --out ${out} ` +
+			`--filter container:${container}+namespace:!${beta_namespace} ${cache_files}`,
+		CommandDeps: []string{"${aconfig}"},
+		Description: "create aconfig_flags.pb file",
+	}, "container", "beta_namespace", "cache_files")
 )
 
 func (a *apexBundle) buildAconfigFiles(ctx android.ModuleContext) []apexFile {
@@ -260,15 +267,33 @@ func (a *apexBundle) buildAconfigFiles(ctx android.ModuleContext) []apexFile {
 	var files []apexFile
 	if len(aconfigFiles) > 0 {
 		apexAconfigFile := android.PathForModuleOut(ctx, "aconfig_flags.pb")
-		ctx.Build(pctx, android.BuildParams{
-			Rule:        aconfig.AllDeclarationsRule,
-			Inputs:      aconfigFiles,
-			Output:      apexAconfigFile,
-			Description: "combine_aconfig_declarations",
-			Args: map[string]string{
-				"cache_files": android.JoinPathsWithPrefix(aconfigFiles, "--cache "),
-			},
-		})
+		if ctx.Config().ReleaseRemoveBetaFlagsFromAconfigFlagsPb() {
+			beta_namespace := ""
+			if a.overridableProperties.Beta_namespace != nil {
+				beta_namespace = *(a.overridableProperties.Beta_namespace)
+			}
+			ctx.Build(pctx, android.BuildParams{
+				Rule:        apexAconfigFlagsPbRule,
+				Inputs:      aconfigFiles,
+				Output:      apexAconfigFile,
+				Description: "aggregate all dependent aconfig caches",
+				Args: map[string]string{
+					"container":      ctx.ModuleName(),
+					"beta_namespace": beta_namespace,
+					"cache_files":    android.JoinPathsWithPrefix(aconfigFiles, "--cache "),
+				},
+			})
+		} else {
+			ctx.Build(pctx, android.BuildParams{
+				Rule:        aconfig.AllDeclarationsRule,
+				Inputs:      aconfigFiles,
+				Output:      apexAconfigFile,
+				Description: "combine_aconfig_declarations",
+				Args: map[string]string{
+					"cache_files": android.JoinPathsWithPrefix(aconfigFiles, "--cache "),
+				},
+			})
+		}
 		files = append(files, newApexFile(ctx, apexAconfigFile, "aconfig_flags", "etc", etc, android.ModuleProxy{}))
 
 		storageFilesVersion := ctx.Config().ReleaseAconfigStorageVersion()
@@ -968,7 +993,7 @@ func (a *apexBundle) buildApex(ctx android.ModuleContext) {
 		"flags":        "-a 4096 --align-file-size", //alignment
 	}
 	implicits := android.Paths{pem, key}
-	if ctx.Config().UseRBE() && ctx.Config().IsEnvTrue("RBE_SIGNAPK") {
+	if ctx.Config().UseREWrapper() && ctx.Config().IsEnvTrue("RBE_SIGNAPK") {
 		rule = java.SignapkRE
 		args["implicits"] = strings.Join(implicits.Strings(), ",")
 		args["outCommaList"] = signedOutputFile.String()
@@ -1022,7 +1047,7 @@ func (a *apexBundle) buildApex(ctx android.ModuleContext) {
 		compressRule.Build("compressRule", "Generate unsigned compressed APEX file")
 
 		signedCompressedOutputFile := android.PathForModuleOut(ctx, a.Name()+imageCapexSuffix)
-		if ctx.Config().UseRBE() && ctx.Config().IsEnvTrue("RBE_SIGNAPK") {
+		if ctx.Config().UseREWrapper() && ctx.Config().IsEnvTrue("RBE_SIGNAPK") {
 			args["outCommaList"] = signedCompressedOutputFile.String()
 		}
 		ctx.Build(pctx, android.BuildParams{

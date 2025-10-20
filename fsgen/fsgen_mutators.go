@@ -15,6 +15,7 @@
 package fsgen
 
 import (
+	"container/list"
 	"fmt"
 	"slices"
 	"strings"
@@ -71,7 +72,7 @@ func (m *multilibDeps) SortedFullyQualifiedNames() []string {
 }
 
 type moduleToInstallationProps struct {
-	// Map of _all_ soong module names to their corresponding installation properties
+	// Map of _all_ soong module fully qualified names to their corresponding installation properties
 	// Should not be accessed directly to add entries; Use AddToMap instead.
 	moduleToPropsMap map[string]installationProperties
 
@@ -88,12 +89,41 @@ func (m *moduleToInstallationProps) Get(ctx android.BottomUpMutatorContext) (ins
 	return m.GetFromFullyQualifiedModuleName(fullyQualifiedModuleName(ctx.ModuleName(), ctx.Namespace().Path))
 }
 
-func (m *moduleToInstallationProps) GetFromFullyQualifiedModuleName(name string) (installationProperties, bool) {
-	prop, ok := m.moduleToPropsMap[name]
+func (m *moduleToInstallationProps) GetFromFullyQualifiedModuleName(fullyQualifiedModuleName string) (installationProperties, bool) {
+	prop, ok := m.moduleToPropsMap[fullyQualifiedModuleName]
 	if ok {
 		return prop, ok
 	}
 	return installationProperties{}, ok
+}
+
+func (m *moduleToInstallationProps) GetFromModuleName(name string) (string, installationProperties, bool) {
+	if len(name) == 0 {
+		return "", installationProperties{}, false
+	}
+	// If the name has a fully qualified module name format, get it from the fully qualified module name
+	if strings.HasPrefix("//", name) {
+		prop, ok := m.GetFromFullyQualifiedModuleName(name)
+		return name, prop, ok
+	}
+
+	// Input name is not in fully qualified name format, but the module may be in a namespace
+	if props, ok := m.baseModuleNameToPropsMap[name]; ok {
+		for _, prop := range props {
+			fullyQualifiedName := fullyQualifiedModuleName(name, prop.Namespace)
+			if discoveredProp, ok := m.GetFromFullyQualifiedModuleName(fullyQualifiedName); ok {
+				return fullyQualifiedName, discoveredProp, ok
+			}
+		}
+	}
+	return "", installationProperties{}, false
+}
+
+func (m *moduleToInstallationProps) ModuleNameToFullyQualifiedModuleName(name string) string {
+	if fullyQualifiedName, _, ok := m.GetFromModuleName(name); ok {
+		return fullyQualifiedName
+	}
+	return name
 }
 
 func (m *moduleToInstallationProps) SortedKeys() []string {
@@ -122,10 +152,15 @@ type FsGenState struct {
 
 	// Name of the generated recovery fstab module name
 	recoveryFstabModuleName string
+
+	// Mapping of the partition type to the list of overridden modules that will be listed as
+	// `Overridden_modules` in the generated filesystem modules
+	overriddenModuleNames map[string][]string
 }
 
 type installationProperties struct {
-	Required            []string
+	Required            []string // Modules that should be installed alongside
+	RequiredBy          []string // List of modules (or PRODUCT_PACKAGES) that require this module to be installed
 	Overrides           []string
 	CcAndRustSharedLibs []string
 	Partition           string
@@ -242,10 +277,12 @@ func createFsGenState(ctx android.LoadHookContext, generatedPrebuiltEtcModuleNam
 					"fs_config_files_odm_dlkm": defaultDepCandidateProps(ctx.Config()),
 					"notice_xml_odm_dlkm":      defaultDepCandidateProps(ctx.Config()),
 				},
-				"ramdisk":               {},
-				"vendor_ramdisk":        {},
-				"vendor_ramdisk-debug":  {},
-				"vendor_kernel_ramdisk": {},
+				"ramdisk":                      {},
+				"vendor_ramdisk":               {},
+				"vendor_ramdisk-debug":         {},
+				"vendor_ramdisk_fragment_dlkm": {},
+				"vendor_ramdisk-test-harness":  {},
+				"vendor_kernel_ramdisk":        {},
 				"recovery": {
 					"sepolicy.recovery":                     defaultDepCandidateProps(ctx.Config()),
 					"plat_file_contexts.recovery":           defaultDepCandidateProps(ctx.Config()),
@@ -266,6 +303,9 @@ func createFsGenState(ctx android.LoadHookContext, generatedPrebuiltEtcModuleNam
 				"debug_ramdisk": {
 					"force_debuggable": defaultDepCandidateProps(ctx.Config()),
 				}, // TODO: move this to PRODUCT_PACKAGES
+				"test_harness_ramdisk": {
+					"adb_debug.test_harness.prop": defaultDepCandidateProps(ctx.Config()),
+				}, // TODO: move this to PRODUCT_PACKAGES
 			},
 			fsDepsMutex: sync.Mutex{},
 			moduleToInstallationProps: moduleToInstallationProps{
@@ -275,6 +315,7 @@ func createFsGenState(ctx android.LoadHookContext, generatedPrebuiltEtcModuleNam
 			generatedPrebuiltEtcModuleNames: generatedPrebuiltEtcModuleNames,
 			avbKeyFilegroups:                map[string]string{},
 			nativeBridgeModules:             map[string]bool{},
+			overriddenModuleNames:           map[string][]string{},
 		}
 
 		if avbpubkeyGenerated {
@@ -325,7 +366,8 @@ func createFsGenState(ctx android.LoadHookContext, generatedPrebuiltEtcModuleNam
 		}
 
 		dtbo, dtbo16k := createPrebuiltDtboImages(ctx)
-		if bootOtas := createBootOtas16kModules(ctx, dtbo, dtbo16k); bootOtas != "" {
+		if bootOtas := createBootOtas16kModules(ctx, dtbo, dtbo16k); bootOtas != "" &&
+			ctx.Config().ProductVariables().PartitionVarsForSoongMigrationOnlyDoNotUse.Board16kOtaMoveVendor {
 			(*fsGenState.fsDeps["vendor"])[bootOtas] = defaultDepCandidateProps(ctx.Config())
 		}
 
@@ -446,7 +488,7 @@ func collectDepsMutator(mctx android.BottomUpMutatorContext) {
 	}
 
 	if mctx.Target().NativeBridge == android.NativeBridgeEnabled {
-		fsGenState.nativeBridgeModules[mctx.ModuleName()] = true
+		fsGenState.nativeBridgeModules[fullyQualifiedModuleName(mctx.ModuleName(), mctx.Namespace().Path)] = true
 	}
 }
 
@@ -464,13 +506,14 @@ type multilibDepsStruct struct {
 }
 
 type packagingPropsStruct struct {
+	Overridden_deps    []string
 	High_priority_deps []string
 	Deps               []string
 	Multilib           multilibDepsStruct
 }
 
 func fullyQualifiedModuleName(moduleName, namespace string) string {
-	if namespace == "." {
+	if namespace == "." || strings.HasPrefix(moduleName, "//") {
 		return moduleName
 	}
 	return fmt.Sprintf("//%s:%s", namespace, moduleName)
@@ -528,11 +571,22 @@ func setDepsMutator(mctx android.BottomUpMutatorContext) {
 			// Handwritten image, don't modify it
 			return
 		}
+
+		var overriddenDeps []string
+		if deps, ok := fsGenState.overriddenModuleNames[partition]; ok {
+			overriddenDeps = deps
+		}
+
+		if partition == "tzsw" {
+			// tzsw is a prebuilt file, and does not use android_filesystem module type.
+			return
+		}
+
 		backgroundRecoveryImageGenerator, _ := getRecoveryBackgroundPicturesGeneratorModuleName(mctx)
 		// backgroundRecoveryImageGenerator generates additional images which takes precedence over images files
 		// created by other deps of recovery.img.
 		// Use this in highPriorityDeps
-		depsStruct := generateDepStruct(*fsDeps[partition], append([]string{backgroundRecoveryImageGenerator}, fsGenState.generatedPrebuiltEtcModuleNames...))
+		depsStruct := generateDepStruct(*fsDeps[partition], append([]string{backgroundRecoveryImageGenerator}, fsGenState.generatedPrebuiltEtcModuleNames...), overriddenDeps)
 		if err := proptools.AppendMatchingProperties(m.GetProperties(), depsStruct, nil); err != nil {
 			mctx.ModuleErrorf(err.Error())
 		}
@@ -581,8 +635,33 @@ func updatePartitionsOfOverrideModules(mctx android.BottomUpMutatorContext) {
 	}
 }
 
+type queue struct {
+	internalQueue *list.List
+}
+
+func (q *queue) Pop() string {
+	ret := q.internalQueue.Front()
+	if ret == nil {
+		return ""
+	}
+	q.internalQueue.Remove(ret)
+	return ret.Value.(string)
+}
+
+func (q *queue) Add(inputs ...string) {
+	for _, input := range inputs {
+		q.internalQueue.PushBack(input)
+	}
+}
+
+func (q *queue) Len() int {
+	return q.internalQueue.Len()
+}
+
 // removeOverriddenDeps collects PRODUCT_PACKAGES and (transitive) required deps.
 // it then removes any modules which appear in `overrides` of the above list.
+// Returns the list of names of the overridden modules. These are passed as `Overridden_modules`
+// when generating the filesystem modules.
 func removeOverriddenDeps(mctx android.BottomUpMutatorContext) {
 	mctx.Config().Once(fsGenRemoveOverridesOnceKey, func() interface{} {
 		fsGenState := mctx.Config().Get(fsGenStateOnceKey).(*FsGenState)
@@ -600,6 +679,15 @@ func removeOverriddenDeps(mctx android.BottomUpMutatorContext) {
 					fullyQualifiedDepName = fmt.Sprintf("//%s:%s", moduleInfo.Namespace, fullyQualifiedDepName)
 				}
 				allDeps = append(allDeps, fullyQualifiedDepName)
+			}
+		}
+
+		// Record all modules' required rdeps (i.e. modules that set the module as a required
+		// dependency) and whether if the module is installed as a top level module.
+		moduleToRequiredRdepsMap := map[string][]string{}
+		for _, productPackagesEntry := range productInstalledModules(mctx, "all") {
+			if moduleName, _, ok := fsGenState.moduleToInstallationProps.GetFromModuleName(productPackagesEntry); ok {
+				moduleToRequiredRdepsMap[moduleName] = append(moduleToRequiredRdepsMap[moduleName], "PRODUCT_PACKAGES")
 			}
 		}
 
@@ -622,17 +710,88 @@ func removeOverriddenDeps(mctx android.BottomUpMutatorContext) {
 				}
 				overridden[overrides] = true
 			}
+			for _, requiredModule := range props.Required {
+				if requiredModuleName, _, ok := fsGenState.moduleToInstallationProps.GetFromModuleName(requiredModule); ok {
+					moduleToRequiredRdepsMap[requiredModuleName] = append(moduleToRequiredRdepsMap[requiredModuleName], depName)
+				}
+			}
+
 			// add required dep to the queue.
 			allDeps = append(allDeps, props.Required...)
 			i += 1
 		}
 
-		// Step 3: Delete all the overridden modules.
-		for overridden, _ := range overridden {
-			for partition, _ := range fsDeps {
-				delete(*fsDeps[partition], overridden)
+		fullyQualifiedOverriddenModuleNames := map[string]installationProperties{}
+		for overridden := range overridden {
+			if fullyQualifiedModuleName, props, ok := fsGenState.moduleToInstallationProps.GetFromModuleName(overridden); ok {
+				fullyQualifiedOverriddenModuleNames[fullyQualifiedModuleName] = props
 			}
 		}
+
+		removeModuleFromFsDeps := func(moduleName string) {
+			for partition := range fsDeps {
+				delete(*fsDeps[partition], moduleName)
+			}
+		}
+
+		// isOverriddenModule returns true if the module itself is overridden by another module,
+		// or is transitively overridden as all of its required reverse dependencies are overridden.
+		// The module is not overridden if it is listed in PRODUCT_PACKAGES, even all of its
+		// required reverse dependencies are overridden
+		isOverriddenModule := func(moduleName string) bool {
+			// check if the module itself is overridden
+			if _, ok := fullyQualifiedOverriddenModuleNames[moduleName]; ok {
+				return true
+			}
+
+			// check if all of its required reverse dependencies are overridden
+			rdeps, ok := moduleToRequiredRdepsMap[moduleName]
+			if !ok {
+				return false
+			}
+			for _, rdep := range rdeps {
+				// The module cannot be transitively overridden if it is listed in PRODUCT_PACKAGES
+				if rdep == "PRODUCT_PACKAGES" {
+					return false
+				} else if _, ok := fullyQualifiedOverriddenModuleNames[rdep]; !ok {
+					return false
+				}
+			}
+
+			return true
+		}
+
+		// Step 3: Delete all the overridden modules and its required deps.
+		// The module is removed only if all of its required rdeps are overridden.
+		// e.g. if the module is referenced by multiple modules as a required dependency
+		// and if any of the rdep modules are not overridden, the module should be installed.
+		for _, overridden := range android.SortedKeys(fullyQualifiedOverriddenModuleNames) {
+			requiredQueue := queue{internalQueue: list.New()}
+			requiredQueue.Add(overridden)
+
+			// Iterate over overridden module and its rdeps until the queue is empty.
+			// Rdeps are added to the queue if the module is overridden
+			for requiredQueue.Len() > 0 {
+				requiredModule := requiredQueue.Pop()
+				if isOverriddenModule(requiredModule) {
+					removeModuleFromFsDeps(requiredModule)
+					requiredModuleProp, _ := fsGenState.moduleToInstallationProps.GetFromFullyQualifiedModuleName(requiredModule)
+					for _, requiredDep := range requiredModuleProp.Required {
+						if fullyQualifiedRequiredDepName, _, ok := fsGenState.moduleToInstallationProps.GetFromModuleName(requiredDep); ok {
+							requiredQueue.Add(fullyQualifiedRequiredDepName)
+						}
+					}
+				}
+			}
+		}
+
+		filteredOverriddenDepsMap := make(map[string][]string)
+		for _, overriddenDep := range android.SortedKeys(fullyQualifiedOverriddenModuleNames) {
+			prop := fullyQualifiedOverriddenModuleNames[overriddenDep]
+			filteredOverriddenDepsMap[prop.Partition] = append(filteredOverriddenDepsMap[prop.Partition], overriddenDep)
+		}
+
+		fsGenState.overriddenModuleNames = filteredOverriddenDepsMap
 		return nil
 	})
 }
@@ -773,7 +932,7 @@ func isHighPriorityDep(depName string) bool {
 	return false
 }
 
-func generateDepStruct(deps map[string]*depCandidateProps, highPriorityDeps []string) *packagingPropsStruct {
+func generateDepStruct(deps map[string]*depCandidateProps, highPriorityDeps []string, overriddenDeps []string) *packagingPropsStruct {
 	depsStruct := packagingPropsStruct{}
 	for depName, depProps := range deps {
 		if _, ok := depProps.NativeBridgeSupport[android.NativeBridgeDisabled]; !ok {
@@ -833,6 +992,7 @@ func generateDepStruct(deps map[string]*depCandidateProps, highPriorityDeps []st
 	depsStruct.Multilib.Common.Deps = android.SortedUniqueStrings(depsStruct.Multilib.Common.Deps)
 	depsStruct.Multilib.Native_bridge.Deps = android.SortedUniqueStrings(nativeBridgeDeps)
 	depsStruct.High_priority_deps = android.SortedUniqueStrings(depsStruct.High_priority_deps)
+	depsStruct.Overridden_deps = android.SortedUniqueStrings(overriddenDeps)
 
 	return &depsStruct
 }

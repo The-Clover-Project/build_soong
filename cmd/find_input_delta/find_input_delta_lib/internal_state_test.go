@@ -131,6 +131,8 @@ func TestLoadState(t *testing.T) {
 func TestCreateState(t *testing.T) {
 	testCases := []struct {
 		Name     string
+		Version  string
+		Tools    []string
 		Inputs   []string
 		Inspect  bool
 		Mapfs    StatReadFileFS
@@ -145,14 +147,21 @@ func TestCreateState(t *testing.T) {
 			Err:      nil,
 		},
 		{
-			Name:   "files found",
-			Inputs: []string{"baz", "foo", "bar"},
+			Name:    "files found",
+			Version: "version",
+			Tools:   []string{"tool"},
+			Inputs:  []string{"baz", "foo", "bar"},
 			Mapfs: fstest.MapFS{
-				"foo": &fstest.MapFile{ModTime: time.Unix(0, 100).UTC()},
-				"baz": &fstest.MapFile{ModTime: time.Unix(0, 300).UTC()},
-				"bar": &fstest.MapFile{ModTime: time.Unix(0, 200).UTC()},
+				"tool": &fstest.MapFile{ModTime: time.Unix(0, 10000).UTC()},
+				"foo":  &fstest.MapFile{ModTime: time.Unix(0, 100).UTC()},
+				"baz":  &fstest.MapFile{ModTime: time.Unix(0, 300).UTC()},
+				"bar":  &fstest.MapFile{ModTime: time.Unix(0, 200).UTC()},
 			},
 			Expected: &fid_proto.PartialCompileInputs{
+				Version: proto.String("version"),
+				Tools: []*fid_proto.PartialCompileInput{
+					protoFile("tool", 10000, "", nil),
+				},
 				InputFiles: []*fid_proto.PartialCompileInput{
 					// Files are always sorted.
 					protoFile("bar", 200, "", nil),
@@ -164,7 +173,7 @@ func TestCreateState(t *testing.T) {
 		},
 	}
 	for _, tc := range testCases {
-		actual, err := createState(tc.Inputs, tc.Inspect, tc.Mapfs)
+		actual, err := createState(tc.Version, tc.Tools, tc.Inputs, tc.Inspect, tc.Mapfs)
 		if tc.Err == nil {
 			android.AssertSame(t, tc.Name, tc.Err, err)
 		} else if err == nil {
@@ -194,8 +203,72 @@ func TestCompareInternalState(t *testing.T) {
 				},
 			},
 			Expected: &FileList{
-				Name:      "foo",
-				Additions: []string{"file1"},
+				Name: "foo",
+				Additions: []FileList{
+					FileList{Name: "file1"},
+				},
+			},
+		},
+		{
+			Name:   "version changed",
+			Target: "foo",
+			Prior: &fid_proto.PartialCompileInputs{
+				Version: proto.String("1.0"),
+				InputFiles: []*fid_proto.PartialCompileInput{
+					protoFile("file0", 100, "", nil),
+					protoFile("file1", 100, "", nil),
+					protoFile("file2", 200, "", nil),
+				},
+			},
+			New: &fid_proto.PartialCompileInputs{
+				Version: proto.String("1.1"),
+				InputFiles: []*fid_proto.PartialCompileInput{
+					protoFile("file0", 100, "", nil),
+					protoFile("file1", 100, "", nil),
+					protoFile("file2", 200, "", nil),
+				},
+			},
+			Expected: &FileList{
+				Name: "foo",
+				Additions: []FileList{
+					FileList{Name: "file0"},
+					FileList{Name: "file1"},
+					FileList{Name: "file2"},
+				},
+			},
+		},
+		{
+			Name:   "tools updated",
+			Target: "foo",
+			Prior: &fid_proto.PartialCompileInputs{
+				Version: proto.String("1.0"),
+				Tools: []*fid_proto.PartialCompileInput{
+					protoFile("tool", 50, "", nil),
+				},
+				InputFiles: []*fid_proto.PartialCompileInput{
+					protoFile("file0", 100, "", nil),
+					protoFile("file1", 100, "", nil),
+					protoFile("file2", 200, "", nil),
+				},
+			},
+			New: &fid_proto.PartialCompileInputs{
+				Version: proto.String("1.0"),
+				Tools: []*fid_proto.PartialCompileInput{
+					protoFile("tool", 1000, "", nil),
+				},
+				InputFiles: []*fid_proto.PartialCompileInput{
+					protoFile("file0", 100, "", nil),
+					protoFile("file1", 100, "", nil),
+					protoFile("file2", 200, "", nil),
+				},
+			},
+			Expected: &FileList{
+				Name: "foo",
+				Additions: []FileList{
+					FileList{Name: "file0"},
+					FileList{Name: "file1"},
+					FileList{Name: "file2"},
+				},
 			},
 		},
 		{
@@ -217,9 +290,9 @@ func TestCompareInternalState(t *testing.T) {
 			},
 			Expected: &FileList{
 				Name:      "foo",
-				Additions: []string{"file3"},
+				Additions: []FileList{FileList{Name: "file3"}},
 				Changes:   []FileList{FileList{Name: "file1"}},
-				Deletions: []string{"file2"},
+				Deletions: []FileList{FileList{Name: "file2"}},
 			},
 		},
 		{
@@ -245,9 +318,9 @@ func TestCompareInternalState(t *testing.T) {
 				Name: "bar",
 				Changes: []FileList{FileList{
 					Name:      "file1",
-					Additions: []string{"innerA"},
+					Additions: []FileList{FileList{Name: "innerA"}},
 					Changes:   []FileList{FileList{Name: "innerC"}},
-					Deletions: []string{"innerD"},
+					Deletions: []FileList{FileList{Name: "innerD"}},
 				}},
 			},
 		},

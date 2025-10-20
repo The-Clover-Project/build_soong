@@ -15,15 +15,16 @@ function make_mock_top {
   echo "$mock"
 }
 
+WARMED_UP_MOCK_TOP=$(mktemp -t soong_integration_tests_warmup.XXXXXX.tar.gz)
+MOCK_TOP_TO_CLEAN_UP=
 if [[ -n "$HARDWIRED_MOCK_TOP" ]]; then
   MOCK_TOP="$HARDWIRED_MOCK_TOP"
 else
   MOCK_TOP=$(make_mock_top)
-  trap cleanup_mock_top EXIT
+  MOCK_TOP_TO_CLEAN_UP="$MOCK_TOP"
 fi
 
-WARMED_UP_MOCK_TOP=$(mktemp -t soong_integration_tests_warmup.XXXXXX.tar.gz)
-trap 'rm -f "$WARMED_UP_MOCK_TOP"' EXIT
+trap cleanup_all EXIT
 
 function warmup_mock_top {
   info "Warming up mock top ..."
@@ -35,16 +36,28 @@ function warmup_mock_top {
   if [[ "$BUILD_JAVA_LIBRARY" == "true" ]]; then
     create_mock_soong_for_java_lib
     run_soong_for_java_lib
+    # Precompile dependency-mapper into the warmed up archive to
+    # speed up the individual tests.
+    run_ninja dependency-mapper
   else
     create_mock_soong
     run_soong
+    # Precompile androidmk for the tests in androidmk_test.sh.
+    run_ninja androidmk
   fi
   tar czf "$WARMED_UP_MOCK_TOP" *
 }
 
 function cleanup_mock_top {
   cd /
-  rm -fr "$MOCK_TOP"
+  if [[ -d "$MOCK_TOP_TO_CLEAN_UP" ]]; then
+    rm -fr "$MOCK_TOP_TO_CLEAN_UP"
+  fi
+}
+
+function cleanup_all {
+  cleanup_mock_top
+  rm -f "$WARMED_UP_MOCK_TOP"
 }
 
 function info {
@@ -110,67 +123,23 @@ function create_mock_soong {
   symlink_directory external/go-cmp
   symlink_directory external/golang-protobuf
   symlink_directory external/licenseclassifier
-  symlink_directory external/starlark-go
   symlink_directory external/python
-  symlink_directory external/sqlite
+  symlink_directory external/pogreb
   symlink_directory external/spdx-tools
-  symlink_directory libcore
-
-  # TODO: b/286872909 - Remove these when the blocking bug is completed
-  symlink_directory external/libavc
-  symlink_directory external/libaom
-  symlink_directory external/libvpx
-  symlink_directory frameworks/base/libs/androidfw
-  symlink_directory external/libhevc
-  symlink_directory external/libexif
-  symlink_directory external/libopus
-  symlink_directory external/libmpeg2
-  symlink_directory external/expat
-  symlink_directory external/flac
-  symlink_directory system/extras/toolchain-extras
+  symlink_directory external/sqlite
+  symlink_directory external/starlark-go
 
   touch "$MOCK_TOP/Android.bp"
 }
 
 function create_mock_soong_for_java_lib {
-  copy_directory build/blueprint
-  copy_directory build/soong
-  copy_directory build/make
-
-  symlink_directory prebuilts/sdk
-  symlink_directory prebuilts/go
-  symlink_directory prebuilts/build-tools
-  symlink_directory prebuilts/clang/host
-  symlink_directory external/compiler-rt
-  symlink_directory external/go-cmp
-  symlink_directory external/golang-protobuf
-  symlink_directory external/licenseclassifier
-  symlink_directory external/starlark-go
-  symlink_directory external/python
-  symlink_directory external/sqlite
-  symlink_directory external/spdx-tools
-  symlink_directory libcore
-
-  # TODO: b/286872909 - Remove these when the blocking bug is completed
-  symlink_directory external/libavc
-  symlink_directory external/libaom
-  symlink_directory external/libvpx
-  symlink_directory frameworks/base/libs/androidfw
-  symlink_directory external/libhevc
-  symlink_directory external/libexif
-  symlink_directory external/libopus
-  symlink_directory external/libmpeg2
-  symlink_directory external/expat
-  symlink_directory external/flac
-  symlink_directory system/extras/toolchain-extras
+  create_mock_soong
 
   # Required for building java_library type modules.
   symlink_directory prebuilts/jdk
-  symlink_directory prebuilts/r8
   symlink_directory prebuilts/rust
   symlink_directory prebuilts/gcc
   symlink_directory external/turbine
-  symlink_directory external/jarjar
   symlink_directory external/rust
   symlink_directory external/gson
   symlink_directory external/ow2-asm
@@ -186,10 +155,15 @@ function create_mock_soong_for_java_lib {
   symlink_directory external/escapevelocity
   symlink_directory external/kotlinx.metadata
   symlink_directory external/kotlinc
-  symlink_directory prebuilts/misc/common/asm/
   symlink_directory system/logging/liblog
+  symlink_directory external/abseil-cpp
 
-  touch "$MOCK_TOP/Android.bp"
+  mkdir -p "$MOCK_TOP"/tools/lint_checks
+  cat > "$MOCK_TOP"/tools/lint_checks/Android.bp <<EOF
+java_library_host {
+    name: "AndroidGlobalLintChecker",
+}
+EOF
 }
 
 function setup {
@@ -227,8 +201,8 @@ function write_soong_vars {
     "Platform_version_all_preview_codenames": [
         "S"
     ],
-    "DeviceName": "generic_arm64",
-    "DeviceProduct": "aosp_arm-eng",
+    "DeviceName": "test_arm64",
+    "DeviceProduct": "test_arm64",
     "DeviceArch": "arm64",
     "DeviceArchVariant": "armv8-a",
     "DeviceCpuVariant": "generic",
@@ -286,18 +260,18 @@ fi
 
 # shellcheck disable=SC2120
 function run_soong {
-  USE_RBE=false TARGET_PRODUCT=aosp_arm TARGET_RELEASE=trunk_staging TARGET_BUILD_VARIANT=userdebug build/soong/soong_ui.bash --make-mode --skip-ninja --skip-config --soong-only --skip-soong-tests "$@"
+  OUT_DIR=out USE_RBE=false TARGET_PRODUCT=test_arm64 TARGET_RELEASE=trunk_staging TARGET_BUILD_VARIANT=eng build/soong/soong_ui.bash --make-mode --skip-ninja --skip-config --soong-only --skip-soong-tests "$@"
 }
 
 # shellcheck disable=SC2120
 function run_soong_for_java_lib {
-  write_soong_vars soong.aosp_arm.variables
+  write_soong_vars soong.test_arm64.variables
   write_soong_vars soong.variables
-  USE_RBE=false TARGET_PRODUCT=aosp_arm TARGET_RELEASE=trunk_staging TARGET_BUILD_VARIANT=eng build/soong/soong_ui.bash --make-mode --skip-ninja --skip-config --soong-only --skip-soong-tests "$@"
+  OUT_DIR=out USE_RBE=false TARGET_PRODUCT=test_arm64 TARGET_RELEASE=trunk_staging TARGET_BUILD_VARIANT=eng build/soong/soong_ui.bash --make-mode --skip-ninja --skip-config --soong-only --skip-soong-tests "$@"
 }
 
 function run_ninja {
-  build/soong/soong_ui.bash --make-mode --skip-config --soong-only --skip-soong-tests "$@"
+  OUT_DIR=out USE_RBE=false TARGET_PRODUCT=test_arm64 TARGET_RELEASE=trunk_staging TARGET_BUILD_VARIANT=eng build/soong/soong_ui.bash --make-mode --skip-config --soong-only --skip-soong-tests "$@"
 }
 
 info "Starting Soong integration test suite $(basename "$0")"
@@ -309,9 +283,12 @@ export ALLOW_BP_UNDER_SYMLINKS=true
 warmup_mock_top
 
 function scan_and_run_tests {
+  test_fns=("$@")
   # find all test_ functions
   # NB "declare -F" output is sorted, hence test order is deterministic
-  readarray -t test_fns < <(declare -F | sed -n -e 's/^declare -f \(test_.*\)$/\1/p')
+  if [[ ${#test_fns[*]} -eq 0 ]]; then
+    readarray -t test_fns < <(declare -F | sed -n -e 's/^declare -f \(test_.*\)$/\1/p')
+  fi
   info "Found ${#test_fns[*]} tests"
   if [[ ${#test_fns[*]} -eq 0 ]]; then
     fail "No tests found"
@@ -327,5 +304,79 @@ function move_mock_top {
   rm -rf $MOCK_TOP2
   mv $MOCK_TOP $MOCK_TOP2
   MOCK_TOP=$MOCK_TOP2
-  trap cleanup_mock_top EXIT
+  MOCK_TOP_TO_CLEAN_UP="$MOCK_TOP"
+}
+
+function assert_files_equal {
+  if [ $# -ne 2 ]; then
+    echo "Usage: assert_files_equal file1 file2"
+    exit 1
+  fi
+
+  if ! cmp -s "$1" "$2"; then
+    echo "Files are different: $1 $2"
+    diff -u "$1" "$2"
+    exit 1
+  fi
+}
+
+function compare_incremental_files() {
+  local dir_full=$1; shift
+  local dir_incremental=$1; shift
+  count=0
+  for file_before in ${dir_full}/*.mk; do
+    file_after="${dir_incremental}/$(basename "$file_before")"
+    assert_files_equal $file_before $file_after
+    ((count++)) || true
+  done
+  echo "Compared $count mk files"
+
+  count=0
+  for file_before in ${dir_full}/*.ninja; do
+    basename=$(basename "$file_before")
+    file_after="${dir_incremental}/${basename}"
+    # The incremental file should be a superset of the full one.
+    if [[ "$basename" == "build.test_arm64.ninja" ]]; then
+      echo "Performing superset check for $basename..."
+      extra_lines=$(comm -23 <(sort "$file_before") <(sort "$file_after"))
+      if [[ -n "$extra_lines" ]]; then
+        # If there are extra lines, print an error and the differing lines, then exit.
+        echo "ERROR: $file_after is NOT a superset of $file_before."
+        echo "The following lines were in the 'before' file but not the 'after' file:"
+        echo "$extra_lines"
+        exit 1
+      fi
+    else
+      assert_files_equal $file_before $file_after
+    fi
+    ((count++)) || true
+  done
+  echo "Compared $count ninja files"
+}
+
+function compare_files_parity() {
+  local dir_before=$1; shift
+  local dir_after=$1; shift
+  count=0
+  for file_before in ${dir_before}/*.*; do
+    file_after="${dir_after}/$(basename "$file_before")"
+    assert_files_equal $file_before $file_after
+    ((count++)) || true
+  done
+  echo "Compared $count ninja files"
+}
+
+# Assumes an initial run of "run_soong SOONG_INCREMENTAL_ANALYSIS=true" and then
+# the tree is modified.
+function compare_incremental_and_full_analysis() {
+    run_soong SOONG_INCREMENTAL_ANALYSIS=true "$@"
+    mkdir incremental
+    cp -pr out/soong/*.mk out/soong/build.test_arm64*.ninja incremental
+
+    touch Android.bp
+    run_soong "$@"
+    mkdir full
+    cp -pr out/soong/*.mk out/soong/build.test_arm64*.ninja full
+
+    compare_incremental_files full incremental
 }

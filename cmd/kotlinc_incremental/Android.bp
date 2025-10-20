@@ -29,9 +29,9 @@ license {
 }
 
 java_library_host {
-    name: "kotlin-incremental-client-lib",
+    name: "kotlin-incremental-common",
     srcs: [
-        "src/com/**/*.kt",
+        "src/com/android/kotlin/compiler/cli/**/*.kt",
     ],
     static_libs: [
         "kotlin-build-tools-api",
@@ -47,6 +47,52 @@ java_library_host {
 
     kotlincflags: [
         "-Werror",
+    ],
+    kotlin_incremental: false,
+}
+
+java_library_host {
+    name: "kotlin-incremental-client-lib",
+    srcs: [
+        "src/com/android/kotlin/compiler/client/**/*.kt",
+        "src/com/android/kotlin/compiler/snapshotter/**/*.kt",
+    ],
+    static_libs: [
+        "kotlin-incremental-common",
+        "kotlin-build-tools-api",
+        "kotlin-build-tools-impl",
+        "kotlin-compiler-embeddable",
+        "kotlin-compiler-runner",
+        "kotlin-daemon-client",
+        "kotlinx_coroutines",
+        "kotlinc-trove4j",
+    ],
+
+    plugins: [],
+
+    kotlincflags: [
+        "-Werror",
+    ],
+    kotlin_incremental: false,
+}
+
+java_library_host {
+    name: "kotlin-ksp-client-lib",
+    srcs: [
+        "src/com/**/*.kt",
+    ],
+    static_libs: [
+        "kotlin-incremental-common",
+        "ksp-aa-embeddable",
+        "ksp-common-deps",
+        "kotlin_symbol_processing_api",
+        "kotlin-stdlib",
+    ],
+
+    plugins: [],
+
+    kotlincflags: [
+        //"-Werror",
     ],
     kotlin_incremental: false,
 }
@@ -75,6 +121,13 @@ java_binary_host {
     kotlin_incremental: false,
 }
 
+java_binary_host {
+    name: "kotlin-ksp-client",
+    manifest: "kotlin-ksp-client.mf",
+    static_libs: ["kotlin-ksp-client-lib"],
+    kotlin_incremental: false,
+}
+
 java_test_host {
     name: "kotlin-incremental-client-tests",
     srcs: [
@@ -85,6 +138,7 @@ java_test_host {
     ],
     static_libs: [
         "kotlin-incremental-client-lib",
+        "kotlin-ksp-client-lib",
         "junit",
         "truth",
     ],

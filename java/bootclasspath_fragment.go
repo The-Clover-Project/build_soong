@@ -16,7 +16,6 @@ package java
 
 import (
 	"fmt"
-	"io"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -28,6 +27,8 @@ import (
 
 	"github.com/google/blueprint"
 )
+
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
 
 func init() {
 	registerBootclasspathFragmentBuildComponents(android.InitRegistrationContext)
@@ -41,6 +42,7 @@ func registerBootclasspathFragmentBuildComponents(ctx android.RegistrationContex
 	ctx.RegisterModuleType("prebuilt_bootclasspath_fragment", prebuiltBootclasspathFragmentFactory)
 }
 
+// @auto-generate: gob
 type BootclasspathFragmentInfo struct {
 	ImageName               *string
 	Contents                []string
@@ -384,6 +386,7 @@ var BootclasspathFragmentApexContentInfoProvider = blueprint.NewProvider[Bootcla
 
 // BootclasspathFragmentApexContentInfo contains the bootclasspath_fragments contributions to the
 // apex contents.
+// @auto-generate: gob
 type BootclasspathFragmentApexContentInfo struct {
 	// Map from the base module name (without prebuilt_ prefix) of a fragment's contents module to the
 	// hidden API encoded dex jar path.
@@ -501,7 +504,7 @@ func (b *BootclasspathFragmentModule) DepsMutator(ctx android.BottomUpMutatorCon
 	for _, additionalStubModule := range b.properties.Additional_stubs {
 		for _, apiScope := range hiddenAPISdkLibrarySupportedScopes {
 			// Add a dependency onto a possibly scope specific stub library.
-			scopeSpecificDependency := apiScope.scopeSpecificStubModule(ctx, additionalStubModule)
+			scopeSpecificDependency := apiScope.Value().scopeSpecificStubModule(ctx, additionalStubModule)
 			tag := hiddenAPIStubsDependencyTag{apiScope: apiScope, fromAdditionalDependency: true}
 			ctx.AddVariationDependencies(nil, tag, scopeSpecificDependency)
 		}
@@ -556,6 +559,23 @@ func (b *BootclasspathFragmentModule) GenerateAndroidBuildActions(ctx android.Mo
 	// Perform hidden API processing.
 	hiddenAPIOutput := b.generateHiddenAPIBuildActions(ctx, contents, fragments)
 
+	// Zip all encoded jars and set an output tag for other modules to use.
+	encodedJars := hiddenAPIOutput.EncodedBootDexFilesByModule.bootDexJars()
+	outputZipPath := android.PathForModuleOut(ctx, "encoded-jars.zip")
+	rule := android.NewRuleBuilder(pctx, ctx)
+	cmd := rule.Command().
+		Tool(ctx.Config().HostToolPath(ctx, "soong_zip")).
+		Flag("-o").Output(outputZipPath).
+		Flag("-j")
+
+	for _, jar := range encodedJars {
+		cmd.Flag("-f").Input(jar)
+	}
+
+	rule.Build("zip_encoded_jars", "zip encoded jars")
+
+	ctx.SetOutputFiles(android.Paths{outputZipPath}, ".encoded_jars_zip")
+
 	if android.IsModulePrebuilt(ctx, ctx.Module()) {
 		b.profilePath = ctx.Module().(*PrebuiltBootclasspathFragmentModule).produceBootImageProfile(ctx)
 	} else {
@@ -570,7 +590,7 @@ func (b *BootclasspathFragmentModule) GenerateAndroidBuildActions(ctx android.Mo
 	// be output to Make but it does not really matter which variant is output. The default/platform
 	// variant is the first (ctx.PrimaryModule()) and is usually hidden from make so this just picks
 	// the last variant (ctx.FinalModule()).
-	if !ctx.IsFinalModule(ctx.Module()) {
+	if !ctx.IsFinalModule() {
 		b.HideFromMake()
 	}
 
@@ -682,6 +702,7 @@ func (b *BootclasspathFragmentModule) configuredJars(ctx android.ModuleContext) 
 
 var ClasspathFragmentValidationInfoProvider = blueprint.NewProvider[ClasspathFragmentValidationInfo]()
 
+// @auto-generate: gob
 type ClasspathFragmentValidationInfo struct {
 	ClasspathFragmentModuleName string
 	UnknownJars                 []string
@@ -887,24 +908,21 @@ func (b *BootclasspathFragmentModule) produceBootImageProfileFromSource(ctx andr
 	return bootImageProfileRuleCommon(ctx, b.Name(), dexPaths, dexLocations)
 }
 
-func (b *BootclasspathFragmentModule) AndroidMkEntries() []android.AndroidMkEntries {
+func (b *BootclasspathFragmentModule) PrepareAndroidMKProviderInfo(config android.Config) *android.AndroidMkProviderInfo {
 	// Use the generated classpath proto as the output.
 	outputFile := b.outputFilepath
 	// Create a fake entry that will cause this to be added to the module-info.json file.
-	entriesList := []android.AndroidMkEntries{{
+	info := &android.AndroidMkProviderInfo{}
+	info.PrimaryInfo = android.AndroidMkInfo{
 		Class:      "FAKE",
 		OutputFile: android.OptionalPathForPath(outputFile),
 		Include:    "$(BUILD_PHONY_PACKAGE)",
-		ExtraFooters: []android.AndroidMkExtraFootersFunc{
-			func(w io.Writer, name, prefix, moduleDir string) {
-				// Allow the bootclasspath_fragment to be built by simply passing its name on the command
-				// line.
-				fmt.Fprintln(w, ".PHONY:", b.Name())
-				fmt.Fprintln(w, b.Name()+":", outputFile.String())
-			},
-		},
-	}}
-	return entriesList
+	}
+	info.PrimaryInfo.FooterStrings = append(info.PrimaryInfo.FooterStrings,
+		".PHONY: "+b.Name(),
+		b.Name()+": "+outputFile.String(),
+	)
+	return info
 }
 
 func (b *BootclasspathFragmentModule) getProfilePath() android.Path {

@@ -251,6 +251,10 @@ type generateTask struct {
 	keepGendir bool
 }
 
+func (g *Module) IncrementalSupported() bool {
+	return true
+}
+
 func (g *Module) GeneratedSourceFiles() android.Paths {
 	return g.outputFiles
 }
@@ -302,7 +306,9 @@ func isModuleInBuildNumberAllowlist(ctx android.ModuleContext) bool {
 			"trusty/vendor/google/aosp/scripts:trusty_desktop_test_vm_arm64.bin",
 			"trusty/vendor/google/aosp/scripts:trusty_desktop_test_vm_x86_64.bin",
 			"trusty/vendor/google/aosp/scripts:trusty_desktop_vm_arm64.bin",
+			"trusty/vendor/google/aosp/scripts:trusty_desktop_vm_arm64_ext_boot.bin",
 			"trusty/vendor/google/aosp/scripts:trusty_desktop_vm_x86_64.bin",
+			"trusty/vendor/google/aosp/scripts:trusty_desktop_vm_x86_64_ext_boot.bin",
 			"trusty/vendor/google/aosp/scripts:trusty_security_vm_arm64.bin",
 			"trusty/vendor/google/aosp/scripts:trusty_security_vm_x86_64.elf",
 			"trusty/vendor/google/aosp/scripts:trusty_tee_package",
@@ -338,7 +344,9 @@ func isModuleInBuildDateAllowlist(ctx android.ModuleContext) bool {
 			"trusty/vendor/google/aosp/scripts:trusty_desktop_test_vm_arm64.bin",
 			"trusty/vendor/google/aosp/scripts:trusty_desktop_test_vm_x86_64.bin",
 			"trusty/vendor/google/aosp/scripts:trusty_desktop_vm_arm64.bin",
+			"trusty/vendor/google/aosp/scripts:trusty_desktop_vm_arm64_ext_boot.bin",
 			"trusty/vendor/google/aosp/scripts:trusty_desktop_vm_x86_64.bin",
+			"trusty/vendor/google/aosp/scripts:trusty_desktop_vm_x86_64_ext_boot.bin",
 			"trusty/vendor/google/aosp/scripts:trusty_security_vm_arm64.bin",
 			"trusty/vendor/google/aosp/scripts:trusty_security_vm_x86_64.elf",
 			"trusty/vendor/google/aosp/scripts:trusty_tee_package",
@@ -766,6 +774,8 @@ func (g *Module) setOutputFiles(ctx android.ModuleContext) {
 	for _, files := range g.outputFiles {
 		ctx.SetOutputFiles(android.Paths{files}, files.Rel())
 	}
+
+	ctx.CheckbuildFile(g.outputFiles...)
 }
 
 // Collect information for opening IDE project files in java/jdeps.go.

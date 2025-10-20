@@ -34,6 +34,8 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 var pctx = android.NewPackageContext("android/soong/filesystem")
 
 func init() {
@@ -43,6 +45,7 @@ func init() {
 	pctx.HostBinToolVariable("fs_config", "fs_config")
 	pctx.HostBinToolVariable("SoongZipCmd", "soong_zip")
 	pctx.HostBinToolVariable("check_radio_versions", "check_radio_versions")
+	pctx.Import("android/soong/kernel")
 }
 
 func registerBuildComponents(ctx android.RegistrationContext) {
@@ -53,6 +56,7 @@ func registerBuildComponents(ctx android.RegistrationContext) {
 	ctx.RegisterModuleType("avb_add_hash_footer_defaults", avbAddHashFooterDefaultsFactory)
 	ctx.RegisterModuleType("avb_gen_vbmeta_image", avbGenVbmetaImageFactory)
 	ctx.RegisterModuleType("avb_gen_vbmeta_image_defaults", avbGenVbmetaImageDefaultsFactory)
+	ctx.RegisterModuleType("bootimg", BootimgFactory)
 }
 
 func registerMutators(ctx android.RegistrationContext) {
@@ -112,6 +116,8 @@ type filesystem struct {
 
 	selinuxFc android.Path
 	avbKey    android.Path
+
+	overriddenModulesPackagingSpecs map[string]depset.DepSet[android.PackagingSpec]
 }
 
 type filesystemBuilder interface {
@@ -126,6 +132,10 @@ type filesystemBuilder interface {
 	// Function to check if the filesystem should not use `vintf_fragments` property,
 	// but use `vintf_fragment` module type instead
 	ShouldUseVintfFragmentModuleOnly() bool
+
+	// Function to filter overridden modules' transtive packaging specs DepSet in
+	// PackagingBase.GatherPackagingSpecs()
+	FilterOverriddenModulesTransitivePackagingSpecs(depset.DepSet[android.PackagingSpec]) depset.DepSet[android.PackagingSpec]
 }
 
 var _ filesystemBuilder = (*filesystem)(nil)
@@ -206,6 +216,11 @@ type FilesystemProperties struct {
 	// Seconds since unix epoch to override timestamps of file entries
 	Fake_timestamp *string
 
+	// To produce hermetic filesystems, the timestamp of the file entries is pinned to a known
+	// timestamp by default.
+	// Setting `No_use_fixed_timestamp` to true will create unpinned timestamps.
+	No_use_fixed_timestamp *bool
+
 	// When set, passed to mkuserimg_mke2fs --mke2fs_uuid & --mke2fs_hash_seed.
 	// Otherwise, they'll be set as random which might cause indeterministic build output.
 	Uuid *string
@@ -270,6 +285,16 @@ type FilesystemProperties struct {
 
 	// Used by build_image
 	Share_dup_blocks *bool
+
+	// Name to use as `--ramdisk_name` when included as a fragment in a bootimg.
+	Ramdisk_fragment_name *string
+
+	// Name of android_prebuilt_system_module. This is only for experiment as of now and must not be
+	// used for any release.
+	Prebuilt_module_name *string
+
+	// Whether to run the host_init_verifier check for this module. Defaults to true.
+	Enable_host_init_verifier_check *bool
 }
 
 type AndroidFilesystemDeps struct {
@@ -288,6 +313,10 @@ type ErofsProperties struct {
 	Compress_hints *string `android:"path"`
 
 	Sparse *bool
+
+	Pcluster_size *int64
+
+	Block_size *int64
 }
 
 // Additional properties required to generate f2fs FS partitions.
@@ -357,15 +386,14 @@ type depTagWithVisibilityEnforcementBypass struct {
 
 type interPartitionDepTag struct {
 	blueprint.BaseDependencyTag
-	includeVintfs bool
 }
 
-var interPartitionDependencyTag = interPartitionDepTag{includeVintfs: false}
+var interPartitionDependencyTag = interPartitionDepTag{}
 
-var interPartitionInstallDependencyTag = interPartitionDepTag{includeVintfs: true}
+var interPartitionInstallDependencyTag = interPartitionDepTag{}
 
 func (t interPartitionDepTag) IncludeVintfs() bool {
-	return t.includeVintfs
+	return false
 }
 
 var _ android.InterPartitionIncludeVintfsInterface = (*interPartitionDepTag)(nil)
@@ -393,6 +421,10 @@ func (f *filesystem) setDevNodesDescriptionProp() {
 	}
 }
 
+func (f *filesystem) RunHostInitVerifierCheck() bool {
+	return proptools.BoolDefault(f.properties.Enable_host_init_verifier_check, true)
+}
+
 func (f *filesystem) addDepsDepTag() blueprint.DependencyTag {
 	if proptools.Bool(f.properties.Is_auto_generated) {
 		return dependencyTagWithVisibilityEnforcementBypass
@@ -417,6 +449,11 @@ func (f *filesystem) DepsMutator(ctx android.BottomUpMutatorContext) {
 	for _, partition := range f.properties.Include_files_of {
 		ctx.AddDependency(ctx.Module(), interPartitionInstallDependencyTag, partition)
 	}
+	// TODO: remove this once android_system_image_prebuilt is fully implemented.
+	if f.properties.Prebuilt_module_name != nil {
+		ctx.AddDependency(ctx.Module(), android.PrebuiltDepTag, proptools.String(f.properties.Prebuilt_module_name))
+	}
+
 }
 
 type fsType int
@@ -448,17 +485,20 @@ func (t fsType) String() string {
 	panic(fmt.Errorf("unsupported fs type %d", t))
 }
 
+// @auto-generate: gob
 type InstalledFilesStruct struct {
 	Txt  android.Path
 	Json android.Path
 }
 
+// @auto-generate: gob
 type InstalledModuleInfo struct {
 	Name      string
 	Variation string
 	Prebuilt  bool
 }
 
+// @auto-generate: gob
 type FilesystemInfo struct {
 	// The built filesystem image
 	Output android.Path
@@ -523,6 +563,8 @@ type FilesystemInfo struct {
 
 	// Results of check_vintf
 	checkVintfLog android.Path
+
+	Prebuilt bool
 }
 
 // FullInstallPathInfo contains information about the "full install" paths of all the files
@@ -530,6 +572,7 @@ type FilesystemInfo struct {
 // out/target/product/<device>/<partition>. This is essentially legacy behavior, maintained for
 // tools like adb sync and adevice, but we should update them to query the build system for the
 // installed files no matter where they are.
+// @auto-generate: gob
 type FullInstallPathInfo struct {
 	// RequiresFullInstall tells us if the origional module did the install to FullInstallPath
 	// already. If it's false, the android_device module needs to emit the install rule.
@@ -553,6 +596,7 @@ type FullInstallPathInfo struct {
 
 var FilesystemProvider = blueprint.NewProvider[FilesystemInfo]()
 
+// @auto-generate: gob
 type FilesystemDefaultsInfo struct{}
 
 var FilesystemDefaultsInfoProvider = blueprint.NewProvider[FilesystemDefaultsInfo]()
@@ -606,6 +650,12 @@ func (f *filesystem) FilterPackagingSpec(ps android.PackagingSpec) bool {
 	}
 	if proptools.Bool(f.properties.Is_auto_generated) { // TODO (spandandas): Remove this.
 		pt := f.PartitionType()
+
+		// Due to the partition name of filesystem for data is 'userdata' but for PackagingSpec it is 'data'.
+		if pt == "userdata" && ps.Partition() == "data" {
+			return true
+		}
+
 		return ps.Partition() == pt || strings.HasPrefix(ps.Partition(), pt+"/")
 	}
 	return true
@@ -627,6 +677,25 @@ func (f *filesystem) ModifyPackagingSpec(ps *android.PackagingSpec) {
 			f.subPartitions = append(f.subPartitions, subPartition)
 		}
 	}
+}
+
+func (f *filesystem) FilterOverriddenModulesTransitivePackagingSpecs(transitivePackagingSpecs depset.DepSet[android.PackagingSpec]) depset.DepSet[android.PackagingSpec] {
+
+	// We cannot naively set minus all depset of overridden modules, as that might lead to
+	// removing transitive deps that are referenced by other modules. Instead, find whether
+	// the owner of the transitive packaging specs match any of the modules listed in
+	// `overridden_deps` and then perform set minus on the discovered overridden transitive deps.
+	var overriddenModulesForDepSet []string
+	for _, ps := range transitivePackagingSpecs.ToList() {
+		if _, ok := f.overriddenModulesPackagingSpecs[ps.Owner()]; ok {
+			overriddenModulesForDepSet = append(overriddenModulesForDepSet, ps.Owner())
+		}
+	}
+
+	for _, overriddenModuleName := range overriddenModulesForDepSet {
+		transitivePackagingSpecs = transitivePackagingSpecs.SetMinus(f.overriddenModulesPackagingSpecs[overriddenModuleName])
+	}
+	return transitivePackagingSpecs
 }
 
 func buildInstalledFiles(ctx android.ModuleContext, partition string, rootDir android.Path, image android.Path) InstalledFilesStruct {
@@ -672,6 +741,13 @@ func (f *filesystem) updateAvbInFsInfo(ctx android.ModuleContext, fsInfo *Filesy
 	}
 }
 
+func (f *filesystem) gatherOverriddenModulesPackagingSpecs(ctx android.ModuleContext) {
+	f.overriddenModulesPackagingSpecs = make(map[string]depset.DepSet[android.PackagingSpec])
+	ctx.VisitDirectDepsProxyWithTag(android.OverriddenModuleDepTag, func(proxy android.ModuleProxy) {
+		f.overriddenModulesPackagingSpecs[proxy.Name()] = android.OtherModuleProviderOrDefault(ctx, proxy, android.InstallFilesProvider).TransitivePackagingSpecs
+	})
+}
+
 func (f *filesystem) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	validatePartitionType(ctx, f)
 	if f.filesystemBuilder.ShouldUseVintfFragmentModuleOnly() {
@@ -691,6 +767,7 @@ func (f *filesystem) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 
 	// Wipe the root dir to get rid of leftover files from prior builds
 	builder.Command().Textf("rm -rf %s && mkdir -p %s", rootDir, rootDir)
+	f.gatherOverriddenModulesPackagingSpecs(ctx)
 	specs := f.gatherFilteredPackagingSpecs(ctx)
 
 	var fullInstallPaths []FullInstallPathInfo
@@ -719,18 +796,38 @@ func (f *filesystem) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	builder.Build("assemble_filesystem_staging_dir", fmt.Sprintf("Assemble filesystem staging dir %s", f.BaseModuleName()))
 
 	// Create a new rule builder for build_image
+	f.installDir = android.PathForModuleInstall(ctx, "etc")
+
+	// TODO: remove this once android_system_image_prebuilt is fully implemented.
+	usePrebuilt := false
+	var prebuiltInfo FilesystemInfo
+	ctx.VisitDirectDepsProxyWithTag(android.PrebuiltDepTag, func(m android.ModuleProxy) {
+		if fsProvider, ok := android.OtherModuleProvider(ctx, m, FilesystemProvider); ok {
+			usePrebuilt = true
+			prebuiltInfo = fsProvider
+		} else {
+			ctx.PropertyErrorf("prebuilt_module_name", "must provide filesystem")
+		}
+	})
+
 	builder = android.NewRuleBuilder(pctx, ctx)
 	var buildImagePropFile android.Path
 	var buildImagePropFileDeps android.Paths
 	var extraRootDirs android.Paths
 	var propFileForMiscInfo android.Path
+
 	switch f.fsType(ctx) {
 	case ext4Type, erofsType, f2fsType:
 		buildImagePropFile, buildImagePropFileDeps = f.buildPropFile(ctx)
 		propFileForMiscInfo = f.buildPropFileForMiscInfo(ctx)
-		output := android.PathForModuleOut(ctx, f.installFileName())
-		f.buildImageUsingBuildImage(ctx, builder, buildImageParams{rootDir, buildImagePropFile, buildImagePropFileDeps, output})
-		f.output = output
+		// TODO: remove this once android_system_image_prebuilt correctly implements prop files.
+		if !usePrebuilt {
+			output := android.PathForModuleOut(ctx, f.installFileName())
+			f.buildImageUsingBuildImage(ctx, builder, buildImageParams{rootDir, buildImagePropFile, buildImagePropFileDeps, output})
+			f.output = output
+		} else {
+			f.output = prebuiltInfo.Output
+		}
 	case compressedCpioType:
 		f.output, extraRootDirs = f.buildCpioImage(ctx, builder, rootDir, true)
 	case cpioType:
@@ -739,7 +836,6 @@ func (f *filesystem) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		return
 	}
 
-	f.installDir = android.PathForModuleInstall(ctx, "etc")
 	ctx.InstallFile(f.installDir, f.installFileName(), f.output)
 	ctx.SetOutputFiles([]android.Path{f.output}, "")
 
@@ -767,27 +863,33 @@ func (f *filesystem) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		erofsCompressHints = android.PathForModuleSrc(ctx, *f.properties.Erofs.Compress_hints)
 	}
 
-	installedFilesStructList := []InstalledFilesStruct{buildInstalledFiles(ctx, partitionNameForInstalledFiles, rebasedDir, f.output)}
-	if f.partitionName() == "system" {
-		rootDirForInstalledFiles := android.PathForModuleOut(ctx, "root_for_installed_files", "root")
-		copyToRootTimestamp := android.PathForModuleOut(ctx, "root_copy_timestamp")
+	var installedFilesStructList []InstalledFilesStruct
+	if !usePrebuilt {
+		installedFilesStructList = []InstalledFilesStruct{buildInstalledFiles(ctx, partitionNameForInstalledFiles, rebasedDir, f.output)}
+		if f.partitionName() == "system" {
+			rootDirForInstalledFiles := android.PathForModuleOut(ctx, "root_for_installed_files", "root")
+			copyToRootTimestamp := android.PathForModuleOut(ctx, "root_copy_timestamp")
 
-		builder := android.NewRuleBuilder(pctx, ctx)
-		builder.Command().Text("touch").Text(copyToRootTimestamp.String())
-		builder.Command().Text("rm -rf").Text(rootDirForInstalledFiles.String())
-		builder.Command().Text("mkdir -p").Text(rootDirForInstalledFiles.String())
-		builder.Command().
-			Text("rsync").
-			Flag("-a").
-			Flag("--checksum").
-			Flag("--exclude='system/'").
-			Text(rootDir.String() + "/").
-			Text(rootDirForInstalledFiles.String()).
-			Implicit(f.output).
-			ImplicitOutput(copyToRootTimestamp)
-		builder.Build("system_root_dir", "Construct system partition root dir")
+			builder := android.NewRuleBuilder(pctx, ctx)
+			builder.Command().Text("touch").Text(copyToRootTimestamp.String())
+			builder.Command().Text("rm -rf").Text(rootDirForInstalledFiles.String())
+			builder.Command().Text("mkdir -p").Text(rootDirForInstalledFiles.String())
+			builder.Command().
+				Text("rsync").
+				Flag("-a").
+				Flag("--checksum").
+				Flag("--exclude='system/'").
+				Text(rootDir.String() + "/").
+				Text(rootDirForInstalledFiles.String()).
+				Implicit(f.output).
+				ImplicitOutput(copyToRootTimestamp)
+			builder.Build("system_root_dir", "Construct system partition root dir")
 
-		installedFilesStructList = append(installedFilesStructList, buildInstalledFiles(ctx, "root", rootDirForInstalledFiles, copyToRootTimestamp))
+			installedFilesStructList = append(installedFilesStructList, buildInstalledFiles(ctx, "root", rootDirForInstalledFiles, copyToRootTimestamp))
+		}
+	} else {
+		// TODO: remove this once android_system_image_prebuilt correctly implements FilesystemInfo.
+		rootDir = prebuiltInfo.RootDir
 	}
 
 	fsInfo := FilesystemInfo{
@@ -822,6 +924,7 @@ func (f *filesystem) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		HasOrIsRecovery:     f.hasOrIsRecovery(ctx),
 		NoFlashall:          proptools.Bool(f.properties.No_flashall),
 		checkVintfLog:       checkVintfLog,
+		Prebuilt:            usePrebuilt,
 	}
 	f.updateAvbInFsInfo(ctx, &fsInfo)
 
@@ -831,11 +934,15 @@ func (f *filesystem) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		PartitionType: f.PartitionType(),
 	})
 
-	f.fileListFile = fileListFile
-
-	if proptools.Bool(f.properties.Unchecked_module) {
-		ctx.UncheckedModule()
+	if f.properties.Ramdisk_fragment_name != nil {
+		android.SetProvider(ctx, ramdiskFragmentInfoProvider, ramdiskFragmentInfo{
+			Output:       f.OutputPath(),
+			Ramdisk_name: proptools.String(f.properties.Ramdisk_fragment_name),
+			RootDir:      rootDir,
+		})
 	}
+
+	f.fileListFile = fileListFile
 
 	f.setVbmetaPartitionProvider(ctx)
 
@@ -1191,13 +1298,16 @@ func (f *filesystem) buildImageUsingBuildImage(
 	ctx android.ModuleContext,
 	builder *android.RuleBuilder,
 	params buildImageParams) {
-	// run host_init_verifier
-	// Ideally we should have a concept of pluggable linters that verify the generated image.
-	// While such concept is not implement this will do.
-	// TODO(b/263574231): substitute with pluggable linter.
-	builder.Command().
-		BuiltTool("host_init_verifier").
-		FlagWithArg("--out_system=", params.rootDir.String()+"/system")
+
+	if f.RunHostInitVerifierCheck() {
+		// run host_init_verifier
+		// Ideally we should have a concept of pluggable linters that verify the generated image.
+		// While such concept is not implement this will do.
+		// TODO(b/263574231): substitute with pluggable linter.
+		builder.Command().
+			BuiltTool("host_init_verifier").
+			FlagWithArg("--out_system=", params.rootDir.String())
+	}
 
 	// Most of the time, if build_image were to call a host tool, it accepts the path to the
 	// host tool in a field in the prop file. However, it doesn't have that option for fec, which
@@ -1232,6 +1342,20 @@ func (f *filesystem) buildFileContexts(ctx android.ModuleContext) android.Path {
 		Input(android.PathForModuleSrc(ctx, proptools.String(f.properties.File_contexts)))
 	builder.Build("build_filesystem_file_contexts", fmt.Sprintf("Creating filesystem file contexts for %s", f.BaseModuleName()))
 	return fcBin
+}
+
+// https://source.corp.google.com/h/googleplex-android/platform/build/+/15aeee21e69003e63b64c1dc678cb09b6bcc335d:tools/releasetools/build_image.py;l=745-756;drc=9a3d812e3cff4d9005fa1d4991dfa059e5d2a319;bpv=1;bpt=0
+var ro_mount_points = []string{
+	"odm",
+	"odm_dlkm",
+	"oem",
+	"product",
+	"system",
+	"system_dlkm",
+	"system_ext",
+	"system_other",
+	"vendor",
+	"vendor_dlkm",
 }
 
 func (f *filesystem) buildPropFile(ctx android.ModuleContext) (android.Path, android.Paths) {
@@ -1283,6 +1407,8 @@ func (f *filesystem) buildPropFile(ctx android.ModuleContext) (android.Path, and
 		addStr("timestamp", timestamp)
 	} else if ctx.Config().Getenv("USE_FIXED_TIMESTAMP_IMG_FILES") == "true" {
 		addStr("use_fixed_timestamp", "true")
+	} else if !proptools.Bool(f.properties.No_use_fixed_timestamp) {
+		addStr("use_fixed_timestamp", "true")
 	}
 
 	if uuid := proptools.String(f.properties.Uuid); uuid != "" {
@@ -1309,12 +1435,33 @@ func (f *filesystem) buildPropFile(ctx android.ModuleContext) (android.Path, and
 			// https://source.corp.google.com/h/googleplex-android/platform/build/+/88b1c67239ca545b11580237242774b411f2fed9:core/Makefile;l=2292;bpv=1;bpt=0;drc=ea8f34bc1d6e63656b4ec32f2391e9d54b3ebb6b
 			addStr("erofs_sparse_flag", "-s")
 		}
+
+		if f.properties.Erofs.Pcluster_size != nil {
+			addStr("erofs_pcluster_size", fmt.Sprintf("%d", *f.properties.Erofs.Pcluster_size))
+		}
+
+		if f.properties.Erofs.Block_size != nil {
+			addStr("erofs_blocksize", fmt.Sprintf("%d", *f.properties.Erofs.Block_size))
+		}
+
 	case f2fsType:
 		if proptools.BoolDefault(f.properties.F2fs.Sparse, true) {
 			// https://source.corp.google.com/h/googleplex-android/platform/build/+/88b1c67239ca545b11580237242774b411f2fed9:core/Makefile;l=2294;drc=ea8f34bc1d6e63656b4ec32f2391e9d54b3ebb6b;bpv=1;bpt=0
 			addStr("f2fs_sparse_flag", "-S")
 		}
+	case ext4Type:
+		// build_image.py implicitly adds some properties when mount point is not specified.
+		// Make built prop files does not specify mount_point, but Soong built prop files do.
+		// This causes some binary diffs in the final .img files.
+		// To fix this, explicitly set these properties in the prop file.
+		// https://source.corp.google.com/h/googleplex-android/platform/build/+/15aeee21e69003e63b64c1dc678cb09b6bcc335d:tools/releasetools/build_image.py;l=817-826;drc=9a3d812e3cff4d9005fa1d4991dfa059e5d2a319;bpv=0;bpt=0
+		if android.InList(f.PartitionType(), ro_mount_points) {
+			addStr("extfs_rsv_pct", "0")
+			addStr("journal_size", "0")
+			addStr("ro_mount_point", "1")
+		}
 	}
+
 	f.checkFsTypePropertyError(ctx, fst, fst.String())
 
 	if f.properties.Partition_size != nil {
@@ -1400,6 +1547,15 @@ func (f *filesystem) buildPropFileForMiscInfo(ctx android.ModuleContext) android
 			// https://source.corp.google.com/h/googleplex-android/platform/build/+/88b1c67239ca545b11580237242774b411f2fed9:core/Makefile;l=2292;bpv=1;bpt=0;drc=ea8f34bc1d6e63656b4ec32f2391e9d54b3ebb6b
 			addStr("erofs_sparse_flag", "-s")
 		}
+
+		if f.properties.Erofs.Pcluster_size != nil {
+			addStr(f.partitionName()+"_erofs_pcluster_size", fmt.Sprintf("%d", *f.properties.Erofs.Pcluster_size))
+		}
+
+		if f.properties.Erofs.Block_size != nil {
+			addStr(f.partitionName()+"_erofs_blocksize", fmt.Sprintf("%d", *f.properties.Erofs.Block_size))
+		}
+
 	case f2fsType:
 		if proptools.BoolDefault(f.properties.F2fs.Sparse, true) {
 			// https://source.corp.google.com/h/googleplex-android/platform/build/+/88b1c67239ca545b11580237242774b411f2fed9:core/Makefile;l=2294;drc=ea8f34bc1d6e63656b4ec32f2391e9d54b3ebb6b;bpv=1;bpt=0
@@ -1590,7 +1746,9 @@ var validPartitions = []string{
 	"recovery",
 	"vendor_kernel_ramdisk",
 	"vendor_ramdisk-debug",
+	"vendor_ramdisk-test-harness",
 	"debug_ramdisk",
+	"test_harness_ramdisk",
 }
 
 func (f *filesystem) buildEventLogtagsFile(
@@ -1661,8 +1819,9 @@ func (f *filesystem) assembleVintfs(
 		return
 	}
 	pathPrefix := ""
-	if f.PartitionType() == "vendor_ramdisk" || f.PartitionType() == "recovery" {
-		pathPrefix = "system" // vintf manifests are not installed in root.
+	if f.PartitionType() == "recovery" {
+		// https://cs.android.com/android/_/android/platform/build/+/045a3d6a3e359633a14853a5a5e1e4f2a11cbdae:core/base_rules.mk;l=562;drc=41cada8d4e9b91386d9b691c4ae485425ef6a62e;bpv=1;bpt=0
+		pathPrefix = "root/system" // vintf manifests are not installed in root.
 	}
 	vintfInStagingDir := rebasedDir.Join(ctx, pathPrefix, "etc", "vintf", "manifest")
 	builder.Command().Text("mkdir").Flag("-p").Text(vintfInStagingDir.String())
@@ -1719,6 +1878,7 @@ func (f *filesystem) AndroidMkEntries() []android.AndroidMkEntries {
 					entries.SetString("LOCAL_FILESYSTEM_AVB_KEY_PATH", f.avbKey.String())
 				}
 				entries.SetString("LOCAL_FILESYSTEM_AVB_ALGORITHM", proptools.StringDefault(f.properties.Avb_algorithm, "SHA256_RSA4096"))
+				entries.SetBoolIfTrue(fmt.Sprintf("BOARD_%s_IMAGE_NO_FLASHALL", strings.ToUpper(f.Name())), proptools.Bool(f.properties.No_flashall))
 			},
 		},
 	}}
@@ -1752,7 +1912,7 @@ func (f *filesystem) SignedOutputPath() android.Path {
 // Note that "apex" module installs its contents to "apex"(fake partition) as well
 // for symbol lookup by imitating "activated" paths.
 func (f *filesystem) gatherFilteredPackagingSpecs(ctx android.ModuleContext) map[string]android.PackagingSpec {
-	return f.PackagingBase.GatherPackagingSpecsWithFilterAndModifier(ctx, f.filesystemBuilder.FilterPackagingSpec, f.filesystemBuilder.ModifyPackagingSpec)
+	return f.PackagingBase.GatherPackagingSpecsWithFilterAndModifier(ctx, f.filesystemBuilder.FilterOverriddenModulesTransitivePackagingSpecs, f.filesystemBuilder.FilterPackagingSpec, f.filesystemBuilder.ModifyPackagingSpec)
 }
 
 func (f *filesystem) gatherOwners(specs map[string]android.PackagingSpec) []InstalledModuleInfo {
@@ -1788,7 +1948,7 @@ func (f *filesystem) systemOtherFiles(ctx android.ModuleContext) map[string]andr
 		spec.SetRelPathInPackage(strings.TrimPrefix(spec.RelPathInPackage(), "system_other/"))
 		spec.SetPartition("system_other")
 	}
-	return f.PackagingBase.GatherPackagingSpecsWithFilterAndModifier(ctx, filter, modifier)
+	return f.PackagingBase.GatherPackagingSpecsWithFilterAndModifier(ctx, nil, filter, modifier)
 }
 
 func sha1sum(values []string) string {

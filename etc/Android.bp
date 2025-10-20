@@ -7,12 +7,15 @@ bootstrap_go_package {
     pkgPath: "android/soong/etc",
     deps: [
         "blueprint",
+        "blueprint-gobtools",
+        "blueprint-proptools",
         "soong",
         "soong-android",
     ],
     srcs: [
         "adb_keys.go",
         "avbpubkey.go",
+        "etc_enc.go",
         "install_symlink.go",
         "otacerts_zip.go",
         "prebuilt_etc.go",

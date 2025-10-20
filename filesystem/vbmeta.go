@@ -28,6 +28,8 @@ import (
 	"android/soong/android"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
 func init() {
 	android.RegisterModuleType("vbmeta", VbmetaFactory)
 	pctx.HostBinToolVariable("avbtool", "avbtool")
@@ -91,6 +93,10 @@ type VbmetaProperties struct {
 
 	// List of key-value pair of avb properties
 	Avb_properties []avbProperty
+
+	// Determines if the module is auto-generated from Soong or not. If the module is
+	// auto-generated, it does not use generic config.
+	Is_auto_generated *bool
 }
 
 type avbProperty struct {
@@ -119,6 +125,7 @@ type ChainedPartitionProperties struct {
 	Private_key *string `android:"path"`
 }
 
+// @auto-generate: gob
 type vbmetaPartitionInfo struct {
 	// Name of the partition
 	Name string
@@ -144,6 +151,7 @@ type vbmetaPartitionInfo struct {
 	AbOtaBootloaderPartition bool
 }
 
+// @auto-generate: gob
 type vbmetaPartitionInfos []vbmetaPartitionInfo
 
 var vbmetaPartitionProvider = blueprint.NewProvider[vbmetaPartitionInfo]()
@@ -227,6 +235,11 @@ func (v *vbmeta) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		return
 	}
 
+	if v.partitionName() == "vbmeta" && ctx.Config().Eng() {
+		// https://source.corp.google.com/h/googleplex-android/platform/build/+/0cf7c289634e9aad9720cb45bb42ad0d338f7802:core/Makefile;l=5057-5060;drc=0e426f646784e2d233098f6aa0f7444070b1049f;bpv=1;bpt=0
+		cmd.Flag("--set_hashtree_disabled_flag")
+	}
+
 	for _, avb_prop := range v.properties.Avb_properties {
 		key := proptools.String(avb_prop.Key)
 		if key == "" {
@@ -287,22 +300,28 @@ func (v *vbmeta) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		})
 	}
 
-	sort.SliceStable(includeDescriptorsFromImages, func(i, j int) bool {
-		iName := includeDescriptorsFromImages[i].Name
-		jName := includeDescriptorsFromImages[j].Name
-		iIndex := slices.Index(includeDescriptorsFromImgOrder, iName)
-		jIndex := slices.Index(includeDescriptorsFromImgOrder, jName)
-		if iIndex < 0 && jIndex < 0 {
-			return iName < jName
-		}
-		if iIndex < 0 {
-			return false
-		}
-		if jIndex < 0 {
-			return true
-		}
-		return iIndex < jIndex
-	})
+	// This is the order that make listed the partitions in. The order is important because
+	// it ends up being encoded in the output file. Maintain the order so that the resultant
+	// files are easier to compare.
+	// https://cs.android.com/android/platform/superproject/main/+/main:build/make/core/Makefile;l=4833;drc=a951ebf0198006f7fd38073a05c442d0eb92f97b
+	if v.partitionName() == "vbmeta" {
+		sort.SliceStable(includeDescriptorsFromImages, func(i, j int) bool {
+			iName := includeDescriptorsFromImages[i].Name
+			jName := includeDescriptorsFromImages[j].Name
+			iIndex := slices.Index(includeDescriptorsFromImgOrder, iName)
+			jIndex := slices.Index(includeDescriptorsFromImgOrder, jName)
+			if iIndex < 0 && jIndex < 0 {
+				return iName < jName
+			}
+			if iIndex < 0 {
+				return false
+			}
+			if jIndex < 0 {
+				return true
+			}
+			return iIndex < jIndex
+		})
+	}
 
 	for _, partition := range includeDescriptorsFromImages {
 		cmd.FlagWithInput("--include_descriptors_from_image ", partition.Output)
@@ -447,13 +466,20 @@ func (v *vbmeta) buildPropFileForMiscInfo(ctx android.ModuleContext) android.Pat
 		addStr(fmt.Sprintf("avb_%s", v.partitionName()), strings.Join(android.SortedUniqueStrings(partitionDepNames), " "))
 	}
 
-	includeDescriptors := ""
-	if len(bootloaderPartitions) > 0 {
-		for _, p := range bootloaderPartitions {
-			includeDescriptors += fmt.Sprintf("--include_descriptors_from_image %s ", p.String())
-		}
+	var args []string
+	for _, p := range bootloaderPartitions {
+		args = append(args, "--include_descriptors_from_image "+p.String())
 	}
-	addStr(fmt.Sprintf("avb_%s_args", v.partitionName()), fmt.Sprintf("%s--padding_size 4096 --rollback_index %s", includeDescriptors, v.rollbackIndexString(ctx)))
+	args = append(args, "--padding_size 4096")
+
+	// We only need the flag in top-level vbmeta.img.
+	// https://cs.android.com/android/platform/superproject/main/+/main:build/make/core/Makefile;l=4917;drc=a951ebf0198006f7fd38073a05c442d0eb92f97b
+	if ctx.Config().Eng() && v.partitionName() == "vbmeta" {
+		args = append(args, "--set_hashtree_disabled_flag")
+	}
+
+	args = append(args, "--rollback_index "+v.rollbackIndexString(ctx))
+	addStr(fmt.Sprintf("avb_%s_args", v.partitionName()), strings.Join(args, " "))
 
 	sort.Strings(lines)
 

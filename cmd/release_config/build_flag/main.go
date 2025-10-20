@@ -123,7 +123,9 @@ func GetReleaseArgs(configs *rc_lib.ReleaseConfigs, commonFlags Flags) ([]*rc_li
 			"-default": 100,
 		}
 
-		configs.GenerateAllReleaseConfigs(commonFlags.targetReleases[0])
+		if err := configs.GenerateAllReleaseConfigs(commonFlags.targetReleases[0]); err != nil {
+			return nil, err
+		}
 		for _, config := range configs.ReleaseConfigs {
 			ret = append(ret, config)
 		}
@@ -230,11 +232,18 @@ func GetCommand(configs *rc_lib.ReleaseConfigs, commonFlags Flags, cmd string, a
 		fmt.Println(outStr)
 	}
 
+	newArgs := []string{}
 	for _, arg := range args {
+		if configs.IgnoredFlags[arg] {
+			fmt.Fprintf(os.Stderr, "%s is a deleted flag\n", arg)
+			continue
+		}
+		newArgs = append(newArgs, arg)
 		if _, ok := configs.FlagArtifacts[arg]; !ok {
 			return fmt.Errorf("%s is not a defined build flag", arg)
 		}
 	}
+	args = newArgs
 
 	numArgs := len(args)
 	for argIdx, arg := range args {

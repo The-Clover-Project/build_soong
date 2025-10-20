@@ -24,10 +24,11 @@ var prepareForHostInitVerifierCheckTest = android.GroupFixturePreparers(
 	android.PrepareForIntegrationTestWithAndroid,
 	android.PrepareForTestWithAndroidBuildComponents,
 	PrepareForTestWithFilesystemBuildComponents,
-	prepareForTestWithAndroidDeviceComponents,
+	PrepareForTestWithAndroidDeviceComponents,
 )
 
 func TestHostInitVerifierCheck(t *testing.T) {
+	t.Parallel()
 	result := android.GroupFixturePreparers(prepareForHostInitVerifierCheckTest).
 		RunTestWithBp(t, `
 			android_device {
@@ -69,6 +70,7 @@ func TestHostInitVerifierCheck(t *testing.T) {
 }
 
 func TestHostInitVerifierCheck_MissingDeps(t *testing.T) {
+	t.Parallel()
 	result := android.GroupFixturePreparers(
 		prepareForHostInitVerifierCheckTest,
 	).RunTestWithBp(t, `

@@ -103,6 +103,18 @@ type ModuleContext interface {
 	// dependency tags for which IsInstallDepNeeded returns true.
 	InstallExecutable(installPath InstallPath, name string, srcPath Path, deps ...InstallPath) InstallPath
 
+	// InstallExecutableWithBootstrap creates a rule to copy srcPath to name in the
+	// installPath directory, with the given additional dependencies. The file is
+	// marked executable after copying. It is functionally the same as [InstallExecutable], but
+	// the rule uses the toybox commands from source rather than the ones installed in $HOST_OUT
+	// as the command deps. This is mostly used to install the toybox commands themselves.
+	//
+	// The installed file can be accessed by InstallFilesInfo.InstallFiles, and the PackagingSpec
+	// for the installed file can be accessed by InstallFilesInfo.PackagingSpecs on this module
+	// or by InstallFilesInfo.TransitivePackagingSpecs on modules that depend on this module through
+	// dependency tags for which IsInstallDepNeeded returns true.
+	InstallExecutableWithBootstrap(installPath InstallPath, name string, srcPath Path, deps ...InstallPath) InstallPath
+
 	// InstallFile creates a rule to copy srcPath to name in the installPath directory,
 	// with the given additional dependencies.
 	//
@@ -184,6 +196,7 @@ type ModuleContext interface {
 	InstallPathSkipFirstStageRamdisk() bool
 	InstallInVendorKernelRamdisk() bool
 	InstallInDebugRamdisk() bool
+	InstallInTestHarnessRamdisk() bool
 	InstallInRecovery() bool
 	InstallInRoot() bool
 	InstallInOdm() bool
@@ -274,11 +287,6 @@ type ModuleContext interface {
 	// Defines this module as a compatibility suite test and gives all the information needed
 	// to build the suite.
 	SetTestSuiteInfo(info TestSuiteInfo)
-
-	// FreeModuleAfterGenerateBuildActions marks this module as no longer necessary after the completion of
-	// GenerateBuildActions, i.e. all later accesses to the module will be via ModuleProxy and not direct access
-	// to the Module.
-	FreeModuleAfterGenerateBuildActions()
 
 	// ModulePhonyFiles registers the srcPaths as dependencies of the module name phony target.
 	// This is similar to OutputFiles, but can be used for files that are not intended to be
@@ -426,8 +434,8 @@ func (m *moduleContext) Rule(pctx PackageContext, name string, params blueprint.
 
 	if m.config.UseRemoteBuild() {
 		if params.Pool == nil {
-			// When USE_RBE=true is set and the rule is not supported by RBE, restrict
-			// jobs to the local parallelism value
+			// When USE_REWRAPPER=true is set and the rule is not supported by RBE,
+			// restrict jobs to the local parallelism value
 			params.Pool = localPool
 		} else if params.Pool == remotePool {
 			// remotePool is a fake pool used to identify rule that are supported for remoting. If the rule's
@@ -484,18 +492,6 @@ func (m *moduleContext) GetMissingDependencies() []string {
 	return missingDeps
 }
 
-func (m *moduleContext) GetDirectDepWithTag(name string, tag blueprint.DependencyTag) Module {
-	deps := m.getDirectDepsInternal(name, tag)
-	if len(deps) == 1 {
-		return deps[0]
-	} else if len(deps) >= 2 {
-		panic(fmt.Errorf("Multiple dependencies having same BaseModuleName() %q found from %q",
-			name, m.ModuleName()))
-	} else {
-		return nil
-	}
-}
-
 func (m *moduleContext) GetDirectDepProxyWithTag(name string, tag blueprint.DependencyTag) ModuleProxy {
 	deps := m.getDirectDepsProxyInternal(name, tag)
 	if len(deps) == 1 {
@@ -542,6 +538,10 @@ func (m *moduleContext) InstallInVendorKernelRamdisk() bool {
 
 func (m *moduleContext) InstallInDebugRamdisk() bool {
 	return m.module.InstallInDebugRamdisk()
+}
+
+func (m *moduleContext) InstallInTestHarnessRamdisk() bool {
+	return m.module.InstallInTestHarnessRamdisk()
 }
 
 func (m *moduleContext) InstallInRecovery() bool {
@@ -616,22 +616,27 @@ func (m *moduleContext) requiresFullInstall() bool {
 
 func (m *moduleContext) InstallFile(installPath InstallPath, name string, srcPath Path,
 	deps ...InstallPath) InstallPath {
-	return m.installFile(installPath, name, srcPath, deps, false, true, true, nil)
+	return m.installFile(installPath, name, srcPath, deps, false, true, true, false, nil)
 }
 
 func (m *moduleContext) InstallFileWithoutCheckbuild(installPath InstallPath, name string, srcPath Path,
 	deps ...InstallPath) InstallPath {
-	return m.installFile(installPath, name, srcPath, deps, false, true, false, nil)
+	return m.installFile(installPath, name, srcPath, deps, false, true, false, false, nil)
 }
 
 func (m *moduleContext) InstallExecutable(installPath InstallPath, name string, srcPath Path,
 	deps ...InstallPath) InstallPath {
-	return m.installFile(installPath, name, srcPath, deps, true, true, true, nil)
+	return m.installFile(installPath, name, srcPath, deps, true, true, true, false, nil)
+}
+
+func (m *moduleContext) InstallExecutableWithBootstrap(installPath InstallPath, name string, srcPath Path,
+	deps ...InstallPath) InstallPath {
+	return m.installFile(installPath, name, srcPath, deps, true, true, true, true, nil)
 }
 
 func (m *moduleContext) InstallFileWithExtraFilesZip(installPath InstallPath, name string, srcPath Path,
 	extraZip Path, deps ...InstallPath) InstallPath {
-	return m.installFile(installPath, name, srcPath, deps, false, true, true, &extraFilesZip{
+	return m.installFile(installPath, name, srcPath, deps, false, true, true, false, &extraFilesZip{
 		zip: extraZip,
 		dir: installPath,
 	})
@@ -685,6 +690,7 @@ func (m *moduleContext) packageFile(fullInstallPath InstallPath, srcPath Path, e
 		owner:                 owner,
 		requiresFullInstall:   requiresFullInstall,
 		fullInstallPath:       fullInstallPath,
+		installInSanitizerDir: m.InstallInSanitizerDir(),
 		variation:             m.ModuleSubDir(),
 		prebuilt:              IsModulePrebuilt(m, m.Module()),
 	}
@@ -692,8 +698,20 @@ func (m *moduleContext) packageFile(fullInstallPath InstallPath, srcPath Path, e
 	return spec
 }
 
+type ruleKey struct {
+	executable bool
+	bootstrap  bool
+}
+
+var ruleMap = map[ruleKey]blueprint.Rule{
+	{executable: true, bootstrap: true}:   CpExecutableWithBashBootstrap,
+	{executable: true, bootstrap: false}:  CpExecutableWithBash,
+	{executable: false, bootstrap: true}:  CpWithBashBootstrap,
+	{executable: false, bootstrap: false}: CpWithBash,
+}
+
 func (m *moduleContext) installFile(installPath InstallPath, name string, srcPath Path, deps []InstallPath,
-	executable bool, hooks bool, checkbuild bool, extraZip *extraFilesZip) InstallPath {
+	executable bool, hooks bool, checkbuild bool, bootstrap bool, extraZip *extraFilesZip) InstallPath {
 	if _, ok := srcPath.(InstallPath); ok {
 		m.ModuleErrorf("Src path cannot be another installed file. Please use a path from source or intermediates instead.")
 	}
@@ -735,10 +753,7 @@ func (m *moduleContext) installFile(installPath InstallPath, name string, srcPat
 			extraFiles:    extraZip,
 		})
 		if !m.Config().KatiEnabled() {
-			rule := CpWithBash
-			if executable {
-				rule = CpExecutableWithBash
-			}
+			rule := ruleMap[ruleKey{executable: executable, bootstrap: bootstrap}]
 
 			extraCmds := ""
 			if extraZip != nil {
@@ -829,20 +844,21 @@ func (m *moduleContext) InstallSymlink(installPath InstallPath, name string, src
 
 	owner, overrides := m.getOwnerAndOverrides()
 	m.packagingSpecs = append(m.packagingSpecs, PackagingSpec{
-		relPathInPackage:    Rel(m, fullInstallPath.PartitionDir(), fullInstallPath.String()),
-		srcPath:             nil,
-		symlinkTarget:       relPath,
-		executable:          false,
-		partition:           fullInstallPath.partition,
-		skipInstall:         m.skipInstall(),
-		aconfigPaths:        uniquelist.Make(m.getAconfigPaths()),
-		archType:            m.target.Arch.ArchType,
-		overrides:           uniquelist.Make(overrides),
-		owner:               owner,
-		requiresFullInstall: m.requiresFullInstall(),
-		fullInstallPath:     fullInstallPath,
-		variation:           m.ModuleSubDir(),
-		prebuilt:            IsModulePrebuilt(m, m.Module()),
+		relPathInPackage:      Rel(m, fullInstallPath.PartitionDir(), fullInstallPath.String()),
+		srcPath:               nil,
+		symlinkTarget:         relPath,
+		executable:            false,
+		partition:             fullInstallPath.partition,
+		skipInstall:           m.skipInstall(),
+		aconfigPaths:          uniquelist.Make(m.getAconfigPaths()),
+		archType:              m.target.Arch.ArchType,
+		overrides:             uniquelist.Make(overrides),
+		owner:                 owner,
+		requiresFullInstall:   m.requiresFullInstall(),
+		fullInstallPath:       fullInstallPath,
+		installInSanitizerDir: m.InstallInSanitizerDir(),
+		variation:             m.ModuleSubDir(),
+		prebuilt:              IsModulePrebuilt(m, m.Module()),
 	})
 
 	return fullInstallPath
@@ -881,20 +897,21 @@ func (m *moduleContext) InstallAbsoluteSymlink(installPath InstallPath, name str
 
 	owner, overrides := m.getOwnerAndOverrides()
 	m.packagingSpecs = append(m.packagingSpecs, PackagingSpec{
-		relPathInPackage:    Rel(m, fullInstallPath.PartitionDir(), fullInstallPath.String()),
-		srcPath:             nil,
-		symlinkTarget:       absPath,
-		executable:          false,
-		partition:           fullInstallPath.partition,
-		skipInstall:         m.skipInstall(),
-		aconfigPaths:        uniquelist.Make(m.getAconfigPaths()),
-		archType:            m.target.Arch.ArchType,
-		overrides:           uniquelist.Make(overrides),
-		owner:               owner,
-		requiresFullInstall: m.requiresFullInstall(),
-		fullInstallPath:     fullInstallPath,
-		variation:           m.ModuleSubDir(),
-		prebuilt:            IsModulePrebuilt(m, m.Module()),
+		relPathInPackage:      Rel(m, fullInstallPath.PartitionDir(), fullInstallPath.String()),
+		srcPath:               nil,
+		symlinkTarget:         absPath,
+		executable:            false,
+		partition:             fullInstallPath.partition,
+		skipInstall:           m.skipInstall(),
+		aconfigPaths:          uniquelist.Make(m.getAconfigPaths()),
+		archType:              m.target.Arch.ArchType,
+		overrides:             uniquelist.Make(overrides),
+		owner:                 owner,
+		requiresFullInstall:   m.requiresFullInstall(),
+		fullInstallPath:       fullInstallPath,
+		installInSanitizerDir: m.InstallInSanitizerDir(),
+		variation:             m.ModuleSubDir(),
+		prebuilt:              IsModulePrebuilt(m, m.Module()),
 	})
 
 	return fullInstallPath
@@ -906,7 +923,7 @@ func (m *moduleContext) InstallTestData(installPath InstallPath, data []DataPath
 	ret := make(InstallPaths, 0, len(data))
 	for _, d := range data {
 		relPath := d.ToRelativeInstallPath()
-		installed := m.installFile(installPath, relPath, d.SrcPath, nil, false, false, true, nil)
+		installed := m.installFile(installPath, relPath, d.SrcPath, nil, false, false, true, false, nil)
 		ret = append(ret, installed)
 	}
 
@@ -1066,10 +1083,6 @@ func (c *moduleContext) SetTestSuiteInfo(info TestSuiteInfo) {
 	}
 	c.testSuiteInfo = info
 	c.testSuiteInfoSet = true
-}
-
-func (c *moduleContext) FreeModuleAfterGenerateBuildActions() {
-	c.bp.FreeModuleAfterGenerateBuildActions()
 }
 
 func (m *moduleContext) ModulePhonyFiles(srcPaths ...Path) {

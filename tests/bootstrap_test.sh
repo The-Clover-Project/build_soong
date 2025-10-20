@@ -9,7 +9,7 @@ source "$(dirname "$0")/lib.sh"
 
 readonly GENERATED_BUILD_FILE_NAME="BUILD.bazel"
 
-readonly target_product=aosp_arm
+readonly target_product=test_arm64
 
 function test_smoke {
   setup
@@ -585,4 +585,4 @@ EOF
   fi
 }
 
-scan_and_run_tests
+scan_and_run_tests "$@"

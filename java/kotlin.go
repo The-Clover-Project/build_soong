@@ -33,16 +33,19 @@ type KotlinCompileData struct {
 }
 
 const inputDeltaCmd = `${config.FindInputDeltaCmd} --target "$out" ` +
-	`--inputs_file "$out.rsp" --new_state "$newStateFile" --prior_state "$priorStateFile" > $sourceDeltaFile`
+	`--inputs_file "$out.rsp" --new_state "$newStateFile" --prior_state "$priorStateFile" --inspect $srcJars > $sourceDeltaFile`
+
+const kotlinZipSyncCmd = `mkdir -p $srcJarDir && ` +
+	`${config.ZipSyncCmd} -d $srcJarDir -l $srcJarDir/list -f "*.java" -f "*.kt" $srcJars`
 
 const nonIncKotlinCmd = `rm -rf "$classesDir" "$headerClassesDir" "$srcJarDir" "$kotlinBuildFile" "$emptyDir" && ` +
-	`mkdir -p "$classesDir" "$headerClassesDir" "$srcJarDir" "$emptyDir" && ` +
-	`${config.ZipSyncCmd} -d $srcJarDir -l $srcJarDir/list -f "*.java" -f "*.kt" $srcJars && ` +
+	`mkdir -p "$classesDir" "$headerClassesDir" "$emptyDir" && ` +
+	kotlinZipSyncCmd + ` && ` +
 	`${config.GenKotlinBuildFileCmd} --classpath "$classpath" $friendPathsArg --name "$name"` +
 	` --out_dir "$classesDir" --srcs "$out.rsp" --srcs "$srcJarDir/list"` +
 	` $commonSrcFilesArg --out "$kotlinBuildFile" && ` +
 	`${config.KotlincCmd} ${config.KotlincGlobalFlags} ` +
-	` ${config.KotlincSuppressJDK9Warnings} ${config.JavacHeapFlags} ` +
+	` ${config.KotlincSuppressJDK9Warnings} ${config.KotlincHeapFlags} ` +
 	` $kotlincFlags -jvm-target $kotlinJvmTarget $composePluginFlag $kotlincPluginFlags -Xbuild-file=$kotlinBuildFile ` +
 	` -kotlin-home $emptyDir ` +
 	` -Xplugin=${config.KotlinAbiGenPluginJar} ` +
@@ -94,25 +97,37 @@ var kotlinIncremental = pctx.AndroidRemoteStaticRule("kotlin-incremental", andro
 		Command: // Incremental
 
 		inputDeltaCmd + ` && ` +
+			`. ${config.UsePartialCompileFile} && ` +
 			`if [ "$$SOONG_USE_PARTIAL_COMPILE" = "true" ]; then ` +
 			`rm -rf "$srcJarDir" "$kotlinBuildFile" "$emptyDir" && ` +
-			`mkdir -p "$headerClassesDir" "$srcJarDir" "$emptyDir" && ` +
-			`${config.ZipSyncCmd} -d $srcJarDir -l $srcJarDir/list -f "*.java" -f "*.kt" $srcJars && ` +
+			`mkdir -p "$headerClassesDir" "$emptyDir" && ` +
+			kotlinZipSyncCmd + ` && ` +
 			`${config.GenKotlinBuildFileCmd} --classpath "$classpath" $friendPathsArg --name "$name"` +
 			` --out_dir "$classesDir" --srcs "$out.rsp" --srcs "$srcJarDir/list"` +
 			` $commonSrcFilesArg --out "$kotlinBuildFile" && ` +
 			`${config.KotlinIncrementalClientBinary} ${config.KotlincGlobalFlags} ` +
-			` ${config.KotlincSuppressJDK9Warnings} ${config.JavacHeapFlags} ` +
+			` ${config.KotlincSuppressJDK9Warnings} ${config.KotlincHeapFlags} ` +
 			` $kotlincFlags $composeEmbeddablePluginFlag $kotlincPluginFlags ` +
 			` -jvm-target $kotlinJvmTarget -build-file=$kotlinBuildFile ` +
 			` -source-delta-file=$sourceDeltaFile` +
 			` -kotlin-home=$emptyDir ` +
 			` -root-dir=$incrementalRootDir` +
+			` -src-jars-dir=$srcJarDir` +
 			` -output-dir=$outputDir` +
 			` -build-dir=$buildDir ` +
 			` -working-dir=$workDir ` +
 			` -Xplugin=${config.KotlinAbiGenPluginJar} ` +
 			` -P plugin:org.jetbrains.kotlin.jvm.abi:outputDir=$headerClassesDir && ` +
+			// abi-gen doesn't delete headers for deleted source files.
+			// To compensate, we diff the classesDir with the headerClassesDir and delete any
+			// header files that should no longer be there.
+			` EXISTING_CLASSES=$$(mktemp -p $classesDir) && ` +
+			` EXISTING_HEADER_CLASSES=$$(mktemp -p $headerClassesDir) && ` +
+			` (cd "$classesDir" && find . -type f | sort) > $$EXISTING_CLASSES && ` +
+			` (cd "$headerClassesDir" && find . -type f | sort) > $$EXISTING_HEADER_CLASSES && ` +
+			` comm -13 "$$EXISTING_CLASSES" "$$EXISTING_HEADER_CLASSES" ` +
+			`   | while read -r filename; do rm "$headerClassesDir/$$filename"; done && ` +
+			` rm $$EXISTING_CLASSES && rm -f $$EXISTING_HEADER_CLASSES && ` +
 			`${config.SoongZipCmd} -jar $jarArgs -o $out -C $classesDir -D $classesDir -write_if_changed && ` +
 			`${config.SoongZipCmd} -jar $jarArgs -o $headerJar -C $headerClassesDir -D $headerClassesDir -write_if_changed && ` +
 			`rm -rf "$srcJarDir" ; ` +
@@ -136,6 +151,7 @@ var kotlinIncremental = pctx.AndroidRemoteStaticRule("kotlin-incremental", andro
 			"${config.KotlinAbiGenPluginJar}",
 			"${config.GenKotlinBuildFileCmd}",
 			"${config.SoongZipCmd}",
+			"${config.UsePartialCompileFile}",
 			"${config.ZipSyncCmd}",
 		},
 		Rspfile:        "$out.rsp",
@@ -148,8 +164,8 @@ var kotlinIncremental = pctx.AndroidRemoteStaticRule("kotlin-incremental", andro
 
 var kotlinKytheExtract = pctx.AndroidStaticRule("kotlinKythe",
 	blueprint.RuleParams{
-		Command: `rm -rf "$srcJarDir" && mkdir -p "$srcJarDir" && ` +
-			`${config.ZipSyncCmd} -d $srcJarDir -l $srcJarDir/list -f "*.java" -f "*.kt" $srcJars && ` +
+		Command: `rm -rf "$srcJarDir" && ` +
+			kotlinZipSyncCmd + ` && ` +
 			`${config.KotlinKytheExtractor} -corpus ${kytheCorpus} --srcs @$out.rsp --srcs @"$srcJarDir/list" $commonSrcFilesList --cp @$classpath -o $out --kotlin_out $outJar ` +
 			// wrap the additional kotlin args.
 			// Skip Xbuild file, pass the cp explicitly.
@@ -217,7 +233,6 @@ func (j *Module) kotlinCompile(ctx android.ModuleContext, outputFile, headerOutp
 	var orderOnlyDeps android.Paths
 	deps = append(deps, flags.kotlincClasspath...)
 	deps = append(deps, flags.kotlincDeps...)
-	deps = append(deps, srcJars...)
 	deps = append(deps, commonSrcFiles...)
 
 	kotlinName := filepath.Join(ctx.ModuleDir(), ctx.ModuleSubDir(), ctx.ModuleName())
@@ -247,7 +262,6 @@ func (j *Module) kotlinCompile(ctx android.ModuleContext, outputFile, headerOutp
 	deps = append(deps, classpathRspFile)
 
 	if incremental {
-
 		var snapshotDeps android.Paths
 		// Check that we have a snapshot.bin for each jar, and include them as needed.
 		for _, dep := range deps.FilterByExt(".jar") {
@@ -277,6 +291,10 @@ func (j *Module) kotlinCompile(ctx android.ModuleContext, outputFile, headerOutp
 
 		deps = append(deps, snapshotDeps...)
 	}
+	// Don't add srcJars as deps until after checking for snapshots.
+	// Taking kotlin snapshots of sources doesn't make sense, as they aren't depended upon as
+	// libraries. Their contents are inspected by find_input_delta directly.
+	deps = append(deps, srcJars...)
 
 	var jarArgs string
 	if manifest.Valid() {
@@ -290,6 +308,7 @@ func (j *Module) kotlinCompile(ctx android.ModuleContext, outputFile, headerOutp
 	outputDir := "classes"
 	buildDir := "build"
 	workDir := "work"
+	srcJarDir := "srcJars"
 	args := map[string]string{
 		"classpath":          classpathRspFile.String(),
 		"friendPathsArg":     flags.kotlincFriendPathsArg,
@@ -300,7 +319,7 @@ func (j *Module) kotlinCompile(ctx android.ModuleContext, outputFile, headerOutp
 		"classesDir":         android.PathForModuleOut(ctx, "kotlinc", outputDir).String(),
 		"headerClassesDir":   android.PathForModuleOut(ctx, "kotlinc", "header_classes").String(),
 		"headerJar":          headerOutputFile.String(),
-		"srcJarDir":          android.PathForModuleOut(ctx, "kotlinc", "srcJars").String(),
+		"srcJarDir":          android.PathForModuleOut(ctx, "kotlinc", srcJarDir).String(),
 		"kotlinBuildFile":    android.PathForModuleOut(ctx, "kotlinc-build.xml").String(),
 		"emptyDir":           android.PathForModuleOut(ctx, "kotlinc", "empty").String(),
 		"kotlinJvmTarget":    flags.javaVersion.StringForKotlinc(),
@@ -351,7 +370,7 @@ func (j *Module) kotlinCompile(ctx android.ModuleContext, outputFile, headerOutp
 	ctx.Phony("partialcompileclean", cleanPhonyPath)
 
 	// Emit kythe xref rule
-	if (ctx.Config().EmitXrefRules()) && ctx.Module() == ctx.PrimaryModule() {
+	if (ctx.Config().EmitXrefRules()) && ctx.IsPrimaryModule() {
 		extractionFile := outputFile.ReplaceExtension(ctx, "kzip")
 		args := map[string]string{
 			"classpath":          classpathRspFile.String(),
@@ -420,10 +439,71 @@ func getAssociateJars(ctx android.ModuleContext, associates []string) android.Pa
 	return associateJars
 }
 
+var kspIncrementalClean = pctx.AndroidStaticRule("ksp-partialcompileclean",
+	blueprint.RuleParams{
+		Command: `rm -rf "$kspDir/out/caches"`,
+	},
+	"kspDir")
+
+var kspProcessingRule = pctx.AndroidRemoteStaticRule("ksp", android.RemoteRuleSupports{},
+	blueprint.RuleParams{
+		Command: `mkdir -p "$kspDir/out" && ` +
+			` . ${config.UsePartialCompileFile} && ` +
+			inputDeltaCmd + ` && ` +
+			kotlinZipSyncCmd + ` && ` +
+			`${config.KotlinKspClientBinary} ` +
+			` -jvm-target=$kotlinJvmTarget ` +
+			` -project-base-dir=. ` +
+			` -module-name=$name ` +
+			` -source-roots=@$out.rsp:@$srcJarDir/list ` +
+			` -src-jars-dir=$srcJarDir` +
+			` -libraries=@$classpath ` +
+			` -friends=$friendArg ` +
+			` -common-src-roots=$commonSrcRootArg ` +
+			` -output-base-dir=$kspDir/out ` +
+			` -java-output-dir=$kspDir/out/java ` +
+			` -caches-dir=$kspDir/out/caches ` +
+			` -class-output-dir=$kspDir/out/classes ` +
+			` -kotlin-output-dir=$kspDir/out/kotlin ` +
+			` -resource-output-dir=$kspDir/out/resources ` +
+			` -source-delta-file=$sourceDeltaFile ` +
+			` -incremental=$$([ "$$SOONG_USE_PARTIAL_COMPILE" = "true" ] && echo "true" || echo "false") ` +
+			` -language-version=2.2 ` +
+			` -api-version=2.2 ` +
+			` -processor-options=$processorOptions ` +
+			` $kspProcessorPath ` +
+			`&& ` +
+			`${config.SoongZipCmd} -jar -write_if_changed -o $out -C $kspDir/out/java -D $kspDir/out/java && ` +
+			`${config.SoongZipCmd} -jar -write_if_changed -o $kotlinSrcJarOutputFile -C $kspDir/out/kotlin -D $kspDir/out/kotlin && ` +
+			`${config.SoongZipCmd} -jar -write_if_changed -o $resJarOutputFile -C $kspDir/out/resources -D $kspDir/out/resources && ` +
+			`${config.SoongZipCmd} -jar -write_if_changed -o $classJarOutputFile -C $kspDir/out/classes -D $kspDir/out/classes && ` +
+			moveDeltaStateFile,
+		CommandDeps: []string{
+			"${config.FindInputDeltaCmd}",
+			"${config.GenKotlinBuildFileCmd}",
+			"${config.JavaCmd}",
+			"${config.KotlincCmd}",
+			"${config.KotlinCompilerJar}",
+			"${config.KotlinKspClientBinary}",
+			"${config.SoongZipCmd}",
+			"${config.UsePartialCompileFile}",
+			"${config.ZipSyncCmd}",
+		},
+		Rspfile:        "$out.rsp",
+		RspfileContent: `$in`,
+		Restat:         true,
+	},
+	"kotlincFlags", "kspProcessorPath", "kotlinJvmTarget",
+	"classpath", "fcp", "srcJars", "commonSrcFilesArg", "srcJarDir", "kspDir",
+	"kotlinBuildFile", "name", "friendPathsArg", "friendArg", "processorOptions",
+	"commonSrcRootArg", "kotlinSrcJarOutputFile", "resJarOutputFile", "classJarOutputFile",
+	"newStateFile", "priorStateFile", "sourceDeltaFile")
+
 var kaptStubs = pctx.AndroidRemoteStaticRule("kaptStubs", android.RemoteRuleSupports{},
 	blueprint.RuleParams{
 		Command: `rm -rf "$srcJarDir" "$kotlinBuildFile" "$kaptDir" && ` +
 			`mkdir -p "$srcJarDir" "$kaptDir/sources" "$kaptDir/classes" && ` +
+			// Only include java files in our src jar, so don't use kotlinZipSyncCmd
 			`${config.ZipSyncCmd} -d $srcJarDir -l $srcJarDir/list -f "*.java" $srcJars && ` +
 			`${config.FindInputDeltaCmd} --template '' --target "$out" --inputs_file "$out.rsp" && ` +
 			`${config.GenKotlinBuildFileCmd} --classpath "$classpath" $friendPathsArg --name "$name"` +
@@ -460,6 +540,87 @@ var kaptStubs = pctx.AndroidRemoteStaticRule("kaptStubs", android.RemoteRuleSupp
 	"kotlincFlags", "encodedJavacFlags", "kaptProcessorPath", "kaptProcessor",
 	"classpath", "srcJars", "commonSrcFilesArg", "srcJarDir", "kaptDir",
 	"kotlinBuildFile", "name", "classesJarOut", "friendPathsArg")
+
+func (j *Module) kotlinKsp(ctx android.ModuleContext, javaSrcJarOutputFile, kotlinSrcJarOutputFile,
+	resJarOutputFile, classJarOutputFile android.WritablePath, processorFlags []string,
+	srcFiles, commonSrcFiles, srcJars android.Paths, compileData KotlinCompileData,
+	flags javaBuilderFlags) {
+
+	srcFiles = append(android.Paths(nil), srcFiles...)
+
+	var deps android.Paths
+	deps = append(deps, flags.kotlincClasspath...)
+	deps = append(deps, flags.kotlincDeps...)
+	deps = append(deps, srcJars...)
+	deps = append(deps, flags.processorPath...)
+	deps = append(deps, commonSrcFiles...)
+
+	commonSrcsList := kotlinCommonSrcsList(ctx, commonSrcFiles)
+	commonSrcFilesArg := ""
+	commonSrcRootArg := ""
+	if commonSrcsList.Valid() {
+		deps = append(deps, commonSrcsList.Path())
+		commonSrcFilesArg = "--common_srcs " + commonSrcsList.String()
+		commonSrcRootArg = strings.Join(commonSrcFiles.Strings(), ":")
+	}
+
+	kspName := filepath.Join(ctx.ModuleDir(), ctx.ModuleSubDir(), ctx.ModuleName(), "ksp")
+	kspName = strings.ReplaceAll(kspName, "/", "__")
+
+	classpathRspFile := android.PathForModuleOut(ctx, "ksp", "classpath.rsp")
+	android.WriteFileRule(ctx, classpathRspFile, strings.Join(flags.kotlincClasspath.Strings(), "\n"))
+	deps = append(deps, classpathRspFile)
+	associateJars := getAssociateJars(ctx, j.properties.Associates)
+	friendArg := ""
+	if len(associateJars) > 0 {
+		friendArg = strings.Join(associateJars.Strings(), ":")
+	}
+
+	kspDir := android.PathForModuleOut(ctx, "ksp")
+	ctx.Build(pctx, android.BuildParams{
+		Rule:            kspProcessingRule,
+		Description:     "ksp annotation processing",
+		Output:          javaSrcJarOutputFile,
+		ImplicitOutputs: android.WritablePaths{kotlinSrcJarOutputFile, resJarOutputFile, classJarOutputFile},
+		Inputs:          append(srcFiles, srcJars...),
+		Implicits:       deps,
+		Args: map[string]string{
+			"classpath":              classpathRspFile.String(),
+			"fcp":                    flags.kotlincClasspath.FormJavaClassPath(""),
+			"friendPathsArg":         flags.kotlincFriendPathsArg,
+			"friendArg":              friendArg,
+			"kotlincFlags":           flags.kotlincFlags,
+			"kotlinJvmTarget":        flags.javaVersion.StringForKotlinc(),
+			"commonSrcFilesArg":      commonSrcFilesArg,
+			"commonSrcRootArg":       commonSrcRootArg,
+			"srcJars":                strings.Join(srcJars.Strings(), " "),
+			"srcJarDir":              kspDir.Join(ctx, "srcJars").String(),
+			"processorOptions":       strings.Join(processorFlags, ":"),
+			"kspProcessorPath":       strings.Join(flags.processorPath.Strings(), " "),
+			"kspDir":                 kspDir.String(),
+			"name":                   kspName,
+			"kotlinSrcJarOutputFile": kotlinSrcJarOutputFile.String(),
+			"resJarOutputFile":       resJarOutputFile.String(),
+			"classJarOutputFile":     classJarOutputFile.String(),
+			"newStateFile":           compileData.pcStateFileNew.String(),
+			"priorStateFile":         compileData.pcStateFilePrior.String(),
+			"sourceDeltaFile":        compileData.diffFile.String(),
+		},
+	})
+
+	cleanPhonyPath := android.PathForModuleOut(ctx, "partialcompileclean", kspName)
+	ctx.Build(pctx, android.BuildParams{
+		Rule:        kspIncrementalClean,
+		Description: "ksp-partialcompileclean",
+		Output:      cleanPhonyPath,
+		Inputs:      android.Paths{},
+		Args: map[string]string{
+			"kspDir": kspDir.String(),
+		},
+		PhonyOutput: true,
+	})
+	ctx.Phony("partialcompileclean", cleanPhonyPath)
+}
 
 // kotlinKapt performs Kotlin-compatible annotation processing.  It takes .kt and .java sources and srcjars, and runs
 // annotation processors over all of them, producing a srcjar of generated code in outputFile.  The srcjar should be

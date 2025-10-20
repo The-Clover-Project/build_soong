@@ -32,6 +32,9 @@ import (
 	"android/soong/android"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+
+// @auto-generate: gob
 type PythonLibraryInfo struct {
 	SrcsPathMappings   []pathMapping
 	DataPathMappings   []pathMapping
@@ -42,28 +45,6 @@ type PythonLibraryInfo struct {
 }
 
 var PythonLibraryInfoProvider = blueprint.NewProvider[PythonLibraryInfo]()
-
-// the version-specific properties that apply to python modules.
-type VersionProperties struct {
-	// whether the module is required to be built with this version.
-	// Defaults to true for Python 3, and false otherwise.
-	Enabled *bool
-
-	// list of source files specific to this Python version.
-	// Using the syntax ":module", srcs may reference the outputs of other modules that produce source files,
-	// e.g. genrule or filegroup.
-	Srcs []string `android:"path,arch_variant"`
-
-	// list of source files that should not be used to build the Python module for this version.
-	// This is most useful to remove files that are not common to all Python versions.
-	Exclude_srcs []string `android:"path,arch_variant"`
-
-	// list of the Python libraries used only for this Python version.
-	Libs []string `android:"arch_variant"`
-
-	// whether the binary is required to be built with embedded launcher for this version, defaults to true.
-	Embedded_launcher *bool // TODO(b/174041232): Remove this property
-}
 
 // properties that apply to all python modules
 type BaseProperties struct {
@@ -111,20 +92,6 @@ type BaseProperties struct {
 	// list of shared libraries that should be packaged with the python code for this module.
 	Shared_libs []string `android:"arch_variant"`
 
-	Version struct {
-		// Python2-specific properties, including whether Python2 is supported for this module
-		// and version-specific sources, exclusions and dependencies.
-		Py2 VersionProperties `android:"arch_variant"`
-
-		// Python3-specific properties, including whether Python3 is supported for this module
-		// and version-specific sources, exclusions and dependencies.
-		Py3 VersionProperties `android:"arch_variant"`
-	} `android:"arch_variant"`
-
-	// This enabled property is to accept the collapsed enabled property from the VersionProperties.
-	// It is unused now, as all builds should be python3.
-	Enabled *bool `blueprint:"mutated"`
-
 	// whether the binary is required to be built with an embedded python interpreter, defaults to
 	// true. This allows taking the resulting binary outside of the build and running it on machines
 	// that don't have python installed or may have an older version of python.
@@ -132,6 +99,7 @@ type BaseProperties struct {
 }
 
 // Used to store files of current module after expanding dependencies
+// @auto-generate: gob
 type pathMapping struct {
 	dest string
 	src  android.Path
@@ -203,10 +171,6 @@ func (p *PythonLibraryModule) getPkgPath() string {
 	return String(p.properties.Pkg_path)
 }
 
-func (p *PythonLibraryModule) getBaseProperties() *BaseProperties {
-	return &p.properties
-}
-
 func (p *PythonLibraryModule) getBundleSharedLibs() android.Paths {
 	return p.bundleSharedLibs
 }
@@ -254,10 +218,6 @@ var (
 	internalPath             = "internal"
 )
 
-type basePropertiesProvider interface {
-	getBaseProperties() *BaseProperties
-}
-
 func anyHasExt(paths []string, ext string) bool {
 	for _, p := range paths {
 		if filepath.Ext(p) == ext {
@@ -277,17 +237,6 @@ func (p *PythonLibraryModule) anySrcHasExt(ctx android.BottomUpMutatorContext, e
 //   - if required, specifies launcher and adds launcher dependencies,
 //   - applies python version mutations to Python dependencies
 func (p *PythonLibraryModule) DepsMutator(ctx android.BottomUpMutatorContext) {
-	// Flatten the version.py3 props down into the main property struct. Leftover from when
-	// there was both python2 and 3 in the build, and properties could be different between them.
-	if base, ok := ctx.Module().(basePropertiesProvider); ok {
-		props := base.getBaseProperties()
-
-		err := proptools.AppendMatchingProperties([]interface{}{props}, &props.Version.Py3, nil)
-		if err != nil {
-			panic(err)
-		}
-	}
-
 	android.ProtoDeps(ctx, &p.protoProperties)
 
 	// If sources contain a proto file, add dependency on libprotobuf-python
@@ -378,9 +327,6 @@ func (p *PythonLibraryModule) AddDepsOnPythonLauncherAndStdlib(ctx android.Botto
 
 // GenerateAndroidBuildActions performs build actions common to all Python modules
 func (p *PythonLibraryModule) GenerateAndroidBuildActions(ctx android.ModuleContext) {
-	if proptools.BoolDefault(p.properties.Version.Py2.Enabled, false) {
-		ctx.PropertyErrorf("version.py2.enabled", "Python 2 is no longer supported, please convert to python 3.")
-	}
 	expandedSrcs := android.PathsForModuleSrcExcludes(ctx, p.properties.Srcs, p.properties.Exclude_srcs)
 	// Keep before any early returns.
 	android.SetProvider(ctx, android.TestOnlyProviderKey, android.TestModuleInformation{

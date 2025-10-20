@@ -9,6 +9,7 @@ bootstrap_go_package {
         "class_loader_context.go",
         "config.go",
         "dexpreopt.go",
+        "dexpreopt_enc.go",
         "dexpreopt_tools_zip.go",
         "system_server_zip.go",
         "testing.go",
@@ -18,7 +19,10 @@ bootstrap_go_package {
         "dexpreopt_test.go",
     ],
     deps: [
+        "blueprint",
+        "blueprint-gobtools",
         "blueprint-pathtools",
+        "blueprint-proptools",
         "soong-android",
     ],
 }

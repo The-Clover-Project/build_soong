@@ -273,6 +273,7 @@ type LinkableInfo struct {
 	HasLLNDKStubs            bool
 	IsLLNDKMovedToApex       bool
 	ImplementationModuleName string
+	SelectedStl              string
 }
 
 // @auto-generate: gob
@@ -304,6 +305,8 @@ func RegisterCCBuildComponents(ctx android.RegistrationContext) {
 	})
 
 	ctx.PostDepsMutators(func(ctx android.RegisterMutatorsContext) {
+		ctx.BottomUp("sanitize_markapexes", markSanitizableApexesMutator)
+
 		for _, san := range Sanitizers {
 			san.registerMutators(ctx)
 		}
@@ -320,8 +323,6 @@ func RegisterCCBuildComponents(ctx android.RegistrationContext) {
 		ctx.Transition("orderfile", &orderfileTransitionMutator{})
 
 		ctx.Transition("lto", &ltoTransitionMutator{})
-
-		ctx.BottomUp("check_linktype", checkLinkTypeMutator)
 	})
 
 	ctx.PostApexMutators(func(ctx android.RegisterMutatorsContext) {
@@ -564,7 +565,7 @@ type BaseProperties struct {
 	// defaults to the value of sdk_version.  When this is set to "apex_inherit", this tracks
 	// min_sdk_version of the containing APEX. When the module
 	// is not built for an APEX, "apex_inherit" defaults to sdk_version.
-	Min_sdk_version *string
+	Min_sdk_version proptools.Configurable[string] `android:"replace_instead_of_append"`
 
 	// If true, always create an sdk variant and don't create a platform variant.
 	Sdk_variant_only *bool
@@ -1154,10 +1155,9 @@ type Module struct {
 	sourceProperties android.SourceProperties
 
 	// initialize before calling Init
-	hod         android.HostOrDeviceSupported
-	multilib    android.Multilib
-	testModule  bool
-	incremental bool
+	hod        android.HostOrDeviceSupported
+	multilib   android.Multilib
+	testModule bool
 
 	// Allowable SdkMemberTypes of this module type.
 	sdkMemberTypes []android.SdkMemberType
@@ -1204,8 +1204,6 @@ type Module struct {
 	// For apex variants, this is set as apex.min_sdk_version
 	apexSdkVersion android.ApiLevel
 
-	hideApexVariantFromMake bool
-
 	logtagsPaths android.Paths
 
 	WholeRustStaticlib bool
@@ -1224,7 +1222,7 @@ type Module struct {
 }
 
 func (c *Module) IncrementalSupported() bool {
-	return c.incremental
+	return true
 }
 
 var _ blueprint.Incremental = (*Module)(nil)
@@ -1312,16 +1310,24 @@ func (c *Module) SdkVersion() string {
 	return String(c.Properties.Sdk_version)
 }
 
-func (c *Module) MinSdkVersion() string {
-	return String(c.Properties.Min_sdk_version)
+func (c *Module) MinSdkVersion(ctx android.ConfigurableEvaluatorContext) string {
+	return c.Properties.Min_sdk_version.GetOrDefault(c.ConfigurableEvaluator(ctx), "")
 }
 
-func (c *Module) SetSdkVersion(s string) {
-	c.Properties.Sdk_version = StringPtr(s)
+func (c *Module) SetSdkVersion(s *string) {
+	c.Properties.Sdk_version = s
+}
+
+func (c *Module) SetSdkAndPlatformVariantVisibleToMake() {
+	c.Properties.SdkAndPlatformVariantVisibleToMake = true
+}
+
+func (c *Module) SetSdkVariant() {
+	c.Properties.IsSdkVariant = true
 }
 
 func (c *Module) SetMinSdkVersion(s string) {
-	c.Properties.Min_sdk_version = StringPtr(s)
+	c.Properties.Min_sdk_version = proptools.NewSimpleConfigurable(s)
 }
 
 func (c *Module) SetStl(s string) {
@@ -1834,10 +1840,10 @@ func (ctx *moduleContextImpl) sdkVersion() string {
 	return ""
 }
 
-func MinSdkVersion(mod VersionedLinkableInterface, ctxIsForPlatform bool, device bool,
+func MinSdkVersion(ctx android.ConfigurableEvaluatorContext, mod VersionedLinkableInterface, ctxIsForPlatform bool, device bool,
 	platformSdkVersion string) string {
 
-	ver := mod.MinSdkVersion()
+	ver := mod.MinSdkVersion(ctx)
 	if ver == "apex_inherit" && !ctxIsForPlatform {
 		ver = mod.ApexSdkVersion().String()
 	}
@@ -1891,7 +1897,7 @@ func (ctx *moduleContextImpl) minSdkVersion() string {
 	if ctx.ctx.Device() {
 		platformSdkVersion = ctx.ctx.Config().PlatformSdkVersion().String()
 	}
-	return MinSdkVersion(ctx.mod, CtxIsForPlatform(ctx.ctx), ctx.ctx.Device(), platformSdkVersion)
+	return MinSdkVersion(ctx.ctx, ctx.mod, CtxIsForPlatform(ctx.ctx), ctx.ctx.Device(), platformSdkVersion)
 }
 
 func (ctx *moduleContextImpl) isSdkVariant() bool {
@@ -2019,7 +2025,6 @@ func newModule(hod android.HostOrDeviceSupported, multilib android.Multilib) *Mo
 	module.lto = &lto{}
 	module.afdo = &afdo{}
 	module.orderfile = &orderfile{}
-	module.incremental = true
 	return module
 }
 
@@ -2308,7 +2313,7 @@ func CopySymbolsAndSetSymbolsInfoProvider(ctx android.ModuleContext, symbolInfos
 }
 
 func (c *Module) collectSymbolsInfo(ctx android.ModuleContext) {
-	if !c.hideApexVariantFromMake && !c.Properties.HideFromMake {
+	if !c.Properties.HideFromMake {
 		infos := &SymbolInfos{}
 		for _, feature := range c.features {
 			infos.AppendSymbols(c.getSymbolInfo(ctx, feature, c.baseSymbolInfo(ctx)))
@@ -2376,7 +2381,7 @@ func (c *Module) GenerateAndroidBuildActions(actx android.ModuleContext) {
 	c.Properties.SubName = GetSubnameProperty(actx, c)
 	apexInfo, _ := android.ModuleProvider(actx, android.ApexInfoProvider)
 	if !apexInfo.IsForPlatform() {
-		c.hideApexVariantFromMake = true
+		c.HideFromMake()
 	}
 
 	c.makeLinkType = GetMakeLinkType(actx, c)
@@ -2543,8 +2548,13 @@ func (c *Module) GenerateAndroidBuildActions(actx android.ModuleContext) {
 		}
 	}
 
+	if c.Properties.HideFromMake {
+		c.ModuleBase.HideFromMake()
+	}
+
 	buildComplianceMetadataInfo(ctx, c, deps)
 
+	c.checkLinkType(ctx)
 	c.checkDoubleLoadableLibraries(ctx)
 
 	if b, ok := c.compiler.(*baseCompiler); ok {
@@ -2737,34 +2747,15 @@ func (c *Module) GenerateAndroidBuildActions(actx android.ModuleContext) {
 		android.SetProvider(ctx, CcMakeVarsInfoProvider, c.makeVarsInfo)
 	}
 
-	if !c.hideApexVariantFromMake && !c.Properties.HideFromMake {
+	if !c.Properties.HideFromMake {
 		c.collectSymbolsInfo(ctx)
+	} else {
+		// Historically, make packaging has been responsible for creating the
+		// checkbuild dependencies.
+		// If a module is hidden from make, it will be hidden from checkbuild as well.
+		// Port this behavior to soong-only checkbuild.
+		ctx.UncheckedModule()
 	}
-
-	ctx.FreeModuleAfterGenerateBuildActions()
-}
-
-func (c *Module) CleanupAfterBuildActions() {
-	// Clear as much of Module as possible to reduce memory usage.
-	c.generators = nil
-	c.installer = nil
-	c.features = nil
-	c.coverage = nil
-	c.fuzzer = nil
-	c.sabi = nil
-	c.lto = nil
-	c.afdo = nil
-	c.orderfile = nil
-
-	// TODO: these can be cleared after nativeBinaryInfoProperties and nativeLibInfoProperties are switched to
-	//  using providers.
-	// c.linker = nil
-	// c.stl = nil
-	// c.sanitize = nil
-	// c.library = nil
-
-	// TODO: this can be cleared after ccdeps.go is switched to using providers.
-	// c.compiler = nil
 }
 
 func CreateCommonLinkableInfo(ctx android.ModuleContext, mod VersionedLinkableInterface) *LinkableInfo {
@@ -2802,6 +2793,7 @@ func CreateCommonLinkableInfo(ctx android.ModuleContext, mod VersionedLinkableIn
 		Symlinks:                        mod.Symlinks(),
 		Header:                          mod.Header(),
 		IsVndkPrebuiltLibrary:           mod.IsVndkPrebuiltLibrary(),
+		SelectedStl:                     mod.SelectedStl(),
 	}
 
 	vi := mod.VersionedInterface()
@@ -3094,7 +3086,7 @@ func GetCrtVariations(ctx android.BottomUpMutatorContext,
 	}
 	if m.UseSdk() {
 		// Choose the CRT that best satisfies the min_sdk_version requirement of this module
-		minSdkVersion := m.MinSdkVersion()
+		minSdkVersion := m.MinSdkVersion(ctx)
 		if minSdkVersion == "" || minSdkVersion == "apex_inherit" {
 			minSdkVersion = m.SdkVersion()
 		}
@@ -3465,9 +3457,15 @@ func BeginMutator(ctx android.BottomUpMutatorContext) {
 
 // Whether a module can link to another module, taking into
 // account NDK linking.
-func checkLinkType(ctx android.BaseModuleContext, from LinkableInterface, to LinkableInterface,
-	tag blueprint.DependencyTag) {
+func checkLinkType(ctx android.BaseModuleContext, from LinkableInterface, to android.ModuleProxy) {
+	toLinkableInfo, ok := android.OtherModuleProvider(ctx, to, LinkableInfoProvider)
+	if !ok {
+		return
+	}
 
+	toCommonInfo := android.OtherModulePointerProviderOrDefault(ctx, to, android.CommonModuleInfoProvider)
+
+	tag := ctx.OtherModuleDependencyTag(to)
 	switch t := tag.(type) {
 	case dependencyTag:
 		if t != vndkExtDepTag {
@@ -3499,25 +3497,21 @@ func checkLinkType(ctx android.BaseModuleContext, from LinkableInterface, to Lin
 		// Recovery code is not NDK
 		return
 	}
-	// Change this to LinkableInterface if Rust gets NDK support, which stubDecorators are for
-	if c, ok := to.(*Module); ok {
-		if c.StubDecorator() {
-			// These aren't real libraries, but are the stub shared libraries that are included in
-			// the NDK.
-			return
-		}
+
+	if toLinkableInfo.IsNdk {
+		return
 	}
 
-	if strings.HasPrefix(ctx.ModuleName(), "libclang_rt.") && to.Module().Name() == "libc++" {
+	if strings.HasPrefix(ctx.ModuleName(), "libclang_rt.") && to.Name() == "libc++" {
 		// Bug: http://b/121358700 - Allow libclang_rt.* shared libraries (with sdk_version)
 		// to link to libc++ (non-NDK and without sdk_version).
 		return
 	}
 
-	if to.SdkVersion() == "" {
+	if toCommonInfo.SdkVersion == "" {
 		// NDK code linking to platform code is never okay.
 		ctx.ModuleErrorf("depends on non-NDK-built library %q",
-			ctx.OtherModuleName(to.Module()))
+			ctx.OtherModuleName(to))
 		return
 	}
 
@@ -3529,10 +3523,10 @@ func checkLinkType(ctx android.BaseModuleContext, from LinkableInterface, to Lin
 	// Current can link against anything.
 	if from.SdkVersion() != "current" {
 		// Otherwise we need to check.
-		if to.SdkVersion() == "current" {
+		if toCommonInfo.SdkVersion == "current" {
 			// Current can't be linked against by anything else.
 			ctx.ModuleErrorf("links %q built against newer API version %q",
-				ctx.OtherModuleName(to.Module()), "current")
+				ctx.OtherModuleName(to), "current")
 		} else {
 			fromApi, err := android.ApiLevelFromUserWithConfig(ctx.Config(), from.SdkVersion())
 			if err != nil {
@@ -3540,46 +3534,40 @@ func checkLinkType(ctx android.BaseModuleContext, from LinkableInterface, to Lin
 					"Invalid sdk_version value (must be int, preview or current): %q",
 					from.SdkVersion())
 			}
-			toApi, err := android.ApiLevelFromUserWithConfig(ctx.Config(), to.SdkVersion())
+			toApi, err := android.ApiLevelFromUserWithConfig(ctx.Config(), toCommonInfo.SdkVersion)
 			if err != nil {
 				ctx.PropertyErrorf("sdk_version",
 					"Invalid sdk_version value (must be int, preview or current): %q",
-					to.SdkVersion())
+					toCommonInfo.SdkVersion)
 			}
 
 			if toApi.GreaterThan(fromApi) {
 				ctx.ModuleErrorf("links %q built against newer API version %q",
-					ctx.OtherModuleName(to.Module()), to.SdkVersion())
+					ctx.OtherModuleName(to), toCommonInfo.SdkVersion)
 			}
 		}
 	}
 
 	// Also check that the two STL choices are compatible.
 	fromStl := from.SelectedStl()
-	toStl := to.SelectedStl()
+	toStl := toLinkableInfo.SelectedStl
 	if fromStl == "" || toStl == "" {
 		// Libraries that don't use the STL are unrestricted.
 	} else if fromStl == "ndk_system" || toStl == "ndk_system" {
 		// We can be permissive with the system "STL" since it is only the C++
 		// ABI layer, but in the future we should make sure that everyone is
 		// using either libc++ or nothing.
-	} else if getNdkStlFamily(from) != getNdkStlFamily(to) {
+	} else if getNdkStlFamily(fromStl) != getNdkStlFamily(toStl) {
 		ctx.ModuleErrorf("uses %q and depends on %q which uses incompatible %q",
-			from.SelectedStl(), ctx.OtherModuleName(to.Module()),
-			to.SelectedStl())
+			fromStl, ctx.OtherModuleName(to),
+			toStl)
 	}
 }
 
-func checkLinkTypeMutator(ctx android.BottomUpMutatorContext) {
-	if c, ok := ctx.Module().(*Module); ok {
-		ctx.VisitDirectDeps(func(dep android.Module) {
-			depTag := ctx.OtherModuleDependencyTag(dep)
-			ccDep, ok := dep.(LinkableInterface)
-			if ok {
-				checkLinkType(ctx, c, ccDep, depTag)
-			}
-		})
-	}
+func (c *Module) checkLinkType(ctx android.ModuleContext) {
+	ctx.VisitDirectDepsProxy(func(dep android.ModuleProxy) {
+		checkLinkType(ctx, c, dep)
+	})
 }
 
 // Tests whether the dependent library is okay to be double loaded inside a single process.
@@ -3755,6 +3743,10 @@ func (c *Module) depsToPaths(ctx android.ModuleContext) PathDeps {
 		}
 
 		if depTag == android.RequiredDepTag {
+			return
+		}
+
+		if android.IsSourceDepTag(depTag) {
 			return
 		}
 
@@ -4564,7 +4556,7 @@ func (c *Module) MinSdkVersionSupported(ctx android.BaseModuleContext) android.A
 		return android.MinApiLevel
 	}
 
-	minSdkVersion := c.MinSdkVersion()
+	minSdkVersion := c.MinSdkVersion(ctx)
 	if minSdkVersion == "apex_inherit" {
 		return android.MinApiLevel
 	}

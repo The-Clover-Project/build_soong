@@ -103,7 +103,7 @@ func SignAppPackage(ctx android.ModuleContext, signedApk android.WritablePath, u
 		"certificates": strings.Join(certificateArgs, " "),
 		"flags":        strings.Join(flags, " "),
 	}
-	if ctx.Config().UseRBE() && ctx.Config().IsEnvTrue("RBE_SIGNAPK") {
+	if ctx.Config().UseREWrapper() && ctx.Config().IsEnvTrue("RBE_SIGNAPK") {
 		rule = SignapkRE
 		args["implicits"] = strings.Join(deps.Strings(), ",")
 		args["outCommaList"] = strings.Join(outputFiles.Strings(), ",")
@@ -246,7 +246,7 @@ func TransformJniLibsToJar(
 	args := map[string]string{
 		"jarArgs": strings.Join(proptools.NinjaAndShellEscapeList(jarArgs), " "),
 	}
-	if ctx.Config().UseRBE() && ctx.Config().IsEnvTrue("RBE_ZIP") {
+	if ctx.Config().UseREWrapper() && ctx.Config().IsEnvTrue("RBE_ZIP") {
 		rule = zipRE
 		args["implicits"] = strings.Join(deps.Strings(), ",")
 	}
@@ -292,7 +292,10 @@ func (a *AndroidApp) generateJavaUsedByApex(ctx android.ModuleContext) {
 		Output(javaApiUsedByOutputFile).
 		Input(a.Library.Module.outputFile)
 	javaUsedByRule.Build("java_usedby_list", "Generate Java APIs used by Apex")
-	a.javaApiUsedByOutputFile = javaApiUsedByOutputFile
+
+	if !android.ShouldSkipAndroidMkProcessing(ctx, a) {
+		ctx.DistForGoalWithFilename(a.installApkName, javaApiUsedByOutputFile, "java_apis_used_by_apex/"+javaApiUsedByOutputFile.Base())
+	}
 }
 
 func targetToJniDir(target android.Target) string {

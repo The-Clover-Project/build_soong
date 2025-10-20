@@ -55,17 +55,19 @@ func GenerateIncrementalInput(classDir, srcs, deps, javacTarget, srcDeps, localH
 	var classesForRemoval []string
 	var incAllSources bool
 
+	version := ""
+	tools := []string{}
 	// Read the srcRspFile contents
 	srcList := readRspFile(srcs)
 	// run find_input_delta, save [add + ch] as a []string,  and [del] as another []string
-	addF, delF, chF := findInputDelta(srcList, inputPcState, javacTarget)
+	addF, delF, chF := findInputDelta(version, tools, srcList, inputPcState, javacTarget)
 	var incInputList []string
 	incInputList = append(incInputList, addF...)
 	incInputList = append(incInputList, chF...)
 
 	// check if deps have changed
 	depsList := readRspFile(deps)
-	if addD, delD, chD := findInputDelta(depsList, depsPcState, javacTarget); len(addD)+len(delD)+len(chD) > 0 {
+	if addD, delD, chD := findInputDelta(version, tools, depsList, depsPcState, javacTarget); len(addD)+len(delD)+len(chD) > 0 {
 		incAllSources = true
 	}
 
@@ -104,14 +106,14 @@ func GenerateIncrementalInput(classDir, srcs, deps, javacTarget, srcDeps, localH
 	// if headers do not change, we can just keep the incInputList as is.
 	// Read the srcRspFile contents
 	headersList := readRspFile(localHeaderJars)
-	if addH, delH, chH := findInputDelta(headersList, headersPcState, javacTarget); len(addH)+len(delH)+len(chH) > 0 {
+	if addH, delH, chH := findInputDelta(version, tools, headersList, headersPcState, javacTarget); len(addH)+len(delH)+len(chH) > 0 {
 		headersChanged = true
 	}
 
 	var addCM, delCM, chCM []string
 	if fileExists(crossModuleJarRsp) {
 		crossModuleDepsList := readRspFile(crossModuleJarRsp)
-		addCM, delCM, chCM = findInputContentsDelta(crossModuleDepsList, crossModuleDepsPcState, javacTarget)
+		addCM, delCM, chCM = findInputContentsDelta(version, tools, crossModuleDepsList, crossModuleDepsPcState, javacTarget)
 		addCM = filterClassFiles(addCM)
 		delCM = filterClassFiles(delCM)
 		chCM = filterClassFiles(chCM)
@@ -161,11 +163,17 @@ func usePartialCompile() bool {
 // Returns whether to include all src Files in incremental src set
 func getUsages(usageMap map[string]UsageMap, modifiedFiles, deletedFiles, modifiedClasses, deletedClasses []string) ([]string, bool) {
 	usagesSet := make(map[string]bool)
+	delFileSet := make(map[string]bool)
 
 	// First add all the modified files in the output
 	for _, incInput := range modifiedFiles {
 		usagesSet[incInput] = true
 	}
+	// Create a set containing deletedFiles
+	for _, delFile := range deletedFiles {
+		delFileSet[delFile] = true
+	}
+
 	// Add all the usages of modified + deleted files
 	for _, modFile := range slices.Concat(modifiedFiles, deletedFiles, modifiedClasses, deletedClasses) {
 		if um, exists := usageMap[modFile]; exists {
@@ -173,7 +181,10 @@ func getUsages(usageMap map[string]UsageMap, modifiedFiles, deletedFiles, modifi
 				return nil, true
 			}
 			for _, usage := range um.Usages {
-				usagesSet[usage] = true
+				// If a usage was also being deleted, then should skip adding the same.
+				if !delFileSet[usage] {
+					usagesSet[usage] = true
+				}
 			}
 		}
 	}
@@ -291,21 +302,21 @@ func writeOutput(incInputPath, removedClassesPath string, incInputList, classesF
 
 // Computes the diff of the inputs provided, saving the temp state in the
 // priorStateFile.
-func findInputDelta(inputs []string, priorStateFile, target string) ([]string, []string, []string) {
-	return findInputDeltaInternal(inputs, priorStateFile, target, false)
+func findInputDelta(version string, tools, inputs []string, priorStateFile, target string) ([]string, []string, []string) {
+	return findInputDeltaInternal(version, tools, inputs, priorStateFile, target, false)
 }
 
 // Computes the diff of the contents of the inputs provided, saving the temp state in the
 // priorStateFile.
-func findInputContentsDelta(inputs []string, priorStateFile, target string) ([]string, []string, []string) {
-	return findInputDeltaInternal(inputs, priorStateFile, target, true)
+func findInputContentsDelta(version string, tools, inputs []string, priorStateFile, target string) ([]string, []string, []string) {
+	return findInputDeltaInternal(version, tools, inputs, priorStateFile, target, true)
 }
 
 // Computes the diff of the inputs provided, saving the temp state in the
 // priorStateFile.
-func findInputDeltaInternal(inputs []string, priorStateFile, target string, inspect bool) ([]string, []string, []string) {
+func findInputDeltaInternal(version string, tools, inputs []string, priorStateFile, target string, inspect bool) ([]string, []string, []string) {
 	newStateFile := priorStateFile + ".new"
-	fileList, err := fid_lib.GenerateFileList(target, priorStateFile, newStateFile, inputs, inspect, fid_lib.OsFs)
+	fileList, err := fid_lib.GenerateFileList(target, priorStateFile, newStateFile, version, tools, inputs, inspect, fid_lib.OsFs)
 	if err != nil {
 		panic(err)
 	}
@@ -319,11 +330,15 @@ func flattenChanges(root *fid_lib.FileList) ([]string, []string, []string) {
 	var allChangedFiles []string
 
 	for _, addition := range root.Additions {
-		allAdditions = append(allAdditions, addition)
+		allAdditions = append(allAdditions, addition.Name)
+		recAdd, _, _ := flattenChanges(&addition)
+		allAdditions = append(allAdditions, recAdd...)
 	}
 
 	for _, del := range root.Deletions {
-		allDeletions = append(allDeletions, del)
+		allDeletions = append(allDeletions, del.Name)
+		_, recDel, _ := flattenChanges(&del)
+		allDeletions = append(allDeletions, recDel...)
 	}
 
 	for _, ch := range root.Changes {

@@ -18,6 +18,7 @@ package com.android.kotlin.compiler.cli
 
 import com.google.common.truth.Truth.assertThat
 import java.io.ByteArrayOutputStream
+import java.io.File
 import java.io.PrintStream
 import org.junit.Before
 import org.junit.Rule
@@ -28,6 +29,7 @@ class ArgumentTest {
 
     class TestOpts : Options {
         override val passThroughArgs = mutableListOf<String>()
+        val mapArgs = mutableMapOf<String, String>()
     }
 
     private val opts = TestOpts()
@@ -96,4 +98,128 @@ class ArgumentTest {
         ha.parse("-h", args, opts)
         assertThat(args.hasNext()).isTrue()
     }
+
+    @Test
+    fun testSingleArgument_NotEmpty() {
+        val sa =
+            object : SingleArgument<String, TestOpts>(false) {
+                override fun stringToType(arg: String) = arg
+
+                override val argumentName = "test"
+                override val helpText = "help"
+                override val default = null
+
+                override fun setOption(option: String, opts: TestOpts) {
+                    opts.passThroughArgs.add(option)
+                }
+            }
+
+        val arg = "-test=foobar"
+        assertThat(sa.matches(arg)).isTrue()
+        sa.parse(arg, emptyList<String>().iterator(), opts)
+        assertThat(opts.passThroughArgs).hasSize(1)
+        assertThat(opts.passThroughArgs).contains("foobar")
+        assertThat(sa.error).isNull()
+
+        sa.parse("-test=", emptyList<String>().iterator(), opts)
+        assertThat(sa.error).isNotEmpty()
+    }
+
+    @Test
+    fun testSingleArgument_AllowEmpty() {
+        val sa =
+            object : SingleArgument<String, TestOpts>(true) {
+                override fun stringToType(arg: String) = arg
+
+                override val argumentName = "test"
+                override val helpText = "help"
+                override val default = null
+
+                override fun setOption(option: String, opts: TestOpts) {
+                    opts.passThroughArgs.add(option)
+                }
+            }
+
+        val arg = "-test="
+        assertThat(sa.matches(arg)).isTrue()
+        sa.parse(arg, emptyList<String>().iterator(), opts)
+        assertThat(opts.passThroughArgs).hasSize(1)
+        assertThat(opts.passThroughArgs).contains("")
+        assertThat(sa.error).isNull()
+    }
+
+    @Test
+    fun testMapArgument() {
+        val ma =
+            object : MapArgument<String, String, TestOpts>(":") {
+                override fun kToType(arg: String) = arg
+
+                override fun vToType(arg: String) = arg
+
+                override val argumentName = "test"
+                override val helpText = "help"
+                override val default = null
+
+                override fun setOption(option: Map<String, String>, opts: TestOpts) {
+                    opts.mapArgs.putAll(option)
+                }
+            }
+
+        val arg = "-test=a=b:c=d"
+        assertThat(ma.matches(arg)).isTrue()
+        ma.parse(arg, emptyList<String>().iterator(), opts)
+        assertThat(opts.mapArgs).hasSize(2)
+        assertThat(opts.mapArgs).containsEntry("a", "b")
+        assertThat(opts.mapArgs).containsEntry("c", "d")
+    }
+
+    @Test
+    fun testInputFileListArgument_MultipleFiles() {
+        val ifa = createInputFileListArgument()
+
+        val fileA = tFolder.newFile("a")
+        val fileB = tFolder.newFile("b")
+
+        val arg = "-test=${fileA.path}:${fileB.path}"
+
+        assertThat(ifa.matches(arg)).isTrue()
+
+        ifa.parse(arg, emptyList<String>().iterator(), opts)
+
+        assertThat(opts.passThroughArgs).hasSize(2)
+        assertThat(opts.passThroughArgs).contains(fileA.absolutePath)
+        assertThat(opts.passThroughArgs).contains(fileB.absolutePath)
+    }
+
+    @Test
+    fun testInputFileListArgument_FileList() {
+        val ifa = createInputFileListArgument()
+
+        val list = tFolder.newFile("list")
+        val fileA = tFolder.newFile("a")
+        val fileB = tFolder.newFile("b")
+
+        list.writeText("${fileA.path}\n${fileB.path}")
+
+        val arg = "-test=@${list.path}"
+
+        assertThat(ifa.matches(arg)).isTrue()
+
+        ifa.parse(arg, emptyList<String>().iterator(), opts)
+
+        assertThat(opts.passThroughArgs).hasSize(2)
+        assertThat(opts.passThroughArgs).contains(fileA.absolutePath)
+        assertThat(opts.passThroughArgs).contains(fileB.absolutePath)
+    }
+
+    private fun createInputFileListArgument() =
+        object : InputFileListArgument<TestOpts>() {
+            override fun setFiles(files: List<File>, opts: TestOpts) {
+                opts.passThroughArgs.addAll(files.map { it.absolutePath })
+            }
+
+            override val argumentName = "test"
+            override val helpText = "help"
+            override val default = null
+        }
 }

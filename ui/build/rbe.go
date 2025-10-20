@@ -15,6 +15,7 @@
 package build
 
 import (
+	"bytes"
 	"fmt"
 	"math"
 	"os"
@@ -22,6 +23,7 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
+	"text/template"
 
 	"android/soong/remoteexec"
 	"android/soong/ui/metrics"
@@ -66,7 +68,7 @@ func getRBEVars(ctx Context, config Config) map[string]string {
 		"RBE_download_tmp_dir": config.rbeDownloadTmpDir(),
 		"RBE_platform":         "container-image=" + remoteexec.DefaultImage,
 	}
-	if config.StartRBE() {
+	if config.StartReproxy() {
 		name, err := config.rbeSockAddr(absPath(ctx, config.rbeTmpDir()))
 		if err != nil {
 			ctx.Fatalf("Error retrieving socket address: %v", err)
@@ -115,13 +117,206 @@ func checkRBERequirements(ctx Context, config Config) {
 	}
 }
 
-func startRBE(ctx Context, config Config) {
-	ctx.BeginTrace(metrics.RunSetupTool, "rbe_bootstrap")
-	defer ctx.EndTrace()
+var DEFAULT_SISO_CONFIG_DIR = "build/soong/siso_config"
+
+func ensureSymlink(ctx Context, dir, name, target string) {
+	if err := os.MkdirAll(dir, 0777); err != nil {
+		ctx.Fatalf("Could not ensure that directory %q exists: %w", dir, err)
+	}
+
+	absTarget := target
+	if !filepath.IsAbs(target) {
+		var err error
+		absTarget, err = filepath.Abs(target)
+		if err != nil {
+			ctx.Fatalf("Could not create absolute path for %s in %s: %w", dir, target, err)
+		}
+	}
+
+	// Remove any xisting symlink.
+	linkPath := filepath.Join(dir, name)
+	currentTarget, err := os.Readlink(linkPath)
+	if err == nil {
+		if absTarget == currentTarget {
+			return
+		}
+		if err := os.Remove(linkPath); err != nil {
+			ctx.Fatalf("Failed to remove existing symlink %q: %w", linkPath, err)
+		}
+	} else if !os.IsNotExist(err) {
+		if err := os.Remove(linkPath); err != nil {
+			ctx.Fatalf("Failed to remove existing symlink %q: %w", linkPath, err)
+		}
+	}
+
+	// Create the new one.
+	if err := os.Symlink(absTarget, linkPath); err != nil {
+		ctx.Fatalf("Failed to create symlink %q => %q: %w", linkPath, absTarget, err)
+	}
+}
+
+var sisoConfigTemplate = template.Must(template.New("siso-config").Parse(`
+load("@builtin//struct.star", "module")
+load("main/main.star", "main")
+load("extension/main.star", "extension")
+
+imports = [main, extension]
+
+def init(ctx):
+    vars = module(
+        "config",
+        {{- range $key, $value := .SisoStringVars }}
+        {{ $key }} = "{{ $value }}",{{ end }}
+        {{- range $key, $value := .SisoBoolVars }}
+        {{ $key }} = {{ if $value }}True{{ else }}False{{ end }},{{ end }}
+    )
+
+    return main.generate(ctx, vars, imports)
+`))
+
+func createSisoConfigDir(ctx Context, config Config, value string) string {
+	// We need to fabricate a working directory.
+	confDir := filepath.Join(config.OutDir(), "siso_config")
+	if value == confDir {
+		_, err := os.Stat(filepath.Join(confDir, "main.star"))
+		if err != nil {
+			ctx.Fatalf("${SISO_CONFIG_DIR}/main.star is missing: %w", err)
+		}
+		return value
+	}
+	ensureSymlink(ctx, confDir, "main", DEFAULT_SISO_CONFIG_DIR)
+	ensureSymlink(ctx, confDir, "extension", value)
+
+	var sb bytes.Buffer
+	if err := sisoConfigTemplate.Execute(&sb, config); err != nil {
+		ctx.Fatalf("Failed to generate siso config:", err)
+	}
+	confFile := filepath.Join(confDir, "main.star")
+	if err := os.WriteFile(confFile, sb.Bytes(), 0666); err != nil {
+		ctx.Fatalf("Failed to write siso config to %q: %w", confFile, err)
+	}
+	return confDir
+}
+
+// Create a script for siso to get credentials.
+// Siso will invoke ${SISO_CREDENTIAL_HELPER} with "get", so put the actual credhelper command
+// invocation in `soong-convert-command`.
+func createSisoCredsHelper(ctx Context, config Config) (string, error) {
+	var helperPath string
+	var helperArgs string
+
+	// RBE_credentials_helper_args contains space-separated arguments for the helper
+	if envArgs, ok := config.environ.Get("RBE_credentials_helper_args"); ok && envArgs != "" {
+		helperArgs = envArgs
+	}
+	var ok bool
+	if helperPath, ok = config.Environment().Get("RBE_credentials_helper"); !ok {
+		helperPath = "execrel://"
+	}
+	if strings.HasPrefix(helperPath, "execrel://") {
+		relpath, _ := strings.CutPrefix(helperPath, "execrel://")
+		dir, ok := config.Environment().Get("RBE_DIR")
+		if !ok {
+			dir = "prebuilts/remoteexecution-client/live"
+		}
+		// Use the one from RBE_DIR.
+		helperPath = filepath.Join(dir, relpath, "credshelper")
+	}
+	if helperArgs == "" {
+		helperArgs = "--auth_source=automaticAuth --gcert_refresh_timeout=20"
+	}
+	if helperPath == "" {
+		return "", fmt.Errorf("missing RBE_credentials_helper")
+	}
+	ctx.Verbosef("Using '%s %s' for RBE credentials helper\n", helperPath, helperArgs)
+	cacheDir := config.rbeCacheDir()
+	helperArgs = strings.TrimSpace(helperArgs)
+	args := []string{helperPath, helperArgs, "--cache_dir", cacheDir, "-bazel_compat"}
+	cmdFile := filepath.Join(cacheDir, "soong-convert-command")
+	err := os.WriteFile(cmdFile, []byte(strings.Join(args, " ")), 0666)
+	return "build/soong/scripts/siso-creds-helper.py", err
+}
+
+func startRBEproxy(ctx Context, config Config) {
+	e := ctx.BeginTrace(metrics.RunSetupTool, "rbe_bootstrap")
+	defer e.End()
 
 	ctx.Status.Status("Starting rbe...")
+	executable := config.SisoBin()
+	args := []string{
+		"proxy",
+		"--addr", getRBEproxySocket(ctx, config),
+	}
+	authType, _ := config.rbeAuth()
+	switch authType {
+	case "RBE_credentials_helper":
+		helper, err := createSisoCredsHelper(ctx, config)
+		if err != nil {
+			ctx.Fatalf("Failed to create credential helper script: %v\n", err)
+		}
+		config.environ.Set("SISO_CREDENTIAL_HELPER", helper)
+	case "RBE_use_google_prod_creds":
+		ctx.Printf("Using google prod credentials\n")
+	default:
+		config.environ.Set("SISO_CREDENTIAL_HELPER", "google-application-default")
+		ctx.Printf("Using google application default credentials\n")
+	}
+	if instance, ok := config.environ.Get("RBE_instance"); ok {
+		args = append(args, "--reapi_instance", instance)
+	}
+	if service, ok := config.environ.Get("RBE_service"); ok {
+		// Pass the actual service to siso proxy.
+		args = append(args, "--reapi_address", service)
+	}
+	if project := getRBEProject(ctx, config); project != "" {
+		args = append(args, "--project", project)
+	}
 
-	cmd := Command(ctx, config, "startRBE bootstrap", rbeCommand(ctx, config, bootstrapCmd))
+	cmd := Command(ctx, config, e, "startRbeproxy bootstrap", executable, args...)
+	ctx.Printf("Starting RBE proxy\n")
+	ctx.Verbosef("RBE proxy command: %s\n", cmd)
+	cmd.Stdin = strings.NewReader("")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	if err := cmd.Start(); err != nil {
+		ctx.Fatalf("Unable to start siso proxy\nFAILED: siso proxy failed with: %v\n%s\n", err)
+	}
+	ctx.RBEProxyCmd = cmd
+}
+
+func getRBEproxySocket(ctx Context, config Config) string {
+	service, ok := config.environ.Get("RBE_service")
+	if !ok {
+		ctx.Fatalf("RBE_service is not set")
+	}
+	config.environ.Set("RBE_actual_service", service)
+	rel_socket := filepath.Join(config.OutDir(), "rbeproxy.socket")
+	abs_socket, err := filepath.Abs(rel_socket)
+	if err != nil {
+		ctx.Fatalf("Could not resolve %s to an absolute path: %v\n", rel_socket, err)
+	}
+	return fmt.Sprintf("unix://%s", abs_socket)
+}
+
+func getRBEProject(ctx Context, config Config) string {
+	project, found := config.environ.Get("RBE_project")
+	if !found {
+		// If RBE_project is not set, try RBE_metrics_project.
+		project, _ = config.environ.Get("RBE_metrics_project")
+	}
+	if project == "" {
+		ctx.Printf("No RBE project found\n")
+	}
+	return project
+}
+
+func startReproxy(ctx Context, config Config) {
+	e := ctx.BeginTrace(metrics.RunSetupTool, "rbe_bootstrap")
+	defer e.End()
+
+	ctx.Status.Status("Starting rbe...")
+	cmd := Command(ctx, config, e, "startReproxy bootstrap", rbeCommand(ctx, config, bootstrapCmd))
 
 	if output, err := cmd.CombinedOutput(); err != nil {
 		ctx.Fatalf("Unable to start RBE reproxy\nFAILED: RBE bootstrap failed with: %v\n%s\n", err, output)
@@ -129,15 +324,21 @@ func startRBE(ctx Context, config Config) {
 }
 
 func stopRBE(ctx Context, config Config) {
-	cmd := Command(ctx, config, "stopRBE bootstrap", rbeCommand(ctx, config, bootstrapCmd), "-shutdown")
-	output, err := cmd.CombinedOutput()
-	if err != nil {
-		ctx.Fatalf("rbe bootstrap with shutdown failed with: %v\n%s\n", err, output)
+	var output []byte
+	var err error
+	if ctx.RBEProxyCmd != nil {
+		ctx.RBEProxyCmd.Kill()
+	} else {
+		cmd := Command(ctx, config, nil, "stopRBE bootstrap", rbeCommand(ctx, config, bootstrapCmd), "-shutdown")
+		output, err = cmd.CombinedOutput()
+		if err != nil {
+			ctx.Fatalf("rbe bootstrap with shutdown failed with: %v\n%s\n", err, output)
+		}
 	}
 
 	if !config.Environment().IsEnvTrue("ANDROID_QUIET_BUILD") && len(output) > 0 {
-		fmt.Fprintln(ctx.Writer, "")
-		fmt.Fprintln(ctx.Writer, fmt.Sprintf("%s", output))
+		ctx.PrintFinal("\n")
+		ctx.PrintFinal(string(output))
 	}
 }
 
@@ -168,8 +369,8 @@ func CheckProdCreds(ctx Context, config Config) {
 // started. The proxy service is shutdown in order to dump the RBE metrics to the
 // protobuf file.
 func DumpRBEMetrics(ctx Context, config Config, filename string) {
-	ctx.BeginTrace(metrics.RunShutdownTool, "dump_rbe_metrics")
-	defer ctx.EndTrace()
+	e := ctx.BeginTrace(metrics.RunShutdownTool, "dump_rbe_metrics")
+	defer e.End()
 
 	// Remove the previous metrics file in case there is a failure or RBE has been
 	// disable for this run.
@@ -179,7 +380,7 @@ func DumpRBEMetrics(ctx Context, config Config, filename string) {
 	// If RBE does not require to start, the RBE proxy maybe started
 	// manually for debugging purpose and can generate the metrics
 	// afterwards.
-	if !config.StartRBE() {
+	if !config.StartReproxy() {
 		return
 	}
 
@@ -221,7 +422,7 @@ func PrintOutDirWarning(ctx Context, config Config) {
 // we use bash ulimit instead.
 func ulimitOrFatal(ctx Context, config Config, opt string) int {
 	commandText := fmt.Sprintf("ulimit %s", opt)
-	cmd := Command(ctx, config, commandText, "bash", "-c", commandText)
+	cmd := Command(ctx, config, nil, commandText, "bash", "-c", commandText)
 	output := strings.TrimRight(string(cmd.CombinedOutputOrFatal()), "\n")
 	ctx.Verbose(output + "\n")
 	ctx.Verbose("done\n")

@@ -51,7 +51,7 @@ import (
 type CommonProperties struct {
 	// list of source files used to compile the Java module.  May be .java, .kt, .logtags, .proto,
 	// or .aidl files.
-	Srcs []string `android:"path,arch_variant"`
+	Srcs proptools.Configurable[[]string] `android:"path,arch_variant"`
 
 	// list Kotlin of source files containing Kotlin code that should be treated as common code in
 	// a codebase that supports Kotlin multiplatform.  See
@@ -99,8 +99,14 @@ type CommonProperties struct {
 	// Whether this target supports compilation with the kotlin-incremental-client.
 	Kotlin_incremental *bool
 
+	// Which annotation processor to use when working with kotlin: kapt or ksp. Defaults to false.
+	Enable_ksp *bool
+
+	// List of annotation processor options to pass in.
+	Annotation_processor_flags []string
+
 	// list of java libraries that will be in the classpath
-	Libs []string `android:"arch_variant"`
+	Libs proptools.Configurable[[]string] `android:"arch_variant"`
 
 	// list of java libraries that will be compiled into the resulting jar
 	Static_libs proptools.Configurable[[]string] `android:"arch_variant"`
@@ -375,7 +381,7 @@ type OverridableProperties struct {
 
 	// if not blank, set the minimum version of the sdk that the compiled artifacts will run against.
 	// Defaults to sdk_version if not set. See sdk_version for possible values.
-	Min_sdk_version *string
+	Min_sdk_version proptools.Configurable[string] `android:"replace_instead_of_append"`
 }
 
 // Functionality common to Module and Import
@@ -417,6 +423,7 @@ func depIsInSameApex(tag blueprint.DependencyTag) bool {
 // E.g. it is invalid with a reason message if there is a prebuilt APEX that
 // could produce the dex jar through a deapexer module, but the APEX isn't
 // installable so doing so wouldn't be safe.
+// @auto-generate: gob
 type OptionalDexJarPath struct {
 	isSet bool
 	path  android.OptionalPath
@@ -592,8 +599,6 @@ type Module struct {
 	kytheFiles       android.Paths
 	kytheKotlinFiles android.Paths
 
-	hideApexVariantFromMake bool
-
 	sdkVersion    android.SdkSpec
 	minSdkVersion android.ApiLevel
 	maxSdkVersion android.ApiLevel
@@ -628,6 +633,12 @@ type Module struct {
 }
 
 var _ android.InstallableModule = (*Module)(nil)
+
+func (j *Module) IncrementalSupported() bool {
+	return true
+}
+
+var _ blueprint.Incremental = (*Module)(nil)
 
 // To satisfy the InstallableModule interface
 func (j *Module) StaticDependencyTags() []blueprint.DependencyTag {
@@ -831,7 +842,7 @@ func (j *Module) setApiMapper(value bool) {
 	j.properties.ApiMapper = value
 }
 
-func (j *Module) SdkVersion(ctx android.EarlyModuleContext) android.SdkSpec {
+func (j *Module) SdkVersion(ctx android.ConfigContext) android.SdkSpec {
 	return android.SdkSpecFrom(ctx, String(j.deviceProperties.Sdk_version))
 }
 
@@ -839,9 +850,10 @@ func (j *Module) SystemModules() string {
 	return proptools.String(j.deviceProperties.System_modules)
 }
 
-func (j *Module) MinSdkVersion(ctx android.EarlyModuleContext) android.ApiLevel {
-	if j.overridableProperties.Min_sdk_version != nil {
-		return android.ApiLevelFrom(ctx, *j.overridableProperties.Min_sdk_version)
+func (j *Module) MinSdkVersion(ctx android.MinSdkVersionFromValueContext) android.ApiLevel {
+	minSdkVersion := j.overridableProperties.Min_sdk_version.Get(j.ConfigurableEvaluator(ctx))
+	if minSdkVersion.IsPresent() {
+		return android.ApiLevelFrom(ctx, minSdkVersion.Get())
 	}
 	return j.SdkVersion(ctx).ApiLevel
 }
@@ -892,6 +904,10 @@ func (j *Module) ApexAvailableFor() []string {
 	return android.FirstUniqueStrings(list)
 }
 
+func (j *Module) libs(ctx android.BaseModuleContext) []string {
+	return j.properties.Libs.GetOrDefault(ctx, nil)
+}
+
 func (j *Module) staticLibs(ctx android.BaseModuleContext) []string {
 	return j.properties.Static_libs.GetOrDefault(ctx, nil)
 }
@@ -907,11 +923,18 @@ func (j *Module) incrementalKotlin(config android.Config) bool {
 	return incremental
 }
 
+func (j *Module) useKsp() bool {
+	return proptools.BoolDefault(j.properties.Enable_ksp, false)
+}
+
 func (j *Module) deps(ctx android.BottomUpMutatorContext) {
+	j.setOptimizeForceDisabled(proptools.Bool(j.properties.Is_stubs_module))
 	if ctx.Device() {
 		j.linter.deps(ctx)
 
-		sdkDeps(ctx, android.SdkContext(j), j.dexer)
+		compileDex := proptools.Bool(j.properties.Installable) || proptools.Bool(j.dexProperties.Compile_dex)
+		addR8DexDeps := compileDex && !j.dexer.isOptimizeForceDisabled(ctx)
+		sdkDeps(ctx, android.SdkContext(j), addR8DexDeps)
 
 		if j.deviceProperties.SyspropPublicStub != "" {
 			// This is a sysprop implementation library that has a corresponding sysprop public
@@ -921,7 +944,7 @@ func (j *Module) deps(ctx android.BottomUpMutatorContext) {
 		}
 	}
 
-	libDeps := ctx.AddVariationDependencies(nil, libTag, j.properties.Libs...)
+	libDeps := ctx.AddVariationDependencies(nil, libTag, j.libs(ctx)...)
 
 	ctx.AddVariationDependencies(nil, staticLibTag, j.staticLibs(ctx)...)
 
@@ -936,15 +959,19 @@ func (j *Module) deps(ctx android.BottomUpMutatorContext) {
 
 	ctx.AddFarVariationDependencies(ctx.Config().BuildOSCommonTarget.Variations(), pluginTag, j.properties.Plugins...)
 	ctx.AddFarVariationDependencies(ctx.Config().BuildOSCommonTarget.Variations(), kotlinPluginTag, j.properties.Kotlin_plugins...)
-	ctx.AddFarVariationDependencies(ctx.Config().BuildOSCommonTarget.Variations(), errorpronePluginTag, j.properties.Errorprone.Extra_check_modules...)
 	ctx.AddFarVariationDependencies(ctx.Config().BuildOSCommonTarget.Variations(), exportedPluginTag, j.properties.Exported_plugins...)
+	epEnabled := j.properties.Errorprone.Enabled
+	if (ctx.Config().RunErrorProne() && epEnabled == nil) || Bool(epEnabled) {
+		ctx.AddFarVariationDependencies(ctx.Config().BuildOSCommonTarget.Variations(), errorpronePluginTag, "error_prone_plugin")
+		ctx.AddFarVariationDependencies(ctx.Config().BuildOSCommonTarget.Variations(), errorpronePluginTag, j.properties.Errorprone.Extra_check_modules...)
+	}
 
 	android.ProtoDeps(ctx, &j.protoProperties)
-	if j.hasSrcExt(".proto") {
+	if j.hasSrcExt(ctx, ".proto") {
 		protoDeps(ctx, &j.protoProperties)
 	}
 
-	if j.hasSrcExt(".kt") {
+	if j.hasSrcExt(ctx, ".kt") {
 		// TODO(ccross): move this to a mutator pass that can tell if generated sources contain
 		// Kotlin files
 		tag := staticLibTag
@@ -989,8 +1016,8 @@ func hasSrcExt(srcs []string, ext string) bool {
 	return false
 }
 
-func (j *Module) hasSrcExt(ext string) bool {
-	return hasSrcExt(j.properties.Srcs, ext)
+func (j *Module) hasSrcExt(ctx android.ConfigurableEvaluatorContext, ext string) bool {
+	return hasSrcExt(j.properties.Srcs.GetOrDefault(j.ConfigurableEvaluator(ctx), nil), ext)
 }
 
 func (j *Module) individualAidlFlags(ctx android.ModuleContext, aidlFile android.Path) string {
@@ -1072,7 +1099,7 @@ func (j *Module) collectBuilderFlags(ctx android.ModuleContext, deps deps) javaB
 
 	epEnabled := j.properties.Errorprone.Enabled
 	if (ctx.Config().RunErrorProne() && epEnabled == nil) || Bool(epEnabled) {
-		if config.ErrorProneClasspath == nil && !ctx.Config().RunningInsideUnitTest() {
+		if config.ErrorProneFlags == nil && !ctx.Config().RunningInsideUnitTest() {
 			ctx.ModuleErrorf("cannot build with Error Prone, missing external/error_prone?")
 		}
 
@@ -1084,7 +1111,6 @@ func (j *Module) collectBuilderFlags(ctx android.ModuleContext, deps deps) javaB
 
 		flags.errorProneExtraJavacFlags = "${config.ErrorProneHeapFlags} ${config.ErrorProneFlags} " +
 			"'" + strings.Join(errorProneFlags, " ") + "'"
-		flags.errorProneProcessorPath = classpath(android.PathsForSource(ctx, config.ErrorProneClasspath))
 	}
 
 	// classpath
@@ -1163,15 +1189,25 @@ func (j *Module) collectJavacFlags(
 			// Manually specify build directory in case it is not under the repo root.
 			// (javac doesn't seem to expand into symbolic links when searching for patch-module targets, so
 			// just adding a symlink under the root doesn't help.)
-			patchPaths := []string{".", ctx.Config().SoongOutDir()}
-
-			classPath := flags.classpath.FormJavaClassPath("")
-			if classPath != "" {
-				patchPaths = append(patchPaths, classPath)
+			patchPathDirs := []string{android.PathForModuleOut(ctx).String()}
+			for _, srcFile := range srcFiles {
+				srcDir := filepath.Dir(srcFile.String())
+				if !slices.Contains(patchPathDirs, srcDir) {
+					patchPathDirs = append(patchPathDirs, srcDir)
+				}
 			}
-			javacFlags = append(
-				javacFlags,
-				"--patch-module="+String(j.properties.Patch_module)+"="+strings.Join(patchPaths, ":"))
+			patchPathDirs = append(patchPathDirs, flags.classpath.Strings()...)
+			patchPathFlag := "--patch-module=" + String(j.properties.Patch_module) + "=" + strings.Join(patchPathDirs, ":")
+			patchPathFlagFile := android.PathForModuleOut(ctx, "javac", "patch_module_paths")
+			android.WriteFileRule(ctx, patchPathFlagFile, patchPathFlag)
+			javacFlags = append(javacFlags, "@"+patchPathFlagFile.String())
+			flags.javacFlagsDeps = append(flags.javacFlagsDeps, patchPathFlagFile)
+		}
+	}
+
+	if !srcFiles.HasExt(".kt") || !j.useKsp() {
+		for _, apFlag := range j.properties.Annotation_processor_flags {
+			javacFlags = append(javacFlags, "-A"+apFlag)
 		}
 	}
 
@@ -1230,13 +1266,13 @@ func (j *Module) compile(ctx android.ModuleContext) *JavaInfo {
 	flags := j.collectBuilderFlags(ctx, deps)
 
 	if flags.javaVersion.usesJavaModules() {
-		j.properties.Srcs = append(j.properties.Srcs, j.properties.Openjdk9.Srcs...)
+		j.properties.Srcs.AppendSimpleValue(j.properties.Openjdk9.Srcs)
 	} else if len(j.properties.Openjdk9.Javacflags) > 0 {
 		// java version defaults higher than openjdk 9, these conditionals should no longer be necessary
 		ctx.PropertyErrorf("openjdk9.srcs", "JDK version defaults to higher than 9")
 	}
 
-	srcFiles := android.PathsForModuleSrcExcludes(ctx, j.properties.Srcs, j.properties.Exclude_srcs)
+	srcFiles := android.PathsForModuleSrcExcludes(ctx, j.properties.Srcs.GetOrDefault(ctx, nil), j.properties.Exclude_srcs)
 	j.sourceExtensions = []string{}
 	for _, ext := range []string{".kt", ".proto", ".aidl", ".java", ".logtags"} {
 		if hasSrcExt(srcFiles.Strings(), ext) {
@@ -1298,7 +1334,7 @@ func (j *Module) compile(ctx android.ModuleContext) *JavaInfo {
 	// We don't currently run annotation processors in turbine, which means we can't use turbine
 	// generated header jars when an annotation processor that generates API is enabled.  One
 	// exception (handled further below) is when kotlin sources are enabled, in which case turbine
-	//  is used to run all of the annotation processors.
+	// is used to run all of the annotation processors.
 	disableTurbine := deps.disableTurbine
 
 	// Collect .java and .kt files for AIDEGen
@@ -1361,6 +1397,8 @@ func (j *Module) compile(ctx android.ModuleContext) *JavaInfo {
 			j.addKSnapshot(ctx, hj)
 		}
 
+		overridableMinSdkVersion := j.overridableProperties.Min_sdk_version.Get(ctx)
+
 		j.outputFile = j.headerJarFile
 		return &JavaInfo{
 			HeaderJars:                          android.PathsIfNonNil(j.headerJarFile),
@@ -1376,7 +1414,7 @@ func (j *Module) compile(ctx android.ModuleContext) *JavaInfo {
 			StubsLinkType:                       j.stubsLinkType,
 			AconfigIntermediateCacheOutputPaths: deps.aconfigProtoFiles,
 			SdkVersion:                          j.SdkVersion(ctx),
-			OverrideMinSdkVersion:               j.overridableProperties.Min_sdk_version,
+			HasOverrideMinSdkVersion:            overridableMinSdkVersion.IsPresent(),
 			Installable:                         BoolDefault(j.properties.Installable, true),
 			KSnapshotFiles:                      j.kSnapshotFiles,
 		}
@@ -1388,9 +1426,10 @@ func (j *Module) compile(ctx android.ModuleContext) *JavaInfo {
 	}
 
 	if srcFiles.HasExt(".kt") {
-		// When using kotlin sources turbine is used to generate annotation processor sources,
-		// including for annotation processors that generate API, so we can use turbine for
-		// java sources too.
+		// When using kotlin+kapt, turbine is used to generate annotation processor sources.
+		// For ksp, all annotation processing is handled by ksp directory.
+		// In either case, annotation processors that generate API are run, so we can later use
+		// turbine to generate java headers.
 		disableTurbine = false
 
 		// user defined kotlin flags.
@@ -1490,22 +1529,52 @@ func (j *Module) compile(ctx android.ModuleContext) *JavaInfo {
 			pcStateFilePrior: kotlinJar.ReplaceExtension(ctx, "pc_state"),
 		}
 
-		if len(flags.processorPath) > 0 {
-			// Use kapt for annotation processing
-			kaptSrcJar := android.PathForModuleOut(ctx, "kapt", "kapt-sources.jar")
-			kaptResJar := android.PathForModuleOut(ctx, "kapt", "kapt-res.jar")
-			kotlinKapt(ctx, kaptSrcJar, kaptResJar, uniqueSrcFiles, kotlinCommonSrcFiles, srcJars, flags)
-			srcJars = append(srcJars, kaptSrcJar)
-			localImplementationJars = append(localImplementationJars, kaptResJar)
-			// Disable annotation processing in javac, it's already been handled by kapt
-			flags.processorPath = nil
-			flags.processors = nil
+		// kotlinSrcJars is just srcJars, but potentially with additional .kt sources appended
+		// to it that should not be passed on to javac.
+		kotlinSrcJars := srcJars
 
-			j.addKSnapshot(ctx, kaptSrcJar)
-			j.addKSnapshot(ctx, kaptResJar)
+		if len(flags.processorPath) > 0 {
+			if j.useKsp() {
+				kspJavaSrcJar := android.PathForModuleOut(ctx, "ksp", "ksp-java-sources.srcjar")
+				kspKotlinSrcJar := android.PathForModuleOut(ctx, "ksp", "ksp-kotlin-sources.srcjar")
+				kspResJar := android.PathForModuleOut(ctx, "ksp", "ksp-res.jar")
+				kspClassJar := android.PathForModuleOut(ctx, "ksp", "ksp-classes.jar")
+
+				kspStub := android.PathForModuleOut(ctx, "ksp", jarName)
+				kspCompileData := KotlinCompileData{
+					diffFile:         kspStub.ReplaceExtension(ctx, "source_diff"),
+					pcStateFileNew:   kspStub.ReplaceExtension(ctx, "pc_state.new"),
+					pcStateFilePrior: kspStub.ReplaceExtension(ctx, "pc_state"),
+				}
+
+				j.kotlinKsp(ctx, kspJavaSrcJar, kspKotlinSrcJar, kspResJar, kspClassJar, j.properties.Annotation_processor_flags,
+					uniqueSrcFiles, kotlinCommonSrcFiles, srcJars, kspCompileData, flags)
+				srcJars = append(srcJars, kspJavaSrcJar)
+				kotlinSrcJars = append(srcJars, kspKotlinSrcJar)
+				localImplementationJars = append(localImplementationJars, kspResJar, kspClassJar)
+				// Disable annotation processing in javac, it's already been handled by kapt
+				flags.processorPath = nil
+				flags.processors = nil
+
+				j.addKSnapshot(ctx, kspClassJar)
+			} else {
+				// Use kapt for annotation processing
+				kaptSrcJar := android.PathForModuleOut(ctx, "kapt", "kapt-sources.jar")
+				kaptResJar := android.PathForModuleOut(ctx, "kapt", "kapt-res.jar")
+				kotlinKapt(ctx, kaptSrcJar, kaptResJar, uniqueSrcFiles, kotlinCommonSrcFiles, srcJars, flags)
+				srcJars = append(srcJars, kaptSrcJar)
+				kotlinSrcJars = srcJars
+				localImplementationJars = append(localImplementationJars, kaptResJar)
+				// Disable annotation processing in javac, it's already been handled by kapt
+				flags.processorPath = nil
+				flags.processors = nil
+
+				j.addKSnapshot(ctx, kaptSrcJar)
+				j.addKSnapshot(ctx, kaptResJar)
+			}
 		}
 
-		j.kotlinCompile(ctx, kotlinJar, kotlinHeaderJar, uniqueSrcFiles, kotlinCommonSrcFiles, srcJars, flags,
+		j.kotlinCompile(ctx, kotlinJar, kotlinHeaderJar, uniqueSrcFiles, kotlinCommonSrcFiles, kotlinSrcJars, flags,
 			manifest, kotlinCompileData, incrementalKotlin)
 		if ctx.Failed() {
 			return nil
@@ -1769,7 +1838,7 @@ func (j *Module) compile(ctx android.ModuleContext) *JavaInfo {
 		args := map[string]string{
 			"jarArgs": "-P META-INF/services/ " + strings.Join(proptools.NinjaAndShellEscapeList(zipargs), " "),
 		}
-		if ctx.Config().UseRBE() && ctx.Config().IsEnvTrue("RBE_ZIP") {
+		if ctx.Config().UseREWrapper() && ctx.Config().IsEnvTrue("RBE_ZIP") {
 			rule = zipRE
 			args["implicits"] = strings.Join(services.Strings(), ",")
 		}
@@ -2133,6 +2202,9 @@ func (j *Module) compile(ctx android.ModuleContext) *JavaInfo {
 	if deps.headerJarOverride.Valid() {
 		j.headerJarFile = deps.headerJarOverride.Path()
 	}
+
+	overridableMinSdkVersion := j.overridableProperties.Min_sdk_version.Get(ctx)
+
 	return &JavaInfo{
 		HeaderJars:               android.PathsIfNonNil(j.headerJarFile),
 		LocalHeaderJarsPreJarjar: android.PathsIfNonNil(combinedHeaderJarFile),
@@ -2162,7 +2234,7 @@ func (j *Module) compile(ctx android.ModuleContext) *JavaInfo {
 		AconfigIntermediateCacheOutputPaths: j.aconfigCacheFiles,
 		SdkVersion:                          j.SdkVersion(ctx),
 		OutputFile:                          j.outputFile,
-		OverrideMinSdkVersion:               j.overridableProperties.Min_sdk_version,
+		HasOverrideMinSdkVersion:            overridableMinSdkVersion.IsPresent(),
 		Installable:                         BoolDefault(j.properties.Installable, true),
 	}
 }
@@ -2211,7 +2283,7 @@ func (j *Module) collectProguardSpecInfo(ctx android.ModuleContext) ProguardSpec
 	transitiveProguardFlags, transitiveUnconditionalExportedFlags := collectDepProguardSpecInfo(ctx)
 
 	directUnconditionalExportedFlags := android.Paths{}
-	proguardFlagsForThisModule := android.PathsForModuleSrc(ctx, j.dexProperties.Optimize.Proguard_flags_files)
+	proguardFlagsForThisModule := android.PathsForModuleSrc(ctx, j.ProguardFlagsFiles(ctx))
 	exportUnconditionally := proptools.Bool(j.dexProperties.Optimize.Export_proguard_flags_files)
 	if exportUnconditionally {
 		// if we explicitly export, then our unconditional exports are the same as our transitive flags
@@ -2270,7 +2342,7 @@ func (j *Module) compileJavaClasses(ctx android.ModuleContext, jarName string, i
 		TransformJavaToClasses(ctx, classes, idx, srcFiles, srcJars, annoSrcJar, flags, extraJarDeps, genAnnoSrcJars)
 	}
 
-	if ctx.Config().EmitXrefRules() && ctx.Module() == ctx.PrimaryModule() {
+	if ctx.Config().EmitXrefRules() && ctx.IsPrimaryModule() {
 		extractionFile := android.PathForModuleOut(ctx, kzipName)
 		emitXrefRule(ctx, extractionFile, idx, srcFiles, srcJars, flags, extraJarDeps)
 		j.kytheFiles = append(j.kytheFiles, extractionFile)
@@ -2479,7 +2551,7 @@ func (j *Module) IDEInfo(ctx android.BaseModuleContext, dpInfo *android.IdeInfo)
 	dpInfo.Deps = append(dpInfo.Deps, j.CompilerDeps()...)
 	dpInfo.Aidl_include_dirs = append(dpInfo.Aidl_include_dirs, j.deviceProperties.Aidl.Include_dirs...)
 	dpInfo.Static_libs = append(dpInfo.Static_libs, j.staticLibs(ctx)...)
-	dpInfo.Libs = append(dpInfo.Libs, j.properties.Libs...)
+	dpInfo.Libs = append(dpInfo.Libs, j.libs(ctx)...)
 }
 
 func (j *Module) CompilerDeps() []string {
@@ -2487,7 +2559,7 @@ func (j *Module) CompilerDeps() []string {
 }
 
 func (j *Module) hasCode(ctx android.ModuleContext) bool {
-	srcFiles := android.PathsForModuleSrcExcludes(ctx, j.properties.Srcs, j.properties.Exclude_srcs)
+	srcFiles := android.PathsForModuleSrcExcludes(ctx, j.properties.Srcs.GetOrDefault(ctx, nil), j.properties.Exclude_srcs)
 	return len(srcFiles) > 0 || len(ctx.GetDirectDepsProxyWithTag(staticLibTag)) > 0
 }
 

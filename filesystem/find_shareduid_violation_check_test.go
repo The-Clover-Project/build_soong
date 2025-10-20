@@ -25,11 +25,12 @@ var prepareForFindSharedUIDViolationCheckTest = android.GroupFixturePreparers(
 	android.PrepareForIntegrationTestWithAndroid,
 	android.PrepareForTestWithAndroidBuildComponents,
 	PrepareForTestWithFilesystemBuildComponents,
-	prepareForTestWithAndroidDeviceComponents,
+	PrepareForTestWithAndroidDeviceComponents,
 	etc.PrepareForTestWithPrebuiltEtc,
 )
 
 func TestFindSharedUIDViolationCheck(t *testing.T) {
+	t.Parallel()
 	result := android.GroupFixturePreparers(prepareForFindSharedUIDViolationCheckTest).
 		RunTestWithBp(t, `
 			android_device {
@@ -54,6 +55,7 @@ func TestFindSharedUIDViolationCheck(t *testing.T) {
 }
 
 func TestFindSharedUIDViolationCheck_MissingDeps(t *testing.T) {
+	t.Parallel()
 	result := android.GroupFixturePreparers(
 		prepareForFindSharedUIDViolationCheckTest,
 	).RunTestWithBp(t, `

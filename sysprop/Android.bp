@@ -7,6 +7,8 @@ bootstrap_go_package {
     pkgPath: "android/soong/sysprop",
     deps: [
         "blueprint",
+        "blueprint-gobtools",
+        "blueprint-proptools",
         "soong",
         "soong-android",
         "soong-cc",
@@ -15,6 +17,7 @@ bootstrap_go_package {
     ],
     srcs: [
         "sysprop_library.go",
+        "sysprop_enc.go",
         "testing.go",
     ],
     testSrcs: [

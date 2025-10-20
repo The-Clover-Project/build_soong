@@ -15,11 +15,17 @@
 package filesystem
 
 import (
+	"fmt"
+	"io"
+	"strings"
+
 	"github.com/google/blueprint"
 	"github.com/google/blueprint/proptools"
 
 	"android/soong/android"
 )
+
+//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
 
 var (
 	toRawBinary = pctx.AndroidStaticRule("toRawBinary",
@@ -37,6 +43,14 @@ func init() {
 	android.RegisterModuleType("raw_binary", rawBinaryFactory)
 }
 
+// @auto-generate: gob
+type RawBinaryInfo struct {
+	// symbols info of the raw binary src
+	SrcSymbolInfos android.SymbolicOutputInfos
+}
+
+var RawBinaryInfoProvider = blueprint.NewProvider[RawBinaryInfo]()
+
 type rawBinary struct {
 	android.ModuleBase
 
@@ -44,6 +58,8 @@ type rawBinary struct {
 
 	output     android.Path
 	installDir android.InstallPath
+
+	symbolsInfo android.SymbolicOutputInfos
 }
 
 type rawBinaryProperties struct {
@@ -90,6 +106,19 @@ func (r *rawBinary) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	r.output = outputFile
 
 	setCommonFilesystemInfo(ctx, r)
+
+	ctx.VisitDirectDepsProxy(func(proxy android.ModuleProxy) {
+		// Find the src module
+		if android.IsSourceDepTagWithOutputTag(ctx.OtherModuleDependencyTag(proxy), "") {
+			if info, ok := android.OtherModuleProvider(ctx, proxy, android.SymbolInfosProvider); ok {
+				r.symbolsInfo = append(r.symbolsInfo, info...)
+			}
+		}
+	})
+
+	android.SetProvider(ctx, RawBinaryInfoProvider, RawBinaryInfo{
+		SrcSymbolInfos: r.symbolsInfo,
+	})
 }
 
 var _ android.AndroidMkEntriesProvider = (*rawBinary)(nil)
@@ -99,7 +128,15 @@ func (r *rawBinary) AndroidMkEntries() []android.AndroidMkEntries {
 	return []android.AndroidMkEntries{{
 		Class:      "ETC",
 		OutputFile: android.OptionalPathForPath(r.output),
-	}}
+		ExtraFooters: []android.AndroidMkExtraFootersFunc{
+			func(w io.Writer, name, prefix, moduleDir string) {
+				if r.symbolsInfo != nil {
+					fmt.Fprintf(w, "ALL_MODULES.$(my_register_name).SYMBOLIC_OUTPUT_PATH := %s\n", strings.Join(r.symbolsInfo.SortedUniqueSymbolicOutputPaths().Strings(), " "))
+					fmt.Fprintf(w, "ALL_MODULES.$(my_register_name).ELF_SYMBOL_MAPPING_PATH := %s\n", strings.Join(r.symbolsInfo.SortedUniqueElfMappingProtoPaths().Strings(), " "))
+				}
+			},
+		}},
+	}
 }
 
 var _ Filesystem = (*rawBinary)(nil)
