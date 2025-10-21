@@ -47,6 +47,7 @@ function test_move_file {
 
   partial_compile_setup out/soong/.intermediates/soong-test/java/integration/impl-library/android_common/javac/impl-library.jar
   run_soong_for_java_lib
+  run_ninja impl-library
 
   # create a new directory
   mkdir -p soong-test/java/integration/impllib/newimpl
@@ -59,6 +60,7 @@ function test_move_file {
 ## Now run with full_compile setup
   full_compile_setup out/soong/.intermediates/soong-test/java/integration/impl-library/android_common/javac/impl-library.jar
   run_soong_for_java_lib
+  run_ninja impl-library
 
   # create a new directory
   mkdir -p soong-test/java/integration/impllib/newimpl
