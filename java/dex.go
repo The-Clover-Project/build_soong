@@ -307,6 +307,8 @@ var d8Inc, d8IncRE = pctx.MultiCommandRemoteStaticRules("d8Inc",
 		CommandDeps: []string{
 			"${config.IncrementalDexInputCmd}",
 			"${config.D8Cmd}",
+			"${config.D8Jar}",
+			"${config.JavaCmd}",
 			"${config.SoongZipCmd}",
 			"${config.MergeZipsCmd}",
 			"${config.UsePartialCompileFile}",
