@@ -846,6 +846,7 @@ func (configs *ReleaseConfigs) Finalize(ctx *loadContext, targetRelease string) 
 			} else {
 				// Note the additional declaration.
 				configs.FlagArtifacts[name].Traces = append(configs.FlagArtifacts[name].Traces, fa.Traces...)
+				configs.FlagArtifacts[name].Duplicate = true
 				if configs.DuplicateFlags[name] == nil {
 					configs.DuplicateFlags[name] = []*string{configs.FlagArtifacts[name].Traces[0].Source}
 				}
