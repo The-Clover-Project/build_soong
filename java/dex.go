@@ -525,6 +525,7 @@ var r8, r8RE = pctx.MultiCommandRemoteStaticRules("r8",
 		CommandDeps: []string{
 			"${config.R8Cmd}",
 			"${config.R8Jar}",
+			"${config.JavaCmd}",
 			"${config.SoongZipCmd}",
 			"${config.MergeZipsCmd}",
 		},
