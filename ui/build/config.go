@@ -2083,6 +2083,35 @@ func (c *configImpl) RunCIPDProxyServer() bool {
 	return c.runCIPDProxyServer
 }
 
+// Siso logs and metrics files.
+func (c *configImpl) SisoConfigFile(isBootstrap bool) string {
+	if isBootstrap {
+		return filepath.Join(c.SoongOutDir(), ".siso_config")
+	}
+	return filepath.Join(c.OutDir(), ".siso_config")
+}
+
+func (c *configImpl) SisoDepsFile(isBootstrap bool) string {
+	if isBootstrap {
+		return filepath.Join(c.SoongOutDir(), ".siso_deps")
+	}
+	return filepath.Join(c.OutDir(), ".siso_deps")
+}
+
+func (c *configImpl) SisoFsStateFile(isBootstrap bool) string {
+	if isBootstrap {
+		return filepath.Join(c.SoongOutDir(), ".siso_fs_state")
+	}
+	return filepath.Join(c.OutDir(), ".siso_fs_state")
+}
+
+func (c *configImpl) SisoFilegroupsFile(isBootstrap bool) string {
+	if isBootstrap {
+		return filepath.Join(c.SoongOutDir(), ".siso_filegroups")
+	}
+	return filepath.Join(c.OutDir(), ".siso_filegroups")
+}
+
 // Returns a Time object if one was passed via a command-line flag.
 // Otherwise returns the passed default.
 func (c *configImpl) BuildStartedTimeOrDefault(defaultTime time.Time) time.Time {

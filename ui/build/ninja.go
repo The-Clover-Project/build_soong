@@ -88,6 +88,7 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 			//"-d", "stats",
 			"--frontend_file", fifo,
 			"--local_jobs", strconv.Itoa(config.Parallel()),
+			"--log_dir", config.LogsDir(),
 		}
 		if value := config.SisoConfigDir(); value != "" {
 			value = createSisoConfigDir(ctx, config, value)
@@ -384,6 +385,14 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 	defer ctx.ExecutionMetrics.Finish(ExecutionMetricsFinishAdaptor{ctx})
 	ctx.Status.Status("Starting ninja...")
 	cmd.RunAndStreamOrFatal()
+
+	// Post build execution.
+	if config.ninjaCommand == NINJA_SISO {
+		distFile(ctx, config, config.SisoConfigFile(false), "soong_ui/siso")
+		distFile(ctx, config, config.SisoDepsFile(false), "soong_ui/siso")
+		distFile(ctx, config, config.SisoFsStateFile(false), "soong_ui/siso")
+		distFile(ctx, config, config.SisoFilegroupsFile(false), "soong_ui/siso")
+	}
 }
 
 // A simple struct for checking if Ninja gets stuck, using timestamps.

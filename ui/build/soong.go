@@ -665,6 +665,7 @@ func runSoong(ctx Context, config Config, enforceNoSoongOutput bool) {
 					//"--remote_jobs", strconv.Itoa(config.RemoteParallel()),
 					"--frontend_file", fifo,
 					"-f", filepath.Join(config.SoongOutDir(), "bootstrap.ninja"),
+					"--log_dir", filepath.Join(config.LogsDir(), "bootstrap"),
 				}
 				if value := config.SisoConfigDir(); value != "" {
 					value = createSisoConfigDir(ctx, config, value)
@@ -780,6 +781,13 @@ func runSoong(ctx Context, config Config, enforceNoSoongOutput bool) {
 
 	if config.JsonModuleGraph() {
 		distGzipFile(ctx, config, config.ModuleGraphFile(), "soong_ui/soong")
+	}
+
+	if config.ninjaCommand == NINJA_SISO {
+		distFile(ctx, config, config.SisoConfigFile(true), "soong_ui/bootstrap")
+		distFile(ctx, config, config.SisoDepsFile(true), "soong_ui/bootstrap")
+		distFile(ctx, config, config.SisoFsStateFile(true), "soong_ui/bootstrap")
+		distFile(ctx, config, config.SisoFilegroupsFile(true), "soong_ui/bootstrap")
 	}
 }
 
