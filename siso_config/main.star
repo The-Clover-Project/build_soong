@@ -36,6 +36,12 @@ def __generate(ctx, vars, dir_modules):
             "default": {
                 "OSFamily": "Linux",
                 "container-image": vars.RBE_container_image,
+                "Pool": "default",
+            },
+            "java16": {
+                "OSFamily": "Linux",
+                "container-image": vars.RBE_container_image,
+                "Pool": "java16",
             },
         },
         "input_deps": {},
