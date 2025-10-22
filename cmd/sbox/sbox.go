@@ -39,11 +39,12 @@ import (
 )
 
 var (
-	sandboxesRoot  string
-	outputDir      string
-	manifestFile   string
-	keepOutDir     bool
-	writeIfChanged bool
+	sandboxesRoot      string
+	outputDir          string
+	manifestFile       string
+	keepOutDir         bool
+	writeIfChanged     bool
+	overrideSandboxDir string
 )
 
 const (
@@ -63,6 +64,10 @@ func init() {
 		"whether to keep the sandbox directory when done")
 	flag.BoolVar(&writeIfChanged, "write-if-changed", false,
 		"only write the output files if they have changed")
+	flag.StringVar(&overrideSandboxDir, "override-sandbox-dir", "",
+		"full path to the directory to put the sandbox into."+
+			" Implies --keep-out-dir and overrides the automatic directory"+
+			" picking under --sandbox-path.")
 }
 
 func usageViolation(violation string) {
@@ -129,12 +134,6 @@ func run() error {
 		return fmt.Errorf("at least one commands entry is required in %q", manifestFile)
 	}
 
-	// setup sandbox directory
-	err = os.MkdirAll(sandboxesRoot, 0777)
-	if err != nil {
-		return fmt.Errorf("failed to create %q: %w", sandboxesRoot, err)
-	}
-
 	// This tool assumes that there are no two concurrent runs with the same
 	// manifestFile. It should therefore be safe to use the hash of the
 	// manifestFile as the temporary directory name. We do this because it
@@ -144,7 +143,12 @@ func run() error {
 	// depending on this one.
 	hash := sha1.New()
 	hash.Write([]byte(manifestFile))
-	tempDir := filepath.Join(sandboxesRoot, "sbox", hex.EncodeToString(hash.Sum(nil)))
+	var tempDir string
+	if overrideSandboxDir != "" {
+		tempDir = overrideSandboxDir
+	} else {
+		tempDir = filepath.Join(sandboxesRoot, "sbox", hex.EncodeToString(hash.Sum(nil)))
+	}
 
 	err = os.RemoveAll(tempDir)
 	if err != nil {
@@ -161,7 +165,7 @@ func run() error {
 	// directory.
 	defer func() {
 		// in some cases we decline to remove the temp dir, to facilitate debugging
-		if !keepOutDir {
+		if !keepOutDir && overrideSandboxDir == "" {
 			os.RemoveAll(tempDir)
 		}
 	}()
