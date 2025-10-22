@@ -2602,6 +2602,7 @@ func metalavaStubCmd(ctx android.ModuleContext, rule *android.RuleBuilder,
 
 	cmd := rule.Command()
 	cmd.FlagWithArg("ANDROID_PREFS_ROOT=", homeDir.String())
+	rule.ToolchainPaths(filepath.Dir(config.JavaCmd(ctx).String()))
 
 	if metalavaUseRewrapper(ctx) {
 		rule.Remoteable(android.RemoteRuleSupports{RBE: true})
