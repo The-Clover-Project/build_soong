@@ -456,7 +456,7 @@ func (s *ccRustFuzzPackager) GenerateBuildActions(ctx android.SingletonContext) 
 		archOs := fuzz.ArchOs{HostOrTarget: hostOrTargetString, Arch: archString, Dir: archDir.String()}
 
 		var files []fuzz.FileToZip
-		builder := android.NewRuleBuilder(pctx, ctx)
+		builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 
 		// Package the corpus, data, dict and config into a zipfile.
 		files = s.PackageArtifacts(ctx, module, &fuzzInfo, archDir, builder)

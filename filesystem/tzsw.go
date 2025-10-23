@@ -52,7 +52,7 @@ func (p *prebuiltTzsw) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 
 func (p *prebuiltTzsw) avbAddHash(ctx android.ModuleContext, src android.Path) android.Path {
 	vbmetaIntermediates := android.PathForModuleOut(ctx, "vbmeta")
-	builder := android.NewRuleBuilder(pctx, ctx).Sbox(
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled().Sbox(
 		vbmetaIntermediates,
 		android.PathForModuleOut(ctx, "vbmeta.textproto"),
 	)

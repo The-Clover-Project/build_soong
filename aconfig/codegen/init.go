@@ -40,7 +40,8 @@ var (
 				"$aconfig",
 				"$soong_zip",
 			},
-			Restat: true,
+			Restat:          true,
+			SandboxDisabled: true,
 		}, "mode")
 
 	// For cc_aconfig_library: Generate C++ library
@@ -55,6 +56,7 @@ var (
 			CommandDeps: []string{
 				"$aconfig",
 			},
+			SandboxDisabled: true,
 		}, "gendir", "mode")
 
 	// For rust_aconfig_library: Generate Rust library
@@ -69,6 +71,7 @@ var (
 			CommandDeps: []string{
 				"$aconfig",
 			},
+			SandboxDisabled: true,
 		}, "gendir", "mode")
 )
 

@@ -296,7 +296,7 @@ func createFrameworkAidl(stubsModules []string, path android.WritablePath, ctx a
 		}
 	}
 
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	rule.MissingDeps(missingDeps)
 
 	var aidls android.Paths
@@ -344,7 +344,7 @@ func nonUpdatableFrameworkAidlPath(ctx android.PathContext) android.OutputPath {
 func createAPIFingerprint(ctx android.SingletonContext) {
 	out := android.ApiFingerprintPath(ctx)
 
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 
 	rule.Command().
 		Text("rm -f").Output(out)

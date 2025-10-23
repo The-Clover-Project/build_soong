@@ -126,7 +126,7 @@ func buildNoticeOutputFromLicenseMetadata(
 	if libraryName == "" {
 		libraryName = modules[0].Name
 	}
-	rule := NewRuleBuilder(pctx, ctx)
+	rule := NewRuleBuilder(pctx, ctx).SandboxDisabled()
 
 	// Arguments that will go into the response file.
 	var rspArgs []string

@@ -308,9 +308,10 @@ var (
 		blueprint.RuleParams{
 			Command: `rm -rf $out && ` +
 				`cat $out.rsp | tr ' ' '\n' | while read -r file || [ -n "$$file" ]; do ${sqlite3_noicu} $out ".import --csv $${file} $$(basename $${file} .csv)"; done`,
-			CommandDeps:    []string{"${sqlite3_noicu}"},
-			Rspfile:        `$out.rsp`,
-			RspfileContent: `$in`,
+			CommandDeps:     []string{"${sqlite3_noicu}"},
+			Rspfile:         `$out.rsp`,
+			RspfileContent:  `$in`,
+			SandboxDisabled: true,
 		})
 )
 

@@ -483,7 +483,7 @@ func (p *PythonLibraryModule) createSrcsZip(ctx android.ModuleContext, pkgPath s
 
 		if pkgPath != "" {
 			pkgPathStagingDir := android.PathForModuleGen(ctx, "protos_staged_for_pkg_path")
-			rule := android.NewRuleBuilder(pctx, ctx)
+			rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 			var stagedProtoSrcs android.Paths
 			for _, srcFile := range protoSrcs {
 				stagedProtoSrc := pkgPathStagingDir.Join(ctx, pkgPath, srcFile.Rel())

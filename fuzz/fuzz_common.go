@@ -670,7 +670,7 @@ func (s *FuzzPackager) CreateFuzzPackage(ctx android.SingletonContext, archDirs 
 		filesToZip := archDirs[archOs]
 		arch := archOs.Arch
 		hostOrTarget := archOs.HostOrTarget
-		builder := android.NewRuleBuilder(pctx, ctx)
+		builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 		zipFileName := "fuzz-" + hostOrTarget + "-" + arch + ".zip"
 		if fuzzType == Rust {
 			zipFileName = "fuzz-rust-" + hostOrTarget + "-" + arch + ".zip"

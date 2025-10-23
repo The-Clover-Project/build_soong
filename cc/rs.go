@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"android/soong/android"
+
 	"github.com/google/blueprint"
 )
 
@@ -44,10 +45,11 @@ touch $out
 var (
 	rsCpp = pctx.AndroidStaticRule("rsCpp",
 		blueprint.RuleParams{
-			Command:     rsCppCmdLine,
-			CommandDeps: []string{"$rsCmd"},
-			Depfile:     "${out}.d",
-			Deps:        blueprint.DepsGCC,
+			Command:         rsCppCmdLine,
+			CommandDeps:     []string{"$rsCmd"},
+			Depfile:         "${out}.d",
+			Deps:            blueprint.DepsGCC,
+			SandboxDisabled: true,
 		},
 		"depFiles", "outDir", "rsFlags", "stampFile")
 )

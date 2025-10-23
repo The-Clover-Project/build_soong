@@ -21,7 +21,7 @@ func (s *systemServerZipSingleton) GenerateBuildActions(ctx android.SingletonCon
 	systemServerDexjarsDir := android.PathForOutput(ctx, SystemServerDexjarsDir)
 
 	out := android.PathForOutput(ctx, "system_server.zip")
-	builder := android.NewRuleBuilder(pctx, ctx)
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	cmd := builder.Command().BuiltTool("soong_zip").
 		FlagWithOutput("-o ", out).
 		FlagWithArg("-C ", systemServerDexjarsDir.String())

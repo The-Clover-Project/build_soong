@@ -43,8 +43,9 @@ func init() {
 var (
 	modifyAllowlist = pctx.AndroidStaticRule("modifyAllowlist",
 		blueprint.RuleParams{
-			Command:     "${ModifyAllowlistCmd} $in $packageName $out",
-			CommandDeps: []string{"${ModifyAllowlistCmd}"},
+			Command:         "${ModifyAllowlistCmd} $in $packageName $out",
+			CommandDeps:     []string{"${ModifyAllowlistCmd}"},
+			SandboxDisabled: true,
 		}, "packageName")
 )
 
@@ -1101,7 +1102,7 @@ func (a *AndroidApp) generateAndroidBuildActions(ctx android.ModuleContext) {
 			},
 			ctx.ModuleProxy(),
 		)
-		builder := android.NewRuleBuilder(pctx, ctx)
+		builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 		builder.Command().Text("cp").
 			Input(noticeFile).
 			Output(noticeAssetPath)
@@ -1809,7 +1810,7 @@ func (a *AndroidTest) FixTestConfig(ctx android.ModuleContext, testConfig androi
 	}
 
 	fixedConfig := android.PathForModuleOut(ctx, "test_config_fixer", "AndroidTest.xml")
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	command := rule.Command().BuiltTool("test_config_fixer").Input(testConfig).Output(fixedConfig)
 	fixNeeded := false
 
@@ -2242,7 +2243,7 @@ func (u *usesLibrary) verifyUsesLibraries(ctx android.ModuleContext, inputFile a
 		return inputFile
 	}
 
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	cmd := rule.Command().BuiltTool("manifest_check").
 		Flag("--enforce-uses-libraries").
 		Input(inputFile).

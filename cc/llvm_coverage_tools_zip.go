@@ -41,7 +41,7 @@ func (l *llvmCoverageToolsZipSingleton) GenerateBuildActions(ctx android.Singlet
 	libCxx := config.ClangPath(ctx, "lib/x86_64-unknown-linux-gnu/libc++.so")
 	llvmCoverageToolsZip := android.PathForOutput(ctx, "llvm-profdata.zip")
 
-	builder := android.NewRuleBuilder(pctx, ctx)
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	builder.Command().BuiltTool("soong_zip").
 		Flag("-d").
 		FlagWithOutput("-o ", llvmCoverageToolsZip).

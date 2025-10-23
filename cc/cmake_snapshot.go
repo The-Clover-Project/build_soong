@@ -458,7 +458,7 @@ func (m *CmakeSnapshot) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	android.WriteFileRuleVerbatim(ctx, extPath, cmakeExtAddAidlLibrary)
 
 	// Generating the final zip file
-	zipRule := android.NewRuleBuilder(pctx, ctx)
+	zipRule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	zipCmd := zipRule.Command().
 		BuiltTool("soong_zip").
 		FlagWithOutput("-o ", m.zipPath)

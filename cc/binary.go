@@ -559,8 +559,9 @@ func init() {
 
 var verifyHostBionic = pctx.AndroidStaticRule("verifyHostBionic",
 	blueprint.RuleParams{
-		Command:     "$verifyHostBionicCmd -i $in -l $linker && touch $out",
-		CommandDeps: []string{"$verifyHostBionicCmd"},
+		Command:         "$verifyHostBionicCmd -i $in -l $linker && touch $out",
+		CommandDeps:     []string{"$verifyHostBionicCmd"},
+		SandboxDisabled: true,
 	}, "linker")
 
 func (binary *binaryDecorator) verifyHostBionicLinker(ctx ModuleContext, in, linker android.Path, out android.WritablePath) {

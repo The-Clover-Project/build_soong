@@ -152,7 +152,7 @@ func (*unbundledBuilder) GenerateAndroidBuildActions(ctx android.ModuleContext) 
 
 	// Dist apexkeys.txt
 	apexKeysFile := android.PathForModuleOut(ctx, "apexkeys.txt")
-	apexKeysRuleBuilder := android.NewRuleBuilder(pctx, ctx)
+	apexKeysRuleBuilder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	apexKeysRuleBuilder.Command().Textf("rm -f %s && touch ", apexKeysFile.String()).Output(apexKeysFile)
 	for _, app := range appModules {
 		if info, ok := android.OtherModuleProvider(ctx, app, filesystem.ApexKeyPathInfoProvider); ok {

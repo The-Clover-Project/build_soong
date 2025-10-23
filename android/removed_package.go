@@ -36,7 +36,8 @@ func removedPackageModuleFactory() Module {
 }
 
 var removedPackageRule = pctx.AndroidStaticRule("removed_package", blueprint.RuleParams{
-	Command: "echo $message && false",
+	Command:         "echo $message && false",
+	SandboxDisabled: true,
 }, "message")
 
 func (m *removedPackageModule) GenerateAndroidBuildActions(ctx ModuleContext) {

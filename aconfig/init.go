@@ -42,8 +42,9 @@ var (
 			},
 			Rspfile: "${out}.rsp",
 			// Write declarations and values to a response file to avoid command line length limits.
-			RspfileContent: "${declarations} ${values}",
-			Restat:         true,
+			RspfileContent:  "${declarations} ${values}",
+			Restat:          true,
+			SandboxDisabled: true,
 		}, "release_version", "package", "container", "declarations", "values", "default-permission", "allow-read-write", "mainline-beta-namespace-config", "force-read-only")
 
 	// For create-device-config-sysprops: Generate aconfig flag value map text file
@@ -56,7 +57,8 @@ var (
 			CommandDeps: []string{
 				"${aconfig}",
 			},
-			Restat: true,
+			Restat:          true,
+			SandboxDisabled: true,
 		})
 
 	// For all_aconfig_declarations: Combine all parsed_flags proto files
@@ -66,6 +68,7 @@ var (
 			CommandDeps: []string{
 				"${aconfig}",
 			},
+			SandboxDisabled: true,
 		}, "cache_files")
 	AllDeclarationsRuleTextProto = pctx.AndroidStaticRule("All_aconfig_declarations_dump_textproto",
 		blueprint.RuleParams{
@@ -73,6 +76,7 @@ var (
 			CommandDeps: []string{
 				"${aconfig}",
 			},
+			SandboxDisabled: true,
 		}, "cache_files")
 
 	allDeclarationsRuleStoragePackageMap = pctx.AndroidStaticRule("all_aconfig_declarations_storage_package_map",
@@ -81,6 +85,7 @@ var (
 			CommandDeps: []string{
 				"${aconfig}",
 			},
+			SandboxDisabled: true,
 		}, "container", "cache_files", "version")
 	allDeclarationsRuleStorageFlagMap = pctx.AndroidStaticRule("all_aconfig_declarations_storage_flag_map",
 		blueprint.RuleParams{
@@ -88,6 +93,7 @@ var (
 			CommandDeps: []string{
 				"${aconfig}",
 			},
+			SandboxDisabled: true,
 		}, "container", "cache_files", "version")
 	allDeclarationsRuleStorageFlagInfo = pctx.AndroidStaticRule("all_aconfig_declarations_storage_flag_info",
 		blueprint.RuleParams{
@@ -95,6 +101,7 @@ var (
 			CommandDeps: []string{
 				"${aconfig}",
 			},
+			SandboxDisabled: true,
 		}, "container", "cache_files", "version")
 	allDeclarationsRuleStorageFlagVal = pctx.AndroidStaticRule("all_aconfig_declarations_storage_flag_val",
 		blueprint.RuleParams{
@@ -102,6 +109,7 @@ var (
 			CommandDeps: []string{
 				"${aconfig}",
 			},
+			SandboxDisabled: true,
 		}, "container", "cache_files", "version")
 	ExportedFlagCheckRule = pctx.AndroidStaticRule("ExportedFlagCheckRule",
 		blueprint.RuleParams{
@@ -112,6 +120,7 @@ var (
 			CommandDeps: []string{
 				"${exported-flag-check}",
 			},
+			SandboxDisabled: true,
 		}, "api_signature_files", "finalized_flags_file", "parsed_flags_file")
 
 	CreateStorageRule = pctx.AndroidStaticRule("aconfig_create_storage",
@@ -120,6 +129,7 @@ var (
 			CommandDeps: []string{
 				"${aconfig}",
 			},
+			SandboxDisabled: true,
 		}, "container", "file_type", "cache_files", "version")
 
 	// For exported_java_aconfig_library: Generate a JAR from all
@@ -152,6 +162,7 @@ var (
 				"$soong_zip",
 				"$exported-flag-check",
 			},
+			SandboxDisabled: true,
 		}, "cache_files")
 )
 

@@ -324,7 +324,8 @@ var (
 				"--package-info $in " +
 				"--partition ${partition} " +
 				"--priority ${priority} -o $out",
-			CommandDeps: []string{"build/make/tools/generate-enforce-rro-android-manifest.py"},
+			CommandDeps:     []string{"build/make/tools/generate-enforce-rro-android-manifest.py"},
+			SandboxDisabled: true,
 		}, "partition", "priority",
 	)
 )

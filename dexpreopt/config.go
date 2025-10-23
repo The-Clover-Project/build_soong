@@ -753,7 +753,7 @@ func buildUffdGcFlag(ctx android.BuilderContext, global *GlobalConfig) {
 		kernelVersionFile := android.PathForOutput(ctx, "dexpreopt/kernel_version_for_uffd_gc.txt")
 
 		// Determine the UFFD GC flag by the kernel version file.
-		rule := android.NewRuleBuilder(pctx, ctx)
+		rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 		rule.Command().
 			Tool(ctx.Config().HostToolPath(ctx, "construct_uffd_gc_flag")).
 			Input(kernelVersionFile).
@@ -769,7 +769,7 @@ func buildAssumedValues(ctx android.BuilderContext, global *GlobalConfig, global
 
 	if global.PlatformSdkVersion != "" {
 		maybeAssumedValues := fmt.Sprintf(`'--assume-value=Landroid/os/Build$VERSION;->SDK_INT:%s'`, global.PlatformSdkVersion)
-		rule := android.NewRuleBuilder(pctx, ctx)
+		rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 		cmd := rule.Command()
 		// First check dex2oat to see if it supports `--assume-value=` arguments.
 		// If it does, stash the assumed value args in a reusable output file for compilation.
@@ -789,7 +789,7 @@ func buildAllowProfileCode(ctx android.BuilderContext, global *GlobalConfig, glo
 	profileCodeFlag := getProfileCodeFlagPath(ctx)
 
 	if global.AllowProfileCode {
-		rule := android.NewRuleBuilder(pctx, ctx)
+		rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 		cmd := rule.Command()
 		// First check dex2oat to see if it supports `--allow-profile-code` arguments.
 		// If it does, stash the assumed value args in a reusable output file for compilation.

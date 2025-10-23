@@ -381,7 +381,7 @@ func ParseSymbolFileForAPICoverage(ctx android.ModuleContext, symbolFile string)
 	symbolFilePath := android.PathForModuleSrc(ctx, symbolFile)
 	outputFile := ctx.Module().(LinkableInterface).BaseModuleName() + ".xml"
 	parsedApiCoveragePath := android.PathForModuleOut(ctx, outputFile)
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	rule.Command().
 		BuiltTool("ndk_api_coverage_parser").
 		Input(symbolFilePath).

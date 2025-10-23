@@ -82,7 +82,7 @@ func (a *androidDevice) hostInitVerifierCheckDepsMutator(ctx android.BottomUpMut
 func (a *androidDevice) hostInitVerifierCheck(ctx android.ModuleContext) {
 	fsInfoMap := a.getFsInfos(ctx)
 
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	cmd := rule.Command().BuiltTool("host_init_verifier")
 
 	outputFile := android.PathForModuleOut(ctx, "host_init_verifier_output.txt")

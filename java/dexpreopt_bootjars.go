@@ -820,7 +820,7 @@ func (d *dexpreoptBootJars) buildBootZip(ctx android.ModuleContext) {
 
 	bootZipFirstPart := android.PathForModuleOut(ctx, "boot_zip", "boot_first_part.zip")
 	bootZip := android.PathForModuleOut(ctx, "boot_zip", "boot.zip")
-	builder := android.NewRuleBuilder(pctx, ctx)
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	cmd := builder.Command().BuiltTool("soong_zip").
 		FlagWithOutput("-o ", bootZipFirstPart).
 		FlagWithArg("-C ", filepath.Dir(filepath.Dir(bootclasspathDexFiles[0].String())))
@@ -1131,7 +1131,7 @@ func buildBootImageZipInPredefinedLocation(ctx android.ModuleContext, image *boo
 		zipFiles = append(zipFiles, filesByArch[archType]...)
 	}
 
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	rule.Command().
 		BuiltTool("soong_zip").
 		FlagWithOutput("-o ", image.zip).
@@ -1238,7 +1238,7 @@ func buildBootImageVariant(ctx android.ModuleContext, image *bootImageVariant, p
 	oatLocation := dexpreopt.PathToLocation(outputPath, arch)
 	imagePath := outputPath.ReplaceExtension(ctx, "art")
 
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 
 	rule.Command().Text("mkdir").Flag("-p").Flag(symbolsDir.String())
 	rule.Command().Text("rm").Flag("-f").
@@ -1449,7 +1449,7 @@ func bootImageProfileRuleCommon(ctx android.ModuleContext, name string, dexFiles
 		return nil
 	}
 
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 
 	var profiles android.Paths
 	if len(global.BootImageProfiles) > 0 {
@@ -1516,7 +1516,7 @@ func bootImageProfileRule(ctx android.ModuleContext, image *bootImageConfig) (an
 	profile := bootImageProfileRuleCommon(ctx, image.name, image.dexPathsDeps.Paths(), image.getAnyAndroidVariant().dexLocationsDeps)
 
 	if image == defaultBootImageConfig(ctx) && profile != nil {
-		rule := android.NewRuleBuilder(pctx, ctx)
+		rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 		rule.Install(profile, "/system/etc/boot-image.prof")
 		return profile, rule.Installs()
 	}
@@ -1538,7 +1538,7 @@ func bootFrameworkProfileRule(ctx android.ModuleContext, image *bootImageConfig)
 
 	profile := image.dir.Join(ctx, "boot.bprof")
 
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	rule.Command().
 		Text(`ANDROID_LOG_TAGS="*:e"`).
 		Tool(globalSoong.Profman).
@@ -1566,7 +1566,7 @@ func dumpOatRules(ctx android.ModuleContext, image *bootImageConfig) {
 		}
 		// Create a rule to call oatdump.
 		output := android.PathForOutput(ctx, name+"."+suffix+".oatdump.txt")
-		rule := android.NewRuleBuilder(pctx, ctx)
+		rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 		imageLocationsOnHost, _ := image.imageLocations()
 
 		cmd := rule.Command().
@@ -1584,7 +1584,7 @@ func dumpOatRules(ctx android.ModuleContext, image *bootImageConfig) {
 
 		// Create a phony rule that depends on the output file and prints the path.
 		phony := android.PathForPhony(ctx, "dump-oat-"+name+"-"+suffix)
-		rule = android.NewRuleBuilder(pctx, ctx)
+		rule = android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 		rule.Command().
 			Implicit(output).
 			ImplicitOutput(phony).
@@ -1725,7 +1725,7 @@ func (d *artBootImages) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 				// Create a phony target that can ART run-tests can depend on.
 				ctx.Phony(d.Name(), installs...)
 
-				rule := android.NewRuleBuilder(pctx, ctx)
+				rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 				cmd := rule.Command().
 					Tool(ctx.Config().HostToolPath(ctx, "soong_zip")).
 					FlagWithOutput("-o ", d.zipFile)
@@ -1750,7 +1750,7 @@ func (d *artBootImages) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 				// create an empty file so that the `art_boot_images` is known to the packaging system.
 				d.outputFile = android.OptionalPathForPath(android.PathForModuleOut(ctx, "undefined_art_boot_images"))
 				// Create a valid, empty zip file.
-				rule := android.NewRuleBuilder(pctx, ctx)
+				rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 				rule.Command().
 					Tool(ctx.Config().HostToolPath(ctx, "soong_zip")).
 					FlagWithOutput("-o ", d.zipFile)

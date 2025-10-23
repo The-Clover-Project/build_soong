@@ -45,7 +45,7 @@ func buildRuleForBootJarsPackageCheck(ctx android.ModuleContext, bootDexJarByMod
 
 	timestamp := android.PathForOutput(ctx, "boot-jars-package-check/stamp")
 
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	rule.Command().BuiltTool("check_boot_jars").
 		Input(ctx.Config().HostToolPath(ctx, "dexdump")).
 		Input(android.PathForSource(ctx, "build/soong/scripts/check_boot_jars/package_allowed_list.txt")).

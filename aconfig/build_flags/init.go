@@ -34,7 +34,8 @@ var (
 			CommandDeps: []string{
 				"${buildFlagDeclarations}",
 			},
-			Restat: true,
+			Restat:          true,
+			SandboxDisabled: true,
 		}, "release_version", "declarations")
 
 	buildFlagTextRule = pctx.AndroidStaticRule("build-flag-declarations-text",
@@ -47,7 +48,8 @@ var (
 			CommandDeps: []string{
 				"${buildFlagDeclarations}",
 			},
-			Restat: true,
+			Restat:          true,
+			SandboxDisabled: true,
 		})
 
 	allDeclarationsRule = pctx.AndroidStaticRule("all-build-flag-declarations-dump",
@@ -56,7 +58,8 @@ var (
 			CommandDeps: []string{
 				"${buildFlagDeclarations}",
 			},
-			Restat: true,
+			Restat:          true,
+			SandboxDisabled: true,
 		}, "intermediates")
 
 	allDeclarationsRuleTextProto = pctx.AndroidStaticRule("All_build_flag_declarations_dump_textproto",
@@ -65,7 +68,8 @@ var (
 			CommandDeps: []string{
 				"${buildFlagDeclarations}",
 			},
-			Restat: true,
+			Restat:          true,
+			SandboxDisabled: true,
 		})
 
 	allReleaseConfigsRule = pctx.AndroidStaticRule("All_release_configs",
@@ -75,7 +79,8 @@ var (
 			CommandDeps: []string{
 				"${releaseConfigInternal}",
 			},
-			Restat: true,
+			Restat:          true,
+			SandboxDisabled: true,
 		}, "argsFile", "moduleOut", "product")
 
 	releaseConfigRule = pctx.AndroidStaticRule("Release_config",
@@ -85,7 +90,8 @@ var (
 			CommandDeps: []string{
 				"${releaseConfigInternal}",
 			},
-			Restat: true,
+			Restat:          true,
+			SandboxDisabled: true,
 		}, "argsFile", "moduleOut", "product")
 
 	allReleaseConfigContributionsRule = pctx.AndroidStaticRule("all-release-config-contributions-dump",
@@ -94,7 +100,8 @@ var (
 			CommandDeps: []string{
 				"${releaseConfigContributions}",
 			},
-			Restat: true,
+			Restat:          true,
+			SandboxDisabled: true,
 		}, "dirs", "format")
 
 	flagDeclarationsValidationRule = pctx.AndroidStaticRule("flagDeclarationsValidation",
@@ -104,7 +111,8 @@ var (
 			CommandDeps: []string{
 				"${buildFlagInternal}",
 			},
-			Restat: true,
+			Restat:          true,
+			SandboxDisabled: true,
 		})
 )
 

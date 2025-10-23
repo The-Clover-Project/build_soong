@@ -71,7 +71,7 @@ func (m *javaSystemFeaturesSrcs) GenerateAndroidBuildActions(ctx android.ModuleC
 	// Ensure sorted outputs for consistency of flag ordering in ninja outputs.
 	sort.Strings(features)
 
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	rule.Command().Text("rm -rf").Text(outputDir.String())
 	rule.Command().Text("mkdir -p").Text(outputDir.String())
 	ruleCmd := rule.Command().

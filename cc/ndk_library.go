@@ -39,7 +39,8 @@ var (
 		blueprint.RuleParams{
 			Command: "$ndkStubGenerator --arch $arch --api $apiLevel " +
 				"--api-map $apiMap $flags $in $out",
-			CommandDeps: []string{"$ndkStubGenerator"},
+			CommandDeps:     []string{"$ndkStubGenerator"},
+			SandboxDisabled: true,
 		}, "arch", "apiLevel", "apiMap", "flags")
 
 	// $headersList should include paths to public headers. All types
@@ -50,8 +51,9 @@ var (
 	// so there is no need to add them to dependencies.
 	stg = pctx.AndroidStaticRule("stg",
 		blueprint.RuleParams{
-			Command:     "$stg -S :$symbolList --file-filter :$headersList --elf $in -o $out",
-			CommandDeps: []string{"$stg"},
+			Command:         "$stg -S :$symbolList --file-filter :$headersList --elf $in -o $out",
+			CommandDeps:     []string{"$stg"},
+			SandboxDisabled: true,
 		}, "symbolList", "headersList")
 
 	stgdiff = pctx.AndroidStaticRule("stgdiff",
@@ -60,8 +62,9 @@ var (
 			// because we don't want to spam the build output with "nothing
 			// changed" messages, so redirect output message to $out, and if
 			// changes were detected print the output and fail.
-			Command:     "$stgdiff $args --stg $in -o $out || (cat $out && echo 'Run $$ANDROID_BUILD_TOP/development/tools/ndk/update_ndk_abi.sh to update the ABI dumps.' && false)",
-			CommandDeps: []string{"$stgdiff"},
+			Command:         "$stgdiff $args --stg $in -o $out || (cat $out && echo 'Run $$ANDROID_BUILD_TOP/development/tools/ndk/update_ndk_abi.sh to update the ABI dumps.' && false)",
+			CommandDeps:     []string{"$stgdiff"},
+			SandboxDisabled: true,
 		}, "args")
 
 	ndkLibrarySuffix = ".ndk"

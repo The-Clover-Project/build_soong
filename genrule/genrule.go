@@ -72,10 +72,11 @@ var (
 	// Used by gensrcs when there is more than 1 shard to merge the outputs
 	// of each shard into a zip file.
 	gensrcsMerge = pctx.AndroidStaticRule("gensrcsMerge", blueprint.RuleParams{
-		Command:        "${soongZip} -o ${tmpZip} @${tmpZip}.rsp && ${zipSync} -d ${genDir} ${tmpZip}",
-		CommandDeps:    []string{"${soongZip}", "${zipSync}"},
-		Rspfile:        "${tmpZip}.rsp",
-		RspfileContent: "${zipArgs}",
+		Command:         "${soongZip} -o ${tmpZip} @${tmpZip}.rsp && ${zipSync} -d ${genDir} ${tmpZip}",
+		CommandDeps:     []string{"${soongZip}", "${zipSync}"},
+		Rspfile:         "${tmpZip}.rsp",
+		RspfileContent:  "${zipArgs}",
+		SandboxDisabled: true,
 	}, "tmpZip", "genDir", "zipArgs")
 )
 
@@ -562,7 +563,7 @@ func (g *Module) generateCommonBuildActions(ctx android.ModuleContext) {
 		desc := "generate"
 		name := "generator"
 		if task.useNsjail {
-			rule = android.NewRuleBuilder(pctx, ctx).
+			rule = android.NewRuleBuilder(pctx, ctx).SandboxDisabled().
 				Nsjail(task.genDir, android.PathForModuleOut(ctx, "nsjail_build_sandbox")).
 				DirDepsFile(task.genDir.Join(ctx, "dir_deps.d"))
 			if task.keepGendir {
@@ -581,7 +582,7 @@ func (g *Module) generateCommonBuildActions(ctx android.ModuleContext) {
 			manifestPath := android.PathForModuleOut(ctx, manifestName)
 
 			// Use a RuleBuilder to create a rule that runs the command inside an sbox sandbox.
-			rule = android.NewRuleBuilder(pctx, ctx).Sbox(task.genDir, manifestPath).SandboxInputs()
+			rule = android.NewRuleBuilder(pctx, ctx).SandboxDisabled().Sbox(task.genDir, manifestPath).SandboxInputs()
 			rule.DirDepsFile(task.genDir.Join(ctx, "dir_deps.d"))
 		}
 		if Bool(g.properties.Write_if_changed) {
@@ -887,7 +888,7 @@ func NewGenSrcs() *Module {
 			// TODO(ccross): this RuleBuilder is a hack to be able to call
 			// rule.Command().PathForOutput.  Replace this with passing the rule into the
 			// generator.
-			rule := android.NewRuleBuilder(pctx, ctx).Sbox(genDir, nil).SandboxInputs()
+			rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled().Sbox(genDir, nil).SandboxInputs()
 
 			for _, in := range shard {
 				outFile := android.GenPathWithExtAndTrimExt(ctx, finalSubDir, in, String(properties.Output_extension), String(properties.Trim_extension))

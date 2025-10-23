@@ -29,7 +29,7 @@ func (s *testMappingZipSingleton) GenerateBuildActions(ctx SingletonContext) {
 	out := PathForOutput(ctx, "test_mappings.zip")
 	dep := PathForOutput(ctx, "test_mappings.zip.d")
 
-	builder := NewRuleBuilder(pctx, ctx)
+	builder := NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	builder.Command().BuiltTool("soong_zip").
 		FlagWithOutput("-o ", out).
 		FlagWithInput("-l ", fileListFile)

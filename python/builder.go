@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"android/soong/android"
+
 	"github.com/google/blueprint"
 )
 
@@ -28,15 +29,17 @@ var (
 
 	zip = pctx.AndroidStaticRule("zip",
 		blueprint.RuleParams{
-			Command:     `$parCmd -o $out $args`,
-			CommandDeps: []string{"$parCmd"},
+			Command:         `$parCmd -o $out $args`,
+			CommandDeps:     []string{"$parCmd"},
+			SandboxDisabled: true,
 		},
 		"args")
 
 	combineZip = pctx.AndroidStaticRule("combineZip",
 		blueprint.RuleParams{
-			Command:     `$mergeParCmd $out $in`,
-			CommandDeps: []string{"$mergeParCmd"},
+			Command:         `$mergeParCmd $out $in`,
+			CommandDeps:     []string{"$mergeParCmd"},
+			SandboxDisabled: true,
 		},
 	)
 
@@ -48,7 +51,8 @@ var (
 				`echo "#!/usr/bin/env $interp" >${out}.prefix &&` +
 				`$mergeParCmd -p --prefix ${out}.prefix -pm $out.main $out $srcsZips $out.entrypoint_zip && ` +
 				"chmod +x $out && (rm -f $out.main; rm -f ${out}.prefix; rm -f $out.entrypoint_zip; rm -f `dirname $out`/__soong_entrypoint_redirector__.py)",
-			CommandDeps: []string{"$mergeParCmd", "$parCmd", "build/soong/python/scripts/stub_template_host.txt", "build/soong/python/scripts/main_non_embedded.py"},
+			CommandDeps:     []string{"$mergeParCmd", "$parCmd", "build/soong/python/scripts/stub_template_host.txt", "build/soong/python/scripts/main_non_embedded.py"},
+			SandboxDisabled: true,
 		},
 		"interp", "main", "srcsZips")
 
@@ -58,7 +62,8 @@ var (
 				`sed 's/ENTRY_POINT/$main/' build/soong/python/scripts/main.py >$out.main &&` +
 				`$mergeParCmd -p -pm $out.main --prefix $launcher $out $srcsZips && ` +
 				`chmod +x $out && rm -rf $out.main`,
-			CommandDeps: []string{"$mergeParCmd", "build/soong/python/scripts/main.py"},
+			CommandDeps:     []string{"$mergeParCmd", "build/soong/python/scripts/main.py"},
+			SandboxDisabled: true,
 		},
 		"main", "srcsZips", "launcher")
 
@@ -66,7 +71,8 @@ var (
 		blueprint.RuleParams{
 			Command: `$mergeParCmd -p --prefix $launcher $out $srcsZips && ` +
 				`chmod +x $out`,
-			CommandDeps: []string{"$mergeParCmd"},
+			CommandDeps:     []string{"$mergeParCmd"},
+			SandboxDisabled: true,
 		},
 		"srcsZips", "launcher")
 
@@ -79,6 +85,7 @@ var (
 			"$launcher",
 			"build/soong/python/scripts/precompile_python.py",
 		},
+		SandboxDisabled: true,
 	}, "stdlibZip", "stdlibPkg", "launcher", "ldLibraryPath")
 )
 

@@ -88,7 +88,7 @@ func (b *bootOtas16k) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 }
 
 func (b *bootOtas16k) createOtaPackage(ctx android.ModuleContext, primaryBootImage, secondaryBootImage, dtboImage android.OptionalPath, filename string) android.Path {
-	builder := android.NewRuleBuilder(pctx, ctx)
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	zip := android.PathForModuleOut(ctx, filename)
 
 	_, key := ctx.Config().DefaultSystemDevCertificate(ctx)

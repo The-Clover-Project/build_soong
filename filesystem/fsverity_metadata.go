@@ -33,12 +33,14 @@ func init() {
 
 var (
 	buildFsverityMeta = pctx.AndroidStaticRule("build_fsverity_meta", blueprint.RuleParams{
-		Command:     `$fsverity_metadata_generator --fsverity-path $fsverity --signature none --hash-alg sha256 --output $out $in`,
-		CommandDeps: []string{"$fsverity_metadata_generator", "$fsverity"},
+		Command:         `$fsverity_metadata_generator --fsverity-path $fsverity --signature none --hash-alg sha256 --output $out $in`,
+		CommandDeps:     []string{"$fsverity_metadata_generator", "$fsverity"},
+		SandboxDisabled: true,
 	})
 	buildFsverityManifest = pctx.AndroidStaticRule("build_fsverity_manifest", blueprint.RuleParams{
-		Command:     `$fsverity_manifest_generator --fsverity-path $fsverity --output $out @$in`,
-		CommandDeps: []string{"$fsverity_manifest_generator", "$fsverity"},
+		Command:         `$fsverity_manifest_generator --fsverity-path $fsverity --output $out @$in`,
+		CommandDeps:     []string{"$fsverity_manifest_generator", "$fsverity"},
+		SandboxDisabled: true,
 	})
 )
 
@@ -236,7 +238,7 @@ func (f *filesystem) buildFsverityMetadataFiles(
 		minSdkVersion = ctx.Config().PlatformSdkVersion().String()
 	}
 
-	apkBuilder := android.NewRuleBuilder(pctx, ctx)
+	apkBuilder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 
 	// aapt2 doesn't support adding individual asset files. Create a temp directory to hold asset
 	// files and pass it to aapt2.

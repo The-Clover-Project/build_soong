@@ -52,6 +52,7 @@ var genManifestProperties = pctx.AndroidStaticRule("genManifestProperties",
 			"echo moduleName=$moduleName >> $out && " +
 			"echo resourceApk=$resourceApk >> $out && " +
 			"echo targetResourceApk=$targetResourceApk >> $out",
+		SandboxDisabled: true,
 	},
 	"targetSdkVersionInt", "targetSdkVersionRaw", "packageName", "targetPackageName",
 	"instrumentationClass", "moduleName", "resourceApk", "targetResourceApk",

@@ -121,7 +121,7 @@ func GenerateFinalizedFlagsForApiSurface(ctx android.ModuleContext, outputPath a
 
 	intermediateMetalavaFlagsConfig := android.PathForModuleOut(ctx, "metalava-flags.config")
 	intermediateFlagReport := android.PathForModuleOut(ctx, "metalava-flag-report.csv")
-	builder := android.NewRuleBuilder(pctx, ctx)
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	builder.Command().
 		BuiltTool("aconfig-to-metalava-flags").
 		Input(parsedFlagsFile).

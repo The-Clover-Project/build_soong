@@ -32,8 +32,9 @@ func init() {
 var (
 	logtags = pctx.AndroidStaticRule("logtags",
 		blueprint.RuleParams{
-			Command:     "$logtagsCmd -o $out $in",
-			CommandDeps: []string{"$logtagsCmd"},
+			Command:         "$logtagsCmd -o $out $in",
+			CommandDeps:     []string{"$logtagsCmd"},
+			SandboxDisabled: true,
 		})
 )
 
@@ -50,7 +51,7 @@ func genAidl(ctx android.ModuleContext, aidlFiles android.Paths, aidlGlobalFlags
 
 		outDir := srcJarFile.ReplaceExtension(ctx, "tmp")
 
-		rule := android.NewRuleBuilder(pctx, ctx)
+		rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 
 		rule.Command().Text("rm -rf").Flag(outDir.String())
 		rule.Command().Text("mkdir -p").Flag(outDir.String())

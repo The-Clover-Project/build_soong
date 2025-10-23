@@ -118,7 +118,7 @@ var _ PlatformCompatConfigIntf = (*platformCompatConfig)(nil)
 var _ platformCompatConfigMetadataProvider = (*platformCompatConfig)(nil)
 
 func (p *platformCompatConfig) GenerateAndroidBuildActions(ctx android.ModuleContext) {
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 
 	configFileName := p.Name() + ".xml"
 	metadataFileName := p.Name() + "_meta.xml"
@@ -296,7 +296,7 @@ func (p *platformCompatConfigSingleton) GenerateBuildActions(ctx android.Singlet
 		return
 	}
 
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	outputPath := platformCompatConfigPath(ctx)
 
 	rule.Command().

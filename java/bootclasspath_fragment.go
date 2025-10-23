@@ -562,7 +562,7 @@ func (b *BootclasspathFragmentModule) GenerateAndroidBuildActions(ctx android.Mo
 	// Zip all encoded jars and set an output tag for other modules to use.
 	encodedJars := hiddenAPIOutput.EncodedBootDexFilesByModule.bootDexJars()
 	outputZipPath := android.PathForModuleOut(ctx, "encoded-jars.zip")
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	cmd := rule.Command().
 		Tool(ctx.Config().HostToolPath(ctx, "soong_zip")).
 		Flag("-o").Output(outputZipPath).

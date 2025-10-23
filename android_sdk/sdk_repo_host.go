@@ -113,7 +113,7 @@ func (s *sdkRepoHost) DepsMutator(ctx android.BottomUpMutatorContext) {
 func (s *sdkRepoHost) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	dir := android.PathForModuleOut(ctx, "zip")
 	outputZipFile := dir.Join(ctx, "output.zip")
-	builder := android.NewRuleBuilder(pctx, ctx).
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled().
 		Sbox(dir, android.PathForModuleOut(ctx, "out.sbox.textproto")).
 		SandboxInputs()
 

@@ -108,20 +108,23 @@ var (
 			`-se version 0 ${default_version} ` +
 			`${opt} ` +
 			`-o $out`,
-		CommandDeps: []string{"${jsonmodify}"},
-		Description: "prepare ${out}",
+		CommandDeps:     []string{"${jsonmodify}"},
+		Description:     "prepare ${out}",
+		SandboxDisabled: true,
 	}, "provideNativeLibs", "requireNativeLibs", "default_version", "opt")
 
 	stripApexManifestRule = pctx.StaticRule("stripApexManifestRule", blueprint.RuleParams{
-		Command:     `rm -f $out && ${conv_apex_manifest} strip $in -o $out`,
-		CommandDeps: []string{"${conv_apex_manifest}"},
-		Description: "strip ${in}=>${out}",
+		Command:         `rm -f $out && ${conv_apex_manifest} strip $in -o $out`,
+		CommandDeps:     []string{"${conv_apex_manifest}"},
+		Description:     "strip ${in}=>${out}",
+		SandboxDisabled: true,
 	})
 
 	pbApexManifestRule = pctx.StaticRule("pbApexManifestRule", blueprint.RuleParams{
-		Command:     `rm -f $out && ${conv_apex_manifest} proto $in -o $out`,
-		CommandDeps: []string{"${conv_apex_manifest}"},
-		Description: "convert ${in}=>${out}",
+		Command:         `rm -f $out && ${conv_apex_manifest} proto $in -o $out`,
+		CommandDeps:     []string{"${conv_apex_manifest}"},
+		Description:     "convert ${in}=>${out}",
+		SandboxDisabled: true,
 	})
 
 	// TODO(b/113233103): make sure that file_contexts is as expected, i.e., validate
@@ -141,9 +144,10 @@ var (
 		CommandDeps: []string{"${apexer}", "${avbtool}", "${e2fsdroid}", "${merge_zips}",
 			"${mke2fs}", "${resize2fs}", "${sefcontext_compile}", "${make_f2fs}", "${sload_f2fs}", "${make_erofs}",
 			"${soong_zip}", "${zipalign}", "${aapt2}", "prebuilts/sdk/current/public/android.jar"},
-		Rspfile:        "${out}.copy_commands",
-		RspfileContent: "${copy_commands}",
-		Description:    "APEX ${image_dir} => ${out}",
+		Rspfile:         "${out}.copy_commands",
+		RspfileContent:  "${copy_commands}",
+		Description:     "APEX ${image_dir} => ${out}",
+		SandboxDisabled: true,
 	}, "tool_path", "image_dir", "copy_commands", "file_contexts", "canned_fs_config", "key",
 		"opt_flags", "manifest")
 
@@ -168,9 +172,10 @@ var (
 			"${merge_zips}", "${mke2fs}", "${resize2fs}", "${sefcontext_compile}", "${make_f2fs}",
 			"${sload_f2fs}", "${make_erofs}", "${soong_zip}", "${zipalign}", "${aapt2}",
 			"prebuilts/sdk/current/public/android.jar"},
-		Rspfile:        "${out}.copy_commands",
-		RspfileContent: "${copy_commands}",
-		Description:    "APEX ${image_dir} => ${out}",
+		Rspfile:         "${out}.copy_commands",
+		RspfileContent:  "${copy_commands}",
+		Description:     "APEX ${image_dir} => ${out}",
+		SandboxDisabled: true,
 	}, "tool_path", "image_dir", "copy_commands", "file_contexts", "canned_fs_config", "key",
 		"opt_flags", "manifest", "is_DCLA")
 
@@ -190,8 +195,9 @@ var (
 			`assets/NOTICE.html.gz:assets/NOTICE.html.gz &&` +
 			`${soong_zip} -o $out.config -C $$(dirname ${config}) -f ${config} && ` +
 			`${merge_zips} $out $out.base $out.config`,
-		CommandDeps: []string{"${zip2zip}", "${soong_zip}", "${merge_zips}"},
-		Description: "app bundle",
+		CommandDeps:     []string{"${zip2zip}", "${soong_zip}", "${merge_zips}"},
+		Description:     "app bundle",
+		SandboxDisabled: true,
 	}, "abi", "config")
 
 	diffApexContentRule = pctx.StaticRule("diffApexContentRule", blueprint.RuleParams{
@@ -202,46 +208,53 @@ var (
 			` "To fix the build run following command:" && ` +
 			`echo "system/apex/tools/update_allowed_list.sh ${allowed_files_file} ${image_content_file}" && ` +
 			`exit 1); touch ${out}`,
-		Description: "Diff ${image_content_file} and ${allowed_files_file}",
+		Description:     "Diff ${image_content_file} and ${allowed_files_file}",
+		SandboxDisabled: true,
 	}, "image_content_file", "allowed_files_file", "apex_module_name")
 
 	generateAPIsUsedbyApexRule = pctx.StaticRule("generateAPIsUsedbyApexRule", blueprint.RuleParams{
-		Command:     "$genNdkUsedbyApexPath ${image_dir} ${readelf} ${out}",
-		CommandDeps: []string{"${genNdkUsedbyApexPath}"},
-		Description: "Generate symbol list used by Apex",
+		Command:         "$genNdkUsedbyApexPath ${image_dir} ${readelf} ${out}",
+		CommandDeps:     []string{"${genNdkUsedbyApexPath}"},
+		Description:     "Generate symbol list used by Apex",
+		SandboxDisabled: true,
 	}, "image_dir", "readelf")
 
 	apexSepolicyTestsRule = pctx.StaticRule("apexSepolicyTestsRule", blueprint.RuleParams{
 		Command: `${apex_ls} -Z ${in} > ${out}.fc` +
 			` && ${apex_sepolicy_tests} -f ${out}.fc --partition ${partition_tag} && touch ${out}`,
-		CommandDeps: []string{"${apex_sepolicy_tests}", "${apex_ls}"},
-		Description: "run apex_sepolicy_tests",
+		CommandDeps:     []string{"${apex_sepolicy_tests}", "${apex_ls}"},
+		Description:     "run apex_sepolicy_tests",
+		SandboxDisabled: true,
 	}, "partition_tag")
 
 	apexLinkerconfigValidationRule = pctx.StaticRule("apexLinkerconfigValidationRule", blueprint.RuleParams{
-		Command:     `${conv_linker_config} validate --type apex ${image_dir} && touch ${out}`,
-		CommandDeps: []string{"${conv_linker_config}"},
-		Description: "run apex_linkerconfig_validation",
+		Command:         `${conv_linker_config} validate --type apex ${image_dir} && touch ${out}`,
+		CommandDeps:     []string{"${conv_linker_config}"},
+		Description:     "run apex_linkerconfig_validation",
+		SandboxDisabled: true,
 	}, "image_dir")
 
 	apexHostVerifierRule = pctx.StaticRule("apexHostVerifierRule", blueprint.RuleParams{
 		Command: `${host_apex_verifier} --deapexer=${deapexer} --debugfs=${debugfs} ` +
 			`--fsckerofs=${fsck_erofs} --apex=${in} --partition_tag=${partition_tag} && touch ${out}`,
-		CommandDeps: []string{"${host_apex_verifier}", "${deapexer}", "${debugfs}", "${fsck_erofs}"},
-		Description: "run host_apex_verifier",
+		CommandDeps:     []string{"${host_apex_verifier}", "${deapexer}", "${debugfs}", "${fsck_erofs}"},
+		Description:     "run host_apex_verifier",
+		SandboxDisabled: true,
 	}, "partition_tag")
 
 	apexElfCheckerUnwantedRule = pctx.StaticRule("apexElfCheckerUnwantedRule", blueprint.RuleParams{
-		Command:     `${apex_elf_checker} --tool_path ${tool_path} --unwanted ${unwanted} ${in} && touch ${out}`,
-		CommandDeps: []string{"${apex_elf_checker}", "${deapexer}", "${debugfs}", "${fsck_erofs}", "${config.ClangBin}/llvm-readelf"},
-		Description: "run apex_elf_checker --unwanted",
+		Command:         `${apex_elf_checker} --tool_path ${tool_path} --unwanted ${unwanted} ${in} && touch ${out}`,
+		CommandDeps:     []string{"${apex_elf_checker}", "${deapexer}", "${debugfs}", "${fsck_erofs}", "${config.ClangBin}/llvm-readelf"},
+		Description:     "run apex_elf_checker --unwanted",
+		SandboxDisabled: true,
 	}, "tool_path", "unwanted")
 
 	apexAconfigFlagsPbRule = pctx.StaticRule("apexAconfigFlagsPbRule", blueprint.RuleParams{
 		Command: `${aconfig} dump-cache --dedup --format protobuf --out ${out} ` +
 			`--filter container:${container}+namespace:!${beta_namespace} ${cache_files}`,
-		CommandDeps: []string{"${aconfig}"},
-		Description: "create aconfig_flags.pb file",
+		CommandDeps:     []string{"${aconfig}"},
+		Description:     "create aconfig_flags.pb file",
+		SandboxDisabled: true,
 	}, "container", "beta_namespace", "cache_files")
 )
 
@@ -442,7 +455,7 @@ func (a *apexBundle) buildFileContexts(ctx android.ModuleContext) android.Path {
 	}
 
 	output := android.PathForModuleOut(ctx, "file_contexts")
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 
 	labelForRoot := "u:object_r:system_file:s0"
 	labelForManifest := "u:object_r:system_file:s0"
@@ -470,7 +483,7 @@ func (a *apexBundle) buildFileContexts(ctx android.ModuleContext) android.Path {
 // included in the APEX without actually downloading and extracting it.
 func (a *apexBundle) buildInstalledFilesFile(ctx android.ModuleContext, builtApex android.Path, imageDir android.Path) android.Path {
 	output := android.PathForModuleOut(ctx, "installed-files.txt")
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	rule.Command().
 		Implicit(builtApex).
 		Text("(cd " + imageDir.String() + " ; ").
@@ -842,7 +855,7 @@ func (a *apexBundle) buildApex(ctx android.ModuleContext) {
 		ctx.ModuleProxy(),
 	)
 	noticeAssetPath := android.PathForModuleOut(ctx, "NOTICE", "NOTICE.html.gz")
-	builder := android.NewRuleBuilder(pctx, ctx)
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	builder.Command().Text("cp").
 		Input(htmlGzNotice).
 		Output(noticeAssetPath)
@@ -931,7 +944,7 @@ func (a *apexBundle) buildApex(ctx android.ModuleContext) {
 		}
 	}
 	apisBackedbyOutputFile := android.PathForModuleOut(ctx, a.Name()+"_backing.txt")
-	rb := android.NewRuleBuilder(pctx, ctx)
+	rb := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	rb.Command().
 		Tool(android.PathForSource(ctx, "build/soong/scripts/gen_ndk_backedby_apex.sh")).
 		Output(apisBackedbyOutputFile).
@@ -945,7 +958,7 @@ func (a *apexBundle) buildApex(ctx android.ModuleContext) {
 		}
 	}
 	javaApiUsedbyOutputFile := android.PathForModuleOut(ctx, a.Name()+"_using.xml")
-	javaUsedByRule := android.NewRuleBuilder(pctx, ctx)
+	javaUsedByRule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	javaUsedByRule.Command().
 		Tool(android.PathForSource(ctx, "build/soong/scripts/gen_java_usedby_apex.sh")).
 		BuiltTool("dexdeps").
@@ -1034,7 +1047,7 @@ func (a *apexBundle) buildApex(ctx android.ModuleContext) {
 	if a.isCompressed {
 		unsignedCompressedOutputFile := android.PathForModuleOut(ctx, a.Name()+imageCapexSuffix+".unsigned")
 
-		compressRule := android.NewRuleBuilder(pctx, ctx)
+		compressRule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 		compressRule.Command().
 			Text("rm").
 			FlagWithOutput("-f ", unsignedCompressedOutputFile)
@@ -1241,7 +1254,7 @@ func (a *apexBundle) buildCannedFsConfig(ctx android.ModuleContext) android.Path
 	sort.Strings(appSetDirs)
 
 	cannedFsConfig := android.PathForModuleOut(ctx, "canned_fs_config")
-	builder := android.NewRuleBuilder(pctx, ctx)
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	cmd := builder.Command()
 	cmd.Text("(")
 	cmd.Text("echo '/ 1000 1000 0755';")
