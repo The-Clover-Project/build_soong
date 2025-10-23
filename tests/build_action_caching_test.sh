@@ -285,4 +285,12 @@ function test_change_environment_variable() {
   compare_incremental_and_full_analysis LLVM_PREBUILTS_VERSION=bar
 }
 
+function test_change_target_product() {
+  setup
+
+  run_soong SOONG_INCREMENTAL_ANALYSIS=true
+  run_soong SOONG_INCREMENTAL_ANALYSIS=true TARGET_PRODUCT=test2_arm64
+  compare_incremental_and_full_analysis
+}
+
 scan_and_run_tests "$@"
