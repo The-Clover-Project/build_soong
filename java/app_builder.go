@@ -20,6 +20,7 @@ package java
 
 import (
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/google/blueprint"
@@ -293,8 +294,8 @@ func (a *AndroidApp) generateJavaUsedByApex(ctx android.ModuleContext) {
 		Input(a.Library.Module.outputFile)
 	javaUsedByRule.Build("java_usedby_list", "Generate Java APIs used by Apex")
 
-	if !android.ShouldSkipAndroidMkProcessing(ctx, a) {
-		ctx.DistForGoalWithFilename(a.installApkName, javaApiUsedByOutputFile, "java_apis_used_by_apex/"+javaApiUsedByOutputFile.Base())
+	if slices.Contains(ctx.Config().UnbundledBuildApps(), a.Name()) && !android.ShouldSkipAndroidMkProcessing(ctx, a) {
+		ctx.DistForGoalsWithFilename([]string{a.installApkName, "apps_only"}, javaApiUsedByOutputFile, "java_apis_used_by_apex/"+javaApiUsedByOutputFile.Base())
 	}
 }
 
