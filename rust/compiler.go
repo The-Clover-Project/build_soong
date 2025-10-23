@@ -574,7 +574,7 @@ func (compiler *baseCompiler) compilerDeps(ctx DepsContext, deps Deps) Deps {
 			// If we're building for the build host, use the prebuilt stdlibs, unless the host
 			// is linux_bionic which doesn't have prebuilts.
 			if ctx.Host() && !ctx.Target().HostCross && ctx.Target().Os != android.LinuxBionic {
-				stdlib = "prebuilt_" + stdlib
+				stdlib = "prebuilt_" + ctx.Config().BuildOS.String() + "_" + stdlib
 			}
 			deps.Stdlibs = append(deps.Stdlibs, stdlib)
 		}
