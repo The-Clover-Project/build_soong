@@ -61,7 +61,14 @@ type LibraryProperties struct {
 		Platform *bool
 	} `blueprint:"mutated"`
 
+	// Static_ndk_lib is true if the static variant of the library is intended for NDK use.
 	Static_ndk_lib *bool
+
+	// Force_rust_staticlib will force generation of the Rust staticlib with all Rust
+	// dependencies and whole-archive it into the staticlib. This should only be set
+	// for static libraries that are intended for use outside of Soong and should not
+	// be set on static libraries used within Soong.
+	Force_rust_staticlib *bool
 
 	// Generate stubs to make this library accessible to APEXes.
 	Stubs StubsProperties `android:"arch_variant"`
@@ -1081,7 +1088,7 @@ func (library *libraryDecorator) linkStatic(ctx ModuleContext,
 	library.objects = library.objects.Append(objs)
 	library.wholeStaticLibsFromPrebuilts = android.CopyOfPaths(deps.WholeStaticLibsFromPrebuilts)
 
-	if library.wideStaticlibForMake {
+	if library.wideStaticlibForMake || Bool(library.Properties.Force_rust_staticlib) {
 		if generatedLib := GenerateRustStaticlib(ctx, deps.RustRlibDeps); generatedLib != nil {
 			// WholeStaticLibsFromPrebuilts are .a files that get included whole into the resulting staticlib
 			// so reuse that here for our Rust staticlibs because we don't have individual object files for
