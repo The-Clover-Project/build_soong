@@ -31,6 +31,7 @@ var (
 				` && mkdir -p ${out}.tmp` +
 				` && ${aconfig} create-java-lib` +
 				`    --mode ${mode}` +
+				`    --allow-impl-interface-removal ${allow_impl_interface_removal}` +
 				`    --cache ${in}` +
 				`    --out ${out}.tmp` +
 				` && $soong_zip -write_if_changed -jar -o ${out} -C ${out}.tmp -D ${out}.tmp` +
@@ -42,7 +43,7 @@ var (
 			},
 			Restat:          true,
 			SandboxDisabled: true,
-		}, "mode")
+		}, "mode", "allow_impl_interface_removal")
 
 	// For cc_aconfig_library: Generate C++ library
 	cppRule = pctx.AndroidStaticRule("cc_aconfig_library",

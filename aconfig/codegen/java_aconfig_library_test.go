@@ -16,6 +16,7 @@ package codegen
 
 import (
 	"fmt"
+	"strconv"
 	"testing"
 
 	"android/soong/android"
@@ -238,6 +239,68 @@ func TestForceReadOnlyMode(t *testing.T) {
 
 func TestUnsupportedMode(t *testing.T) {
 	testCodegenModeWithError(t, "mode: `unsupported`,", "mode: \"unsupported\" is not a supported mode")
+}
+
+func TestLegacyImplInterfaceRemoval(t *testing.T) {
+	testCases := []struct {
+		name                string
+		defaultAllowRemoval bool
+	}{
+		{
+			name:                "DefaultRemoveLegacyImpl",
+			defaultAllowRemoval: true,
+		},
+		{
+			name:                "DefaultPreserveLegacyImpl",
+			defaultAllowRemoval: false,
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			result := android.GroupFixturePreparers(
+				PrepareForTestWithAconfigBuildComponents,
+				android.PrepareForTestWithBuildFlag(
+					"RELEASE_ACONFIG_DEFAULT_ALLOW_JAVA_IMPL_INTERFACE_REMOVAL",
+					strconv.FormatBool(tc.defaultAllowRemoval)),
+				java.PrepareForTestWithJavaDefaultModules).
+				ExtendWithErrorHandler(android.FixtureExpectsNoErrors).
+				RunTestWithBp(t, `
+					aconfig_declarations {
+						name: "my_aconfig_declarations",
+						package: "com.example.package",
+						container: "com.android.foo",
+						srcs: ["foo.aconfig"],
+					}
+
+					java_aconfig_library {
+						name: "my_library_default",
+						aconfig_declarations: "my_aconfig_declarations",
+					}
+					java_aconfig_library {
+						name: "my_library_no_legacy",
+						aconfig_declarations: "my_aconfig_declarations",
+						preserve_legacy_impl_interface: false,
+					}
+					java_aconfig_library {
+						name: "my_library_legacy",
+						aconfig_declarations: "my_aconfig_declarations",
+						preserve_legacy_impl_interface: true,
+					}
+				`)
+
+			rule := result.ModuleForTests(t, "my_library_default", "android_common").Rule("java_aconfig_library")
+			android.AssertStringEquals(t, "Legacy removal should reflect the release default",
+				rule.Args["allow_impl_interface_removal"], strconv.FormatBool(tc.defaultAllowRemoval))
+
+			rule_no_legacy := result.ModuleForTests(t, "my_library_no_legacy", "android_common").Rule("java_aconfig_library")
+			android.AssertStringEquals(t, "Legacy removal should reflect the release default even if explicit preservation disabled",
+				rule_no_legacy.Args["allow_impl_interface_removal"], strconv.FormatBool(tc.defaultAllowRemoval))
+
+			rule_legacy := result.ModuleForTests(t, "my_library_legacy", "android_common").Rule("java_aconfig_library")
+			android.AssertStringEquals(t, "Legacy impl preservation should always respected explicit target preservation",
+				rule_legacy.Args["allow_impl_interface_removal"], "false")
+		})
+	}
 }
 
 func TestMkEntriesMatchedContainer(t *testing.T) {
