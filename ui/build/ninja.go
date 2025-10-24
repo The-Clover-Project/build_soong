@@ -80,6 +80,7 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 	case NINJA_SISO:
 		executable = config.SisoBin()
 		args = []string{
+			"--log_dir", config.LogsDir(), // for glog, e.g. siso.*INFO*
 			"ninja",
 			// TODO: implement these features, or remove them.
 			//"-d", "trace",
