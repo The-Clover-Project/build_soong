@@ -13,4 +13,5 @@ export MOCK_TOP
 "$TOP/build/soong/tests/bootstrap_test.sh"
 "$TOP/build/soong/tests/soong_test.sh"
 "$TOP/build/soong/tests/java_partial_compile_test.sh"
+"$TOP/build/soong/tests/kotlin_partial_compile_test.sh"
 "$TOP/build/soong/tests/build_action_caching_test.sh"
