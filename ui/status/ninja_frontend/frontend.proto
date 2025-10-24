@@ -88,6 +88,8 @@ message Status {
     // Arbitrary tags for build system profiling (module names and types, rule
     // names, etc). Format of the string is implementation defined.
     optional string tags = 14;
+    // True if edge was canceled.
+    optional bool canceled = 15;
   }
 
   message Message {
