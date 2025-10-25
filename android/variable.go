@@ -393,8 +393,6 @@ type ProductVariables struct {
 
 	PgoAdditionalProfileDirs []string `json:",omitempty"`
 
-	MultitreeUpdateMeta bool `json:",omitempty"`
-
 	BoardVendorSepolicyDirs      []string `json:",omitempty"`
 	BoardOdmSepolicyDirs         []string `json:",omitempty"`
 	SystemExtPublicSepolicyDirs  []string `json:",omitempty"`
