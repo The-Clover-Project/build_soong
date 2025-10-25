@@ -296,6 +296,7 @@ func runMakeProductConfig(ctx Context, config Config) {
 		"BUILD_BROKEN_MISSING_OUTPUTS",
 
 		"PRODUCT_SOONG_ONLY",
+		"PRODUCT_SOONG_INCREMENTAL_ANALYSIS",
 
 		// Not used, but useful to be in the soong.log
 		"TARGET_BUILD_TYPE",
@@ -334,6 +335,7 @@ func runMakeProductConfig(ctx Context, config Config) {
 		"RELEASE_SRC_DIR_IS_READ_ONLY",
 		"RELEASE_USE_RKATI",
 		"RELEASE_BUILD_WITH_JDK_25",
+		"RELEASE_SOONG_INCREMENTAL_ANALYSIS",
 		"SOONG_INCREMENTAL_ANALYSIS",
 	}, exportEnvVars, BannerVars, sisoStringVars, earlyReleaseConfigVars)
 
@@ -396,6 +398,13 @@ func runMakeProductConfig(ctx Context, config Config) {
 	}
 
 	ctx.Metrics.SetSoongOnly(config.soongOnlyRequested)
+
+	// Enable incremental analysis by default on a per-product basis.
+	// Once this is stable incremental analysis will be enabled on all
+	// products by reading RELEASE_SOONG_INCREMENTAL_ANALYSIS directly.
+	if makeVars["PRODUCT_SOONG_INCREMENTAL_ANALYSIS"] == "true" {
+		config.incrementalBuildActions = true
+	}
 
 	// Print the banner like make did
 	if !env.IsEnvTrue("ANDROID_QUIET_BUILD") {
