@@ -181,9 +181,11 @@ func (r *RuleBuilder) Sbox(outputDir WritablePath, manifestPath WritablePath) *R
 	if r.nsjail {
 		panic("Sbox() may not be called after Nsjail()")
 	}
-	if r.sandboxDisabled {
-		panic("Sbox() may not be called for rules that call SandboxDisabled()")
-	}
+	// TODO: b/454726435 - Re-enable this check once all dependencies are specified
+	// as the inputs to Sbox
+	// if r.sandboxDisabled {
+	// 	panic("Sbox() may not be called for rules that call SandboxDisabled()")
+	// }
 	r.sbox = true
 	r.outDir = outputDir
 	r.sboxManifestPath = manifestPath
@@ -545,9 +547,11 @@ func (r *RuleBuilder) dirsToDepFileCmd(dirs DirectoryPaths, target WritablePath)
 }
 
 func (r *RuleBuilder) SandboxDisabled() *RuleBuilder {
-	if r.sbox {
-		panic("SandboxDisabled() may not be called for rules that call Sbox()")
-	}
+	// TODO: b/454726435 - Re-enable this check once all dependencies are specified
+	// as the inputs to Sbox
+	// if r.sbox {
+	// 	panic("SandboxDisabled() may not be called for rules that call Sbox()")
+	// }
 	r.sandboxDisabled = true
 	return r
 }
