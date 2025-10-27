@@ -2129,6 +2129,11 @@ func (c *configImpl) BuildUUIDFile() string {
 	return filepath.Join(c.SoongOutDir(), "build_uuid"+suffix+".txt")
 }
 
+func (c *configImpl) IsActionSandboxedBuild() bool {
+	sandboxing, ok := c.Environment().Get("SOONG_ACTION_SANDBOXING")
+	return ok && sandboxing == "nsjail"
+}
+
 func GetMetricsUploader(topDir string, env *Environment) string {
 	if p, ok := env.Get("METRICS_UPLOADER"); ok {
 		metricsUploader := filepath.Join(topDir, p)

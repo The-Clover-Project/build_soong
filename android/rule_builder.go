@@ -970,6 +970,7 @@ func (r *RuleBuilder) build(name string, desc string) {
 		args_vars[i] = k
 		i++
 	}
+
 	r.ctx.Build(r.pctx, BuildParams{
 		Rule: r.ctx.Rule(r.pctx, name, blueprint.RuleParams{
 			Command:         commandString,
