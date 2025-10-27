@@ -32,12 +32,12 @@ function warmup_mock_top {
   create_mock_soong
   run_soong
 
-  tar czf "$WARMED_UP_MOCK_TOP" --exclude out/.path_interposer_log *
+  tar cf "$WARMED_UP_MOCK_TOP" --exclude out/.path_interposer_log *
 }
 
 function extend_mock_top {
   local old_mock_top="$WARMED_UP_MOCK_TOP"
-  WARMED_UP_MOCK_TOP=$(mktemp -t soong_integration_tests_warmup.tar.gz.XXXXXX)
+  WARMED_UP_MOCK_TOP=$(mktemp -t soong_integration_tests_warmup.tar.XXXXXX)
   WARMED_UP_MOCK_TOP_TO_CLEAN_UP+=("$WARMED_UP_MOCK_TOP")
 
   info "Extending mock top with $1 ..."
@@ -47,9 +47,9 @@ function extend_mock_top {
   mkdir -p "$MOCK_TOP"
   cd "$MOCK_TOP"
 
-  tar xzf "$old_mock_top"
+  tar xf "$old_mock_top"
   $1
-  tar czf "$WARMED_UP_MOCK_TOP" --exclude out/.path_interposer_log *
+  tar cf "$WARMED_UP_MOCK_TOP" --exclude out/.path_interposer_log *
 }
 
 function cleanup_mock_top {
@@ -158,7 +158,7 @@ function setup {
   info "Running test case \e[96;1m${FUNCNAME[1]}\e[0m"
   cd "$MOCK_TOP"
 
-  tar xzf "$WARMED_UP_MOCK_TOP"
+  tar xf "$WARMED_UP_MOCK_TOP"
 }
 
 # shellcheck disable=SC2120
