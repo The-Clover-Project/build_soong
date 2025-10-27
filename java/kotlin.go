@@ -453,7 +453,7 @@ var kspIncrementalClean = pctx.AndroidStaticRule("ksp-partialcompileclean",
 
 var kspProcessingRule = pctx.AndroidRemoteStaticRule("ksp", android.RemoteRuleSupports{},
 	blueprint.RuleParams{
-		Command: `mkdir -p "$kspDir/out" && ` +
+		Command: `mkdir -p "$kspDir/out/java" "$kspDir/out/caches" "$kspDir/out/classes" "$kspDir/out/kotlin" "$kspDir/out/resources" && ` +
 			` . ${config.UsePartialCompileFile} && ` +
 			inputDeltaCmd + ` && ` +
 			kotlinZipSyncCmd + ` && ` +
@@ -483,6 +483,9 @@ var kspProcessingRule = pctx.AndroidRemoteStaticRule("ksp", android.RemoteRuleSu
 			`${config.SoongZipCmd} -jar -write_if_changed -o $kotlinSrcJarOutputFile -C $kspDir/out/kotlin -D $kspDir/out/kotlin && ` +
 			`${config.SoongZipCmd} -jar -write_if_changed -o $resJarOutputFile -C $kspDir/out/resources -D $kspDir/out/resources && ` +
 			`${config.SoongZipCmd} -jar -write_if_changed -o $classJarOutputFile -C $kspDir/out/classes -D $kspDir/out/classes && ` +
+			`if [ "$$SOONG_USE_PARTIAL_COMPILE" != "true" ]; then ` +
+			`  rm -rf "$kspDir/out/*"; ` +
+			`fi  && ` +
 			moveDeltaStateFile,
 		CommandDeps: []string{
 			"${config.FindInputDeltaCmd}",
