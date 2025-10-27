@@ -76,6 +76,7 @@ var (
 			"${config.JlinkCmd}",
 			"${config.JrtFsJar}",
 		},
+		SandboxDisabled: true,
 	},
 		"classpath", "outDir", "workDir")
 

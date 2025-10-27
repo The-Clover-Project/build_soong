@@ -25,7 +25,7 @@ func nothingSingletonFactory() Singleton {
 type nothingSingleton struct{}
 
 func (s *nothingSingleton) GenerateBuildActions(ctx SingletonContext) {
-	rule := NewRuleBuilder(pctx, ctx)
+	rule := NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	rule.SetPhonyOutput()
 	rule.Command().
 		Text("echo Successfully read the makefiles.").

@@ -112,7 +112,7 @@ func (adg *AconfigDeclarationsGroup) GenerateAndroidBuildActions(ctx android.Mod
 	})
 
 	combinedCacheOutputPath := android.PathForModuleOut(ctx, fmt.Sprintf("%s.pb", ctx.ModuleName()))
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	rule.Command().
 		BuiltTool("aconfig").
 		Text("dump-cache").

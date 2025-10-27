@@ -74,7 +74,7 @@ func deapex(ctx android.ModuleContext, apexFile android.Path, deapexerProps Deap
 
 		// The apex needs to export some files so create a ninja rule to unpack the apex and check that
 		// the required files are present.
-		builder := android.NewRuleBuilder(pctx, ctx)
+		builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 		command := builder.Command()
 		command.
 			Tool(android.PathForSource(ctx, "build/soong/scripts/unpack-prebuilt-apex.sh")).

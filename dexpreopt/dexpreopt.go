@@ -69,7 +69,7 @@ func GenerateDexpreoptRule(ctx android.BuilderContext, globalSoong *GlobalSoongC
 		}
 	}()
 
-	rule = android.NewRuleBuilder(pctx, ctx)
+	rule = android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 
 	generateProfile := module.ProfileClassListing.Valid() && !global.DisableGenerateProfile
 	generateBootProfile := module.ProfileBootListing.Valid() && !global.DisableGenerateProfile

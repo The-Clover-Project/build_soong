@@ -18,6 +18,7 @@ import (
 	"fmt"
 
 	"android/soong/android"
+
 	"github.com/google/blueprint"
 	"github.com/google/blueprint/proptools"
 )
@@ -176,8 +177,9 @@ func writeApexKeys(ctx android.ModuleContext, module android.Module) android.Wri
 var (
 	pemToDer = pctx.AndroidStaticRule("pem_to_der",
 		blueprint.RuleParams{
-			Command:     `openssl x509 -inform PEM -outform DER -in $in -out $out`,
-			Description: "Convert certificate from PEM to DER format",
+			Command:         `openssl x509 -inform PEM -outform DER -in $in -out $out`,
+			Description:     "Convert certificate from PEM to DER format",
+			SandboxDisabled: true,
 		},
 	)
 )

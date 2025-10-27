@@ -47,18 +47,20 @@ var (
 	// Rule to invoke gcc with given command, flags, and dependencies. Outputs a .d depfile.
 	cc = pctx.AndroidRemoteStaticRule("cc", android.RemoteRuleSupports{RBE: true},
 		blueprint.RuleParams{
-			Depfile:     "${out}.d",
-			Deps:        blueprint.DepsGCC,
-			Command:     "$relPwd ${config.CcWrapper}$ccCmd -c $cFlags -MD -MF ${out}.d -o $out $in$postCmd",
-			CommandDeps: []string{"$ccCmd"},
+			Depfile:         "${out}.d",
+			Deps:            blueprint.DepsGCC,
+			Command:         "$relPwd ${config.CcWrapper}$ccCmd -c $cFlags -MD -MF ${out}.d -o $out $in$postCmd",
+			CommandDeps:     []string{"$ccCmd"},
+			SandboxDisabled: true,
 		},
 		"ccCmd", "cFlags", "postCmd")
 
 	// Rule to invoke gcc with given command and flags, but no dependencies.
 	ccNoDeps = pctx.AndroidStaticRule("ccNoDeps",
 		blueprint.RuleParams{
-			Command:     "$relPwd $ccCmd -c $cFlags -o $out $in$postCmd",
-			CommandDeps: []string{"$ccCmd"},
+			Command:         "$relPwd $ccCmd -c $cFlags -o $out $in$postCmd",
+			CommandDeps:     []string{"$ccCmd"},
+			SandboxDisabled: true,
 		},
 		"ccCmd", "cFlags", "postCmd")
 
@@ -72,7 +74,8 @@ var (
 			Rspfile:        "${out}.rsp",
 			RspfileContent: "${in} ${libFlags}",
 			// clang -Wl,--out-implib doesn't update its output file if it hasn't changed.
-			Restat: true,
+			Restat:          true,
+			SandboxDisabled: true,
 		},
 		&remoteexec.REParams{
 			Labels:          map[string]string{"type": "link", "tool": "clang"},
@@ -89,8 +92,9 @@ var (
 		blueprint.RuleParams{
 			// Without -no-pie, clang 7.0 adds -pie to link Android files,
 			// but -r and -pie cannot be used together.
-			Command:     "$reTemplate$ldCmd -fuse-ld=lld -nostdlib -no-pie -Wl,-r ${in} -o ${out} ${ldFlags}",
-			CommandDeps: []string{"$ldCmd"},
+			Command:         "$reTemplate$ldCmd -fuse-ld=lld -nostdlib -no-pie -Wl,-r ${in} -o ${out} ${ldFlags}",
+			CommandDeps:     []string{"$ldCmd"},
+			SandboxDisabled: true,
 		}, &remoteexec.REParams{
 			Labels:          map[string]string{"type": "link", "tool": "clang"},
 			ExecStrategy:    "${config.RECXXLinksExecStrategy}",
@@ -103,10 +107,11 @@ var (
 	// Rule to invoke `ar` with given cmd and flags, but no static library depenencies.
 	ar = pctx.AndroidStaticRule("ar",
 		blueprint.RuleParams{
-			Command:        "rm -f ${out} && $arCmd $arFlags $out @${out}.rsp",
-			CommandDeps:    []string{"$arCmd"},
-			Rspfile:        "${out}.rsp",
-			RspfileContent: "${in}",
+			Command:         "rm -f ${out} && $arCmd $arFlags $out @${out}.rsp",
+			CommandDeps:     []string{"$arCmd"},
+			Rspfile:         "${out}.rsp",
+			RspfileContent:  "${in}",
+			SandboxDisabled: true,
 		},
 		"arCmd", "arFlags")
 
@@ -114,26 +119,29 @@ var (
 	// (archive) file from .o files.
 	arWithLibs = pctx.AndroidStaticRule("arWithLibs",
 		blueprint.RuleParams{
-			Command:        "rm -f ${out} && $arCmd $arObjFlags $out @${out}.rsp && $arCmd $arLibFlags $out $arLibs",
-			CommandDeps:    []string{"$arCmd"},
-			Rspfile:        "${out}.rsp",
-			RspfileContent: "${arObjs}",
+			Command:         "rm -f ${out} && $arCmd $arObjFlags $out @${out}.rsp && $arCmd $arLibFlags $out $arLibs",
+			CommandDeps:     []string{"$arCmd"},
+			Rspfile:         "${out}.rsp",
+			RspfileContent:  "${arObjs}",
+			SandboxDisabled: true,
 		},
 		"arCmd", "arObjFlags", "arObjs", "arLibFlags", "arLibs")
 
 	// Rule to run objcopy --prefix-symbols (to prefix all symbols in a file with a given string).
 	prefixSymbols = pctx.AndroidStaticRule("prefixSymbols",
 		blueprint.RuleParams{
-			Command:     "$objcopyCmd --prefix-symbols=${prefix} ${in} ${out}",
-			CommandDeps: []string{"$objcopyCmd"},
+			Command:         "$objcopyCmd --prefix-symbols=${prefix} ${in} ${out}",
+			CommandDeps:     []string{"$objcopyCmd"},
+			SandboxDisabled: true,
 		},
 		"objcopyCmd", "prefix")
 
 	// Rule to run objcopy --remove-section=.llvm_addrsig on a partially linked object
 	noAddrSig = pctx.AndroidStaticRule("noAddrSig",
 		blueprint.RuleParams{
-			Command:     "rm -f ${out} && $objcopyCmd --remove-section=.llvm_addrsig ${in} ${out}",
-			CommandDeps: []string{"$objcopyCmd"},
+			Command:         "rm -f ${out} && $objcopyCmd --remove-section=.llvm_addrsig ${in} ${out}",
+			CommandDeps:     []string{"$objcopyCmd"},
+			SandboxDisabled: true,
 		},
 		"objcopyCmd")
 
@@ -154,7 +162,8 @@ var (
 					return []string{"$stripPath", "$xzCmd"}
 				}
 			}(),
-			Pool: darwinStripPool,
+			Pool:            darwinStripPool,
+			SandboxDisabled: true,
 		},
 		"args")
 
@@ -163,8 +172,9 @@ var (
 		if runtime.GOOS == "darwin" {
 			return pctx.AndroidStaticRule("darwinStrip",
 				blueprint.RuleParams{
-					Command:     "${config.MacStripPath} -u -r -o $out $in",
-					CommandDeps: []string{"${config.MacStripPath}"},
+					Command:         "${config.MacStripPath} -u -r -o $out $in",
+					CommandDeps:     []string{"${config.MacStripPath}"},
+					SandboxDisabled: true,
 				})
 		} else {
 			return nil
@@ -187,8 +197,9 @@ var (
 		if runtime.GOOS == "darwin" {
 			return pctx.AndroidStaticRule("darwinLipo",
 				blueprint.RuleParams{
-					Command:     "${config.MacLipoPath} -create -output $out $in",
-					CommandDeps: []string{"${config.MacLipoPath}"},
+					Command:         "${config.MacLipoPath} -create -output $out $in",
+					CommandDeps:     []string{"${config.MacLipoPath}"},
+					SandboxDisabled: true,
 				})
 		} else {
 			return nil
@@ -200,17 +211,19 @@ var (
 	// Rule to repack an archive (.a) file with a subset of object files.
 	archiveRepack = pctx.AndroidStaticRule("archiveRepack",
 		blueprint.RuleParams{
-			Depfile:     "${out}.d",
-			Deps:        blueprint.DepsGCC,
-			Command:     "CLANG_BIN=${config.ClangBin} $archiveRepackPath -i ${in} -o ${out} -d ${out}.d ${objects}",
-			CommandDeps: []string{"$archiveRepackPath"},
+			Depfile:         "${out}.d",
+			Deps:            blueprint.DepsGCC,
+			Command:         "CLANG_BIN=${config.ClangBin} $archiveRepackPath -i ${in} -o ${out} -d ${out}.d ${objects}",
+			CommandDeps:     []string{"$archiveRepackPath"},
+			SandboxDisabled: true,
 		},
 		"objects")
 
 	// Rule to create an empty file at a given path.
 	emptyFile = pctx.AndroidStaticRule("emptyFile",
 		blueprint.RuleParams{
-			Command: "rm -f $out && touch $out",
+			Command:         "rm -f $out && touch $out",
+			SandboxDisabled: true,
 		})
 
 	_ = pctx.SourcePathVariable("tocPath", "build/soong/scripts/toc.sh")
@@ -218,11 +231,12 @@ var (
 	// A rule for extracting a table of contents from a shared library (.so).
 	toc = pctx.AndroidStaticRule("toc",
 		blueprint.RuleParams{
-			Depfile:     "${out}.d",
-			Deps:        blueprint.DepsGCC,
-			Command:     "CLANG_BIN=$clangBin $tocPath $format -i ${in} -o ${out} -d ${out}.d",
-			CommandDeps: []string{"$tocPath"},
-			Restat:      true,
+			Depfile:         "${out}.d",
+			Deps:            blueprint.DepsGCC,
+			Command:         "CLANG_BIN=$clangBin $tocPath $format -i ${in} -o ${out} -d ${out}.d",
+			CommandDeps:     []string{"$tocPath"},
+			Restat:          true,
+			SandboxDisabled: true,
 		},
 		"clangBin", "format")
 
@@ -233,7 +247,8 @@ var (
 			Deps:    blueprint.DepsGCC,
 			Command: "CLANG_CMD=$clangCmd TIDY_FILE=$out " +
 				"$tidyVars$reTemplate${config.ClangBin}/clang-tidy.sh $in $tidyFlags -- $cFlags",
-			CommandDeps: []string{"${config.ClangBin}/clang-tidy.sh", "$ccCmd", "$tidyCmd"},
+			CommandDeps:     []string{"${config.ClangBin}/clang-tidy.sh", "$ccCmd", "$tidyCmd"},
+			SandboxDisabled: true,
 		},
 		&remoteexec.REParams{
 			Labels:               map[string]string{"type": "lint", "tool": "clang-tidy", "lang": "cpp"},
@@ -256,10 +271,11 @@ var (
 	// Rule for invoking yasm to compile .asm assembly files.
 	yasm = pctx.AndroidStaticRule("yasm",
 		blueprint.RuleParams{
-			Command:     "$yasmCmd $asFlags -o $out $in && $yasmCmd $asFlags -M $in >$out.d",
-			CommandDeps: []string{"$yasmCmd"},
-			Depfile:     "$out.d",
-			Deps:        blueprint.DepsGCC,
+			Command:         "$yasmCmd $asFlags -o $out $in && $yasmCmd $asFlags -M $in >$out.d",
+			CommandDeps:     []string{"$yasmCmd"},
+			Depfile:         "$out.d",
+			Deps:            blueprint.DepsGCC,
+			SandboxDisabled: true,
 		},
 		"asFlags")
 
@@ -268,8 +284,9 @@ var (
 	// -w has been added since header-abi-dumper does not need to produce any sort of diagnostic information.
 	sAbiDump, sAbiDumpRE = pctx.RemoteStaticRules("sAbiDump",
 		blueprint.RuleParams{
-			Command:     "rm -f $out && $reTemplate$sAbiDumper --root-dir . --root-dir $$OUT_DIR:out -o ${out} $in $exportDirs -- $cFlags -w -isystem prebuilts/clang-tools/${config.HostPrebuiltTag}/clang-headers",
-			CommandDeps: []string{"$sAbiDumper"},
+			Command:         "rm -f $out && $reTemplate$sAbiDumper --root-dir . --root-dir $$OUT_DIR:out -o ${out} $in $exportDirs -- $cFlags -w -isystem prebuilts/clang-tools/${config.HostPrebuiltTag}/clang-headers",
+			CommandDeps:     []string{"$sAbiDumper"},
+			SandboxDisabled: true,
 		}, &remoteexec.REParams{
 			Labels:       map[string]string{"type": "abi-dump", "tool": "header-abi-dumper"},
 			ExecStrategy: "${config.REAbiDumperExecStrategy}",
@@ -286,10 +303,11 @@ var (
 	// sAbi dump file.
 	sAbiLink, sAbiLinkRE = pctx.RemoteStaticRules("sAbiLink",
 		blueprint.RuleParams{
-			Command:        "$reTemplate$sAbiLinker --root-dir . --root-dir $$OUT_DIR:out -o ${out} $symbolFilter -arch $arch $exportedHeaderFlags @${out}.rsp",
-			CommandDeps:    []string{"$sAbiLinker"},
-			Rspfile:        "${out}.rsp",
-			RspfileContent: "${in}",
+			Command:         "$reTemplate$sAbiLinker --root-dir . --root-dir $$OUT_DIR:out -o ${out} $symbolFilter -arch $arch $exportedHeaderFlags @${out}.rsp",
+			CommandDeps:     []string{"$sAbiLinker"},
+			Rspfile:         "${out}.rsp",
+			RspfileContent:  "${in}",
+			SandboxDisabled: true,
 		}, &remoteexec.REParams{
 			Labels:          map[string]string{"type": "tool", "name": "abi-linker"},
 			ExecStrategy:    "${config.REAbiLinkerExecStrategy}",
@@ -312,8 +330,9 @@ var (
 			commandStr += " && (test -n \"$$DIST_DIR\" && mkdir -p $$DIST_DIR/abidiffs && cp ${out} ${in} $$DIST_DIR/abidiffs/)"
 			commandStr += " && exit 1)"
 			return blueprint.RuleParams{
-				Command:     commandStr,
-				CommandDeps: []string{"$sAbiDiffer"},
+				Command:         commandStr,
+				CommandDeps:     []string{"$sAbiDiffer"},
+				SandboxDisabled: true,
 			}
 		},
 		"extraFlags", "referenceDump", "libName", "arch", "errorMessage")
@@ -321,10 +340,11 @@ var (
 	// Rule to zip files.
 	zip = pctx.AndroidStaticRule("zip",
 		blueprint.RuleParams{
-			Command:        "${SoongZipCmd} -o ${out} -C $$OUT_DIR -r ${out}.rsp",
-			CommandDeps:    []string{"${SoongZipCmd}"},
-			Rspfile:        "${out}.rsp",
-			RspfileContent: "$in",
+			Command:         "${SoongZipCmd} -o ${out} -C $$OUT_DIR -r ${out}.rsp",
+			CommandDeps:     []string{"${SoongZipCmd}"},
+			Rspfile:         "${out}.rsp",
+			RspfileContent:  "$in",
+			SandboxDisabled: true,
 		})
 
 	_ = pctx.SourcePathVariable("cxxExtractor",
@@ -345,15 +365,17 @@ var (
 				`KYTHE_KZIP_ENCODING=${kytheCuEncoding} ` +
 				`KYTHE_CANONICALIZE_VNAME_PATHS=prefer-relative ` +
 				`$cxxExtractor $cFlags $in `,
-			CommandDeps: []string{"$cxxExtractor", "$kytheVnames"},
+			CommandDeps:     []string{"$cxxExtractor", "$kytheVnames"},
+			SandboxDisabled: true,
 		},
 		"cFlags")
 
 	// Rule to generate the elf mapping textproto file from the symbols file.
 	elfSymbolsToProto = pctx.AndroidStaticRule("elf_symbols_to_proto", blueprint.RuleParams{
-		Command:     `${symbols_map} -elf $in -write_if_changed $out`,
-		Restat:      true,
-		CommandDeps: []string{"${symbols_map}"},
+		Command:         `${symbols_map} -elf $in -write_if_changed $out`,
+		Restat:          true,
+		CommandDeps:     []string{"${symbols_map}"},
+		SandboxDisabled: true,
 	})
 
 	// Function pointer for producting staticlibs from rlibs. Corresponds to

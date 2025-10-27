@@ -50,9 +50,10 @@ var avbPubKeyRule = pctx.AndroidStaticRule("avbpubkey",
 	blueprint.RuleParams{
 		Command: `${avbtool} extract_public_key --key ${in} --output ${out}.tmp` +
 			` && ( if cmp -s ${out}.tmp ${out} ; then rm ${out}.tmp ; else mv ${out}.tmp ${out} ; fi )`,
-		CommandDeps: []string{"${avbtool}"},
-		Restat:      true,
-		Description: "Extracting system_other avb key",
+		CommandDeps:     []string{"${avbtool}"},
+		Restat:          true,
+		Description:     "Extracting system_other avb key",
+		SandboxDisabled: true,
 	})
 
 func (m *AvbpubkeyModule) GenerateAndroidBuildActions(ctx android.ModuleContext) {

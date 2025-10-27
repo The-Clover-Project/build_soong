@@ -42,6 +42,7 @@ var (
 			CommandDeps: []string{
 				"${avbtool}",
 			},
+			SandboxDisabled: true,
 		})
 )
 
@@ -217,7 +218,7 @@ var includeDescriptorsFromImgOrder = []string{
 }
 
 func (v *vbmeta) GenerateAndroidBuildActions(ctx android.ModuleContext) {
-	builder := android.NewRuleBuilder(pctx, ctx)
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	cmd := builder.Command().BuiltTool("avbtool").Text("make_vbmeta_image")
 
 	key := android.PathForModuleSrc(ctx, proptools.String(v.properties.Private_key))

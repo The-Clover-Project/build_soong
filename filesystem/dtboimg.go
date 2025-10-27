@@ -75,7 +75,7 @@ func (p *prebuiltDtboImg) avbAddHash(ctx android.ModuleContext, input android.Pa
 		// Do not sign if Use_avb is explicitly turned off.
 		return input
 	}
-	builder := android.NewRuleBuilder(pctx, ctx)
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	filename := proptools.StringDefault(p.properties.Stem, input.Base())
 	output := android.PathForModuleOut(ctx, filename)
 	builder.Command().Text("cp").Input(input).Output(output)

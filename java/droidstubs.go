@@ -972,7 +972,7 @@ func (d *Droidstubs) commonMetalavaStubCmd(ctx android.ModuleContext, rule *andr
 // Sandbox rule for generating the everything stubs and other artifacts
 func (d *Droidstubs) everythingStubCmd(ctx android.ModuleContext, params stubsCommandConfigParams) {
 	srcJarDir := android.PathForModuleOut(ctx, Everything.String(), "srcjars")
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	rule.Sbox(android.PathForModuleOut(ctx, Everything.String()),
 		android.PathForModuleOut(ctx, "metalava.sbox.textproto")).
 		SandboxInputs()
@@ -1219,7 +1219,7 @@ func (d *Droidstubs) exportableStubCmd(ctx android.ModuleContext, params stubsCo
 func (d *Droidstubs) optionalStubCmd(ctx android.ModuleContext, params stubsCommandParams) {
 
 	params.srcJarDir = android.PathForModuleOut(ctx, params.stubConfig.stubsType.String(), "srcjars")
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	rule.Sbox(android.PathForModuleOut(ctx, params.stubConfig.stubsType.String()),
 		android.PathForModuleOut(ctx, fmt.Sprintf("metalava_%s.sbox.textproto", params.stubConfig.stubsType.String()))).
 		SandboxInputs()
@@ -1362,7 +1362,7 @@ func (d *Droidstubs) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 			`       and submitting the updated file as part of your change.`,
 			d.everythingArtifacts.nullabilityWarningsFile, checkNullabilityWarningsPath)
 
-		rule := android.NewRuleBuilder(pctx, ctx)
+		rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 
 		rule.Command().
 			Text("(").
@@ -1395,7 +1395,7 @@ func (d *Droidstubs) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 
 		d.checkCurrentApiTimestamp = android.PathForModuleOut(ctx, Everything.String(), "check_current_api.timestamp")
 
-		rule := android.NewRuleBuilder(pctx, ctx)
+		rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 
 		// Diff command line.
 		// -F matches the closest "opening" line, such as "package android {"
@@ -1641,7 +1641,7 @@ func (p *PrebuiltStubsSources) GenerateAndroidBuildActions(ctx android.ModuleCon
 		// are specified and the module directory must exist in order to get this far.
 		srcDir := android.PathForModuleSrc(ctx).(android.SourcePath).Join(ctx, src)
 
-		rule := android.NewRuleBuilder(pctx, ctx)
+		rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 		rule.Command().
 			BuiltTool("soong_zip").
 			Flag("-write_if_changed").

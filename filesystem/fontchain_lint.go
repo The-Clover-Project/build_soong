@@ -35,7 +35,7 @@ func (a *androidDevice) fontchainLint(ctx android.ModuleContext) {
 
 	outputFile := android.PathForModuleOut(ctx, "fontchain_lint.timestamp")
 
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	rule.Command().Text("rm -f").Output(outputFile)
 	rule.Command().BuiltTool("fontchain_linter").Text(systemPartitionStagingDir.String()).Text(checkEmoji).Input(android.PathForSource(ctx, "external/unicode")).Implicit(partitionOutput)
 	rule.Command().Text("touch").Output(outputFile)

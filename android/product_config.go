@@ -44,7 +44,7 @@ func (p *productConfigModule) GenerateAndroidBuildActions(ctx ModuleContext) {
 	soongVariablesPath := PathForOutput(ctx, "soong."+targetProduct+coverageSuffix+"variables")
 	extraVariablesPath := PathForOutput(ctx, "soong."+targetProduct+coverageSuffix+"extra.variables")
 
-	rule := NewRuleBuilder(pctx, ctx)
+	rule := NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	rule.Command().BuiltTool("merge_json").
 		Output(outputFilePath).
 		Input(soongVariablesPath).

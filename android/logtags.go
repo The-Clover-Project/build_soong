@@ -63,7 +63,7 @@ func (l *logtagsSingleton) GenerateBuildActions(ctx SingletonContext) {
 		}
 	}
 
-	builder := NewRuleBuilder(pctx, ctx)
+	builder := NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	builder.Command().
 		BuiltTool("merge-event-log-tags").
 		FlagWithOutput("-o ", MergedLogtagsPath(ctx)).

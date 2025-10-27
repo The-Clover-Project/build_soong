@@ -150,7 +150,7 @@ func (n *ndkTranslationPackage) GenerateAndroidBuildActions(ctx android.ModuleCo
 	})
 
 	outZip := android.PathForModuleOut(ctx, ctx.ModuleName()+".zip")
-	builder := android.NewRuleBuilder(pctx, ctx)
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	cmd := builder.Command().
 		BuiltTool("soong_zip").
 		FlagWithOutput("-o ", outZip)
@@ -184,7 +184,7 @@ func (n *ndkTranslationPackage) GenerateAndroidBuildActions(ctx android.ModuleCo
 func (n *ndkTranslationPackage) genAndroidBp(ctx android.ModuleContext, files []android.PackagingSpec) android.Path {
 	genDir := android.PathForModuleOut(ctx, "android_bp_dir")
 	generator := android.PathForModuleSrc(ctx, proptools.String(n.properties.Android_bp_gen_path))
-	builder := android.NewRuleBuilder(pctx, ctx).Sbox(
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled().Sbox(
 		genDir,
 		android.PathForModuleOut(ctx, "Android.bp.sbox.textproto"),
 	)
@@ -204,7 +204,7 @@ func (n *ndkTranslationPackage) genProductMk(ctx android.ModuleContext, files, f
 	genDir := android.PathForModuleOut(ctx, "product_arm64_arm_dir")
 	generator := android.PathForModuleSrc(ctx, proptools.String(n.properties.Product_mk_gen_path))
 	// Both arches
-	builder := android.NewRuleBuilder(pctx, ctx).Sbox(
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled().Sbox(
 		genDir,
 		android.PathForModuleOut(ctx, "product_arm64_arm.mk.textproto"),
 	)
@@ -221,7 +221,7 @@ func (n *ndkTranslationPackage) genProductMk(ctx android.ModuleContext, files, f
 
 	// Arm64 only
 	genDir = android.PathForModuleOut(ctx, "product_arm64_dir")
-	builder = android.NewRuleBuilder(pctx, ctx).Sbox(
+	builder = android.NewRuleBuilder(pctx, ctx).SandboxDisabled().Sbox(
 		genDir,
 		android.PathForModuleOut(ctx, "product_arm64.mk.textproto"),
 	)

@@ -40,8 +40,9 @@ func getTestConfig(ctx android.ModuleContext, prop *string) android.Path {
 }
 
 var autogenTestConfig = pctx.StaticRule("autogenTestConfig", blueprint.RuleParams{
-	Command:     "sed 's&{MODULE}&${name}&g;s&{EXTRA_CONFIGS}&'${extraConfigs}'&g;s&{EXTRA_TEST_RUNNER_CONFIGS}&'${extraTestRunnerConfigs}'&g;s&{OUTPUT_FILENAME}&'${outputFileName}'&g;s&{TEST_INSTALL_BASE}&'${testInstallBase}'&g' $template > $out",
-	CommandDeps: []string{"$template"},
+	Command:         "sed 's&{MODULE}&${name}&g;s&{EXTRA_CONFIGS}&'${extraConfigs}'&g;s&{EXTRA_TEST_RUNNER_CONFIGS}&'${extraTestRunnerConfigs}'&g;s&{OUTPUT_FILENAME}&'${outputFileName}'&g;s&{TEST_INSTALL_BASE}&'${testInstallBase}'&g' $template > $out",
+	CommandDeps:     []string{"$template"},
+	SandboxDisabled: true,
 }, "name", "template", "extraConfigs", "outputFileName", "testInstallBase", "extraTestRunnerConfigs")
 
 func testConfigPath(ctx android.ModuleContext, prop *string, testSuites []string, autoGenConfig *bool, testConfigTemplateProp *string) (path android.Path, autogenPath android.WritablePath) {
@@ -212,6 +213,7 @@ var autogenInstrumentationTest = pctx.StaticRule("autogenInstrumentationTest", b
 		"${EmptyTestConfig}",
 		"$template",
 	},
+	SandboxDisabled: true,
 }, "name", "template", "extraConfigs", "extraTestRunnerConfigs")
 
 func AutoGenInstrumentationTestConfig(ctx android.ModuleContext, testConfigProp *string,

@@ -376,7 +376,7 @@ func (b *bootimg) getBootconfigPath(ctx android.ModuleContext) android.Path {
 func (b *bootimg) buildBootImage(ctx android.ModuleContext, kernel android.Path) android.Path {
 	output := android.PathForModuleOut(ctx, "unsigned", b.installFileName())
 
-	builder := android.NewRuleBuilder(pctx, ctx)
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	cmd := builder.Command().BuiltTool("mkbootimg")
 
 	if kernel != nil {
@@ -480,7 +480,7 @@ func (b *bootimg) buildBootImage(ctx android.ModuleContext, kernel android.Path)
 
 func (b *bootimg) addAvbFooter(ctx android.ModuleContext, unsignedImage android.Path, kernel android.Path) android.Path {
 	output := android.PathForModuleOut(ctx, b.installFileName())
-	builder := android.NewRuleBuilder(pctx, ctx)
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	builder.Command().Text("cp").Input(unsignedImage).Output(output)
 	cmd := builder.Command().BuiltTool("avbtool").
 		Text("add_hash_footer").
@@ -542,7 +542,7 @@ func (b *bootimg) signImage(ctx android.ModuleContext, unsignedImage android.Pat
 	propFile, toolDeps := b.buildPropFile(ctx)
 
 	output := android.PathForModuleOut(ctx, b.installFileName())
-	builder := android.NewRuleBuilder(pctx, ctx)
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	builder.Command().Text("cp").Input(unsignedImage).Output(output)
 	builder.Command().BuiltTool("verity_utils").
 		Input(propFile).
@@ -763,7 +763,7 @@ func (b *prebuiltBootImg) signWithAvb(ctx android.ModuleContext, src android.Pat
 	unpackDir := android.PathForModuleOut(ctx, "avb", "unpack")
 	kernel := unpackDir.Join(ctx, "kernel")
 
-	builder := android.NewRuleBuilder(pctx, ctx)
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	builder.Command().Text("cp").Input(src).Output(signed)
 
 	builder.Command().

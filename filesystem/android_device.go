@@ -483,7 +483,7 @@ func (a *androidDevice) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	})
 
 	allImagesZip := android.PathForModuleOut(ctx, "all_images.zip")
-	allImagesZipBuilder := android.NewRuleBuilder(pctx, ctx)
+	allImagesZipBuilder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	cmd := allImagesZipBuilder.Command().BuiltTool("soong_zip")
 	for _, dep := range deps {
 		cmd.FlagWithArg("-e ", dep.Base())
@@ -834,7 +834,7 @@ func (a *androidDevice) buildTargetFilesZip(ctx android.ModuleContext, allInstal
 	otaMetadata := android.PathForModuleOut(ctx, "ota_metadata")
 	partialOtaFilesZip := android.PathForModuleOut(ctx, "partial-ota.zip")
 
-	builder := android.NewRuleBuilder(pctx, ctx)
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	builder.Command().Textf("rm -rf %s", targetFilesDirStamp.String())
 	builder.Command().Textf("rm -rf %s", targetFilesDir.String())
 	builder.Command().Textf("mkdir -p %s", targetFilesDir.String())
@@ -903,7 +903,7 @@ func (a *androidDevice) buildTargetFilesZip(ctx android.ModuleContext, allInstal
 			// Add a duplicate rule to assemble the ROOT/ directory in separate intermediates.
 			// The output timestamp will be an input to a separate fs_config call.
 			a.rootDirForFsConfig = android.PathForModuleOut(ctx, "root_dir_for_fs_config").String()
-			rootDirBuilder := android.NewRuleBuilder(pctx, ctx)
+			rootDirBuilder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 			rootDirForFsConfigTimestamp := android.PathForModuleOut(ctx, "root_dir_for_fs_config.timestamp")
 			rootDirBuilder.Command().Textf("rsync --links --exclude=system/* %s/ -r %s", toCopy.fsInfo.RootDir, a.rootDirForFsConfig).
 				Implicit(toCopy.fsInfo.Output).
@@ -1044,7 +1044,7 @@ func (a *androidDevice) buildTargetFilesZip(ctx android.ModuleContext, allInstal
 	builder.Command().Text("touch ").Output(targetFilesDirStamp)
 	builder.Build("target_files_dir", "Build target_files staging directory")
 
-	zipBuilder := android.NewRuleBuilder(pctx, ctx)
+	zipBuilder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	zipBuilder.Command().
 		BuiltTool("soong_zip").
 		Text("-d").
@@ -1057,7 +1057,7 @@ func (a *androidDevice) buildTargetFilesZip(ctx android.ModuleContext, allInstal
 	a.targetFilesZip = targetFilesZip
 
 	if ctx.Config().BuildOTAPackage() {
-		otaBuilder := android.NewRuleBuilder(pctx, ctx)
+		otaBuilder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 		pem, _ := ctx.Config().DefaultAppCertificate(ctx)
 		pemWithoutFileExt := strings.TrimSuffix(pem.String(), ".x509.pem")
 		otaBuilder.Command().
@@ -1076,7 +1076,7 @@ func (a *androidDevice) buildTargetFilesZip(ctx android.ModuleContext, allInstal
 
 		// Partial ota
 		if len(a.deviceProps.Partial_ota_update_partitions) > 0 {
-			partialOtaBuilder := android.NewRuleBuilder(pctx, ctx)
+			partialOtaBuilder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 			partialOtaBuilder.Command().
 				BuiltTool("ota_from_target_files").
 				Flag("--verbose").
@@ -1468,7 +1468,7 @@ func (a *androidDevice) addMiscInfo(ctx android.ModuleContext) android.Path {
 		return strings.TrimSuffix(pem.String(), ".x509.pem")
 	}
 
-	builder := android.NewRuleBuilder(pctx, ctx)
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	miscInfo := android.PathForModuleOut(ctx, "misc_info.txt")
 	builder.Command().
 		Textf("rm -f %s", miscInfo).
@@ -1706,7 +1706,7 @@ func (a *androidDevice) buildUpdatePackage(ctx android.ModuleContext) {
 	}
 
 	updatePackage := android.PathForModuleOut(ctx, "img.zip")
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 
 	buildSuperImage := ctx.Config().HostToolPath(ctx, "build_super_image")
 	zip2zip := ctx.Config().HostToolPath(ctx, "zip2zip")
@@ -1746,7 +1746,7 @@ func (a *androidDevice) buildWithLicenseZip(ctx android.ModuleContext) {
 	}
 
 	intermediateZip := android.PathForModuleOut(ctx, "with-license", name+".zip")
-	intermediateBuilder := android.NewRuleBuilder(pctx, ctx)
+	intermediateBuilder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	intermediateBuilder.Command().
 		BuiltTool("zip2zip").
 		FlagWithInput("-i ", a.targetFilesZip).
@@ -1757,7 +1757,7 @@ func (a *androidDevice) buildWithLicenseZip(ctx android.ModuleContext) {
 		Text("OTA/android-info.txt:android-info.txt")
 	intermediateBuilder.Build("with_license_intermediate_zip", "with-license intermediate zip")
 
-	withLicenseBuilder := android.NewRuleBuilder(pctx, ctx)
+	withLicenseBuilder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	withLicenseBuilder.Command().
 		BuiltTool("generate-self-extracting-archive").
 		Output(withLicense).
@@ -1861,7 +1861,7 @@ func (a *androidDevice) extractKernelVersionAndConfigs(ctx android.ModuleContext
 
 	extractedVersionFile := android.PathForModuleOut(ctx, "kernel_version.txt")
 	extractedConfigsFile := android.PathForModuleOut(ctx, "kernel_configs.txt")
-	builder := android.NewRuleBuilder(pctx, ctx)
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	builder.Command().BuiltTool("extract_kernel").
 		Flag("--tools lz4:"+lz4tool.String()).Implicit(lz4tool).
 		FlagWithInput("--input ", kernel).
@@ -2019,7 +2019,7 @@ func (a *androidDevice) buildTrebleLabelingTest(ctx android.ModuleContext) andro
 		len(precompiledSepolicies) == 0 ||
 		proptools.String(a.deviceProps.Precompiled_sepolicy_without_vendor) == ""
 
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 
 	if len(precompiledSepolicies) > 1 {
 		errorMessage := fmt.Sprintf("number of precompiled_sepolicy must not be greater than one but was %q", precompiledSepolicies.Strings())
@@ -2098,7 +2098,7 @@ func (a *androidDevice) checkVintf(ctx android.ModuleContext) {
 	}
 	checkVintfLogs = append(checkVintfLogs, a.createMonolithicVintfCompatibleLog(ctx, fsInfoMap))
 
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	rule.SetPhonyOutput()
 	cmd := rule.Command()
 	for _, checkVintfLog := range checkVintfLogs {
@@ -2132,7 +2132,7 @@ func (a *androidDevice) createMonolithicVintfCompatibleLog(ctx android.ModuleCon
 	checkVintfLog := android.PathForModuleOut(ctx, "vintf", "check_vintf_compatible.log")
 	extractedApexDir := android.PathForModuleOut(ctx, "vintf", "apex_extracted")
 
-	builder := android.NewRuleBuilder(pctx, ctx)
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	// Use apexd_host to extract the apexes of the partitions to an intermediate location.
 	// This intermediate location will be subsequently used by checkvintf.
 	cmd := builder.Command()
@@ -2196,7 +2196,7 @@ func (a *androidDevice) runApexSepolicyTests(ctx android.ModuleContext, allInsta
 		apexName := ctx.OtherModuleName(installedApex)
 		outputFile := android.PathForModuleOut(ctx, "apex_sepolicy_tests", apexName, "pass.txt")
 		inputApex := android.OutputFileForModule(ctx, installedApex, "")
-		rule := android.NewRuleBuilder(pctx, ctx)
+		rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 		rule.Command().
 			BuiltTool("apex-ls").
 			Flag("-Z").
@@ -2220,7 +2220,7 @@ func (a *androidDevice) runApexSepolicyTests(ctx android.ModuleContext, allInsta
 
 func (a *androidDevice) checkRadioVersion(ctx android.ModuleContext) android.WritablePath {
 	checkRadioVersionTimestamp := android.PathForModuleOut(ctx, "check_radio_version.timestamp")
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	rule.Command().Text("touch").Output(checkRadioVersionTimestamp)
 
 	cmd := rule.Command()

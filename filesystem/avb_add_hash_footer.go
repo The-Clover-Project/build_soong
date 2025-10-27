@@ -90,7 +90,7 @@ func (a *avbAddHashFooter) installFileName() string {
 }
 
 func (a *avbAddHashFooter) GenerateAndroidBuildActions(ctx android.ModuleContext) {
-	builder := android.NewRuleBuilder(pctx, ctx)
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	src := a.properties.Src.GetOrDefault(ctx, "")
 
 	if src == "" {

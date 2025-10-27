@@ -22,13 +22,15 @@ import (
 
 var (
 	hiddenAPIGenerateCSVRule = pctx.AndroidStaticRule("hiddenAPIGenerateCSV", blueprint.RuleParams{
-		Command:     "${config.Class2NonSdkList} --stub-api-flags ${stubAPIFlags} $in $outFlag $out",
-		CommandDeps: []string{"${config.Class2NonSdkList}"},
+		Command:         "${config.Class2NonSdkList} --stub-api-flags ${stubAPIFlags} $in $outFlag $out",
+		CommandDeps:     []string{"${config.Class2NonSdkList}"},
+		SandboxDisabled: true,
 	}, "outFlag", "stubAPIFlags")
 
 	hiddenAPIGenerateIndexRule = pctx.AndroidStaticRule("hiddenAPIGenerateIndex", blueprint.RuleParams{
-		Command:     "${config.MergeCsvCommand} --zip_input --key_field signature --output=$out $in",
-		CommandDeps: []string{"${config.MergeCsvCommand}"},
+		Command:         "${config.MergeCsvCommand} --zip_input --key_field signature --output=$out $in",
+		CommandDeps:     []string{"${config.MergeCsvCommand}"},
+		SandboxDisabled: true,
 	})
 )
 
@@ -246,6 +248,7 @@ var hiddenAPIEncodeDexRule = pctx.AndroidStaticRule("hiddenAPIEncodeDex", bluepr
 		"${config.SoongZipCmd}",
 		"${config.MergeZipsCmd}",
 	},
+	SandboxDisabled: true,
 }, "flagsCsv", "hiddenapiFlags", "tmpDir", "soongZipFlags")
 
 // hiddenAPIEncodeDex generates the build rule that will encode the supplied dex jar and place the

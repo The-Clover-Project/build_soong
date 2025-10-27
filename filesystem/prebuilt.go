@@ -56,7 +56,7 @@ func (p *prebuiltSystemImage) GenerateAndroidBuildActions(ctx android.ModuleCont
 	}
 	android.SetProvider(ctx, FilesystemProvider, fsInfo)
 
-	builder := android.NewRuleBuilder(pctx, ctx)
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	rootdirTimestamp := android.PathForModuleOut(ctx, p.rootDirString()+".timestamp")
 
 	switch p.fsType(ctx) {

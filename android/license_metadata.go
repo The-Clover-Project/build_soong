@@ -29,10 +29,11 @@ var (
 	_ = pctx.HostBinToolVariable("licenseMetadataCmd", "build_license_metadata")
 
 	licenseMetadataRule = pctx.AndroidStaticRule("licenseMetadataRule", blueprint.RuleParams{
-		Command:        "${licenseMetadataCmd} -o $out @${out}.rsp",
-		CommandDeps:    []string{"${licenseMetadataCmd}"},
-		Rspfile:        "${out}.rsp",
-		RspfileContent: "${args}",
+		Command:         "${licenseMetadataCmd} -o $out @${out}.rsp",
+		CommandDeps:     []string{"${licenseMetadataCmd}"},
+		Rspfile:         "${out}.rsp",
+		RspfileContent:  "${args}",
+		SandboxDisabled: true,
 	}, "args")
 )
 

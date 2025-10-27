@@ -39,7 +39,7 @@ func (a *androidDevice) checkPartitionSizes(ctx android.ModuleContext) {
 	miscInfo := android.PathForModuleOut(ctx, "check_partition_sizes_misc_info.txt")
 	outputFile := android.PathForModuleOut(ctx, "check_all_partition_sizes.log")
 
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	rule.Command().Text("cp -f").Input(a.miscInfo).Output(miscInfo)
 	for _, partition := range android.SortedKeys(partitionsToCheck) {
 		fsInfo := partitionsToCheck[partition]

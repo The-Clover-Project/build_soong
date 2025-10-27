@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"android/soong/aidl_library"
+
 	"github.com/google/blueprint"
 
 	"android/soong/android"
@@ -35,15 +36,17 @@ func init() {
 var (
 	lex = pctx.AndroidStaticRule("lex",
 		blueprint.RuleParams{
-			Command:     "M4=$m4Cmd $lexCmd $flags -o$out $in",
-			CommandDeps: []string{"$lexCmd", "$m4Cmd"},
+			Command:         "M4=$m4Cmd $lexCmd $flags -o$out $in",
+			CommandDeps:     []string{"$lexCmd", "$m4Cmd"},
+			SandboxDisabled: true,
 		}, "flags")
 
 	sysprop = pctx.AndroidStaticRule("sysprop",
 		blueprint.RuleParams{
 			Command: "$syspropCmd --header-dir=$headerOutDir --public-header-dir=$publicOutDir " +
 				"--source-dir=$srcOutDir --include-name=$includeName $in",
-			CommandDeps: []string{"$syspropCmd"},
+			CommandDeps:     []string{"$syspropCmd"},
+			SandboxDisabled: true,
 		},
 		"headerOutDir", "publicOutDir", "srcOutDir", "includeName")
 )
@@ -252,7 +255,7 @@ func genSources(
 	var yaccRule_ *android.RuleBuilder
 	yaccRule := func() *android.RuleBuilder {
 		if yaccRule_ == nil {
-			yaccRule_ = android.NewRuleBuilder(pctx, ctx).Sbox(android.PathForModuleGen(ctx, "yacc"),
+			yaccRule_ = android.NewRuleBuilder(pctx, ctx).SandboxDisabled().Sbox(android.PathForModuleGen(ctx, "yacc"),
 				android.PathForModuleGen(ctx, "yacc.sbox.textproto"))
 		}
 		return yaccRule_
@@ -291,7 +294,7 @@ func genSources(
 			generatedSources = append(generatedSources, ccFile)
 		case ".aidl":
 			if aidlRule == nil {
-				aidlRule = android.NewRuleBuilder(pctx, ctx).Sbox(android.PathForModuleGen(ctx, "aidl"),
+				aidlRule = android.NewRuleBuilder(pctx, ctx).SandboxDisabled().Sbox(android.PathForModuleGen(ctx, "aidl"),
 					android.PathForModuleGen(ctx, "aidl.sbox.textproto"))
 			}
 			baseDir := strings.TrimSuffix(srcFile.String(), srcFile.Rel())
@@ -331,7 +334,7 @@ func genSources(
 
 	for _, aidlLibraryInfo := range aidlLibraryInfos {
 		if aidlLibraryRule == nil {
-			aidlLibraryRule = android.NewRuleBuilder(pctx, ctx).Sbox(
+			aidlLibraryRule = android.NewRuleBuilder(pctx, ctx).SandboxDisabled().Sbox(
 				android.PathForModuleGen(ctx, "aidl_library"),
 				android.PathForModuleGen(ctx, "aidl_library.sbox.textproto"),
 			).SandboxInputs()

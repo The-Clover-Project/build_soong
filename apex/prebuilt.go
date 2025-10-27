@@ -39,13 +39,15 @@ var (
 				`-sdk-version=${sdk-version} -skip-sdk-check=${skip-sdk-check} -abis=${abis} ` +
 				`-screen-densities=all -extract-single ` +
 				`${in}`,
-			CommandDeps: []string{"${extract_apks}"},
+			CommandDeps:     []string{"${extract_apks}"},
+			SandboxDisabled: true,
 		},
 		"abis", "allow-prereleased", "sdk-version", "skip-sdk-check")
 	decompressApex = pctx.StaticRule("decompressApex", blueprint.RuleParams{
-		Command:     `rm -rf $out && ${deapexer} decompress --copy-if-uncompressed --input ${in} --output ${out}`,
-		CommandDeps: []string{"${deapexer}"},
-		Description: "decompress $out",
+		Command:         `rm -rf $out && ${deapexer} decompress --copy-if-uncompressed --input ${in} --output ${out}`,
+		CommandDeps:     []string{"${deapexer}"},
+		Description:     "decompress $out",
+		SandboxDisabled: true,
 	})
 	// Compares the declared apps of `prebuilt_apex` with the actual apks
 	validateApkInPrebuiltApex = pctx.StaticRule("validateApkinPrebuiltApex", blueprint.RuleParams{
@@ -54,8 +56,9 @@ var (
 			` cmp -s ${expectedApks} ${actualApks} && touch ${out}` +
 			` || (echo "Found diffs between "apps" property of ${apexName} and actual contents of ${in}.` +
 			` Please ensure that all apk-in-apexes are declared in 'apps' property." && exit 1)`,
-		CommandDeps: []string{"${apex_ls}"},
-		Description: "validate apk in prebuilt_apex $out",
+		CommandDeps:     []string{"${apex_ls}"},
+		Description:     "validate apk in prebuilt_apex $out",
+		SandboxDisabled: true,
 	}, "expectedApks", "actualApks", "apexName")
 )
 

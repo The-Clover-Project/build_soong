@@ -17,8 +17,9 @@ package rust
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/google/blueprint/proptools"
 	"strings"
+
+	"github.com/google/blueprint/proptools"
 
 	"android/soong/android"
 	"android/soong/rust/config"
@@ -259,7 +260,7 @@ func (singleton *projectGeneratorSingleton) GenerateBuildActions(ctx android.Sin
 
 	}
 	if ctx.Config().XrefCorpusName() != "" {
-		rule := android.NewRuleBuilder(pctx, ctx)
+		rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 		jsonPath := android.PathForOutput(ctx, "rust-project.json")
 		kzipPath := android.PathForOutput(ctx, "rust-project.kzip")
 		vnames := android.PathForSource(ctx, "build/soong/vnames.json")

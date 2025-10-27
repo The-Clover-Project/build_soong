@@ -38,7 +38,7 @@ func genProto(ctx android.ModuleContext, protoFiles android.Paths, flags android
 
 		outDir := srcJarFile.ReplaceExtension(ctx, "tmp")
 
-		rule := android.NewRuleBuilder(pctx, ctx)
+		rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 
 		rule.Command().Text("rm -rf").Flag(outDir.String())
 		rule.Command().Text("mkdir -p").Flag(outDir.String())

@@ -27,8 +27,9 @@ import (
 var (
 	preprocessNdkHeader = pctx.AndroidStaticRule("preprocessNdkHeader",
 		blueprint.RuleParams{
-			Command:     "$preprocessor -o $out $in",
-			CommandDeps: []string{"$preprocessor"},
+			Command:         "$preprocessor -o $out $in",
+			CommandDeps:     []string{"$preprocessor"},
+			SandboxDisabled: true,
 		},
 		"preprocessor")
 )

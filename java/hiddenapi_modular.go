@@ -336,7 +336,7 @@ var HIDDENAPI_FLAGS_CSV_IMPL_FLAGS = []string{"blocked"}
 // name.
 func buildRuleToGenerateHiddenAPIStubFlagsFile(ctx android.BuilderContext, name, desc string, outputPath android.WritablePath, bootDexJars android.Paths, input HiddenAPIFlagInput, stubFlagSubsets SignatureCsvSubsets) {
 	// Singleton rule which applies hiddenapi on all boot class path dex files.
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 
 	tempPath := tempPathForRestat(ctx, outputPath)
 
@@ -1005,7 +1005,7 @@ func buildRuleToGenerateHiddenApiFlags(ctx android.BuilderContext, name, desc st
 
 	// Create the rule that will generate the flag files.
 	tempPath := tempPathForRestat(ctx, outputPath)
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	command := rule.Command().
 		BuiltTool("generate_hiddenapi_lists").
 		FlagWithInput("--csv ", baseFlagsPath).
@@ -1081,7 +1081,7 @@ func buildRuleSignaturePatternsFile(
 
 	patternsFile := android.PathForModuleOut(ctx, hiddenApiSubDir, "signature-patterns.csv")
 	// Create a rule to validate the output from the following rule.
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 
 	// Quote any * in the packages to avoid them being expanded by the shell.
 	quotedSplitPackages := []string{}
@@ -1116,7 +1116,7 @@ func buildRuleRemoveSignaturesWithImplementationFlags(ctx android.BuilderContext
 	name string, desc string, inputPath android.Path, filteredPath android.WritablePath,
 	implementationFlags []string) {
 
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	implementationFlagPattern := ""
 	for _, implementationFlag := range implementationFlags {
 		implementationFlagPattern = implementationFlagPattern + "," + implementationFlag
@@ -1147,7 +1147,7 @@ func buildRuleValidateOverlappingCsvFiles(ctx android.BuilderContext, name strin
 	validFile := pathForValidation(ctx, monolithicFilePath)
 
 	// Create a rule to validate the output from the following rule.
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	command := rule.Command().
 		BuiltTool("verify_overlaps").
 		FlagWithInput("--monolithic-flags ", monolithicFilePath)
@@ -1267,7 +1267,7 @@ func buildRuleToGenerateRemovedDexSignatures(ctx android.ModuleContext, suffix s
 
 	output := android.PathForModuleOut(ctx, "module-hiddenapi"+suffix, "removed-dex-signatures.txt")
 
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	rule.Command().
 		BuiltTool("metalava").
 		Text("signature-to-dex").

@@ -2570,7 +2570,7 @@ func maybeInjectBoringSSLHash(ctx android.ModuleContext, outputFile android.Modu
 		hashedOutputfile := outputFile
 		outputFile = android.PathForModuleOut(ctx, "unhashed", fileName)
 
-		rule := android.NewRuleBuilder(pctx, ctx)
+		rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 		rule.Command().
 			BuiltTool("bssl_inject_hash").
 			FlagWithInput("-in-object ", outputFile).

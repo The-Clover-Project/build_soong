@@ -99,7 +99,7 @@ func (r *recoveryBuildPropModule) GenerateAndroidBuildActions(ctx ModuleContext)
 	r.outputFilePath = PathForModuleOut(ctx, ctx.ModuleName(), "prop.default")
 
 	// Replicates the logic in https://cs.android.com/android/platform/superproject/main/+/main:build/make/core/Makefile;l=2733;drc=0585bb1bcf4c89065adaf709f48acc8b869fd3ce
-	rule := NewRuleBuilder(pctx, ctx)
+	rule := NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	rule.Command().Text("rm").FlagWithOutput("-f ", r.outputFilePath)
 	rule.Command().Text("cat").
 		Inputs(r.getBuildProps(ctx)).

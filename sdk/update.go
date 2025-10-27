@@ -57,6 +57,7 @@ var (
 			CommandDeps: []string{
 				"${config.Zip2ZipCmd}",
 			},
+			SandboxDisabled: true,
 		},
 		"destdir")
 
@@ -66,8 +67,9 @@ var (
 			CommandDeps: []string{
 				"${config.SoongZipCmd}",
 			},
-			Rspfile:        "$out.rsp",
-			RspfileContent: "$in",
+			Rspfile:         "$out.rsp",
+			RspfileContent:  "$in",
+			SandboxDisabled: true,
 		},
 		"basedir")
 
@@ -77,6 +79,7 @@ var (
 			CommandDeps: []string{
 				"${config.MergeZipsCmd}",
 			},
+			SandboxDisabled: true,
 		})
 )
 

@@ -110,7 +110,7 @@ func (p *ramdisk16kImg) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	// needs to be outside of the sandbox directory, which is outputDir
 	stripSymbolsDir := android.PathForIntermediates(ctx, "stripped")
 
-	builder := android.NewRuleBuilder(pctx, ctx).Sbox(
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled().Sbox(
 		outputDir,
 		android.PathForModuleOut(ctx, "ramdisk_16k_intermediates.textproto"),
 	)

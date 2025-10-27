@@ -127,7 +127,7 @@ func (m *otacertsZipModule) GenerateAndroidBuildActions(ctx android.ModuleContex
 	srcPaths := append([]android.SourcePath{pem}, extras...)
 	outputPath := android.PathForModuleOut(ctx, m.outputFileName())
 
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	cmd := rule.Command().BuiltTool("soong_zip").
 		FlagWithOutput("-o ", outputPath).
 		Flag("-j ").

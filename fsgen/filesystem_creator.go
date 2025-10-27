@@ -1681,7 +1681,7 @@ func (f *filesystemCreator) createFileListDiffTest(ctx android.ModuleContext, pa
 	makeFileList := android.PathForArbitraryOutput(ctx, fmt.Sprintf("target/product/%s/obj/PACKAGING/%s_intermediates/file_list.txt", ctx.Config().DeviceName(), partitionType))
 	diffTestResultFile := android.PathForModuleOut(ctx, fmt.Sprintf("diff_test_%s.txt", partitionModuleName))
 
-	builder := android.NewRuleBuilder(pctx, ctx)
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	builder.Command().BuiltTool("file_list_diff").
 		Input(makeFileList).
 		Input(filesystemInfo.FileListFile).
@@ -1696,7 +1696,7 @@ func createFailingCommand(ctx android.ModuleContext, message string) android.Pat
 	hasher.Write([]byte(message))
 	filename := fmt.Sprintf("failing_command_%x.txt", hasher.Sum(nil))
 	file := android.PathForModuleOut(ctx, filename)
-	builder := android.NewRuleBuilder(pctx, ctx)
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	builder.Command().Textf("echo %s", proptools.NinjaAndShellEscape(message))
 	builder.Command().Text("exit 1 #").Output(file)
 	builder.Build("failing command "+filename, "failing command "+filename)
@@ -1721,7 +1721,7 @@ func createVbmetaDiff(ctx android.ModuleContext, vbmetaModuleName string, vbmeta
 }
 
 func createDiffTest(ctx android.ModuleContext, diffTestResultFile android.WritablePath, file1 android.Path, file2 android.Path) {
-	builder := android.NewRuleBuilder(pctx, ctx)
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	builder.Command().Text("diff").
 		Input(file1).
 		Input(file2)

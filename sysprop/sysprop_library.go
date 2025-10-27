@@ -71,6 +71,7 @@ var (
 				"$syspropJavaCmd",
 				"$soongZipCmd",
 			},
+			SandboxDisabled: true,
 		}, "scope")
 	syspropRust = pctx.AndroidStaticRule("syspropRust",
 		blueprint.RuleParams{
@@ -79,6 +80,7 @@ var (
 			CommandDeps: []string{
 				"$syspropRustCmd",
 			},
+			SandboxDisabled: true,
 		}, "scope", "out_dir")
 )
 
@@ -365,7 +367,7 @@ func (m *syspropLibrary) GenerateAndroidBuildActions(ctx android.ModuleContext) 
 	latestApiFile := android.ExistentPathForSource(ctx, latestApiFilePath)
 
 	// dump API rule
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	m.dumpedApiFile = android.PathForModuleOut(ctx, "api-dump.txt")
 	rule.Command().
 		BuiltTool("sysprop_api_dump").
@@ -374,7 +376,7 @@ func (m *syspropLibrary) GenerateAndroidBuildActions(ctx android.ModuleContext) 
 	rule.Build(baseModuleName+"_api_dump", baseModuleName+" api dump")
 
 	// check API rule
-	rule = android.NewRuleBuilder(pctx, ctx)
+	rule = android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 
 	// We allow that the API txt files don't exist, when the sysprop_library only contains internal
 	// properties. But we have to feed current api file and latest api file to the rule builder.

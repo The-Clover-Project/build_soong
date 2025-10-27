@@ -29,14 +29,16 @@ var manifestFixerRule = pctx.AndroidStaticRule("manifestFixer",
 	blueprint.RuleParams{
 		Command: `${config.ManifestFixerCmd} ` +
 			`$args $in $out`,
-		CommandDeps: []string{"${config.ManifestFixerCmd}"},
+		CommandDeps:     []string{"${config.ManifestFixerCmd}"},
+		SandboxDisabled: true,
 	},
 	"args")
 
 var manifestMergerRule = pctx.AndroidStaticRule("manifestMerger",
 	blueprint.RuleParams{
-		Command:     `${config.ManifestMergerCmd} $args --main $in $libs --out $out`,
-		CommandDeps: []string{"${config.ManifestMergerCmd}"},
+		Command:         `${config.ManifestMergerCmd} $args --main $in $libs --out $out`,
+		CommandDeps:     []string{"${config.ManifestMergerCmd}"},
+		SandboxDisabled: true,
 	},
 	"args", "libs")
 

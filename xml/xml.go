@@ -30,25 +30,28 @@ var (
 
 	xmllintDtd = pctx.AndroidStaticRule("xmllint-dtd",
 		blueprint.RuleParams{
-			Command:     `$XmlLintCmd --dtdvalid $dtd $in > /dev/null && touch -a $out`,
-			CommandDeps: []string{"$XmlLintCmd"},
-			Restat:      true,
+			Command:         `$XmlLintCmd --dtdvalid $dtd $in > /dev/null && touch -a $out`,
+			CommandDeps:     []string{"$XmlLintCmd"},
+			Restat:          true,
+			SandboxDisabled: true,
 		},
 		"dtd")
 
 	xmllintXsd = pctx.AndroidStaticRule("xmllint-xsd",
 		blueprint.RuleParams{
-			Command:     `$XmlLintCmd --schema $xsd $in > /dev/null && touch -a $out`,
-			CommandDeps: []string{"$XmlLintCmd"},
-			Restat:      true,
+			Command:         `$XmlLintCmd --schema $xsd $in > /dev/null && touch -a $out`,
+			CommandDeps:     []string{"$XmlLintCmd"},
+			Restat:          true,
+			SandboxDisabled: true,
 		},
 		"xsd")
 
 	xmllintMinimal = pctx.AndroidStaticRule("xmllint-minimal",
 		blueprint.RuleParams{
-			Command:     `$XmlLintCmd $in > /dev/null && touch -a $out`,
-			CommandDeps: []string{"$XmlLintCmd"},
-			Restat:      true,
+			Command:         `$XmlLintCmd $in > /dev/null && touch -a $out`,
+			CommandDeps:     []string{"$XmlLintCmd"},
+			Restat:          true,
+			SandboxDisabled: true,
 		})
 )
 
