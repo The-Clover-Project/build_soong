@@ -79,22 +79,34 @@ fun runKsp(logger: KSPLogger, opts: KspOptions): KotlinSymbolProcessing.ExitCode
 
     // TODO(b/442809933): Make incremental work. See http://ag/36521483
     val inc = false // opts.incremenetal
+
+    if (!inc) {
+        // Delete any prior output.
+        listOf(
+                opts.javaOutputDir!!,
+                opts.cachesDir!!,
+                opts.classOutputDir!!,
+                opts.kotlinOutputDir!!,
+                opts.resourceOutputDir!!,
+            )
+            .forEach { outDir -> outDir.listFiles()?.forEach { it.deleteRecursively() } }
+    }
     val kspConfig =
         KSPJvmConfig.Builder()
             .apply {
                 moduleName = opts.moduleName!!
                 sourceRoots = opts.sourceRoots
                 jvmTarget = opts.jvmTarget!!
-                projectBaseDir = opts.projectBaseDir!!.canonicalFile
+                projectBaseDir = opts.projectBaseDir!!
                 libraries = opts.libraries
                 friends = opts.friends
                 commonSourceRoots = opts.commonSourceRoots
-                outputBaseDir = opts.outputBaseDir!!.canonicalFile
-                javaOutputDir = opts.javaOutputDir!!.canonicalFile
-                cachesDir = opts.cachesDir!!.canonicalFile
-                classOutputDir = opts.classOutputDir!!.canonicalFile
-                kotlinOutputDir = opts.kotlinOutputDir!!.canonicalFile
-                resourceOutputDir = opts.resourceOutputDir!!.canonicalFile
+                outputBaseDir = opts.outputBaseDir!!
+                javaOutputDir = opts.javaOutputDir!!
+                cachesDir = opts.cachesDir!!
+                classOutputDir = opts.classOutputDir!!
+                kotlinOutputDir = opts.kotlinOutputDir!!
+                resourceOutputDir = opts.resourceOutputDir!!
                 incremental = inc
                 incrementalLog = opts.incremental
                 languageVersion = opts.languageVersion!!
