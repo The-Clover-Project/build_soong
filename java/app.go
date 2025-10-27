@@ -33,7 +33,7 @@ import (
 	"android/soong/tradefed"
 )
 
-//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+//go:generate go run ../../blueprint/gobtools/codegen
 
 func init() {
 	RegisterAppBuildComponents(android.InitRegistrationContext)

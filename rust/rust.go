@@ -34,7 +34,7 @@ import (
 	"android/soong/rust/config"
 )
 
-//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+//go:generate go run ../../blueprint/gobtools/codegen
 
 var pctx = android.NewPackageContext("android/soong/rust")
 
@@ -384,6 +384,13 @@ func (mod *Module) StaticExecutable() bool {
 		return false
 	}
 	return mod.StaticallyLinked()
+}
+
+func (mod *Module) Xom() *bool {
+	if mod.compiler == nil {
+		return nil
+	}
+	return mod.compiler.Xom()
 }
 
 func (mod *Module) ApexExclude() bool {
@@ -1228,6 +1235,7 @@ func (mod *Module) GenerateAndroidBuildActions(actx android.ModuleContext) {
 	linkableInfo := cc.CreateCommonLinkableInfo(ctx, mod)
 	linkableInfo.Static = mod.Static()
 	linkableInfo.Shared = mod.Shared()
+	linkableInfo.Rlib = mod.Rlib()
 	linkableInfo.CrateName = mod.CrateName()
 	linkableInfo.ExportedCrateLinkDirs = mod.ExportedCrateLinkDirs()
 	if lib, ok := mod.compiler.(cc.VersionedInterface); ok {

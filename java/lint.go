@@ -28,7 +28,7 @@ import (
 	"android/soong/remoteexec"
 )
 
-//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+//go:generate go run ../../blueprint/gobtools/codegen
 
 // lint checks automatically enforced for modules that have different min_sdk_version than
 // sdk_version

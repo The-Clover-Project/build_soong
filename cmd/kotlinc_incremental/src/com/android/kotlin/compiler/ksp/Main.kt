@@ -77,6 +77,8 @@ fun runKsp(logger: KSPLogger, opts: KspOptions): KotlinSymbolProcessing.ExitCode
     val processorProviders =
         ServiceLoader.load(SymbolProcessorProvider::class.java, processorClassloader).toList()
 
+    // TODO(b/442809933): Make incremental work. See http://ag/36521483
+    val inc = false // opts.incremenetal
     val kspConfig =
         KSPJvmConfig.Builder()
             .apply {
@@ -93,12 +95,12 @@ fun runKsp(logger: KSPLogger, opts: KspOptions): KotlinSymbolProcessing.ExitCode
                 classOutputDir = opts.classOutputDir!!.canonicalFile
                 kotlinOutputDir = opts.kotlinOutputDir!!.canonicalFile
                 resourceOutputDir = opts.resourceOutputDir!!.canonicalFile
-                incremental = opts.incremental
+                incremental = inc
                 incrementalLog = opts.incremental
                 languageVersion = opts.languageVersion!!
                 apiVersion = opts.apiVersion!!
                 processorOptions = opts.processorOptions
-                if (opts.incremental) {
+                if (inc) {
                     modifiedSources = opts.modifiedFiles ?: listOf()
                     removedSources = opts.removedFiles ?: listOf()
                 }

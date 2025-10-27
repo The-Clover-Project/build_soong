@@ -23,6 +23,7 @@ import (
 
 func init() {
 	android.RegisterModuleType("cc_genrule", GenRuleFactory)
+	android.RegisterModuleType("cc_genrule_defaults", genruleDefaultsFactory)
 }
 
 type GenruleExtraProperties struct {
@@ -65,6 +66,11 @@ func GenRuleFactory() android.Module {
 	android.InitDefaultableModule(module)
 
 	return module
+}
+
+func genruleDefaultsFactory() android.Module {
+	return genrule.DefaultsFactory(
+		&GenruleExtraProperties{})
 }
 
 func genruleCmdModifier(ctx android.ModuleContext, cmd string) string {

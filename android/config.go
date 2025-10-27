@@ -1587,6 +1587,18 @@ func (c *config) DisableScudo() bool {
 	return Bool(c.productVariables.DisableScudo)
 }
 
+func (c *config) EnableXOM() bool {
+	// Use the Build Flag value if ENABLE_XOM is not set,
+	// otherwise use the value in product variables.
+	if c.productVariables.EnableXOM == nil {
+		return c.GetBuildFlagBool("RELEASE_BUILD_EXECUTE_ONLY_MEMORY")
+	} else if Bool(c.productVariables.EnableXOM) {
+		return true
+	} else {
+		return false
+	}
+}
+
 func (c *config) Android64() bool {
 	for _, t := range c.Targets[Android] {
 		if t.Arch.ArchType.Multilib == "lib64" {
@@ -2163,6 +2175,13 @@ func (c *config) HWASanEnabledForPath(path string) bool {
 	return HasAnyPrefix(path, c.productVariables.HWASanIncludePaths) && !c.HWASanDisabledForPath(path)
 }
 
+func (c *config) XOMDisabledForPath(path string) bool {
+	if c.productVariables.XOMExcludePaths == nil {
+		return false
+	}
+	return PrefixInList(c.productVariables.XOMExcludePaths, path)
+}
+
 func (c *config) VendorConfig(name string) VendorConfig {
 	return soongconfig.Config(c.productVariables.VendorVars[name])
 }
@@ -2232,10 +2251,6 @@ func (c *config) ProductPublicSepolicyDirs() []string {
 
 func (c *config) ProductPrivateSepolicyDirs() []string {
 	return c.productVariables.ProductPrivateSepolicyDirs
-}
-
-func (c *config) TargetMultitreeUpdateMeta() bool {
-	return c.productVariables.MultitreeUpdateMeta
 }
 
 func (c *deviceConfig) DeviceArch() string {

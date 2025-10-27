@@ -29,7 +29,7 @@ import (
 	"android/soong/java/config"
 )
 
-//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+//go:generate go run ../../blueprint/gobtools/codegen
 
 func init() {
 	android.InitRegistrationContext.RegisterParallelSingletonType("device_tests_jacoco_zip", deviceTestsJacocoZipSingletonFactory)

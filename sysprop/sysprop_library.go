@@ -33,7 +33,7 @@ import (
 	"android/soong/rust"
 )
 
-//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+//go:generate go run ../../blueprint/gobtools/codegen
 
 type dependencyTag struct {
 	blueprint.BaseDependencyTag

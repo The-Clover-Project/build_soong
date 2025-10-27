@@ -7,6 +7,13 @@ set -o pipefail
 
 source "$(dirname "$0")/lib.sh"
 
+function extend_mock_top_for_androidmk_test {
+    # Precompile androidmk for the tests in androidmk_test.sh.
+    run_ninja androidmk
+}
+
+extend_mock_top extend_mock_top_for_androidmk_test
+
 # Expect to create a new license module
 function test_rewrite_license_property_inside_current_directory {
   setup

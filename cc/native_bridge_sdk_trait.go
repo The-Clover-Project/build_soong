@@ -16,7 +16,7 @@ package cc
 
 import "android/soong/android"
 
-//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+//go:generate go run ../../blueprint/gobtools/codegen
 
 // This file contains support for the native bridge sdk trait.
 

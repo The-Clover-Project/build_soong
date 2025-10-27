@@ -34,7 +34,7 @@ import (
 	"android/soong/shared"
 )
 
-//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+//go:generate go run ../../blueprint/gobtools/codegen
 
 const sboxSandboxBaseDir = "__SBOX_SANDBOX_DIR__"
 const sboxOutSubDir = "out"
@@ -70,6 +70,7 @@ type RuleBuilder struct {
 	nsjailBasePath   WritablePath
 	nsjailImplicits  Paths
 	dirDepsFile      WritablePath
+	sandboxDisabled  bool
 }
 
 // NewRuleBuilder returns a newly created RuleBuilder.
@@ -179,6 +180,9 @@ func (r *RuleBuilder) Sbox(outputDir WritablePath, manifestPath WritablePath) *R
 	}
 	if r.nsjail {
 		panic("Sbox() may not be called after Nsjail()")
+	}
+	if r.sandboxDisabled {
+		panic("Sbox() may not be called for rules that call SandboxDisabled()")
 	}
 	r.sbox = true
 	r.outDir = outputDir
@@ -538,6 +542,14 @@ func (r *RuleBuilder) dirsToDepFileCmd(dirs DirectoryPaths, target WritablePath)
 		FlagWithDepFile("-o ", r.dirDepsFile).
 		FlagWithArg("-t ", target.String()).
 		Text(strings.Join(dirs.Strings(), " "))
+}
+
+func (r *RuleBuilder) SandboxDisabled() *RuleBuilder {
+	if r.sbox {
+		panic("SandboxDisabled() may not be called for rules that call Sbox()")
+	}
+	r.sandboxDisabled = true
+	return r
 }
 
 // Build adds the built command line to the build graph, with dependencies on Inputs and Tools, and output files for
@@ -956,12 +968,13 @@ func (r *RuleBuilder) build(name string, desc string) {
 	}
 	r.ctx.Build(r.pctx, BuildParams{
 		Rule: r.ctx.Rule(r.pctx, name, blueprint.RuleParams{
-			Command:        commandString,
-			CommandDeps:    proptools.NinjaEscapeList(tools.Strings()),
-			Restat:         r.restat,
-			Rspfile:        proptools.NinjaEscape(rspFile),
-			RspfileContent: rspFileContent,
-			Pool:           pool,
+			Command:         commandString,
+			CommandDeps:     proptools.NinjaEscapeList(tools.Strings()),
+			Restat:          r.restat,
+			Rspfile:         proptools.NinjaEscape(rspFile),
+			RspfileContent:  rspFileContent,
+			Pool:            pool,
+			SandboxDisabled: r.sandboxDisabled,
 		}, args_vars...),
 		Inputs:          rspFileInputs,
 		Implicits:       inputs,

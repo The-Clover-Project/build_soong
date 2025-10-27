@@ -26,7 +26,7 @@ import (
 	"android/soong/java/config"
 )
 
-//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+//go:generate go run ../../blueprint/gobtools/codegen
 
 func init() {
 	RegisterDocsBuildComponents(android.InitRegistrationContext)

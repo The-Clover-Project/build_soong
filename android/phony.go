@@ -24,7 +24,7 @@ import (
 	"github.com/google/blueprint"
 )
 
-//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+//go:generate go run ../../blueprint/gobtools/codegen
 
 type phonyMap map[string]Paths
 
@@ -140,7 +140,7 @@ func (p *phonySingleton) GenerateBuildActions(ctx SingletonContext) {
 		if buildPhonyFileContents.Len() != phonyFileSize {
 			panic(fmt.Sprintf("phonyFileSize calculation incorrect, expected %d, actual len: %d", phonyFileSize, buildPhonyFileContents.Len()))
 		}
-		buildPhonyFile := PathForOutput(ctx, "soong_phony_targets.mk")
+		buildPhonyFile := PathForOutput(ctx, "soong_phony_targets"+ctx.Config().katiSuffix+".mk")
 		writeValueIfChanged(ctx, absolutePath(buildPhonyFile.String()), buildPhonyFileContents.String())
 	}
 }

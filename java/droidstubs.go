@@ -29,7 +29,7 @@ import (
 	"android/soong/remoteexec"
 )
 
-//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+//go:generate go run ../../blueprint/gobtools/codegen
 
 // @auto-generate: gob
 type StubsInfo struct {

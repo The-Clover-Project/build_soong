@@ -27,7 +27,7 @@ import (
 	"android/soong/remoteexec"
 )
 
-//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+//go:generate go run ../../blueprint/gobtools/codegen
 
 func init() {
 	pctx.HostBinToolVariable("symbols_map", "symbols_map")
@@ -307,6 +307,8 @@ var d8Inc, d8IncRE = pctx.MultiCommandRemoteStaticRules("d8Inc",
 		CommandDeps: []string{
 			"${config.IncrementalDexInputCmd}",
 			"${config.D8Cmd}",
+			"${config.D8Jar}",
+			"${config.JavaCmd}",
 			"${config.SoongZipCmd}",
 			"${config.MergeZipsCmd}",
 			"${config.UsePartialCompileFile}",
@@ -523,6 +525,7 @@ var r8, r8RE = pctx.MultiCommandRemoteStaticRules("r8",
 		CommandDeps: []string{
 			"${config.R8Cmd}",
 			"${config.R8Jar}",
+			"${config.JavaCmd}",
 			"${config.SoongZipCmd}",
 			"${config.MergeZipsCmd}",
 		},
@@ -761,8 +764,10 @@ func (d *dexer) r8Flags(ctx android.ModuleContext, dexParams *compileDexParams, 
 	r8Deps = append(r8Deps, flagFiles...)
 
 	// TODO(b/70942988): This is included from build/make/core/proguard.flags
-	r8Deps = append(r8Deps, android.PathForSource(ctx,
-		"build/make/core/proguard_basic_keeps.flags"))
+	r8Deps = append(r8Deps,
+		android.PathForSource(ctx, "build/make/core/proguard_basic_keeps.flags"),
+		android.PathForSource(ctx, "build/make/core/proguard/kotlin.flags"),
+	)
 
 	r8Flags = append(r8Flags, opt.Proguard_flags.GetOrDefault(ctx, nil)...)
 

@@ -34,6 +34,7 @@ func RegisterRequiredBuildComponentsForTest(ctx android.RegistrationContext) {
 	ctx.RegisterModuleType("cc_cmake_snapshot", CmakeSnapshotFactory)
 	ctx.RegisterModuleType("cc_object", ObjectFactory)
 	ctx.RegisterModuleType("cc_genrule", GenRuleFactory)
+	ctx.RegisterModuleType("cc_genrule_defaults", genruleDefaultsFactory)
 	ctx.RegisterModuleType("ndk_library", NdkLibraryFactory)
 	ctx.RegisterModuleType("ndk_headers", NdkHeadersFactory)
 }

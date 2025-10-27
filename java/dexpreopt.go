@@ -25,7 +25,7 @@ import (
 	"android/soong/dexpreopt"
 )
 
-//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+//go:generate go run ../../blueprint/gobtools/codegen
 
 type DexpreopterInterface interface {
 	// True if the java module is to be dexed and installed on devices.

@@ -373,6 +373,7 @@ func runKatiPackage(ctx Context, config Config, soongOnly bool) {
 		// Directory containing .mk files for packaging purposes, such as
 		// the dist.mk file, containing dist-for-goals data.
 		"KATI_PACKAGE_MK_DIR=" + config.KatiPackageMkDir(),
+		"KATI_SUFFIX=" + config.KatiSuffix(),
 	}
 
 	// Run Kati against a restricted set of environment variables.

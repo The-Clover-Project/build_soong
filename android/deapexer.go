@@ -20,7 +20,7 @@ import (
 	"github.com/google/blueprint"
 )
 
-//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+//go:generate go run ../../blueprint/gobtools/codegen
 
 // Provides support for interacting with the `deapexer` module to which a `prebuilt_apex` module
 // will delegate the work to export files from a prebuilt '.apex` file.

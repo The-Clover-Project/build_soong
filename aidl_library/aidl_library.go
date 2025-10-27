@@ -21,7 +21,7 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
-//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+//go:generate go run ../../blueprint/gobtools/codegen
 
 var PrepareForTestWithAidlLibrary = android.FixtureRegisterWithContext(func(ctx android.RegistrationContext) {
 	registerAidlLibraryBuildComponents(ctx)

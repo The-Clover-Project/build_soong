@@ -24,7 +24,7 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
-//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+//go:generate go run ../../blueprint/gobtools/codegen
 
 // This comment describes the following:
 //  1. the concept of class loader context (CLC) and its relation to classpath

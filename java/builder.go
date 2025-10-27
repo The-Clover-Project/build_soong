@@ -85,13 +85,13 @@ var (
 				`${config.IncrementalJavacInputCmd} ` +
 				`--srcs $out.rsp --classDir $outDir --deps $javacDeps --javacTarget $out --srcDepsProto $out.proto --localHeaderJars $localHeaderJars --crossModuleJarList $crossModuleJars && ` +
 				`mkdir -p "$outDir" && ` +
+				`cat $out.rem.rsp | xargs rm -f && ` +
 				`(if [ -s $out.inc.rsp ] ; then ` +
 				`${config.SoongJavacWrapper} $javaTemplate${config.JavacCmd} ` +
 				`${config.JavacHeapFlags} ${config.JavacVmFlags} ${config.CommonJdkFlags} ` +
 				`$processorpath $processor $javacFlags $bootClasspath $classpath ` +
 				`-source $javaVersion -target $javaVersion ` +
 				`-d $outDir -s $annoDir @$out.inc.rsp ; fi ) && ` +
-				`cat $out.rem.rsp | xargs rm -f && ` +
 				`$annoSrcJarTemplate${config.SoongZipCmd} -jar -o $annoSrcJar.tmp -C $annoDir -D $annoDir && ` +
 				`$zipTemplate${config.SoongZipCmd} -jar -o $out.tmp -C $outDir -D $outDir && ` +
 				`if ! cmp -s "$out.tmp" "$out"; then mv "$out.tmp" "$out"; fi && ` +

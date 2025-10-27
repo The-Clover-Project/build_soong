@@ -331,6 +331,9 @@ type ProductVariables struct {
 	CFIExcludePaths []string `json:",omitempty"`
 	CFIIncludePaths []string `json:",omitempty"`
 
+	EnableXOM       *bool    `json:",omitempty"`
+	XOMExcludePaths []string `json:",omitempty"`
+
 	DisableScudo *bool `json:",omitempty"`
 
 	MemtagHeapExcludePaths      []string `json:",omitempty"`
@@ -389,8 +392,6 @@ type ProductVariables struct {
 	NamespacesToExport []string `json:",omitempty"`
 
 	PgoAdditionalProfileDirs []string `json:",omitempty"`
-
-	MultitreeUpdateMeta bool `json:",omitempty"`
 
 	BoardVendorSepolicyDirs      []string `json:",omitempty"`
 	BoardOdmSepolicyDirs         []string `json:",omitempty"`

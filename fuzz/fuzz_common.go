@@ -28,7 +28,7 @@ import (
 	"android/soong/android"
 )
 
-//go:generate go run ../../blueprint/gobtools/codegen/gob_gen.go
+//go:generate go run ../../blueprint/gobtools/codegen
 
 type Lang string
 
@@ -615,7 +615,7 @@ func (s *FuzzPackager) PackageArtifacts(ctx android.SingletonContext, module and
 // TODO(b/397766191): Change the signature to take ModuleProxy
 // Please only access the module's internal data through providers.
 func (s *FuzzPackager) BuildZipFile(ctx android.SingletonContext, module android.ModuleOrProxy, fuzzModule *FuzzPackagedModuleInfo, files []FileToZip, builder *android.RuleBuilder, archDir android.OutputPath, archString string, hostOrTargetString string, archOs ArchOs, archDirs map[ArchOs][]FileToZip) ([]FileToZip, bool) {
-	fuzzZip := archDir.Join(ctx, module.Name()+".zip")
+	fuzzZip := archDir.Join(ctx, ctx.ModuleDir(module), module.Name()+".zip")
 
 	command := builder.Command().BuiltTool("soong_zip").
 		Flag("-j").

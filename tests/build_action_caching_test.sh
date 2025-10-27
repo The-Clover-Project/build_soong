@@ -49,7 +49,7 @@ EOF
 function test_incremental_build_parity() {
   setup
   local test_dir="test_incremental_build_parity"
-  run_soong
+  run_soong SOONG_INCREMENTAL_ANALYSIS=false
   local dir_before="${test_dir}/before"
   mkdir -p ${dir_before}
   cp -pr out/soong/*.mk out/soong/build.test_arm64*.ninja ${test_dir}/before
@@ -280,9 +280,17 @@ function test_set_environment_variable() {
 function test_change_environment_variable() {
   setup
 
-  run_soong LLVM_PREBUILTS_VERSION=foo
+  run_soong SOONG_INCREMENTAL_ANALYSIS=true LLVM_PREBUILTS_VERSION=foo
 
   compare_incremental_and_full_analysis LLVM_PREBUILTS_VERSION=bar
+}
+
+function test_change_target_product() {
+  setup
+
+  run_soong SOONG_INCREMENTAL_ANALYSIS=true
+  run_soong SOONG_INCREMENTAL_ANALYSIS=true TARGET_PRODUCT=test2_arm64
+  compare_incremental_and_full_analysis
 }
 
 scan_and_run_tests "$@"
