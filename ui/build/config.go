@@ -1889,7 +1889,7 @@ func (c *configImpl) SoongMakeVarsMk() string {
 }
 
 func (c *configImpl) SoongPhonyTargets() string {
-	return filepath.Join(c.SoongOutDir(), "soong_phony_targets.mk")
+	return filepath.Join(c.SoongOutDir(), "soong_phony_targets"+c.katiSuffix+".mk")
 }
 
 func (c *configImpl) SoongBuildMetrics() string {
