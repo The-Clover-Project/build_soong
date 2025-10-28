@@ -60,7 +60,7 @@ type CommonProperties struct {
 
 	// list of source files that should not be used to build the Java module.
 	// This is most useful in the arch/multilib variants to remove non-common files
-	Exclude_srcs []string `android:"path,arch_variant"`
+	Exclude_srcs proptools.Configurable[[]string] `android:"path,arch_variant"`
 
 	// list of Kotlin source files that should excluded from the list of common_srcs.
 	Exclude_common_srcs []string `android:"path,arch_variant"`
@@ -1272,7 +1272,8 @@ func (j *Module) compile(ctx android.ModuleContext) *JavaInfo {
 		ctx.PropertyErrorf("openjdk9.srcs", "JDK version defaults to higher than 9")
 	}
 
-	srcFiles := android.PathsForModuleSrcExcludes(ctx, j.properties.Srcs.GetOrDefault(ctx, nil), j.properties.Exclude_srcs)
+	srcFiles := android.PathsForModuleSrcExcludes(ctx, j.properties.Srcs.GetOrDefault(ctx, nil),
+		j.properties.Exclude_srcs.GetOrDefault(ctx, nil))
 	j.sourceExtensions = []string{}
 	for _, ext := range []string{".kt", ".proto", ".aidl", ".java", ".logtags"} {
 		if hasSrcExt(srcFiles.Strings(), ext) {
@@ -2559,7 +2560,8 @@ func (j *Module) CompilerDeps() []string {
 }
 
 func (j *Module) hasCode(ctx android.ModuleContext) bool {
-	srcFiles := android.PathsForModuleSrcExcludes(ctx, j.properties.Srcs.GetOrDefault(ctx, nil), j.properties.Exclude_srcs)
+	srcFiles := android.PathsForModuleSrcExcludes(ctx, j.properties.Srcs.GetOrDefault(ctx, nil),
+		j.properties.Exclude_srcs.GetOrDefault(ctx, nil))
 	return len(srcFiles) > 0 || len(ctx.GetDirectDepsProxyWithTag(staticLibTag)) > 0
 }
 
