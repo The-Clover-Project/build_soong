@@ -49,7 +49,19 @@ var PrepareForIntegrationTestWithRust = android.GroupFixturePreparers(
 func GatherRequiredDepsForTest() string {
 	bp := `
 		rust_prebuilt_library {
-			name: "libstd",
+			name: "prebuilt_linux_glibc_libstd",
+			crate_name: "std",
+			rlib: {
+				srcs: ["libstd/libstd.rlib"],
+			},
+			dylib: {
+				srcs: ["libstd/libstd.so"],
+			},
+			host_supported: true,
+			sysroot: true,
+		}
+		rust_prebuilt_library {
+			name: "prebuilt_darwin_libstd",
 			crate_name: "std",
 			rlib: {
 				srcs: ["libstd/libstd.rlib"],
