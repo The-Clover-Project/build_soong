@@ -228,7 +228,7 @@ abstract class ReadableDirectoryArgument<O : Options> : StringArgument<O>() {
         if (e != null) {
             error = "Invalid $argumentName option specified: $e"
         } else {
-            setDirectory(File(option), opts)
+            setDirectory(File(option).canonicalFile, opts)
         }
     }
 
