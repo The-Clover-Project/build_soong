@@ -146,6 +146,10 @@ func (c BlueprintConfig) IsActionSandboxedBuild() bool {
 	return c.isActionSandboxedBuild
 }
 
+func (c BlueprintConfig) ActionSandboxMetrics() *blueprint.SandboxMetrics {
+	return nil
+}
+
 func environmentArgs(config Config, tag string) []string {
 	return []string{
 		"--available_env", shared.JoinPath(config.SoongOutDir(), availableEnvFile),
