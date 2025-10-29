@@ -16,6 +16,7 @@ package testconfigs
 
 import (
 	"android/soong/android"
+	"strings"
 
 	"github.com/google/blueprint"
 )
@@ -42,6 +43,50 @@ type ModuleProperties struct {
 	Module_args []string
 }
 
+func (plan *TestExecutionPlanProperties) Validate(ctx android.ModuleContext) {
+	// Check if test modules exist and are in valid suites.
+	for _, moduleExecution := range plan.Tests {
+		if moduleExecution.Module == "" {
+			ctx.ModuleErrorf("module must have a name")
+		}
+		if !ctx.OtherModuleExists(moduleExecution.Module) {
+			if !ctx.Config().AllowMissingDependencies() {
+				ctx.ModuleErrorf("failed to find referenced test module %s", moduleExecution.Module)
+			}
+		}
+		validateArgs(ctx, moduleExecution.Module_args)
+	}
+
+	// Ensure test args are valid
+	validateArgs(ctx, plan.Args)
+}
+
+func validateArgs(ctx android.ModuleContext, args []string) {
+	for _, arg := range args {
+		argSplit := strings.SplitN(arg, "=", 2)
+		if len(argSplit) != 2 {
+			ctx.ModuleErrorf("contains invalid argument %s, must be format key=value", arg)
+		}
+	}
+}
+
+func (plan *TestExecutionPlanProperties) GetTestModules() map[string]any {
+	testModules := map[string]any{}
+	for _, moduleExecution := range plan.Tests {
+		testModule := moduleExecution.Module
+		testModules[testModule] = nil
+	}
+	return testModules
+}
+
+func (plan *TestExecutionPlanProperties) IsEmpty() bool {
+	if len(plan.Tests) > 0 ||
+		len(plan.Args) > 0 {
+		return false
+	}
+	return true
+}
+
 // @auto-generate: gob
 type TestExecutionPlanInlinable struct {
 	TestExecutionPlanProperties
@@ -51,9 +96,12 @@ type TestExecutionPlanInlinable struct {
 var TestExecutionPlanProvider = blueprint.NewProvider[TestExecutionPlanProperties]()
 
 func (plan *TestExecutionPlan) GenerateAndroidBuildActions(ctx android.ModuleContext) {
+	plan.configProperties.Validate(ctx)
+
 	// Create provider for TestExecutionPlan information.
 	android.SetProvider(ctx, TestExecutionPlanProvider, plan.configProperties)
 }
+
 func TestExecutionPlanFactory() android.Module {
 	module := &TestExecutionPlan{}
 	module.AddProperties(&module.configProperties)
