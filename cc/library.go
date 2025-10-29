@@ -1098,7 +1098,7 @@ func (library *libraryDecorator) linkStatic(ctx ModuleContext,
 
 	}
 
-	fileName := ctx.ModuleName() + staticLibraryExtension
+	fileName := library.getLibName(ctx) + staticLibraryExtension
 	outputFile := android.PathForModuleOut(ctx, fileName)
 	builderFlags := flagsToBuilderFlags(flags)
 
