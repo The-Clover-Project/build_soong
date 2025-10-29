@@ -260,3 +260,7 @@ func (m *Metrics) Dump(out string) error {
 func (m *Metrics) Begin(name, desc string) *Event {
 	return newEvent(m, name, desc)
 }
+
+func (m *Metrics) SetNinjaFileSize(size *int64) {
+	m.metrics.NinjaFileSize = size
+}
