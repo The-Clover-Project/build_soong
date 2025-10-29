@@ -150,8 +150,9 @@ func (r *ravenwoodTest) DepsMutator(ctx android.BottomUpMutatorContext) {
 
 	// Directly depend on any utils so that we link against them
 	utils := ctx.AddVariationDependencies(nil, ravenwoodUtilsTag, ravenwoodUtilsName)[0]
-	if utils != nil {
-		for _, lib := range utils.(*ravenwoodLibgroup).ravenwoodLibgroupProperties.Libs {
+	if !utils.IsNil() {
+		libgroupInfo := android.OtherModuleProviderOrDefault(ctx, utils, ravenwoodLibgroupInfoProvider)
+		for _, lib := range libgroupInfo.libs {
 			ctx.AddVariationDependencies(nil, libTag, lib)
 		}
 	}
@@ -440,6 +441,13 @@ func ravenwoodLibgroupFactory() android.Module {
 	return module
 }
 
+// @auto-generate: gob
+type ravenwoodLibgroupInfo struct {
+	libs []string
+}
+
+var ravenwoodLibgroupInfoProvider = blueprint.NewMutatorProvider[ravenwoodLibgroupInfo]("deps")
+
 func (r *ravenwoodLibgroup) InstallInTestcases() bool { return true }
 func (r *ravenwoodLibgroup) InstallForceOS() (*android.OsType, *android.ArchType) {
 	return &r.forceOSType, &r.forceArchType
@@ -470,6 +478,10 @@ func (r *ravenwoodLibgroup) DepsMutator(ctx android.BottomUpMutatorContext) {
 	if r.Name() == ravenwoodRuntimeName {
 		ctx.AddVariationDependencies(nil, allAconfigModuleTag, aconfig.AllAconfigModule)
 	}
+
+	android.SetProvider(ctx, ravenwoodLibgroupInfoProvider, ravenwoodLibgroupInfo{
+		libs: r.ravenwoodLibgroupProperties.Libs,
+	})
 }
 
 func (r *ravenwoodLibgroup) GenerateAndroidBuildActions(ctx android.ModuleContext) {

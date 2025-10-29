@@ -201,7 +201,7 @@ type BottomUpMutatorContext interface {
 	// dependency (some entries may be nil).
 	//
 	// This method will pause until the new dependencies have had the current mutator called on them.
-	AddDependency(module blueprint.Module, tag blueprint.DependencyTag, name ...string) []Module
+	AddDependency(module blueprint.Module, tag blueprint.DependencyTag, name ...string) []ModuleProxy
 
 	// AddReverseDependency adds a dependency from the destination to the given module.
 	// Does not affect the ordering of the current mutator pass, but will be ordered
@@ -217,7 +217,7 @@ type BottomUpMutatorContext interface {
 	// all the non-local variations of the current module, plus the variations argument.
 	//
 	// This method will pause until the new dependencies have had the current mutator called on them.
-	AddVariationDependencies(variations []blueprint.Variation, tag blueprint.DependencyTag, names ...string) []Module
+	AddVariationDependencies(variations []blueprint.Variation, tag blueprint.DependencyTag, names ...string) []ModuleProxy
 
 	// AddReverseVariationDependency adds a dependency from the named module to the current
 	// module. The given variations will be added to the current module's varations, and then the
@@ -240,7 +240,7 @@ type BottomUpMutatorContext interface {
 	// dependency only needs to match the supplied variations.
 	//
 	// This method will pause until the new dependencies have had the current mutator called on them.
-	AddFarVariationDependencies([]blueprint.Variation, blueprint.DependencyTag, ...string) []Module
+	AddFarVariationDependencies([]blueprint.Variation, blueprint.DependencyTag, ...string) []ModuleProxy
 
 	// ReplaceDependencies finds all the variants of the module with the specified name, then
 	// replaces all dependencies onto those variants with the current variant of this module.
@@ -515,11 +515,11 @@ func (b *bottomUpMutatorContext) CreateModule(factory ModuleFactory, props ...in
 	return createModule(b, factory, "_bottomUpMutatorModule", doesNotSpecifyDirectory(), props...)
 }
 
-func (b *bottomUpMutatorContext) AddDependency(module blueprint.Module, tag blueprint.DependencyTag, name ...string) []Module {
+func (b *bottomUpMutatorContext) AddDependency(module blueprint.Module, tag blueprint.DependencyTag, name ...string) []ModuleProxy {
 	if b.baseModuleContext.checkedMissingDeps() {
 		panic("Adding deps not allowed after checking for missing deps")
 	}
-	return bpModulesToModules(b.bp.AddDependency(module, tag, name...))
+	return bpModuleProxiesToModuleProxies(b.bp.AddDependency(module, tag, name...))
 }
 
 func (b *bottomUpMutatorContext) AddReverseDependency(module blueprint.Module, tag blueprint.DependencyTag, name string) {
@@ -537,20 +537,20 @@ func (b *bottomUpMutatorContext) AddReverseVariationDependency(variations []blue
 }
 
 func (b *bottomUpMutatorContext) AddVariationDependencies(variations []blueprint.Variation, tag blueprint.DependencyTag,
-	names ...string) []Module {
+	names ...string) []ModuleProxy {
 	if b.baseModuleContext.checkedMissingDeps() {
 		panic("Adding deps not allowed after checking for missing deps")
 	}
-	return bpModulesToModules(b.bp.AddVariationDependencies(variations, tag, names...))
+	return bpModuleProxiesToModuleProxies(b.bp.AddVariationDependencies(variations, tag, names...))
 }
 
 func (b *bottomUpMutatorContext) AddFarVariationDependencies(variations []blueprint.Variation,
-	tag blueprint.DependencyTag, names ...string) []Module {
+	tag blueprint.DependencyTag, names ...string) []ModuleProxy {
 	if b.baseModuleContext.checkedMissingDeps() {
 		panic("Adding deps not allowed after checking for missing deps")
 	}
 
-	return bpModulesToModules(b.bp.AddFarVariationDependencies(variations, tag, names...))
+	return bpModuleProxiesToModuleProxies(b.bp.AddFarVariationDependencies(variations, tag, names...))
 }
 
 func (b *bottomUpMutatorContext) ReplaceDependencies(name string) {
@@ -580,4 +580,12 @@ func bpModuleToModule(bpModule blueprint.Module) Module {
 		return bpModule.(Module)
 	}
 	return nil
+}
+
+func bpModuleProxiesToModuleProxies(bpModules []blueprint.ModuleProxy) []ModuleProxy {
+	modules := make([]ModuleProxy, len(bpModules))
+	for i, bpModule := range bpModules {
+		modules[i] = ModuleProxy{bpModule}
+	}
+	return modules
 }
