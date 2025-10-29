@@ -685,6 +685,10 @@ func IsStaticLibDepTag(depTag blueprint.DependencyTag) bool {
 	return depTag == staticLibTag
 }
 
+func IsTraceReferencesDepTag(depTag blueprint.DependencyTag) bool {
+	return depTag == traceReferencesTag
+}
+
 type sdkDep struct {
 	useModule, useFiles, invalidVersion bool
 

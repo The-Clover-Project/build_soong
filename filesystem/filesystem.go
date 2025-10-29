@@ -1254,7 +1254,7 @@ func (f *filesystem) verifyGenericConfig(ctx android.ModuleContext) {
 		// Dynamic dependencies can be installed in a non-system partition
 		isDynamicDependency := false
 		depTag := ctx.OtherModuleDependencyTag(child)
-		if java.IsOptionalUsesLibraryDepTag(depTag) || java.IsLibDepTag(depTag) || cc.IsSharedDepTag(depTag) {
+		if java.IsOptionalUsesLibraryDepTag(depTag) || java.IsLibDepTag(depTag) || java.IsTraceReferencesDepTag(depTag) || cc.IsSharedDepTag(depTag) {
 			isDynamicDependency = true
 		}
 
