@@ -151,6 +151,14 @@ func collectMetrics(config Config, eventHandler *metrics.EventHandler) *soong_me
 	metrics.IncrementalInfo.SingletonMetrics.Supported = proto.Uint32(uint32(soongMetrics.incrementalSingletons.supported))
 	metrics.IncrementalInfo.SingletonMetrics.CacheHit = proto.Uint32(uint32(soongMetrics.incrementalSingletons.cacheHit))
 
+	if config.IsActionSandboxedBuild() && config.ActionSandboxMetrics() != nil {
+		sandboxMetrics := config.ActionSandboxMetrics()
+		metrics.SandboxMetrics = &soong_metrics_proto.SandboxMetrics{
+			TotalRules:    proto.Uint32(uint32(sandboxMetrics.TotalRules())),
+			DisabledRules: proto.Uint32(uint32(sandboxMetrics.DisabledRules())),
+		}
+	}
+
 	soongMetrics.perfCollector.stop <- true
 	metrics.PerfCounters = soongMetrics.perfCollector.events
 

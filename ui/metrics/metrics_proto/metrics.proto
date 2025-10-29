@@ -382,6 +382,9 @@ message SoongBuildMetrics {
 
   // Incremental related metrics.
   optional IncrementalInfo incremental_info = 11;
+
+  // Sandbox related metrics.
+  optional SandboxMetrics sandbox_metrics = 12;
 }
 
 message IncrementalInfo {
@@ -543,4 +546,11 @@ message FileCount {
 
   // Number of deleted files with this extension.
   optional uint32 deletions = 4;
+}
+
+message SandboxMetrics {
+  // The total number of rules.
+  optional uint32 total_rules = 1;
+  // The number of rules with sandboxing disabled.
+  optional uint32 disabled_rules = 2;
 }
