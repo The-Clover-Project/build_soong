@@ -177,6 +177,10 @@ func (c Config) CoverageSuffix() string {
 	return ""
 }
 
+func (c Config) IsActionSandboxedBuild() bool {
+	return c.Getenv("SOONG_ACTION_SANDBOXING") == "nsjail"
+}
+
 // MaxPageSizeSupported returns the max page size supported by the device. This
 // value will define the ELF segment alignment for binaries (executables and
 // shared libraries).

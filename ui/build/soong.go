@@ -107,6 +107,7 @@ type BlueprintConfig struct {
 	debugCompilation          bool
 	subninjas                 []string
 	primaryBuilderInvocations []bootstrap.PrimaryBuilderInvocation
+	isActionSandboxedBuild    bool
 }
 
 func (c BlueprintConfig) HostToolDir() string {
@@ -139,6 +140,10 @@ func (c BlueprintConfig) PrimaryBuilderInvocations() []bootstrap.PrimaryBuilderI
 
 func (c BlueprintConfig) IsBootstrap() bool {
 	return true
+}
+
+func (c BlueprintConfig) IsActionSandboxedBuild() bool {
+	return c.isActionSandboxedBuild
 }
 
 func environmentArgs(config Config, tag string) []string {
@@ -416,6 +421,7 @@ func bootstrapBlueprint(ctx Context, config Config) {
 		// If we want to debug soong_build, we need to compile it for debugging
 		debugCompilation:          delvePort != "",
 		primaryBuilderInvocations: invocations,
+		isActionSandboxedBuild:    config.IsActionSandboxedBuild(),
 	}
 
 	// since `bootstrap.ninja` is regenerated unconditionally, we ignore the deps, i.e. little
