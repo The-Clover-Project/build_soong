@@ -16,8 +16,11 @@ package android
 
 import (
 	"bytes"
+	"fmt"
+	"io/fs"
 	"io/ioutil"
 	"os"
+	"path/filepath"
 	"runtime"
 	"strconv"
 	"time"
@@ -159,6 +162,11 @@ func collectMetrics(config Config, eventHandler *metrics.EventHandler) *soong_me
 		}
 	}
 
+	if soongMetrics.incrementalAnalysis {
+		incrementalDbSize := getIncrementalInfoDbSize(config)
+		metrics.IncrementalInfo.IncrementalDbSize = &incrementalDbSize
+	}
+
 	soongMetrics.perfCollector.stop <- true
 	metrics.PerfCounters = soongMetrics.perfCollector.events
 
@@ -179,6 +187,33 @@ func collectMetrics(config Config, eventHandler *metrics.EventHandler) *soong_me
 	}
 
 	return metrics
+}
+
+func getIncrementalInfoDbSize(config Config) int64 {
+	addFileSizeInDir := func(dirPath string) int64 {
+		var ret int64 = 0
+		filepath.WalkDir(absolutePath(dirPath), func(path string, f fs.DirEntry, err error) error {
+			if err != nil {
+				panic(fmt.Errorf("Could not walk directory %s due to err %s\n", dirPath, err))
+			}
+			if f.IsDir() {
+				return nil
+			}
+			fileInfo, err := os.Stat(path)
+			if err != nil {
+				panic(fmt.Errorf("Could not open %s due to %s\n", path, err))
+			} else {
+				ret += fileInfo.Size()
+			}
+			return nil
+		})
+		return ret
+	}
+	var dbFileSize int64 = 0
+	for _, dir := range blueprint.IncrementalInfoDbNames {
+		dbFileSize += addFileSizeInDir(filepath.Join(config.SoongOutDir(), dir))
+	}
+	return dbFileSize
 }
 
 func StartBackgroundMetrics(config Config) {
