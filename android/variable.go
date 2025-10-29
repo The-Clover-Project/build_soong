@@ -213,6 +213,7 @@ type ProductVariables struct {
 	Platform_base_sdk_extension_version    *int     `json:",omitempty"`
 	Platform_display_version_name          *string  `json:",omitempty"`
 	Platform_preview_sdk_version           *string  `json:",omitempty"`
+	Platform_prospective_sdk_version_full  *string  `json:",omitempty"`
 	Platform_sdk_codename                  *string  `json:",omitempty"`
 	Platform_sdk_extension_version         *int     `json:",omitempty"`
 	Platform_sdk_final                     *bool    `json:",omitempty"`
