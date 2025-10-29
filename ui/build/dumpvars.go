@@ -264,6 +264,7 @@ func runMakeProductConfig(ctx Context, config Config) {
 	sisoStringVars := []string{
 		"RBE_container_image",
 		"RELEASE_BUILD_CLANG_VERSION",
+		"JAVA_HOME",
 	}
 
 	allVars := slices.Concat([]string{

@@ -1,3 +1,4 @@
+load("@builtin//path.star", "path")
 load("@builtin//struct.star", "module")
 
 def __filegroups(ctx, vars):
@@ -29,7 +30,27 @@ def __step_config(ctx, vars, step_config):
         ])
         return step_config
 
-    # TODO: siso native remote
+    java_dir = ctx.fs.canonpath(path.join(vars.JAVA_HOME, "bin"))
+    javac_path = path.join(java_dir, "javac")
+    javac_inputs_path = javac_path + "_remote_toolchain_inputs"
+    javac_inputs = []
+    if ctx.fs.exists(javac_inputs_path):
+        for line in str(ctx.fs.read(javac_inputs_path)).splitlines():
+            javac_inputs.append(path.join(java_dir, line))
+
+    # TODO: use phony targets for remote toolchain inputs?
+    step_config["input_deps"].update({
+        javac_path: javac_inputs,
+    })
+    step_config["rules"].extend([
+        {
+            "name": "g.java.javac",
+            "action": "g.java.javac",
+            "remote": True,
+            "platform_ref": "java16",
+            "timeout": "8m",
+        },
+    ])
     return step_config
 
 java = module(
