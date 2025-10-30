@@ -235,33 +235,35 @@ func (n *NinjaReader) run() {
 			if started, ok := n.running[msg.EdgeFinished.GetId()]; ok {
 				delete(n.running, msg.EdgeFinished.GetId())
 
-				var err error
-				exitCode := int(msg.EdgeFinished.GetStatus())
-				if exitCode != 0 {
-					err = fmt.Errorf("exited with code: %d", exitCode)
+				if !msg.EdgeFinished.GetCanceled() {
+					var err error
+					exitCode := int(msg.EdgeFinished.GetStatus())
+					if exitCode != 0 {
+						err = fmt.Errorf("exited with code: %d", exitCode)
+					}
+
+					rawOutput := msg.EdgeFinished.GetOutput()
+					outputWithErrorHint := errorHintGenerator.GetOutputWithErrorHint(rawOutput, exitCode)
+					n.status.FinishAction(ActionResult{
+						Action: started,
+						Output: outputWithErrorHint,
+						Error:  err,
+						Stats: ActionResultStats{
+							UserTime:                   msg.EdgeFinished.GetUserTime(),
+							SystemTime:                 msg.EdgeFinished.GetSystemTime(),
+							MaxRssKB:                   msg.EdgeFinished.GetMaxRssKb(),
+							MinorPageFaults:            msg.EdgeFinished.GetMinorPageFaults(),
+							MajorPageFaults:            msg.EdgeFinished.GetMajorPageFaults(),
+							IOInputKB:                  msg.EdgeFinished.GetIoInputKb(),
+							IOOutputKB:                 msg.EdgeFinished.GetIoOutputKb(),
+							VoluntaryContextSwitches:   msg.EdgeFinished.GetVoluntaryContextSwitches(),
+							InvoluntaryContextSwitches: msg.EdgeFinished.GetInvoluntaryContextSwitches(),
+							Tags:                       msg.EdgeFinished.GetTags(),
+						},
+					})
+
+					n.hasAnyOutput = n.hasAnyOutput || len(rawOutput) > 0
 				}
-
-				rawOutput := msg.EdgeFinished.GetOutput()
-				outputWithErrorHint := errorHintGenerator.GetOutputWithErrorHint(rawOutput, exitCode)
-				n.status.FinishAction(ActionResult{
-					Action: started,
-					Output: outputWithErrorHint,
-					Error:  err,
-					Stats: ActionResultStats{
-						UserTime:                   msg.EdgeFinished.GetUserTime(),
-						SystemTime:                 msg.EdgeFinished.GetSystemTime(),
-						MaxRssKB:                   msg.EdgeFinished.GetMaxRssKb(),
-						MinorPageFaults:            msg.EdgeFinished.GetMinorPageFaults(),
-						MajorPageFaults:            msg.EdgeFinished.GetMajorPageFaults(),
-						IOInputKB:                  msg.EdgeFinished.GetIoInputKb(),
-						IOOutputKB:                 msg.EdgeFinished.GetIoOutputKb(),
-						VoluntaryContextSwitches:   msg.EdgeFinished.GetVoluntaryContextSwitches(),
-						InvoluntaryContextSwitches: msg.EdgeFinished.GetInvoluntaryContextSwitches(),
-						Tags:                       msg.EdgeFinished.GetTags(),
-					},
-				})
-
-				n.hasAnyOutput = n.hasAnyOutput || len(rawOutput) > 0
 			}
 		}
 		if msg.Message != nil {
