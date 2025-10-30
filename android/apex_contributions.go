@@ -139,7 +139,7 @@ func (a *allApexContributions) SetPrebuiltSelectionInfoProvider(ctx BottomUpMuta
 	if !proptools.Bool(ctx.Config().BuildIgnoreApexContributionContents()) {
 		deps := ctx.AddDependency(ctx.Module(), AcDepTag, ctx.Config().AllApexContributions()...)
 		for _, child := range deps {
-			if child == nil {
+			if child.IsNil() {
 				continue
 			}
 			if m, ok := OtherModuleProvider(ctx, child, apexContributionsInfoProvider); ok {
