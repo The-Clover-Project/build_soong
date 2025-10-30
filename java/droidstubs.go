@@ -396,6 +396,21 @@ func (d *Droidstubs) DocZip(stubsType StubsType) (ret android.Path, err error) {
 	return ret, err
 }
 
+func (d *Droidstubs) MetadataZip(stubsType StubsType) (ret android.Path, err error) {
+	switch stubsType {
+	case Everything:
+		ret, err = d.everythingArtifacts.metadataZip, nil
+	case Exportable:
+		ret, err = d.exportableArtifacts.metadataZip, nil
+	default:
+		ret, err = nil, fmt.Errorf("metadata zip not supported for the stub type %s", stubsType.String())
+	}
+	if ret == nil && err == nil {
+		err = fmt.Errorf("metadata zip is null for the stub type %s", stubsType.String())
+	}
+	return ret, err
+}
+
 func (d *Droidstubs) RemovedApiFilePath(stubsType StubsType) (ret android.Path, err error) {
 	switch stubsType {
 	case Everything:
@@ -1541,6 +1556,7 @@ func (d *Droidstubs) setOutputFiles(ctx android.ModuleContext) {
 	addOutputFiles(".removed-api.txt", d.RemovedApiFilePath)
 	addOutputFiles(".annotations.zip", d.AnnotationsZip)
 	addOutputFiles(".api_versions.xml", d.ApiVersionsXmlFilePath)
+	addOutputFiles(".metadata.zip", d.MetadataZip)
 }
 
 func (d *Droidstubs) createApiContribution(ctx android.DefaultableHookContext) {
