@@ -1,3 +1,4 @@
+load("@builtin//path.star", "path")
 load("@builtin//struct.star", "module")
 
 def __filegroups(ctx, vars):
@@ -130,8 +131,8 @@ def __step_config(ctx, vars, step_config):
             "prebuilts/gcc/linux-x86/host/x86_64-w64-mingw32-4.8/x86_64-w64-mingw32/lib64",
         ],
         # TODO(b/433611110): --sysroot out/soong/ndk/sysroot
-        "out/soong/ndk/sysroot:headers": [
-            "out/soong/ndk_headers.timestamp:inputs",
+        path.join(vars.OUT_DIR, "soong/ndk/sysroot:headers"): [
+            path.join(vars.OUT_DIR, "soong/ndk_headers.timestamp") + ":inputs",
         ],
 
         # asm include
