@@ -563,18 +563,6 @@ func (ctx *TestContext) RegisterModuleType(name string, factory ModuleFactory) {
 	ctx.Context.RegisterModuleType(name, ModuleFactoryAdaptor(factory))
 }
 
-func (ctx *TestContext) RegisterSingletonModuleType(name string, factory SingletonModuleFactory) {
-	s, m := SingletonModuleFactoryAdaptor(name, factory)
-	ctx.RegisterSingletonType(name, s)
-	ctx.RegisterModuleType(name, m)
-}
-
-func (ctx *TestContext) RegisterParallelSingletonModuleType(name string, factory SingletonModuleFactory) {
-	s, m := SingletonModuleFactoryAdaptor(name, factory)
-	ctx.RegisterParallelSingletonType(name, s)
-	ctx.RegisterModuleType(name, m)
-}
-
 func (ctx *TestContext) RegisterSingletonType(name string, factory SingletonFactory) {
 	ctx.singletons = append(ctx.singletons, newSingleton(name, factory, false))
 }
