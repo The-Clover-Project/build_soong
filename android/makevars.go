@@ -111,7 +111,7 @@ type MakeVarsContext interface {
 // MakeVarsModuleContext contains the set of functions available for modules
 // implementing the ModuleMakeVarsProvider interface.
 type MakeVarsModuleContext interface {
-	Config() Config
+	PathContext
 }
 
 var _ PathContext = MakeVarsContext(nil)
