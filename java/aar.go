@@ -130,6 +130,7 @@ type aapt struct {
 	mergedManifestFile                 android.Path
 	noticeFile                         android.OptionalPath
 	assetPackage                       android.OptionalPath
+	resIdsFile                         android.OptionalPath
 	isLibrary                          bool
 	defaultManifestVersion             string
 	useEmbeddedNativeLibs              bool
@@ -449,6 +450,7 @@ type aaptBuildActionOptions struct {
 	excludedLibs                   []string
 	enforceDefaultTargetSdkVersion bool
 	forceNonFinalResourceIDs       bool
+	emitResIds                     bool
 	extraLinkFlags                 []string
 	aconfigTextFiles               android.Paths
 	usesLibrary                    *usesLibrary
@@ -670,6 +672,12 @@ func (a *aapt) buildActions(ctx android.ModuleContext, opts aaptBuildActionOptio
 		srcJar = android.PathForModuleGen(ctx, "android", "R.srcjar")
 	}
 
+	var resIds android.WritablePath
+	if opts.emitResIds {
+		resIds = android.PathForModuleOut(ctx, "res-ids.txt")
+		a.resIdsFile = android.OptionalPathForPath(resIds)
+	}
+
 	// No need to specify assets from dependencies to aapt2Link for libraries, all transitive assets will be
 	// provided to the final app aapt2Link step.
 	var transitiveAssets android.Paths
@@ -677,7 +685,7 @@ func (a *aapt) buildActions(ctx android.ModuleContext, opts aaptBuildActionOptio
 		transitiveAssets = android.ReverseSliceInPlace(staticDeps.assets())
 	}
 	if opts.rroDirs == nil { // link resources and overlay
-		aapt2Link(ctx, packageRes, srcJar, proguardOptionsFile, rTxt,
+		aapt2Link(ctx, packageRes, srcJar, proguardOptionsFile, rTxt, resIds,
 			linkFlags, linkDeps, compiledRes, compiledOverlay, transitiveAssets, splitPackages,
 			opts.aconfigTextFiles)
 		ctx.CheckbuildFile(packageRes)
@@ -685,7 +693,7 @@ func (a *aapt) buildActions(ctx android.ModuleContext, opts aaptBuildActionOptio
 		if len(compiledRro) == 0 {
 			return
 		}
-		aapt2Link(ctx, packageRes, srcJar, proguardOptionsFile, rTxt,
+		aapt2Link(ctx, packageRes, srcJar, proguardOptionsFile, rTxt, resIds,
 			linkFlags, linkDeps, compiledRro, compiledRroOverlay, nil, nil,
 			opts.aconfigTextFiles)
 		ctx.CheckbuildFile(packageRes)
@@ -1512,7 +1520,7 @@ func (a *AARImport) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	}
 
 	transitiveAssets := android.ReverseSliceInPlace(staticDeps.assets())
-	aapt2Link(ctx, exportPackage, nil, proguardOptionsFile, aaptRTxt,
+	aapt2Link(ctx, exportPackage, nil, proguardOptionsFile, aaptRTxt, nil,
 		linkFlags, linkDeps, nil, overlayRes, transitiveAssets, nil, nil)
 	ctx.CheckbuildFile(exportPackage)
 	a.exportPackage = exportPackage
