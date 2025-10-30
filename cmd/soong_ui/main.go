@@ -34,6 +34,8 @@ import (
 	"android/soong/ui/status"
 	"android/soong/ui/terminal"
 	"android/soong/ui/tracer"
+
+	"github.com/google/blueprint"
 )
 
 // A command represents an operation to be executed in the soong build
@@ -250,6 +252,36 @@ func main() {
 	preProductConfigSetup(buildCtx, config)
 
 	c.run(buildCtx, config, args)
+
+	writeBuildDiskUsageMetrics(met, config)
+}
+
+// Writes disk usage of Build analysis (e.g. ninja files or incremental analysis cache DB)
+// TODO (b/454665418): Add incremental analysis cache *.db file size
+func writeBuildDiskUsageMetrics(m *metrics.Metrics, config build.Config) {
+	// Sum of all ninja files.
+	var ninjaFileSize int64 = 0
+	var ninjaFiles []string
+	soongNinjaFile := config.SoongNinjaFile()
+	if _, err := os.Stat(soongNinjaFile); err != nil {
+		// Skip if the soong ninja file does not exist.
+		// This would be true in dump var mode.
+		return
+	}
+	ninjaFiles = append(ninjaFiles, soongNinjaFile)
+	ninjaFiles = append(ninjaFiles, blueprint.GetNinjaShardFiles(soongNinjaFile)...)
+	if !config.SkipKatiNinja() && config.HasKatiSuffix() {
+		ninjaFiles = append(ninjaFiles, config.KatiBuildNinjaFile())
+	}
+	for _, file := range ninjaFiles {
+		fileInfo, err := os.Stat(file)
+		if err != nil {
+			panic(fmt.Errorf("Could not open %s due to %s\n", file, err))
+		} else {
+			ninjaFileSize += fileInfo.Size()
+		}
+	}
+	m.SetNinjaFileSize(&ninjaFileSize)
 }
 
 // This function must not modify config, since product config may cause us to recreate the config,
