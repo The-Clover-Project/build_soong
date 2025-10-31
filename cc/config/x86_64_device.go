@@ -61,6 +61,9 @@ var (
 		"ivybridge": []string{
 			"-march=core-avx-i",
 		},
+		"pantherlake": []string{
+			"-march=pantherlake",
+		},
 		"sandybridge": []string{
 			"-march=corei7",
 		},
