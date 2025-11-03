@@ -87,7 +87,7 @@ func (module *GeneratedJavaLibraryModule) GenerateAndroidBuildActions(ctx androi
 	// No additional sources
 	checkPropertyEmpty(ctx, module, "srcs", module.Library.properties.Srcs.GetOrDefault(ctx, nil))
 	checkPropertyEmpty(ctx, module, "common_srcs", module.Library.properties.Common_srcs)
-	checkPropertyEmpty(ctx, module, "exclude_srcs", module.Library.properties.Exclude_srcs)
+	checkPropertyEmpty(ctx, module, "exclude_srcs", module.Library.properties.Exclude_srcs.GetOrDefault(ctx, nil))
 	checkPropertyEmpty(ctx, module, "java_resource_dirs", module.Library.properties.Java_resource_dirs)
 	checkPropertyEmpty(ctx, module, "exclude_java_resource_dirs", module.Library.properties.Exclude_java_resource_dirs)
 	// Restrict these for no good reason other than to limit the surface area. If there's a

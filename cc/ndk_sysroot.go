@@ -65,8 +65,9 @@ import (
 var (
 	verifyCCompat = pctx.AndroidStaticRule("verifyCCompat",
 		blueprint.RuleParams{
-			Command:     "$ccCmd -x c -fsyntax-only $flags $in && touch $out",
-			CommandDeps: []string{"$ccCmd"},
+			Command:         "$ccCmd -x c -fsyntax-only $flags $in && touch $out",
+			CommandDeps:     []string{"$ccCmd"},
+			SandboxDisabled: true,
 		},
 		"ccCmd",
 		"flags",

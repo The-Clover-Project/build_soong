@@ -1200,6 +1200,12 @@ license_kind {
 }
 
 license_kind {
+    name: "SPDX-license-identifier-X11",
+    conditions: ["notice"],
+    url: "https://spdx.org/licenses/X11.html",
+}
+
+license_kind {
     name: "SPDX-license-identifier-Xnet",
     conditions: ["notice"],
     url: "https://spdx.org/licenses/Xnet.html",

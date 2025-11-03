@@ -111,7 +111,12 @@ func (once *OncePer) OncePath(key OnceKey, value func() Path) Path {
 	return once.Once(key, func() interface{} { return value() }).(Path)
 }
 
-// OncePath is the same as Once, but returns the value cast to a SourcePath
+// OnceWritablePath is the same as Once, but returns the value cast to a WritablePath
+func (once *OncePer) OnceWritablePath(key OnceKey, value func() WritablePath) WritablePath {
+	return once.Once(key, func() interface{} { return value() }).(WritablePath)
+}
+
+// OnceSourcePath is the same as Once, but returns the value cast to a SourcePath
 func (once *OncePer) OnceSourcePath(key OnceKey, value func() SourcePath) SourcePath {
 	return once.Once(key, func() interface{} { return value() }).(SourcePath)
 }

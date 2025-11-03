@@ -60,7 +60,7 @@ type CommonProperties struct {
 
 	// list of source files that should not be used to build the Java module.
 	// This is most useful in the arch/multilib variants to remove non-common files
-	Exclude_srcs []string `android:"path,arch_variant"`
+	Exclude_srcs proptools.Configurable[[]string] `android:"path,arch_variant"`
 
 	// list of Kotlin source files that should excluded from the list of common_srcs.
 	Exclude_common_srcs []string `android:"path,arch_variant"`
@@ -1272,7 +1272,8 @@ func (j *Module) compile(ctx android.ModuleContext) *JavaInfo {
 		ctx.PropertyErrorf("openjdk9.srcs", "JDK version defaults to higher than 9")
 	}
 
-	srcFiles := android.PathsForModuleSrcExcludes(ctx, j.properties.Srcs.GetOrDefault(ctx, nil), j.properties.Exclude_srcs)
+	srcFiles := android.PathsForModuleSrcExcludes(ctx, j.properties.Srcs.GetOrDefault(ctx, nil),
+		j.properties.Exclude_srcs.GetOrDefault(ctx, nil))
 	j.sourceExtensions = []string{}
 	for _, ext := range []string{".kt", ".proto", ".aidl", ".java", ".logtags"} {
 		if hasSrcExt(srcFiles.Strings(), ext) {
@@ -1442,7 +1443,7 @@ func (j *Module) compile(ctx android.ModuleContext) *JavaInfo {
 		// For now, avoid targeting language versions directly, as we'd like to kee our source
 		// code version aligned as much as possible. Ideally, after defaulting to "2", we
 		// can remove the "1.9" option entirely, or at least make it emit a warning.
-		kotlin_default_lang_version := "1.9"
+		kotlin_default_lang_version := "2"
 		if build_flag_lang_version, ok := ctx.Config().GetBuildFlag("RELEASE_KOTLIN_LANG_VERSION"); ok {
 			kotlin_default_lang_version = build_flag_lang_version
 		}
@@ -2559,7 +2560,8 @@ func (j *Module) CompilerDeps() []string {
 }
 
 func (j *Module) hasCode(ctx android.ModuleContext) bool {
-	srcFiles := android.PathsForModuleSrcExcludes(ctx, j.properties.Srcs.GetOrDefault(ctx, nil), j.properties.Exclude_srcs)
+	srcFiles := android.PathsForModuleSrcExcludes(ctx, j.properties.Srcs.GetOrDefault(ctx, nil),
+		j.properties.Exclude_srcs.GetOrDefault(ctx, nil))
 	return len(srcFiles) > 0 || len(ctx.GetDirectDepsProxyWithTag(staticLibTag)) > 0
 }
 

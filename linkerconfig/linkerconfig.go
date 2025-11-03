@@ -98,7 +98,7 @@ func BuildLinkerConfig(
 	output android.WritablePath,
 ) {
 	// First, convert the input json to protobuf format
-	builder := android.NewRuleBuilder(pctx, ctx)
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	interimOutput := android.PathForModuleOut(ctx, "temp.pb")
 	cmd := builder.Command().
 		BuiltTool("conv_linker_config").

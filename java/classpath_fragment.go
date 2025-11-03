@@ -174,7 +174,7 @@ func (c *ClasspathFragmentBase) generateClasspathProtoBuildActions(ctx android.M
 		generatedTextproto := android.PathForModuleOut(ctx, outputFilename+".textproto")
 		writeClasspathsTextproto(ctx, generatedTextproto, jars)
 
-		rule := android.NewRuleBuilder(pctx, ctx)
+		rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 		rule.Command().
 			BuiltTool("conv_classpaths_proto").
 			Flag("encode").

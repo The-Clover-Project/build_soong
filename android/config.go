@@ -177,6 +177,14 @@ func (c Config) CoverageSuffix() string {
 	return ""
 }
 
+func (c Config) IsActionSandboxedBuild() bool {
+	return c.Getenv("SOONG_ACTION_SANDBOXING") == "nsjail"
+}
+
+func (c Config) ActionSandboxMetrics() *blueprint.SandboxMetrics {
+	return c.sandboxMetrics
+}
+
 // MaxPageSizeSupported returns the max page size supported by the device. This
 // value will define the ELF segment alignment for binaries (executables and
 // shared libraries).
@@ -428,6 +436,8 @@ type config struct {
 	// If buildFromSourceStub is true then the Java API stubs are
 	// built from the source Java files, not the signature text files.
 	buildFromSourceStub bool
+
+	sandboxMetrics *blueprint.SandboxMetrics
 
 	// If ensureAllowlistIntegrity is true, then the presence of any allowlisted
 	// modules that aren't mixed-built for at least one variant will cause a build
@@ -885,6 +895,8 @@ func initConfig(cmdArgs CmdArgs, availableEnv map[string]string) (*config, error
 		buildUUIDFileSuffix = "-" + targetProduct
 	}
 	newConfig.buildUUIDFile = "build_uuid" + buildUUIDFileSuffix + ".txt"
+
+	newConfig.sandboxMetrics = &blueprint.SandboxMetrics{}
 
 	return newConfig, err
 }

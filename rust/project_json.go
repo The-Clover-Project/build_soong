@@ -17,8 +17,9 @@ package rust
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/google/blueprint/proptools"
 	"strings"
+
+	"github.com/google/blueprint/proptools"
 
 	"android/soong/android"
 	"android/soong/rust/config"
@@ -206,11 +207,20 @@ func (singleton *projectGeneratorSingleton) addCrate(ctx android.SingletonContex
 	}
 	singleton.knownCrates[module.Name()] = crateInfo{Idx: idx, Deps: deps, Device: commonInfo.Target.Os.Class == android.Device}
 	if rustInfo.CompilerInfo.BuildTarget != nil {
+		buildVariant := "user"
+		if ctx.Config().Eng() {
+			buildVariant = "eng"
+		} else if ctx.Config().Debuggable() {
+			buildVariant = "userdebug"
+		}
 		mapping := rustTargetMappingJson{
-			Name:        module.Name(),
-			BuildTarget: rustInfo.CompilerInfo.BuildTarget.String(),
-			CheckTarget: rustInfo.CompilerInfo.CheckTarget.String(),
-			SourceDir:   ctx.ModuleDir(module),
+			Name:               module.Name(),
+			BuildTarget:        rustInfo.CompilerInfo.BuildTarget.String(),
+			CheckTarget:        rustInfo.CompilerInfo.CheckTarget.String(),
+			SourceDir:          ctx.ModuleDir(module),
+			TargetProduct:      ctx.Config().DeviceProduct(),
+			TargetRelease:      "trunk_staging",
+			TargetBuildVariant: buildVariant,
 		}
 		singleton.targetMappings = append(singleton.targetMappings, mapping)
 	}
@@ -259,7 +269,7 @@ func (singleton *projectGeneratorSingleton) GenerateBuildActions(ctx android.Sin
 
 	}
 	if ctx.Config().XrefCorpusName() != "" {
-		rule := android.NewRuleBuilder(pctx, ctx)
+		rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 		jsonPath := android.PathForOutput(ctx, "rust-project.json")
 		kzipPath := android.PathForOutput(ctx, "rust-project.kzip")
 		vnames := android.PathForSource(ctx, "build/soong/vnames.json")

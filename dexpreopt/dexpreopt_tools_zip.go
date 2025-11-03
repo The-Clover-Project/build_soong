@@ -41,7 +41,7 @@ func (s *dexpreoptToolsZipSingleton) GenerateBuildActions(ctx android.SingletonC
 	}
 
 	out := android.PathForOutput(ctx, "dexpreopt_tools.zip")
-	builder := android.NewRuleBuilder(pctx, ctx)
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 
 	cmd := builder.Command().BuiltTool("soong_zip").
 		Flag("-d").

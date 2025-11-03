@@ -28,8 +28,9 @@ var (
 
 	// Command to generate SBOM in Soong.
 	genSbomRule = pctx.AndroidStaticRule("genSbomRule", blueprint.RuleParams{
-		Command:     "rm -rf $out && ${genSbom} --output_file ${out} --metadata ${in} --product_out ${productOut} --soong_out ${soongOut} --build_version \"$$(cat ${buildFingerprintFile})\" --product_mfr \"${productManufacturer}\" --json ${unbundledModule}",
-		CommandDeps: []string{"${genSbom}"},
+		Command:         "rm -rf $out && ${genSbom} --output_file ${out} --metadata ${in} --product_out ${productOut} --soong_out ${soongOut} --build_version \"$$(cat ${buildFingerprintFile})\" --product_mfr \"${productManufacturer}\" --json ${unbundledModule}",
+		CommandDeps:     []string{"${genSbom}"},
+		SandboxDisabled: true,
 	}, "productOut", "soongOut", "buildFingerprintFile", "productManufacturer", "unbundledModule")
 )
 

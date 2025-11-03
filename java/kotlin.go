@@ -74,9 +74,10 @@ var kotlinc = pctx.AndroidRemoteStaticRule("kotlinc", android.RemoteRuleSupports
 			"${config.SoongZipCmd}",
 			"${config.ZipSyncCmd}",
 		},
-		Rspfile:        "$out.rsp",
-		RspfileContent: `$in`,
-		Restat:         true,
+		Rspfile:         "$out.rsp",
+		RspfileContent:  `$in`,
+		Restat:          true,
+		SandboxDisabled: true,
 	},
 	"kotlincFlags", "composePluginFlag", "kotlincPluginFlags", "classpath", "srcJars", "commonSrcFilesArg", "srcJarDir",
 	"classesDir", "headerClassesDir", "headerJar", "kotlinJvmTarget", "kotlinBuildFile", "emptyDir",
@@ -88,7 +89,8 @@ var kotlinJarSnapshot = pctx.AndroidRemoteStaticRule("kotlin-jar-snapshot", andr
 		CommandDeps: []string{
 			"${config.KotlinJarSnapshotterBinary}",
 		},
-		Restat: true,
+		Restat:          true,
+		SandboxDisabled: true,
 	},
 )
 
@@ -154,9 +156,10 @@ var kotlinIncremental = pctx.AndroidRemoteStaticRule("kotlin-incremental", andro
 			"${config.UsePartialCompileFile}",
 			"${config.ZipSyncCmd}",
 		},
-		Rspfile:        "$out.rsp",
-		RspfileContent: `$in`,
-		Restat:         true,
+		Rspfile:         "$out.rsp",
+		RspfileContent:  `$in`,
+		Restat:          true,
+		SandboxDisabled: true,
 	},
 	"kotlincFlags", "composeEmbeddablePluginFlag", "composePluginFlag", "kotlincPluginFlags", "classpath", "srcJars", "commonSrcFilesArg", "srcJarDir", "incrementalRootDir",
 	"classesDir", "headerClassesDir", "headerJar", "kotlinJvmTarget", "kotlinBuildFile", "emptyDir",
@@ -178,8 +181,9 @@ var kotlinKytheExtract = pctx.AndroidStaticRule("kotlinKythe",
 			"${config.KotlinKytheExtractor}",
 			"${config.ZipSyncCmd}",
 		},
-		Rspfile:        "$out.rsp",
-		RspfileContent: "$in",
+		Rspfile:         "$out.rsp",
+		RspfileContent:  "$in",
+		SandboxDisabled: true,
 	},
 	"classpath", "kotlincFlags", "kotlincPluginFlags", "commonSrcFilesList", "kotlinJvmTarget", "outJar",
 	"srcJars", "srcJarDir", "friendPathsArg",
@@ -187,7 +191,8 @@ var kotlinKytheExtract = pctx.AndroidStaticRule("kotlinKythe",
 
 var kotlinIncrementalClean = pctx.AndroidStaticRule("kotlin-partialcompileclean",
 	blueprint.RuleParams{
-		Command: `rm -rf "$cpSnapshot" "$outDir" "$buildDir" "$workDir"`,
+		Command:         `rm -rf "$cpSnapshot" "$outDir" "$buildDir" "$workDir"`,
+		SandboxDisabled: true,
 	},
 	"cpSnapshot", "outDir", "buildDir", "workDir",
 )
@@ -198,7 +203,7 @@ func kotlinCommonSrcsList(ctx android.ModuleContext, commonSrcFiles android.Path
 		// we can't use the rsp file because it is already being used for srcs.
 		// Insert a second rule to write out the list of resources to a file.
 		commonSrcsList := android.PathForModuleOut(ctx, "kotlinc_common_srcs.list")
-		rule := android.NewRuleBuilder(pctx, ctx)
+		rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 		rule.Command().Text("cp").
 			FlagWithRspFileInputList("", commonSrcsList.ReplaceExtension(ctx, "rsp"), commonSrcFiles).
 			Output(commonSrcsList)
@@ -441,13 +446,14 @@ func getAssociateJars(ctx android.ModuleContext, associates []string) android.Pa
 
 var kspIncrementalClean = pctx.AndroidStaticRule("ksp-partialcompileclean",
 	blueprint.RuleParams{
-		Command: `rm -rf "$kspDir/out/caches"`,
+		Command:         `rm -rf "$kspDir/out/caches"`,
+		SandboxDisabled: true,
 	},
 	"kspDir")
 
 var kspProcessingRule = pctx.AndroidRemoteStaticRule("ksp", android.RemoteRuleSupports{},
 	blueprint.RuleParams{
-		Command: `mkdir -p "$kspDir/out" && ` +
+		Command: `mkdir -p "$kspDir/out/java" "$kspDir/out/caches" "$kspDir/out/classes" "$kspDir/out/kotlin" "$kspDir/out/resources" && ` +
 			` . ${config.UsePartialCompileFile} && ` +
 			inputDeltaCmd + ` && ` +
 			kotlinZipSyncCmd + ` && ` +
@@ -477,6 +483,9 @@ var kspProcessingRule = pctx.AndroidRemoteStaticRule("ksp", android.RemoteRuleSu
 			`${config.SoongZipCmd} -jar -write_if_changed -o $kotlinSrcJarOutputFile -C $kspDir/out/kotlin -D $kspDir/out/kotlin && ` +
 			`${config.SoongZipCmd} -jar -write_if_changed -o $resJarOutputFile -C $kspDir/out/resources -D $kspDir/out/resources && ` +
 			`${config.SoongZipCmd} -jar -write_if_changed -o $classJarOutputFile -C $kspDir/out/classes -D $kspDir/out/classes && ` +
+			`if [ "$$SOONG_USE_PARTIAL_COMPILE" != "true" ]; then ` +
+			`  rm -rf "$kspDir/out/*"; ` +
+			`fi  && ` +
 			moveDeltaStateFile,
 		CommandDeps: []string{
 			"${config.FindInputDeltaCmd}",
@@ -489,9 +498,10 @@ var kspProcessingRule = pctx.AndroidRemoteStaticRule("ksp", android.RemoteRuleSu
 			"${config.UsePartialCompileFile}",
 			"${config.ZipSyncCmd}",
 		},
-		Rspfile:        "$out.rsp",
-		RspfileContent: `$in`,
-		Restat:         true,
+		Rspfile:         "$out.rsp",
+		RspfileContent:  `$in`,
+		Restat:          true,
+		SandboxDisabled: true,
 	},
 	"kotlincFlags", "kspProcessorPath", "kotlinJvmTarget",
 	"classpath", "fcp", "srcJars", "commonSrcFilesArg", "srcJarDir", "kspDir",
@@ -533,9 +543,10 @@ var kaptStubs = pctx.AndroidRemoteStaticRule("kaptStubs", android.RemoteRuleSupp
 			"${config.SoongZipCmd}",
 			"${config.ZipSyncCmd}",
 		},
-		Rspfile:        "$out.rsp",
-		RspfileContent: `$in`,
-		Restat:         true,
+		Rspfile:         "$out.rsp",
+		RspfileContent:  `$in`,
+		Restat:          true,
+		SandboxDisabled: true,
 	},
 	"kotlincFlags", "encodedJavacFlags", "kaptProcessorPath", "kaptProcessor",
 	"classpath", "srcJars", "commonSrcFilesArg", "srcJarDir", "kaptDir",

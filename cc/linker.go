@@ -705,7 +705,8 @@ var injectVersionSymbol = pctx.AndroidStaticRule("injectVersionSymbol",
 	blueprint.RuleParams{
 		Command: "$symbolInjectCmd -i $in -o $out -s soong_build_number " +
 			"-from 'SOONG BUILD NUMBER PLACEHOLDER' -v $$(cat $buildNumberFile)",
-		CommandDeps: []string{"$symbolInjectCmd"},
+		CommandDeps:     []string{"$symbolInjectCmd"},
+		SandboxDisabled: true,
 	},
 	"buildNumberFile")
 
@@ -728,7 +729,8 @@ var checkElfFileRule = pctx.AndroidStaticRule("checkElfFile",
 		Command: "${checkElfFileCmd} --skip-unknown-elf-machine $args" +
 			" --llvm-readobj=${config.ClangBin}/llvm-readobj $in" +
 			" && touch $out",
-		CommandDeps: []string{"$checkElfFileCmd", "${config.ClangBin}/llvm-readobj"},
+		CommandDeps:     []string{"$checkElfFileCmd", "${config.ClangBin}/llvm-readobj"},
+		SandboxDisabled: true,
 	}, "args")
 
 // checkElfFile creates a rule that runs a prebuilt ELF file (shared library or binary) through the check_elf_file

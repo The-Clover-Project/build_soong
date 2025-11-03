@@ -134,7 +134,7 @@ func (p *buildPropModule) GenerateAndroidBuildActions(ctx ModuleContext) {
 
 	partition := p.partition(ctx.DeviceConfig())
 
-	rule := NewRuleBuilder(pctx, ctx)
+	rule := NewRuleBuilder(pctx, ctx).SandboxDisabled()
 
 	config := ctx.Config()
 

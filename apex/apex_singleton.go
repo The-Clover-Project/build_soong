@@ -23,25 +23,6 @@ import (
 )
 
 func init() {
-	registerApexDepsInfoComponents(android.InitRegistrationContext)
-}
-
-func registerApexDepsInfoComponents(ctx android.RegistrationContext) {
-	ctx.RegisterParallelSingletonType("apex_depsinfo_singleton", apexDepsInfoSingletonFactory)
-}
-
-type apexDepsInfoSingleton struct{}
-
-func apexDepsInfoSingletonFactory() android.Singleton {
-	return &apexDepsInfoSingleton{}
-}
-
-func (s *apexDepsInfoSingleton) GenerateBuildActions(ctx android.SingletonContext) {
-	// TODO(b/157465465): Remove this line once no postsubmit builds are configured to build it.
-	ctx.Phony("apex-allowed-deps-check")
-}
-
-func init() {
 	registerApexPrebuiltInfoComponents(android.InitRegistrationContext)
 }
 

@@ -92,7 +92,7 @@ func (l *logicalPartition) installFileName() string {
 }
 
 func (l *logicalPartition) GenerateAndroidBuildActions(ctx android.ModuleContext) {
-	builder := android.NewRuleBuilder(pctx, ctx)
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 
 	// Sparse the filesystem images and calculate their sizes
 	sparseImages := make(map[string]android.Path)

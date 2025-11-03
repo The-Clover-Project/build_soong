@@ -21,7 +21,6 @@ const testDefaultUpdatableModuleVersion = "340090000"
 var PrepareForTestWithApexBuildComponents = android.GroupFixturePreparers(
 	android.FixtureRegisterWithContext(registerApexBuildComponents),
 	android.FixtureRegisterWithContext(registerApexKeyBuildComponents),
-	android.FixtureRegisterWithContext(registerApexDepsInfoComponents),
 	android.FixtureAddTextFile("all_apex_certs/Android.bp", `
 		all_apex_certs { name: "all_apex_certs" }
 	`),

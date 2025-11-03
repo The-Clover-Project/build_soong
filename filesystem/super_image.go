@@ -181,7 +181,7 @@ func (s *superImage) DepsMutator(ctx android.BottomUpMutatorContext) {
 
 func (s *superImage) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	miscInfo, deps, subImageInfos := s.buildMiscInfo(ctx, false)
-	builder := android.NewRuleBuilder(pctx, ctx)
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	output := android.PathForModuleOut(ctx, s.installFileName())
 	lpMake := ctx.Config().HostToolPath(ctx, "lpmake")
 	lpMakeDir := filepath.Dir(lpMake.String())
@@ -195,7 +195,7 @@ func (s *superImage) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	builder.Build("build_super_image", fmt.Sprintf("Creating super image %s", s.BaseModuleName()))
 	var superEmptyImage android.WritablePath
 	if proptools.Bool(s.properties.Create_super_empty) {
-		superEmptyImageBuilder := android.NewRuleBuilder(pctx, ctx)
+		superEmptyImageBuilder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 		superEmptyImage = android.PathForModuleOut(ctx, "super_empty.img")
 		superEmptyMiscInfo, superEmptyDeps, _ := s.buildMiscInfo(ctx, true)
 		if superEmptyDeps != nil {

@@ -33,7 +33,8 @@ var traceReferences = pctx.AndroidStaticRule("traceReferences",
 			// jar reference in the sources and libs joined string args.
 			`${sources} ` +
 			`${libs}`,
-		CommandDeps: []string{"${config.TraceReferencesCmd}"},
+		CommandDeps:     []string{"${config.TraceReferencesCmd}"},
+		SandboxDisabled: true,
 	}, "sources", "libs")
 
 // Generates keep rules in output corresponding to any references from sources

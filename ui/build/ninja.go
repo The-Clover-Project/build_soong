@@ -80,6 +80,7 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 	case NINJA_SISO:
 		executable = config.SisoBin()
 		args = []string{
+			"--log_dir", config.LogsDir(), // for glog, e.g. siso.*INFO*
 			"ninja",
 			// TODO: implement these features, or remove them.
 			//"-d", "trace",
@@ -152,7 +153,7 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 			)
 		}
 
-		if sandboxing, ok := config.Environment().Get("SOONG_ACTION_SANDBOXING"); ok && sandboxing == "nsjail" {
+		if config.IsActionSandboxedBuild() {
 			ninjaArgs = append(ninjaArgs, []string{
 				"-o", fmt.Sprintf("nsjail=%s", config.PrebuiltBuildTool("nsjail")),
 				"-o", fmt.Sprintf("nsjail_workdir=%s", filepath.Join(config.SoongOutDir(), "action_sandboxing_workdir")),

@@ -73,7 +73,7 @@ func vintfDataFactory() Module {
 }
 
 func (m *vintfDataRule) GenerateAndroidBuildActions(ctx ModuleContext) {
-	builder := NewRuleBuilder(pctx, ctx)
+	builder := NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	gensrc := PathForModuleOut(ctx, "manifest.xml")
 	assembleVintfEnvs := []string{}
 	inputPaths := make(Paths, 0)

@@ -332,7 +332,7 @@ func (l *linter) writeLintProjectXML(ctx android.ModuleContext, rule *android.Ru
 }
 
 func VerifyStrictUpdatabilityChecks(ctx android.ModuleContext, baselines android.Paths) android.Path {
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	baselineRspFile := android.PathForModuleOut(ctx, "lint_strict_updatability_check_baselines.rsp")
 	outputFile := android.PathForModuleOut(ctx, "lint_strict_updatability_check.stamp")
 	rule.Command().Text("rm -f").Output(outputFile)
@@ -744,7 +744,7 @@ func lintZip(ctx android.BuilderContext, paths android.Paths, outputPath android
 		return paths[i].String() < paths[j].String()
 	})
 
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 
 	rule.Command().BuiltTool("soong_zip").
 		FlagWithOutput("-o ", outputPath).

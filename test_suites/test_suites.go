@@ -38,10 +38,11 @@ var (
 	_ = pctx.HostBinToolVariable("buildLicenseMetadataCmd", "build_license_metadata")
 
 	licenseMetadataRule = pctx.AndroidStaticRule("licenseMetadataRule", blueprint.RuleParams{
-		Command:        "${buildLicenseMetadataCmd} -o $out @${out}.rsp",
-		CommandDeps:    []string{"${buildLicenseMetadataCmd}"},
-		Rspfile:        "${out}.rsp",
-		RspfileContent: "${args}",
+		Command:         "${buildLicenseMetadataCmd} -o $out @${out}.rsp",
+		CommandDeps:     []string{"${buildLicenseMetadataCmd}"},
+		Rspfile:         "${out}.rsp",
+		RspfileContent:  "${args}",
+		SandboxDisabled: true,
 	}, "args")
 )
 
@@ -354,7 +355,7 @@ func generateApiMapReport(ctx android.SingletonContext, pctx android.PackageCont
 	sboxManifest := android.PathForOutput(ctx, "api_map_report_temps", moduleName, fmt.Sprintf("%s_genrule.sbox.textproto", moduleName))
 	outputFileName := fmt.Sprintf("%s-%s.xml", suite, reportType.String())
 	jarFilesList := hostOutApiMap.Join(ctx, fmt.Sprintf("%s_jar_files_%s.txt", suite, reportType.String()))
-	jarFiles_rule := android.NewRuleBuilder(pctx, ctx)
+	jarFiles_rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	jarFiles_rule.Command().
 		Text("cat").
 		Inputs(jarFileLists).
@@ -362,7 +363,7 @@ func generateApiMapReport(ctx android.SingletonContext, pctx android.PackageCont
 		Output(jarFilesList)
 	jarFiles_rule.Build(jarFilesList.Base(), fmt.Sprintf("Jar files list for %s", suite))
 
-	rule := android.NewRuleBuilder(pctx, ctx).Sbox(sboxOut, sboxManifest)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled().Sbox(sboxOut, sboxManifest)
 	switch reportType {
 	case apiMapReportType:
 		rule.Command().BuiltTool("cts-api-map").
@@ -498,7 +499,7 @@ func buildTestSuite(ctx android.SingletonContext, suiteName string, files androi
 	installedPaths := android.SortedUniquePaths(files.Paths())
 
 	outputFile := pathForPackaging(ctx, suiteName+".zip")
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	rule.Command().BuiltTool("soong_zip").
 		FlagWithOutput("-o ", outputFile).
 		FlagWithArg("-P ", "host/testcases").
@@ -584,7 +585,7 @@ func packageTestSuite(
 	testsZipCmdTargetFileInput := android.PathForIntermediates(ctx, suiteConfig.name+"_target_list.txt")
 	var testsZipCmdHostFileInputContent, testsZipCmdTargetFileInputContent []string
 
-	testsZipBuilder := android.NewRuleBuilder(pctx, ctx)
+	testsZipBuilder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	testsZipCmd := testsZipBuilder.Command().
 		BuiltTool("soong_zip").
 		Flag("-sha256").
@@ -592,7 +593,7 @@ func packageTestSuite(
 		FlagWithArg("-P ", "host").
 		FlagWithArg("-C ", hostOut)
 
-	testsConfigsZipBuilder := android.NewRuleBuilder(pctx, ctx)
+	testsConfigsZipBuilder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	testsConfigsZipCmd := testsConfigsZipBuilder.Command().
 		BuiltTool("soong_zip").
 		Flag("-d").
@@ -725,7 +726,7 @@ func packageTestSuite(
 		testsZipCmd.FlagWithOutput("-o ", unmergedTestsZip)
 		testsZipBuilder.Build(suiteConfig.name+"-unmerged", "building "+suiteConfig.name+" unmerged zip")
 
-		mergeBuilder := android.NewRuleBuilder(pctx, ctx)
+		mergeBuilder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 		mergeBuilder.Command().
 			BuiltTool("merge_zips").
 			Output(testsZip).
@@ -740,7 +741,7 @@ func packageTestSuite(
 	testsConfigsZipBuilder.Build(suiteConfig.name+"-configs", "building "+suiteConfig.name+" configs zip")
 
 	if suiteConfig.buildHostSharedLibsZip {
-		testsHostSharedLibsZipBuilder := android.NewRuleBuilder(pctx, ctx)
+		testsHostSharedLibsZipBuilder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 		testsHostSharedLibsZipCmd := testsHostSharedLibsZipBuilder.Command().
 			BuiltTool("soong_zip").
 			Flag("-d").
@@ -764,7 +765,7 @@ func packageTestSuite(
 		android.WriteFileRule(ctx, generalTestsHostFilesListText, strings.Join(hostFilesListLines, "\n"))
 		android.WriteFileRule(ctx, generalTestsTargetFilesListText, strings.Join(targetFilesListLines, "\n"))
 	}
-	testsListZipBuilder := android.NewRuleBuilder(pctx, ctx)
+	testsListZipBuilder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	testsListZipBuilder.Command().
 		BuiltTool("soong_zip").
 		Flag("-d").
@@ -809,7 +810,7 @@ func buildCompatibilitySuitePackage(
 
 	// Some make rules still rely on the zip being at this location
 	out := hostOutSuite.Join(ctx, fmt.Sprintf("android-%s.zip", testSuiteName))
-	builder := android.NewRuleBuilder(pctx, ctx)
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	cmd := builder.Command().BuiltTool("soong_zip").
 		FlagWithOutput("-o ", out).
 		FlagWithArg("-e ", subdir+"/tools/version.txt").
@@ -922,7 +923,7 @@ func buildCompatibilitySuitePackage(
 		sort.Strings(listLines)
 		android.WriteFileRule(ctx, testsListTxt, strings.Join(listLines, "\n"))
 
-		testsListZipBuilder := android.NewRuleBuilder(pctx, ctx)
+		testsListZipBuilder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 		testsListZipBuilder.Command().
 			BuiltTool("soong_zip").
 			FlagWithOutput("-o ", testsListZip).
@@ -935,7 +936,7 @@ func buildCompatibilitySuitePackage(
 	}
 
 	if suite.BuildMetadata {
-		metadata_rule := android.NewRuleBuilder(pctx, ctx)
+		metadata_rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 		compatibility_files_metadata := hostOutSuite.Join(ctx, fmt.Sprintf("%s_files_metadata.textproto", testSuiteName))
 
 		metadata_rule.Command().BuiltTool("file_metadata_generation").
@@ -970,7 +971,7 @@ func buildSharedReport(
 	metaLicOutput := compatibilityOutput.Join(ctx, "meta_lic")
 	// Aggregate license metadata from all component modules into a single file.
 	var componentMetadataFiles android.Paths
-	meta_builder := android.NewRuleBuilder(pctx, ctx)
+	meta_builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	for _, mod := range testSuiteModules {
 		if provider, ok := android.OtherModuleProvider(ctx, mod, android.LicenseMetadataProvider); ok && provider.LicenseMetadataPath != nil {
 			if testSuiteInstalls, ok := android.OtherModuleProvider(ctx, mod, android.TestSuiteInstallsInfoProvider); ok {
@@ -1037,7 +1038,7 @@ func buildSharedReport(
 	})
 
 	// Only gts build shared report. The output is gts-shared-report.txt.
-	gtsReportBuilder := android.NewRuleBuilder(pctx, ctx)
+	gtsReportBuilder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	reportCmd := gtsReportBuilder.Command().BuiltTool("generate_gts_shared_report")
 	reportCmd.FlagWithInput("--checkshare ", ctx.Config().HostToolPath(ctx, "compliance_checkshare"))
 	shared_report := hostOutSuite.Join(ctx, "gts-shared-report.txt")

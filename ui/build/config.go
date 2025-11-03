@@ -36,6 +36,7 @@ import (
 	"android/soong/shared"
 	"android/soong/ui/metrics"
 
+	"github.com/google/blueprint"
 	"google.golang.org/protobuf/proto"
 
 	smpb "android/soong/ui/metrics/metrics_proto"
@@ -1889,7 +1890,7 @@ func (c *configImpl) SoongMakeVarsMk() string {
 }
 
 func (c *configImpl) SoongPhonyTargets() string {
-	return filepath.Join(c.SoongOutDir(), "soong_phony_targets.mk")
+	return filepath.Join(c.SoongOutDir(), "soong_phony_targets"+c.katiSuffix+".mk")
 }
 
 func (c *configImpl) SoongBuildMetrics() string {
@@ -2127,6 +2128,15 @@ func (c *configImpl) BuildUUIDFile() string {
 		suffix = "-" + targetProduct
 	}
 	return filepath.Join(c.SoongOutDir(), "build_uuid"+suffix+".txt")
+}
+
+func (c *configImpl) IsActionSandboxedBuild() bool {
+	sandboxing, ok := c.Environment().Get("SOONG_ACTION_SANDBOXING")
+	return ok && sandboxing == "nsjail"
+}
+
+func (c *configImpl) ActionSandboxMetrics() *blueprint.SandboxMetrics {
+	return nil
 }
 
 func GetMetricsUploader(topDir string, env *Environment) string {

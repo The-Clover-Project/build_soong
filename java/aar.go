@@ -348,7 +348,7 @@ func (a *aapt) aapt2Flags(ctx android.ModuleContext, sdkContext android.SdkConte
 		// files and pass it to aapt2.
 		tmpAssetDir := android.PathForModuleOut(ctx, "tmp_asset_dir")
 
-		rule := android.NewRuleBuilder(pctx, ctx)
+		rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 		rule.Command().
 			Text("rm -rf").Text(tmpAssetDir.String()).
 			Text("&&").
@@ -438,8 +438,9 @@ func (a *aapt) deps(ctx android.BottomUpMutatorContext, sdkDep sdkDep) {
 
 var extractAssetsRule = pctx.AndroidStaticRule("extractAssets",
 	blueprint.RuleParams{
-		Command:     `${config.Zip2ZipCmd} -i ${in} -o ${out} "assets/**/*"`,
-		CommandDeps: []string{"${config.Zip2ZipCmd}"},
+		Command:         `${config.Zip2ZipCmd} -i ${in} -o ${out} "assets/**/*"`,
+		CommandDeps:     []string{"${config.Zip2ZipCmd}"},
+		SandboxDisabled: true,
 	})
 
 type aaptBuildActionOptions struct {
@@ -802,10 +803,11 @@ var resourceProcessorBusyBox = pctx.AndroidStaticRule("resourceProcessorBusyBox"
 			"-cp ${config.ResourceProcessorBusyBox} " +
 			"com.google.devtools.build.android.ResourceProcessorBusyBox --tool=GENERATE_BINARY_R -- @${out}.args && " +
 			"if cmp -s ${out}.tmp ${out} ; then rm ${out}.tmp ; else mv ${out}.tmp ${out}; fi",
-		CommandDeps:    []string{"${config.ResourceProcessorBusyBox}"},
-		Rspfile:        "${out}.args",
-		RspfileContent: "--primaryRTxt ${rTxt} --primaryManifest ${manifest} --classJarOutput ${out}.tmp ${args}",
-		Restat:         true,
+		CommandDeps:     []string{"${config.ResourceProcessorBusyBox}"},
+		Rspfile:         "${out}.args",
+		RspfileContent:  "--primaryRTxt ${rTxt} --primaryManifest ${manifest} --classJarOutput ${out}.tmp ${args}",
+		Restat:          true,
+		SandboxDisabled: true,
 	}, "rTxt", "manifest", "args")
 
 // resourceProcessorBusyBoxGenerateBinaryR converts the R.txt file produced by aapt2 into R.class files
@@ -1374,7 +1376,8 @@ var extractJNI = pctx.AndroidStaticRule("extractJNI",
 			`[ -n "$$jni_files" ] || (echo "ERROR: no JNI libs found for arch ${archString}" && exit 1) && ` +
 			`${config.SoongZipCmd} -o $out -L 0 -P 'lib/${archString}' ` +
 			`-C $outDir/jni/${archString} $$(echo $$jni_files | xargs -n1 printf " -f %s")`,
-		CommandDeps: []string{"${config.SoongZipCmd}"},
+		CommandDeps:     []string{"${config.SoongZipCmd}"},
+		SandboxDisabled: true,
 	},
 	"outDir", "archString")
 
@@ -1386,7 +1389,8 @@ var unzipAAR = pctx.AndroidStaticRule("unzipAAR",
 			`unzip -qoDD -d $outDir $in && rm -rf $outDir/res && touch $out && ` +
 			`${config.Zip2ZipCmd} -i $in -o $assetsPackage 'assets/**/*' && ` +
 			`${config.MergeZipsCmd} $combinedClassesJar $$(ls $outDir/classes.jar 2> /dev/null) $$(ls $outDir/libs/*.jar 2> /dev/null)`,
-		CommandDeps: []string{"${config.MergeZipsCmd}", "${config.Zip2ZipCmd}"},
+		CommandDeps:     []string{"${config.MergeZipsCmd}", "${config.Zip2ZipCmd}"},
+		SandboxDisabled: true,
 	},
 	"outDir", "combinedClassesJar", "assetsPackage")
 

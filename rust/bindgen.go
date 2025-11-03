@@ -72,9 +72,10 @@ var (
 		blueprint.RuleParams{
 			Command: "CLANG_PATH=$bindgenClang LIBCLANG_PATH=$bindgenLibClang RUSTFMT=${config.RustBin}/rustfmt " +
 				"$cmd $flags $$(cat $flagfiles) $in -o $out -- -MD -MF $out.d $cflags",
-			CommandDeps: []string{"$cmd"},
-			Deps:        blueprint.DepsGCC,
-			Depfile:     "$out.d",
+			CommandDeps:     []string{"$cmd"},
+			Deps:            blueprint.DepsGCC,
+			Depfile:         "$out.d",
+			SandboxDisabled: true,
 		},
 		"cmd", "flags", "flagfiles", "cflags")
 )

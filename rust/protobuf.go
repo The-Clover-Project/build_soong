@@ -124,7 +124,7 @@ func (proto *protobufDecorator) GenerateSource(ctx ModuleContext, deps PathDeps)
 	var outputs android.WritablePaths
 
 	for i, shard := range android.ShardPaths(protoFiles, 50) {
-		rule := android.NewRuleBuilder(pctx, ctx)
+		rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 
 		for _, protoFile := range shard {
 			// Since we're iterating over the protoFiles already, make sure they're not redeclared in grpcFiles
@@ -157,7 +157,7 @@ func (proto *protobufDecorator) GenerateSource(ctx ModuleContext, deps PathDeps)
 	}
 
 	for i, shard := range android.ShardPaths(grpcFiles, 50) {
-		rule := android.NewRuleBuilder(pctx, ctx)
+		rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 
 		for _, grpcFile := range shard {
 			grpcName := strings.TrimSuffix(grpcFile.Base(), ".proto")

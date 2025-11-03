@@ -36,11 +36,12 @@ var (
 				"-C linker=${RustcLinkerCmd} -C link-args=\"--android-clang-bin=${config.ClangCmd} ${linkerScriptFlags}\" " +
 				"-C link-args=@${out}.clang.rsp " +
 				"--emit ${emitType} -o $out --emit dep-info=$out.d.raw $in ${libFlags} $rustcFlags",
-			CommandDeps:    []string{"$rustcCmd", "${RustcLinkerCmd}", "${config.ClangCmd}", "${RustcWrapper}"},
-			Rspfile:        "${out}.clang.rsp",
-			RspfileContent: "${crtBegin} ${earlyLinkFlags} ${linkFlags} ${crtEnd}",
-			Deps:           blueprint.DepsGCC,
-			Depfile:        "$out.d",
+			CommandDeps:     []string{"$rustcCmd", "${RustcLinkerCmd}", "${config.ClangCmd}", "${RustcWrapper}"},
+			Rspfile:         "${out}.clang.rsp",
+			RspfileContent:  "${crtBegin} ${earlyLinkFlags} ${linkFlags} ${crtEnd}",
+			Deps:            blueprint.DepsGCC,
+			Depfile:         "$out.d",
+			SandboxDisabled: true,
 		}, &remoteexec.REParams{
 			// Until there's a "rust" tool, use clang. This interprets "-L" flags
 			// to help identify potential build dependencies.
@@ -67,7 +68,8 @@ var (
 		blueprint.RuleParams{
 			Command: "$envVars ${RustcWrapper} $rustdocCmd $rustdocFlags $in -o $outDir && " +
 				"touch $out",
-			CommandDeps: []string{"$rustdocCmd", "${RustcWrapper}"},
+			CommandDeps:     []string{"$rustdocCmd", "${RustcWrapper}"},
+			SandboxDisabled: true,
 		},
 		"rustdocFlags", "outDir", "envVars")
 
@@ -80,9 +82,10 @@ var (
 					// Use the metadata output as it has the smallest footprint.
 					"--emit metadata -o $out --emit dep-info=$out.d.raw $in ${libFlags} " +
 					"$rustcFlags $clippyFlags " + extraFlags,
-				CommandDeps: []string{"$clippyCmd", "${RustcWrapper}"},
-				Deps:        blueprint.DepsGCC,
-				Depfile:     "$out.d",
+				CommandDeps:     []string{"$clippyCmd", "${RustcWrapper}"},
+				Deps:            blueprint.DepsGCC,
+				Depfile:         "$out.d",
+				SandboxDisabled: true,
 			},
 			"rustcFlags", "libFlags", "clippyFlags", "envVars")
 	}
@@ -95,17 +98,19 @@ var (
 
 	zip = pctx.AndroidStaticRule("zip",
 		blueprint.RuleParams{
-			Command:        "cat $out.rsp | tr ' ' '\\n' | tr -d \\' | sort -u > ${out}.tmp && ${SoongZipCmd} -o ${out} -C $$OUT_DIR -l ${out}.tmp",
-			CommandDeps:    []string{"${SoongZipCmd}"},
-			Rspfile:        "$out.rsp",
-			RspfileContent: "$in",
+			Command:         "cat $out.rsp | tr ' ' '\\n' | tr -d \\' | sort -u > ${out}.tmp && ${SoongZipCmd} -o ${out} -C $$OUT_DIR -l ${out}.tmp",
+			CommandDeps:     []string{"${SoongZipCmd}"},
+			Rspfile:         "$out.rsp",
+			RspfileContent:  "$in",
+			SandboxDisabled: true,
 		})
 
 	cp = pctx.AndroidStaticRule("cp",
 		blueprint.RuleParams{
-			Command:        "cp `cat $outDir.rsp` $outDir",
-			Rspfile:        "${outDir}.rsp",
-			RspfileContent: "$in",
+			Command:         "cp `cat $outDir.rsp` $outDir",
+			Rspfile:         "${outDir}.rsp",
+			RspfileContent:  "$in",
+			SandboxDisabled: true,
 		},
 		"outDir")
 )

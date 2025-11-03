@@ -68,29 +68,34 @@ func registerMutators(ctx android.RegistrationContext) {
 var (
 	// Remember to add referenced files to implicits!
 	textFileProcessorRule = pctx.AndroidStaticRule("text_file_processing", blueprint.RuleParams{
-		Command:     "build/soong/scripts/text_file_processor.py $in $out",
-		CommandDeps: []string{"build/soong/scripts/text_file_processor.py"},
+		Command:         "build/soong/scripts/text_file_processor.py $in $out",
+		CommandDeps:     []string{"build/soong/scripts/text_file_processor.py"},
+		SandboxDisabled: true,
 	})
 
 	// Remember to add the output image file as an implicit dependency!
 	installedFilesJsonRule = pctx.AndroidStaticRule("installed_files_json", blueprint.RuleParams{
-		Command:     `${fileslist} ${rootDir} > ${out}`,
-		CommandDeps: []string{"${fileslist}"},
+		Command:         `${fileslist} ${rootDir} > ${out}`,
+		CommandDeps:     []string{"${fileslist}"},
+		SandboxDisabled: true,
 	}, "rootDir")
 
 	installedFilesTxtRule = pctx.AndroidStaticRule("installed_files_txt", blueprint.RuleParams{
-		Command:     `build/make/tools/fileslist_util.py -c ${in} > ${out}`,
-		CommandDeps: []string{"build/make/tools/fileslist_util.py"},
+		Command:         `build/make/tools/fileslist_util.py -c ${in} > ${out}`,
+		CommandDeps:     []string{"build/make/tools/fileslist_util.py"},
+		SandboxDisabled: true,
 	})
 	fsConfigRule = pctx.AndroidStaticRule("fs_config_rule", blueprint.RuleParams{
-		Command:     `(cd ${rootDir}; find . -type d | sed 's,$$,/,'; find . \! -type d) | cut -c 3- | sort | sed 's,^,${prefix},' | ${fs_config} -C -D ${rootDir} -R "${prefix}" > ${out}`,
-		CommandDeps: []string{"${fs_config}"},
+		Command:         `(cd ${rootDir}; find . -type d | sed 's,$$,/,'; find . \! -type d) | cut -c 3- | sort | sed 's,^,${prefix},' | ${fs_config} -C -D ${rootDir} -R "${prefix}" > ${out}`,
+		CommandDeps:     []string{"${fs_config}"},
+		SandboxDisabled: true,
 	}, "rootDir", "prefix")
 	zipFiles = pctx.AndroidStaticRule("SnapshotZipFiles", blueprint.RuleParams{
-		Command:        `${SoongZipCmd}  -r $out.rsp -o $out`,
-		CommandDeps:    []string{"${SoongZipCmd}"},
-		Rspfile:        "$out.rsp",
-		RspfileContent: "$in",
+		Command:         `${SoongZipCmd}  -r $out.rsp -o $out`,
+		CommandDeps:     []string{"${SoongZipCmd}"},
+		Rspfile:         "$out.rsp",
+		RspfileContent:  "$in",
+		SandboxDisabled: true,
 	})
 )
 
@@ -763,7 +768,7 @@ func (f *filesystem) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	if f.properties.Base_dir != nil {
 		rebasedDir = rootDir.Join(ctx, *f.properties.Base_dir)
 	}
-	builder := android.NewRuleBuilder(pctx, ctx)
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 
 	// Wipe the root dir to get rid of leftover files from prior builds
 	builder.Command().Textf("rm -rf %s && mkdir -p %s", rootDir, rootDir)
@@ -810,7 +815,7 @@ func (f *filesystem) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		}
 	})
 
-	builder = android.NewRuleBuilder(pctx, ctx)
+	builder = android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	var buildImagePropFile android.Path
 	var buildImagePropFileDeps android.Paths
 	var extraRootDirs android.Paths
@@ -870,7 +875,7 @@ func (f *filesystem) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 			rootDirForInstalledFiles := android.PathForModuleOut(ctx, "root_for_installed_files", "root")
 			copyToRootTimestamp := android.PathForModuleOut(ctx, "root_copy_timestamp")
 
-			builder := android.NewRuleBuilder(pctx, ctx)
+			builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 			builder.Command().Text("touch").Text(copyToRootTimestamp.String())
 			builder.Command().Text("rm -rf").Text(rootDirForInstalledFiles.String())
 			builder.Command().Text("mkdir -p").Text(rootDirForInstalledFiles.String())
@@ -1249,7 +1254,7 @@ func (f *filesystem) verifyGenericConfig(ctx android.ModuleContext) {
 		// Dynamic dependencies can be installed in a non-system partition
 		isDynamicDependency := false
 		depTag := ctx.OtherModuleDependencyTag(child)
-		if java.IsOptionalUsesLibraryDepTag(depTag) || java.IsLibDepTag(depTag) || cc.IsSharedDepTag(depTag) {
+		if java.IsOptionalUsesLibraryDepTag(depTag) || java.IsLibDepTag(depTag) || java.IsTraceReferencesDepTag(depTag) || cc.IsSharedDepTag(depTag) {
 			isDynamicDependency = true
 		}
 
@@ -1335,7 +1340,7 @@ func (f *filesystem) buildImageUsingBuildImage(
 }
 
 func (f *filesystem) buildFileContexts(ctx android.ModuleContext) android.Path {
-	builder := android.NewRuleBuilder(pctx, ctx)
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	fcBin := android.PathForModuleOut(ctx, "file_contexts.bin")
 	builder.Command().BuiltTool("sefcontext_compile").
 		FlagWithOutput("-o ", fcBin).
@@ -2164,7 +2169,7 @@ func (f *filesystem) checkVintf(ctx android.ModuleContext, rebasedDir android.Ou
 	checkVintfLog := android.PathForModuleOut(ctx, "vintf", "check_vintf_"+f.PartitionType()+".log")
 	extractedApexDir := android.PathForModuleOut(ctx, "vintf", "apex_extracted")
 
-	builder := android.NewRuleBuilder(pctx, ctx)
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	// Use apexd_host to extract the apexes of this partition to an intermediate location.
 	// This intermediate location will be subsequently used by checkvintf.
 	cmd := builder.Command()

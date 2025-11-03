@@ -5604,6 +5604,7 @@ func (r KotlinPluginInfo) GetTypeId() int16 {
 // begin of ravenwood.go
 func init() {
 	ravenwoodLibgroupJniDepProviderInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ravenwoodLibgroupJniDepProviderInfo) })
+	ravenwoodLibgroupInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ravenwoodLibgroupInfo) })
 }
 
 func (r ravenwoodLibgroupJniDepProviderInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
@@ -5661,6 +5662,53 @@ var ravenwoodLibgroupJniDepProviderInfoGobRegId int16
 
 func (r ravenwoodLibgroupJniDepProviderInfo) GetTypeId() int16 {
 	return ravenwoodLibgroupJniDepProviderInfoGobRegId
+}
+
+func (r ravenwoodLibgroupInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if r.libs == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r.libs)); err != nil {
+			return err
+		}
+		for val1 := 0; val1 < len(r.libs); val1++ {
+			if err = gobtools.EncodeString(buf, r.libs[val1]); err != nil {
+				return err
+			}
+		}
+	}
+	return err
+}
+
+func (r *ravenwoodLibgroupInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	var val2 int
+	err = gobtools.DecodeInt(buf, &val2)
+	if err != nil {
+		return err
+	}
+	if val2 != -1 {
+		r.libs = make([]string, val2)
+		for val3 := 0; val3 < int(val2); val3++ {
+			err = gobtools.DecodeString(buf, &r.libs[val3])
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return err
+}
+
+var ravenwoodLibgroupInfoGobRegId int16
+
+func (r ravenwoodLibgroupInfo) GetTypeId() int16 {
+	return ravenwoodLibgroupInfoGobRegId
 }
 
 // end of ravenwood.go

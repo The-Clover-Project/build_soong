@@ -30,18 +30,25 @@ const allAconfigDeclarationsStorage = "all_aconfig_declarations_storage"
 
 const AllAconfigModule = "all_aconfig_declarations"
 
-// A singleton module that collects all of the aconfig flags declared in the
+// all_aconfig_declarations creates an artifact that records all flags used
+// with @FlaggedApi that are currently slated for inclusion in the next API
+// finalization.
+func AllAconfigDeclarationsFactory() android.Module {
+	module := &allAconfigDeclarationsModule{}
+	module.AddProperties(&module.properties)
+	android.InitAndroidArchModule(module, android.DeviceSupported, android.MultilibCommon)
+	return module
+}
+
+// A singleton that collects all of the aconfig flags declared in the
 // tree into a single combined file for export to the external flag setting
 // server (inside Google it's Gantry).
 //
 // Note that this is ALL aconfig_declarations modules present in the tree, not just
 // ones that are relevant to the product currently being built, so that that infra
 // doesn't need to pull from multiple builds and merge them.
-func AllAconfigDeclarationsFactory() android.SingletonModule {
-	module := &allAconfigDeclarationsSingleton{releaseMap: make(map[string]allAconfigReleaseDeclarationsSingleton)}
-	module.AddProperties(&module.properties)
-	android.InitAndroidArchModule(module, android.DeviceSupported, android.MultilibCommon)
-	return module
+func AllAconfigDeclarationsSingletonFactory() android.Singleton {
+	return &allAconfigDeclarationsSingleton{}
 }
 
 var aconfigFlagArtifactsDistGoals = []string{
@@ -90,18 +97,17 @@ type ApiSurfaceContributorProperties struct {
 	Finalized_flags_file string                           `android:"arch_variant,path"`
 }
 
-type allAconfigDeclarationsSingleton struct {
-	android.SingletonModuleBase
+type allAconfigDeclarationsModule struct {
+	android.ModuleBase
 
-	releaseMap map[string]allAconfigReleaseDeclarationsSingleton
 	properties ApiSurfaceContributorProperties
-
-	finalizedFlags android.OutputPath
 }
 
-func (this *allAconfigDeclarationsSingleton) sortedConfigNames() []string {
+type allAconfigDeclarationsSingleton struct{}
+
+func (this *allAconfigDeclarationsSingleton) sortedConfigNames(releaseMap map[string]allAconfigReleaseDeclarationsSingleton) []string {
 	var names []string
-	for k := range this.releaseMap {
+	for k := range releaseMap {
 		names = append(names, k)
 	}
 	slices.Sort(names)
@@ -121,7 +127,7 @@ func GenerateFinalizedFlagsForApiSurface(ctx android.ModuleContext, outputPath a
 
 	intermediateMetalavaFlagsConfig := android.PathForModuleOut(ctx, "metalava-flags.config")
 	intermediateFlagReport := android.PathForModuleOut(ctx, "metalava-flag-report.csv")
-	builder := android.NewRuleBuilder(pctx, ctx)
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	builder.Command().
 		BuiltTool("aconfig-to-metalava-flags").
 		Input(parsedFlagsFile).
@@ -163,12 +169,13 @@ func GenerateExportedFlagCheck(ctx android.ModuleContext, outputPath android.Wri
 	})
 }
 
-func (this *allAconfigDeclarationsSingleton) GenerateAndroidBuildActions(ctx android.ModuleContext) {
+func (this *allAconfigDeclarationsModule) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	parsedFlagsFile := android.PathForIntermediates(ctx, "all_aconfig_declarations.pb")
-	this.finalizedFlags = android.PathForIntermediates(ctx, "finalized-flags.txt")
-	GenerateFinalizedFlagsForApiSurface(ctx, this.finalizedFlags, parsedFlagsFile, this.properties)
+	finalizedFlags := android.PathForIntermediates(ctx, "finalized-flags.txt")
+	GenerateFinalizedFlagsForApiSurface(ctx, finalizedFlags, parsedFlagsFile, this.properties)
+	ctx.DistForGoalWithFilename("sdk", finalizedFlags, "finalized-flags.txt")
 
-	depsFiles := android.Paths{this.finalizedFlags}
+	depsFiles := android.Paths{finalizedFlags}
 	if checkExportedFlag, ok := ctx.Config().GetBuildFlag("RELEASE_EXPORTED_FLAG_CHECK"); ok {
 		if checkExportedFlag == "true" {
 			invalidExportedFlags := android.PathForIntermediates(ctx, "invalid_exported_flags.txt")
@@ -191,7 +198,8 @@ func (this *allAconfigDeclarationsSingleton) GenerateAndroidBuildActions(ctx and
 	})
 }
 
-func (this *allAconfigDeclarationsSingleton) GenerateSingletonBuildActions(ctx android.SingletonContext) {
+func (this *allAconfigDeclarationsSingleton) GenerateBuildActions(ctx android.SingletonContext) {
+	releaseMap := make(map[string]allAconfigReleaseDeclarationsSingleton)
 	for _, rcName := range append([]string{""}, ctx.Config().ReleaseAconfigExtraReleaseConfigs()...) {
 		// Find all of the aconfig_declarations modules
 		var packages = make(map[string]int)
@@ -228,29 +236,29 @@ func (this *allAconfigDeclarationsSingleton) GenerateSingletonBuildActions(ctx a
 			intermediateStorageFlagInfo:   android.PathForIntermediates(ctx, assembleFileName(rcName, "all_aconfig_declarations.flag.info")),
 			intermediateStorageFlagVal:    android.PathForIntermediates(ctx, assembleFileName(rcName, "all_aconfig_declarations.val")),
 		}
-		this.releaseMap[rcName] = paths
+		releaseMap[rcName] = paths
 		ctx.Build(pctx, android.BuildParams{
 			Rule:        AllDeclarationsRule,
 			Inputs:      cacheFiles,
-			Output:      this.releaseMap[rcName].intermediateBinaryProtoPath,
+			Output:      releaseMap[rcName].intermediateBinaryProtoPath,
 			Description: "all_aconfig_declarations",
 			Args: map[string]string{
 				"cache_files": android.JoinPathsWithPrefix(cacheFiles, "--cache "),
 			},
 		})
-		ctx.Phony("all_aconfig_declarations", this.releaseMap[rcName].intermediateBinaryProtoPath)
+		ctx.Phony("all_aconfig_declarations", releaseMap[rcName].intermediateBinaryProtoPath)
 
 		// Generate build action for aconfig (text proto output)
 		ctx.Build(pctx, android.BuildParams{
 			Rule:        AllDeclarationsRuleTextProto,
 			Inputs:      cacheFiles,
-			Output:      this.releaseMap[rcName].intermediateTextProtoPath,
+			Output:      releaseMap[rcName].intermediateTextProtoPath,
 			Description: "all_aconfig_declarations_textproto",
 			Args: map[string]string{
 				"cache_files": android.JoinPathsWithPrefix(cacheFiles, "--cache "),
 			},
 		})
-		ctx.Phony("all_aconfig_declarations_textproto", this.releaseMap[rcName].intermediateTextProtoPath)
+		ctx.Phony("all_aconfig_declarations_textproto", releaseMap[rcName].intermediateTextProtoPath)
 
 		storageFilesVersion := ctx.Config().ReleaseAconfigStorageVersion()
 		const container = "all_aconfig_declarations"
@@ -258,7 +266,7 @@ func (this *allAconfigDeclarationsSingleton) GenerateSingletonBuildActions(ctx a
 		ctx.Build(pctx, android.BuildParams{
 			Rule:        allDeclarationsRuleStoragePackageMap,
 			Inputs:      cacheFiles,
-			Output:      this.releaseMap[rcName].intermediateStoragePackageMap,
+			Output:      releaseMap[rcName].intermediateStoragePackageMap,
 			Description: "all_aconfig_declarations_storage_package_map",
 			Args: map[string]string{
 				"container":   container,
@@ -266,12 +274,12 @@ func (this *allAconfigDeclarationsSingleton) GenerateSingletonBuildActions(ctx a
 				"version":     storageFilesVersion,
 			},
 		})
-		ctx.Phony(allAconfigDeclarationsStorage, this.releaseMap[rcName].intermediateStoragePackageMap)
+		ctx.Phony(allAconfigDeclarationsStorage, releaseMap[rcName].intermediateStoragePackageMap)
 
 		ctx.Build(pctx, android.BuildParams{
 			Rule:        allDeclarationsRuleStorageFlagMap,
 			Inputs:      cacheFiles,
-			Output:      this.releaseMap[rcName].intermediateStorageFlagMap,
+			Output:      releaseMap[rcName].intermediateStorageFlagMap,
 			Description: "all_aconfig_declarations_storage_flag_map",
 			Args: map[string]string{
 				"container":   container,
@@ -279,12 +287,12 @@ func (this *allAconfigDeclarationsSingleton) GenerateSingletonBuildActions(ctx a
 				"version":     storageFilesVersion,
 			},
 		})
-		ctx.Phony(allAconfigDeclarationsStorage, this.releaseMap[rcName].intermediateStorageFlagMap)
+		ctx.Phony(allAconfigDeclarationsStorage, releaseMap[rcName].intermediateStorageFlagMap)
 
 		ctx.Build(pctx, android.BuildParams{
 			Rule:        allDeclarationsRuleStorageFlagInfo,
 			Inputs:      cacheFiles,
-			Output:      this.releaseMap[rcName].intermediateStorageFlagInfo,
+			Output:      releaseMap[rcName].intermediateStorageFlagInfo,
 			Description: "all_aconfig_declarations_storage_flag_info",
 			Args: map[string]string{
 				"container":   container,
@@ -292,12 +300,12 @@ func (this *allAconfigDeclarationsSingleton) GenerateSingletonBuildActions(ctx a
 				"version":     storageFilesVersion,
 			},
 		})
-		ctx.Phony(allAconfigDeclarationsStorage, this.releaseMap[rcName].intermediateStorageFlagInfo)
+		ctx.Phony(allAconfigDeclarationsStorage, releaseMap[rcName].intermediateStorageFlagInfo)
 
 		ctx.Build(pctx, android.BuildParams{
 			Rule:        allDeclarationsRuleStorageFlagVal,
 			Inputs:      cacheFiles,
-			Output:      this.releaseMap[rcName].intermediateStorageFlagVal,
+			Output:      releaseMap[rcName].intermediateStorageFlagVal,
 			Description: "all_aconfig_declarations_storage_flag_val",
 			Args: map[string]string{
 				"container":   container,
@@ -305,13 +313,12 @@ func (this *allAconfigDeclarationsSingleton) GenerateSingletonBuildActions(ctx a
 				"version":     storageFilesVersion,
 			},
 		})
-		ctx.Phony(allAconfigDeclarationsStorage, this.releaseMap[rcName].intermediateStorageFlagVal)
+		ctx.Phony(allAconfigDeclarationsStorage, releaseMap[rcName].intermediateStorageFlagVal)
 	}
 
-	for _, rcName := range this.sortedConfigNames() {
-		ctx.DistForGoals(aconfigFlagArtifactsDistGoals, this.releaseMap[rcName].intermediateBinaryProtoPath)
-		ctx.DistForGoalsWithFilename(aconfigFlagArtifactsDistGoals, this.releaseMap[rcName].intermediateBinaryProtoPath, assembleFileName(rcName, "flags.pb"))
-		ctx.DistForGoalsWithFilename(aconfigFlagArtifactsDistGoals, this.releaseMap[rcName].intermediateTextProtoPath, assembleFileName(rcName, "flags.textproto"))
+	for _, rcName := range this.sortedConfigNames(releaseMap) {
+		ctx.DistForGoals(aconfigFlagArtifactsDistGoals, releaseMap[rcName].intermediateBinaryProtoPath)
+		ctx.DistForGoalsWithFilename(aconfigFlagArtifactsDistGoals, releaseMap[rcName].intermediateBinaryProtoPath, assembleFileName(rcName, "flags.pb"))
+		ctx.DistForGoalsWithFilename(aconfigFlagArtifactsDistGoals, releaseMap[rcName].intermediateTextProtoPath, assembleFileName(rcName, "flags.textproto"))
 	}
-	ctx.DistForGoalWithFilename("sdk", this.finalizedFlags, "finalized-flags.txt")
 }

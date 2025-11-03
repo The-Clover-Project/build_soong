@@ -2168,7 +2168,11 @@ func (mod *Module) addVariantDep(ctx DepsContext, depTags []dependencyTag, lib s
 		return
 	}
 	if !ctx.Config().AllowMissingDependencies() {
-		ctx.ModuleErrorf("unable to find allowed variation for lib %#v - stdLinkage %v depTags %v", lib, mod.stdLinkageOptions(ctx), depTags)
+		// Intentionally add a missing dependency to trigger a more user-friendly error
+		depTag := depTags[0]
+		stdLinkage := mod.stdLinkageOptions(ctx)[0]
+		variations := append(stdLinkage, depTag.libraryVariation())
+		ctx.AddVariationDependencies(variations, depTag, lib)
 	}
 }
 

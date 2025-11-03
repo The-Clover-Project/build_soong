@@ -286,7 +286,8 @@ func (d *dexer) ProguardFlagsFiles(ctx android.ModuleContext) []string {
 // Removes all outputs of d8Inc rule
 var d8IncClean = pctx.AndroidStaticRule("d8Inc-partialcompileclean",
 	blueprint.RuleParams{
-		Command: `rm -rf "${outDir}" "${builtOut}" "${d8Deps}"`,
+		Command:         `rm -rf "${outDir}" "${builtOut}" "${d8Deps}"`,
+		SandboxDisabled: true,
 	}, "outDir", "d8Flags", "d8Deps", "zipFlags", "mergeZipsFlags", "builtOut",
 )
 
@@ -296,6 +297,7 @@ var d8Inc, d8IncRE = pctx.MultiCommandRemoteStaticRules("d8Inc",
 			`. ${config.UsePartialCompileFile} && ` +
 			`${config.IncrementalDexInputCmd} ` +
 			`--classesJar $in --dexTarget $out --deps $d8Deps --outputDir $outDir --packageOutputDir $outDir/packages && ` +
+			`PATH=${config.JavaToolchain}:$$PATH ` +
 			`$d8Template${config.D8Cmd} ${config.D8Flags} $d8Flags --output $outDir --no-dex-input-jar $in --packages $out.rsp --mod-packages $out.inc.rsp --package-output $outDir/packages && ` +
 			`$zipTemplate${config.SoongZipCmd} $zipFlags -o $outDir/classes.dex.jar -C $outDir -f "$outDir/classes*.dex" && ` +
 			`${config.MergeZipsCmd} -D -stripFile "**/*.class" $mergeZipsFlags $out $outDir/classes.dex.jar $in && ` +
@@ -313,6 +315,7 @@ var d8Inc, d8IncRE = pctx.MultiCommandRemoteStaticRules("d8Inc",
 			"${config.MergeZipsCmd}",
 			"${config.UsePartialCompileFile}",
 		},
+		SandboxDisabled: true,
 	}, map[string]*remoteexec.REParams{
 		"$d8Template": &remoteexec.REParams{
 			Labels:          map[string]string{"type": "compile", "compiler": "d8"},
@@ -335,6 +338,7 @@ var d8IncR8Clean = pctx.AndroidStaticRule("d8Incr8-partialcompileclean",
 	blueprint.RuleParams{
 		Command: `rm -rf "${outDir}" "${outDict}" "${outConfig}" "${outUsage}" "${outUsageZip}" "${outUsageDir}" ` +
 			`"${resourcesOutput}" "${outR8ArtProfile}" ${builtOut} ${d8Deps}`,
+		SandboxDisabled: true,
 	}, "outDir", "outDict", "outConfig", "outUsage", "outUsageZip", "outUsageDir", "builtOut",
 	"d8Flags", "d8Deps", "r8Flags", "zipFlags", "mergeZipsFlags", "resourcesOutput", "outR8ArtProfile", "implicits",
 )
@@ -378,6 +382,7 @@ var d8IncR8, d8IncR8RE = pctx.MultiCommandRemoteStaticRules("d8Incr8",
 			"${config.MergeZipsCmd}",
 			"${config.UsePartialCompileFile}",
 		},
+		SandboxDisabled: true,
 	}, map[string]*remoteexec.REParams{
 		"$d8Template": &remoteexec.REParams{
 			Labels:          map[string]string{"type": "compile", "compiler": "d8"},
@@ -417,6 +422,7 @@ var d8, d8RE = pctx.MultiCommandRemoteStaticRules("d8",
 			"${config.SoongZipCmd}",
 			"${config.MergeZipsCmd}",
 		},
+		SandboxDisabled: true,
 	}, map[string]*remoteexec.REParams{
 		"$d8Template": &remoteexec.REParams{
 			Labels:          map[string]string{"type": "compile", "compiler": "d8"},
@@ -439,6 +445,7 @@ var d8r8Clean = pctx.AndroidStaticRule("d8r8-partialcompileclean",
 	blueprint.RuleParams{
 		Command: `rm -rf "${outDir}" "${outDict}" "${outConfig}" "${outUsage}" "${outUsageZip}" "${outUsageDir}" ` +
 			`"${resourcesOutput}" "${outR8ArtProfile}" ${builtOut}`,
+		SandboxDisabled: true,
 	}, "outDir", "outDict", "outConfig", "outUsage", "outUsageZip", "outUsageDir", "builtOut",
 	"d8Flags", "r8Flags", "zipFlags", "mergeZipsFlags", "resourcesOutput", "outR8ArtProfile", "implicits",
 )
@@ -477,6 +484,7 @@ var d8r8, d8r8RE = pctx.MultiCommandRemoteStaticRules("d8r8",
 			"${config.MergeZipsCmd}",
 			"${config.UsePartialCompileFile}",
 		},
+		SandboxDisabled: true,
 	}, map[string]*remoteexec.REParams{
 		"$d8Template": &remoteexec.REParams{
 			Labels:          map[string]string{"type": "compile", "compiler": "d8"},
@@ -529,6 +537,7 @@ var r8, r8RE = pctx.MultiCommandRemoteStaticRules("r8",
 			"${config.SoongZipCmd}",
 			"${config.MergeZipsCmd}",
 		},
+		SandboxDisabled: true,
 	}, map[string]*remoteexec.REParams{
 		"$r8Template": &remoteexec.REParams{
 			Labels:          map[string]string{"type": "compile", "compiler": "r8"},
@@ -556,9 +565,10 @@ var r8, r8RE = pctx.MultiCommandRemoteStaticRules("r8",
 		"r8Flags", "zipFlags", "mergeZipsFlags", "resourcesOutput", "outR8ArtProfile"}, []string{"implicits"})
 
 var proguardDictToProto = pctx.AndroidStaticRule("proguard_dict_to_proto", blueprint.RuleParams{
-	Command:     `${symbols_map} -r8 $in -location $location -write_if_changed $out`,
-	Restat:      true,
-	CommandDeps: []string{"${symbols_map}"},
+	Command:         `${symbols_map} -r8 $in -location $location -write_if_changed $out`,
+	Restat:          true,
+	CommandDeps:     []string{"${symbols_map}"},
+	SandboxDisabled: true,
 }, "location")
 
 func (d *dexer) dexCommonFlags(ctx android.ModuleContext,
@@ -1101,17 +1111,17 @@ type ProguardZips struct {
 
 func BuildProguardZips(ctx android.ModuleContext, modules []android.ModuleProxy) ProguardZips {
 	dictZip := android.PathForModuleOut(ctx, "proguard-dict.zip")
-	dictZipBuilder := android.NewRuleBuilder(pctx, ctx)
+	dictZipBuilder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	dictZipCmd := dictZipBuilder.Command().BuiltTool("soong_zip").Flag("-d").FlagWithOutput("-o ", dictZip)
 
 	dictMapping := android.PathForModuleOut(ctx, "proguard-dict-mapping.textproto")
-	dictMappingBuilder := android.NewRuleBuilder(pctx, ctx)
+	dictMappingBuilder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	dictMappingCmd := dictMappingBuilder.Command().BuiltTool("symbols_map").Flag("-merge").Output(dictMapping)
 
 	protosDir := android.PathForModuleOut(ctx, "proguard_mapping_protos")
 
 	usageZip := android.PathForModuleOut(ctx, "proguard-usage.zip")
-	usageZipBuilder := android.NewRuleBuilder(pctx, ctx)
+	usageZipBuilder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	usageZipCmd := usageZipBuilder.Command().BuiltTool("merge_zips").Output(usageZip)
 
 	for _, mod := range modules {

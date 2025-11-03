@@ -119,7 +119,7 @@ func (pkm *prebuiltKernelModules) GenerateAndroidBuildActions(ctx android.Module
 
 	modulesZip := android.PathForModuleOut(ctx, "modules.zip")
 	modulesZipList := android.PathForModuleOut(ctx, "modules.zip.list")
-	builder := android.NewRuleBuilder(pctx, ctx)
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	var moduleNames []string
 	for _, m := range modules {
 		moduleNames = append(moduleNames, m.Base())
@@ -230,8 +230,9 @@ var (
 
 	StripRule = pctx.AndroidStaticRule("strip",
 		blueprint.RuleParams{
-			Command:     "$stripCmd -o $out --strip-debug $in",
-			CommandDeps: []string{"$stripCmd"},
+			Command:         "$stripCmd -o $out --strip-debug $in",
+			CommandDeps:     []string{"$stripCmd"},
+			SandboxDisabled: true,
 		}, "stripCmd")
 )
 
@@ -268,7 +269,8 @@ var (
 	// /system/lib/modules/foo.ko: /system/lib/modules/bar.ko
 	addLeadingSlashToPaths = pctx.AndroidStaticRule("add_leading_slash",
 		blueprint.RuleParams{
-			Command: `sed -e 's|\([^: ]*lib/modules/[^: ]*\)|/\1|g' $in > $out`,
+			Command:         `sed -e 's|\([^: ]*lib/modules/[^: ]*\)|/\1|g' $in > $out`,
+			SandboxDisabled: true,
 		},
 	)
 	// Remove empty lines. Raise an exception if line is _not_ formatted as `blocklist $name.ko`
@@ -282,6 +284,7 @@ var (
 				` exit_status = 1; next }` +
 				` { $$1 = $$1; print }` +
 				` END { exit exit_status }'`,
+			SandboxDisabled: true,
 		},
 	)
 	// Remove empty lines. Raise an exception if line is _not_ formatted as `options $name.ko`
@@ -295,6 +298,7 @@ var (
 				` exit_status = 1; next }` +
 				` { $$1 = $$1; print }` +
 				` END { exit exit_status }'`,
+			SandboxDisabled: true,
 		},
 	)
 )
@@ -341,7 +345,7 @@ func (pkm *prebuiltKernelModules) runDepmod(ctx android.ModuleContext, modulesZi
 	modulesDir := baseDir.Join(ctx, "lib", "modules", fakeVer)
 	modulesCpDir := modulesDirForAndroidDlkm(ctx, modulesDir, false)
 
-	builder := android.NewRuleBuilder(pctx, ctx)
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 
 	// Copy the module files to a temporary dir
 	builder.Command().BuiltTool("zipsync").

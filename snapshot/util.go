@@ -48,7 +48,7 @@ func zipSnapshot(ctx android.SingletonContext, dir string, baseName string, snap
 	zipPath := android.PathForOutput(
 		ctx, dir, baseName+".zip")
 
-	zipRule := android.NewRuleBuilder(pctx, ctx)
+	zipRule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	rspFile := android.PathForOutput(
 		ctx, dir, baseName+"_list.rsp")
 

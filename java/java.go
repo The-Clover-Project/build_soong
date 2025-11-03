@@ -233,7 +233,8 @@ var (
 		Command: `printf '#!/system/bin/sh\n` +
 			`export CLASSPATH=/system/framework/$jar_name\n` +
 			`exec app_process /$partition/bin $main_class "$$@"\n'> ${out}`,
-		Description: "Generating device binary wrapper ${jar_name}",
+		Description:     "Generating device binary wrapper ${jar_name}",
+		SandboxDisabled: true,
 	}, "jar_name", "partition", "main_class")
 )
 
@@ -682,6 +683,10 @@ func IsLibDepTag(depTag blueprint.DependencyTag) bool {
 
 func IsStaticLibDepTag(depTag blueprint.DependencyTag) bool {
 	return depTag == staticLibTag
+}
+
+func IsTraceReferencesDepTag(depTag blueprint.DependencyTag) bool {
+	return depTag == traceReferencesTag
 }
 
 type sdkDep struct {
@@ -2763,7 +2768,7 @@ func (al *ApiLibrary) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 
 	al.kSnapshotFiles = make(map[string]android.Path)
 
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 
 	rule.Sbox(android.PathForModuleOut(ctx, "metalava"),
 		android.PathForModuleOut(ctx, "metalava.sbox.textproto")).
@@ -2893,7 +2898,7 @@ func (al *ApiLibrary) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	TransformJavaToClasses(ctx, al.stubsJarWithoutStaticLibs, 0, android.Paths{},
 		android.Paths{al.stubsSrcJar}, annoSrcJar, javacFlags, android.Paths{}, nil)
 
-	builder := android.NewRuleBuilder(pctx, ctx)
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	builder.Command().
 		BuiltTool("merge_zips").
 		Output(al.stubsJar).
@@ -3685,7 +3690,7 @@ func (j *DexImport) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	dexOutputFile := android.PathForModuleOut(ctx, ctx.ModuleName()+".jar")
 
 	if j.dexpreopter.uncompressedDex {
-		rule := android.NewRuleBuilder(pctx, ctx)
+		rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 
 		temporary := android.PathForModuleOut(ctx, ctx.ModuleName()+".jar.unaligned")
 		rule.Temporary(temporary)

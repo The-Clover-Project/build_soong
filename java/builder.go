@@ -41,9 +41,10 @@ var (
 			CommandDeps: []string{
 				"${config.SplitZipCmd}",
 			},
-			Restat:         true,
-			Rspfile:        "$rspFile",
-			RspfileContent: "$in",
+			Restat:          true,
+			Rspfile:         "$rspFile",
+			RspfileContent:  "$in",
+			SandboxDisabled: true,
 		}, "rspFile",
 	)
 
@@ -54,13 +55,15 @@ var (
 			CommandDeps: []string{
 				"${config.ZipSyncCmd}",
 			},
+			SandboxDisabled: true,
 		}, "extractDir", "jars",
 	)
 
 	// Removes all outputs of inc-javac rule
 	javacIncClean = pctx.AndroidStaticRule("javac-inc-partialcompileclean",
 		blueprint.RuleParams{
-			Command: `rm -rf "${srcJarDir}" "${outDir}" "${annoDir}" "${annoSrcJar}" "${builtOut}"`,
+			Command:         `rm -rf "${srcJarDir}" "${outDir}" "${annoDir}" "${annoSrcJar}" "${builtOut}"`,
+			SandboxDisabled: true,
 		}, "srcJarDir", "outDir", "annoDir", "annoSrcJar", "builtOut",
 	)
 
@@ -116,6 +119,7 @@ var (
 			Restat:           true,
 			Rspfile:          "$out.rsp",
 			RspfileContent:   "$in",
+			SandboxDisabled:  true,
 		}, map[string]*remoteexec.REParams{
 			"$javaTemplate": &remoteexec.REParams{
 				Labels:       map[string]string{"type": "compile", "lang": "java", "compiler": "javac"},
@@ -174,6 +178,7 @@ var (
 			Restat:           true,
 			Rspfile:          "$out.rsp",
 			RspfileContent:   "$in",
+			SandboxDisabled:  true,
 		}, map[string]*remoteexec.REParams{
 			"$javaTemplate": &remoteexec.REParams{
 				Labels:       map[string]string{"type": "compile", "lang": "java", "compiler": "javac"},
@@ -245,6 +250,7 @@ var (
 			CommandOrderOnly: []string{"${config.SoongJavacWrapper}"},
 			Rspfile:          "$out.rsp",
 			RspfileContent:   "$in",
+			SandboxDisabled:  true,
 		},
 		"javacFlags", "bootClasspath", "classpath", "processorpath", "processor", "srcJars", "srcJarDir",
 		"outDir", "annoDir", "javaVersion")
@@ -258,7 +264,8 @@ var (
 				`--screen-densities=${screen-densities} --stem=${stem} ` +
 				`-apkcerts=${apkcerts} -partition=${partition} ` +
 				`${in}`,
-			CommandDeps: []string{"${config.ExtractApksCmd}"},
+			CommandDeps:     []string{"${config.ExtractApksCmd}"},
+			SandboxDisabled: true,
 		},
 		"abis", "allow-prereleased", "screen-densities", "sdk-version", "skip-sdk-check", "stem", "apkcerts", "partition", "zip")
 
@@ -273,9 +280,10 @@ var (
 				"${config.TurbineJar}",
 				"${config.JavaCmd}",
 			},
-			Rspfile:        "$out.rsp",
-			RspfileContent: "$in_newline",
-			Restat:         true,
+			Rspfile:         "$out.rsp",
+			RspfileContent:  "$in_newline",
+			Restat:          true,
+			SandboxDisabled: true,
 		},
 		&remoteexec.REParams{Labels: map[string]string{"type": "tool", "name": "turbine"},
 			ExecStrategy:    "${config.RETurbineExecStrategy}",
@@ -289,10 +297,11 @@ var (
 
 	jar, jarRE = pctx.RemoteStaticRules("jar",
 		blueprint.RuleParams{
-			Command:        `$reTemplate${config.SoongZipCmd} -jar -o $out @$out.rsp`,
-			CommandDeps:    []string{"${config.SoongZipCmd}"},
-			Rspfile:        "$out.rsp",
-			RspfileContent: "$jarArgs",
+			Command:         `$reTemplate${config.SoongZipCmd} -jar -o $out @$out.rsp`,
+			CommandDeps:     []string{"${config.SoongZipCmd}"},
+			Rspfile:         "$out.rsp",
+			RspfileContent:  "$jarArgs",
+			SandboxDisabled: true,
 		},
 		&remoteexec.REParams{
 			ExecStrategy: "${config.REJarExecStrategy}",
@@ -304,10 +313,11 @@ var (
 
 	zip, zipRE = pctx.RemoteStaticRules("zip",
 		blueprint.RuleParams{
-			Command:        `${config.SoongZipCmd} -o $out @$out.rsp`,
-			CommandDeps:    []string{"${config.SoongZipCmd}"},
-			Rspfile:        "$out.rsp",
-			RspfileContent: "$jarArgs",
+			Command:         `${config.SoongZipCmd} -o $out @$out.rsp`,
+			CommandDeps:     []string{"${config.SoongZipCmd}"},
+			Rspfile:         "$out.rsp",
+			RspfileContent:  "$jarArgs",
+			SandboxDisabled: true,
 		},
 		&remoteexec.REParams{
 			ExecStrategy: "${config.REZipExecStrategy}",
@@ -319,23 +329,26 @@ var (
 
 	combineJar = pctx.AndroidStaticRule("combineJar",
 		blueprint.RuleParams{
-			Command:     `${config.MergeZipsCmd} --ignore-duplicates -j $jarArgs $out $in`,
-			CommandDeps: []string{"${config.MergeZipsCmd}"},
+			Command:         `${config.MergeZipsCmd} --ignore-duplicates -j $jarArgs $out $in`,
+			CommandDeps:     []string{"${config.MergeZipsCmd}"},
+			SandboxDisabled: true,
 		},
 		"jarArgs")
 	combineJarRsp = pctx.AndroidStaticRule("combineJarRsp",
 		blueprint.RuleParams{
-			Command:        `${config.MergeZipsCmd} --ignore-duplicates -j $jarArgs $out @$out.rsp`,
-			CommandDeps:    []string{"${config.MergeZipsCmd}"},
-			Rspfile:        "$out.rsp",
-			RspfileContent: "$in",
+			Command:         `${config.MergeZipsCmd} --ignore-duplicates -j $jarArgs $out @$out.rsp`,
+			CommandDeps:     []string{"${config.MergeZipsCmd}"},
+			Rspfile:         "$out.rsp",
+			RspfileContent:  "$in",
+			SandboxDisabled: true,
 		},
 		"jarArgs")
 
 	extractR8Rules = pctx.AndroidStaticRule("extractR8Rules",
 		blueprint.RuleParams{
-			Command:     `${config.ExtractR8RulesCmd} --rules-output $out --include-origin-comments $in`,
-			CommandDeps: []string{"${config.ExtractR8RulesCmd}"},
+			Command:         `${config.ExtractR8RulesCmd} --rules-output $out --include-origin-comments $in`,
+			CommandDeps:     []string{"${config.ExtractR8RulesCmd}"},
+			SandboxDisabled: true,
 		})
 
 	jarjar = pctx.AndroidStaticRule("jarjar",
@@ -353,7 +366,8 @@ var (
 				" -jar ${config.JarjarCmd} process $rulesFile $in $out $total_shards $shard_index && " +
 				// Turn a missing output file into a ninja error
 				`[ -e ${out} ] || (echo "Missing output file"; exit 1)`,
-			CommandDeps: []string{"${config.JavaCmd}", "${config.JarjarCmd}", "$rulesFile"},
+			CommandDeps:     []string{"${config.JavaCmd}", "${config.JarjarCmd}", "$rulesFile"},
+			SandboxDisabled: true,
 		},
 		"rulesFile", "total_shards", "shard_index")
 
@@ -362,28 +376,32 @@ var (
 			Command: "rm -f $out && " +
 				"${config.PackageCheckCmd} $in $packages && " +
 				"touch $out",
-			CommandDeps: []string{"${config.PackageCheckCmd}"},
+			CommandDeps:     []string{"${config.PackageCheckCmd}"},
+			SandboxDisabled: true,
 		},
 		"packages")
 
 	jetifier = pctx.AndroidStaticRule("jetifier",
 		blueprint.RuleParams{
-			Command:     "${config.JavaCmd}  ${config.JavaVmFlags} -jar ${config.JetifierJar} -l error -o $out -i $in -t epoch",
-			CommandDeps: []string{"${config.JavaCmd}", "${config.JetifierJar}"},
+			Command:         "${config.JavaCmd}  ${config.JavaVmFlags} -jar ${config.JetifierJar} -l error -o $out -i $in -t epoch",
+			CommandDeps:     []string{"${config.JavaCmd}", "${config.JetifierJar}"},
+			SandboxDisabled: true,
 		},
 	)
 
 	ravenizer = pctx.AndroidStaticRule("ravenizer",
 		blueprint.RuleParams{
-			Command:     "rm -f $out && ${ravenizer} --in-jar $in --out-jar $out $ravenizerArgs",
-			CommandDeps: []string{"${ravenizer}"},
+			Command:         "rm -f $out && ${ravenizer} --in-jar $in --out-jar $out $ravenizerArgs",
+			CommandDeps:     []string{"${ravenizer}"},
+			SandboxDisabled: true,
 		},
 		"ravenizerArgs")
 
 	apimapper = pctx.AndroidStaticRule("apimapper",
 		blueprint.RuleParams{
-			Command:     "${apimapper} --in-jar $in --out-jar $out",
-			CommandDeps: []string{"${apimapper}"},
+			Command:         "${apimapper} --in-jar $in --out-jar $out",
+			CommandDeps:     []string{"${apimapper}"},
+			SandboxDisabled: true,
 		},
 	)
 
@@ -394,14 +412,16 @@ var (
 				"else " +
 				"cp -f $in $out; " +
 				"fi",
-			CommandDeps: []string{"${config.ZipAlign}"},
+			CommandDeps:     []string{"${config.ZipAlign}"},
+			SandboxDisabled: true,
 		},
 	)
 
 	convertImplementationJarToHeaderJarRule = pctx.AndroidStaticRule("convertImplementationJarToHeaderJar",
 		blueprint.RuleParams{
-			Command:     `${config.Zip2ZipCmd} -i ${in} -o ${out} -x 'META-INF/services/**/*'`,
-			CommandDeps: []string{"${config.Zip2ZipCmd}"},
+			Command:         `${config.Zip2ZipCmd} -i ${in} -o ${out} -x 'META-INF/services/**/*'`,
+			CommandDeps:     []string{"${config.Zip2ZipCmd}"},
+			SandboxDisabled: true,
 		})
 
 	writeCombinedProguardFlagsFileRule = pctx.AndroidStaticRule("writeCombinedProguardFlagsFileRule",
@@ -412,6 +432,7 @@ var (
 				` echo "# including $$f" && ` +
 				` cat $$f; ` +
 				`done > $out`,
+			SandboxDisabled: true,
 		})
 
 	gatherReleasedFlaggedApisRule = pctx.AndroidStaticRule("gatherReleasedFlaggedApisRule",
@@ -420,23 +441,26 @@ var (
 				`--out ${out} ` +
 				`@$out.rsp ` +
 				`${filter_args} `,
-			CommandDeps:    []string{"${aconfig}"},
-			Description:    "aconfig_bool",
-			Rspfile:        "$out.rsp",
-			RspfileContent: "${flags_path}",
+			CommandDeps:     []string{"${aconfig}"},
+			Description:     "aconfig_bool",
+			Rspfile:         "$out.rsp",
+			RspfileContent:  "${flags_path}",
+			SandboxDisabled: true,
 		}, "flags_path", "filter_args")
 
 	generateMetalavaRevertAnnotationsRule = pctx.AndroidStaticRule("generateMetalavaRevertAnnotationsRule",
 		blueprint.RuleParams{
-			Command:     `${aconfig-to-metalava-flags} ${in} > ${out}`,
-			CommandDeps: []string{"${aconfig-to-metalava-flags}"},
+			Command:         `${aconfig-to-metalava-flags} ${in} > ${out}`,
+			CommandDeps:     []string{"${aconfig-to-metalava-flags}"},
+			SandboxDisabled: true,
 		})
 
 	generateApiXMLRule = pctx.AndroidStaticRule("generateApiXMLRule",
 		blueprint.RuleParams{
-			Command:     `${config.JavaCmd} ${config.JavaVmFlags} -Xmx4g -jar ${config.MetalavaJar} jar-to-jdiff ${in} ${out}`,
-			CommandDeps: []string{"${config.JavaCmd}", "${config.MetalavaJar}"},
-			Description: "Converting API file to XML",
+			Command:         `${config.JavaCmd} ${config.JavaVmFlags} -Xmx4g -jar ${config.MetalavaJar} jar-to-jdiff ${in} ${out}`,
+			CommandDeps:     []string{"${config.JavaCmd}", "${config.MetalavaJar}"},
+			Description:     "Converting API file to XML",
+			SandboxDisabled: true,
 		})
 )
 

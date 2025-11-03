@@ -553,7 +553,7 @@ func (j *Javadoc) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 
 	j.stubsSrcJar = nil
 
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 
 	rule.Command().Text("rm -rf").Text(outDir.String())
 	rule.Command().Text("mkdir -p").Text(outDir.String())
@@ -823,7 +823,7 @@ func (d *Droiddoc) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	outDir := android.PathForModuleOut(ctx, "out")
 	srcJarDir := android.PathForModuleOut(ctx, "srcjars")
 
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 
 	srcJarList := zipSyncCmd(ctx, rule, srcJarDir, d.Javadoc.srcJars)
 

@@ -28,8 +28,9 @@ func init() {
 
 var (
 	aconfigCreateStorage = pctx.AndroidStaticRule("aconfig_create_storage", blueprint.RuleParams{
-		Command:     `$aconfig create-storage --container $container --file $fileType --out $out --cache $in --version $version`,
-		CommandDeps: []string{"$aconfig"},
+		Command:         `$aconfig create-storage --container $container --file $fileType --out $out --cache $in --version $version`,
+		CommandDeps:     []string{"$aconfig"},
+		SandboxDisabled: true,
 	}, "container", "fileType", "version")
 
 	subPartitionsInPartition = map[string][]string{
@@ -71,7 +72,7 @@ func (f *filesystem) buildAconfigFlagsFiles(
 
 	buildAconfigFlagsFiles := func(container string, dir android.OutputPath, fullInstallPath android.InstallPath) {
 		aconfigFlagsPb := android.PathForModuleOut(ctx, "aconfig", container, "aconfig_flags.pb")
-		aconfigFlagsPbBuilder := android.NewRuleBuilder(pctx, ctx)
+		aconfigFlagsPbBuilder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 		cmd := aconfigFlagsPbBuilder.Command().
 			BuiltTool("aconfig").
 			Text(" dump-cache --dedup --format protobuf --out").

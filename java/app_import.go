@@ -40,40 +40,46 @@ var (
 		Command: `if (zipinfo $in 'lib/*.so' 2>/dev/null | grep -v ' stor ' >/dev/null) ; then ` +
 			`${config.Zip2ZipCmd} -i $in -o $out -0 'lib/**/*.so'` +
 			`; else cp -f $in $out; fi`,
-		CommandDeps: []string{"${config.Zip2ZipCmd}"},
-		Description: "Uncompress embedded JNI libs",
+		CommandDeps:     []string{"${config.Zip2ZipCmd}"},
+		Description:     "Uncompress embedded JNI libs",
+		SandboxDisabled: true,
 	})
 
 	stripEmbeddedJniLibsUnusedArchRule = pctx.AndroidStaticRule("strip-embedded-jni-libs-from-unused-arch", blueprint.RuleParams{
-		Command:     `${config.Zip2ZipCmd} -i $in -o $out -x 'lib/**/*.so' $extraArgs`,
-		CommandDeps: []string{"${config.Zip2ZipCmd}"},
-		Description: "Remove all JNI libs from unused architectures",
+		Command:         `${config.Zip2ZipCmd} -i $in -o $out -x 'lib/**/*.so' $extraArgs`,
+		CommandDeps:     []string{"${config.Zip2ZipCmd}"},
+		Description:     "Remove all JNI libs from unused architectures",
+		SandboxDisabled: true,
 	}, "extraArgs")
 
 	uncompressDexRule = pctx.AndroidStaticRule("uncompress-dex", blueprint.RuleParams{
 		Command: `if (zipinfo $in '*.dex' 2>/dev/null | grep -v ' stor ' >/dev/null) ; then ` +
 			`${config.Zip2ZipCmd} -i $in -o $out -0 'classes*.dex'` +
 			`; else cp -f $in $out; fi`,
-		CommandDeps: []string{"${config.Zip2ZipCmd}"},
-		Description: "Uncompress dex files",
+		CommandDeps:     []string{"${config.Zip2ZipCmd}"},
+		Description:     "Uncompress dex files",
+		SandboxDisabled: true,
 	})
 
 	checkPresignedApkRule = pctx.AndroidStaticRule("check-presigned-apk", blueprint.RuleParams{
-		Command:     "build/soong/scripts/check_prebuilt_presigned_apk.py --aapt2 ${config.Aapt2Cmd} --zipalign ${config.ZipAlign} $extraArgs $in $out",
-		CommandDeps: []string{"build/soong/scripts/check_prebuilt_presigned_apk.py", "${config.Aapt2Cmd}", "${config.ZipAlign}"},
-		Description: "Check presigned apk",
+		Command:         "build/soong/scripts/check_prebuilt_presigned_apk.py --aapt2 ${config.Aapt2Cmd} --zipalign ${config.ZipAlign} $extraArgs $in $out",
+		CommandDeps:     []string{"build/soong/scripts/check_prebuilt_presigned_apk.py", "${config.Aapt2Cmd}", "${config.ZipAlign}"},
+		Description:     "Check presigned apk",
+		SandboxDisabled: true,
 	}, "extraArgs")
 
 	extractApkRule = pctx.AndroidStaticRule("extract-apk", blueprint.RuleParams{
-		Command:     "unzip -p $in $extract_apk > $out",
-		Description: "Extract specific sub apk",
+		Command:         "unzip -p $in $extract_apk > $out",
+		Description:     "Extract specific sub apk",
+		SandboxDisabled: true,
 	}, "extract_apk")
 
 	gzipRule = pctx.AndroidStaticRule("gzip",
 		blueprint.RuleParams{
-			Command:     "prebuilts/build-tools/path/linux-x86/gzip -9 -c $in > $out",
-			CommandDeps: []string{"prebuilts/build-tools/path/linux-x86/gzip"},
-			Description: "gzip $out",
+			Command:         "prebuilts/build-tools/path/linux-x86/gzip -9 -c $in > $out",
+			CommandDeps:     []string{"prebuilts/build-tools/path/linux-x86/gzip"},
+			Description:     "gzip $out",
+			SandboxDisabled: true,
 		})
 )
 

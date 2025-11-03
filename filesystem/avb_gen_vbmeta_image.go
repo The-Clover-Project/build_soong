@@ -57,7 +57,7 @@ func (a *avbGenVbmetaImage) installFileName() string {
 }
 
 func (a *avbGenVbmetaImage) GenerateAndroidBuildActions(ctx android.ModuleContext) {
-	builder := android.NewRuleBuilder(pctx, ctx)
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	cmd := builder.Command().BuiltTool("avbtool").Text("add_hash_footer")
 	cmd.Flag("--dynamic_partition_size")
 	cmd.Flag("--do_not_append_vbmeta_image")

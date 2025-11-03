@@ -807,7 +807,7 @@ func (so *soongOnlyAndroidMkSingleton) soongOnlyBuildActions(ctx SingletonContex
 		if err := writeModuleInfoJSON(ctx, moduleInfoJSONs, preMergePath); err != nil {
 			ctx.Errorf("%s", err)
 		}
-		builder := NewRuleBuilder(pctx, ctx)
+		builder := NewRuleBuilder(pctx, ctx).SandboxDisabled()
 		builder.Command().
 			BuiltTool("merge_module_info_json").
 			FlagWithOutput("-o ", moduleInfoJSONPath).

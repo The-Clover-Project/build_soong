@@ -25,7 +25,7 @@ func genProto(ctx android.ModuleContext, protoFile android.Path, flags android.P
 	outDir := srcsZipFile.ReplaceExtension(ctx, "tmp")
 	depFile := srcsZipFile.ReplaceExtension(ctx, "srcszip.d")
 
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 
 	rule.Command().Text("rm -rf").Flag(outDir.String())
 	rule.Command().Text("mkdir -p").Flag(outDir.String())

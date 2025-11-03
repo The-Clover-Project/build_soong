@@ -115,10 +115,29 @@ var (
 						srcs: [
 							"file1.py",
 						],
+					}`,
+				),
+				"dir/file1.py": nil,
+			},
+			errors: []string{
+				fmt.Sprintf(pkgPathErrTemplate,
+					"dir/Android.bp:11:15", "lib2", "a/c/../../../"),
+			},
+		},
+		{
+			desc: "module with absolute pkg_path",
+			mockFiles: map[string][]byte{
+				filepath.Join("dir", bpFile): []byte(
+					`python_library_host {
+						name: "lib1",
+						pkg_path: "a/c/../../",
+						srcs: [
+							"file1.py",
+						],
 					}
 
 					python_library_host {
-						name: "lib3",
+						name: "lib2",
 						pkg_path: "/a/c/../../",
 						srcs: [
 							"file1.py",
@@ -129,9 +148,7 @@ var (
 			},
 			errors: []string{
 				fmt.Sprintf(pkgPathErrTemplate,
-					"dir/Android.bp:11:15", "lib2", "a/c/../../../"),
-				fmt.Sprintf(pkgPathErrTemplate,
-					"dir/Android.bp:19:15", "lib3", "/a/c/../../"),
+					"dir/Android.bp:11:15", "lib2", "/a/c/../../"),
 			},
 		},
 		{

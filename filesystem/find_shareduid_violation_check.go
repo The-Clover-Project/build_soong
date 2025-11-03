@@ -28,7 +28,7 @@ var findSharedUIDViolationPartitionsToCheck = []string{"system", "system_ext", "
 func (a *androidDevice) findSharedUIDViolation(ctx android.ModuleContext) {
 	fsInfoMap := a.getFsInfos(ctx)
 
-	rule := android.NewRuleBuilder(pctx, ctx)
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	cmd := rule.Command().BuiltTool("find_shareduid_violation")
 	cmd.FlagWithInput("--aapt ", ctx.Config().HostToolPath(ctx, "aapt2"))
 	outputFile := android.PathForModuleOut(ctx, "shareduid_violation_modules.json")

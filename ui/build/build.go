@@ -543,7 +543,7 @@ func distGzipFile(ctx Context, config Config, src string, subDirs ...string) {
 	}
 
 	subDir := filepath.Join(subDirs...)
-	destDir := filepath.Join(config.RealDistDir(), "soong_ui", subDir)
+	destDir := filepath.Join(config.RealDistDir(), subDir)
 
 	if err := os.MkdirAll(destDir, 0777); err != nil { // a+rwx
 		ctx.Printf("failed to mkdir %s: %s", destDir, err.Error())

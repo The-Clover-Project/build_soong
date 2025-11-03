@@ -30,7 +30,8 @@ import (
 
 var (
 	systemOtherPropFileTweaks = pctx.AndroidStaticRule("system_other_prop_file_tweaks", blueprint.RuleParams{
-		Command: `rm -rf $out && sed -e 's@^mount_point=/$$@mount_point=system_other@g' -e 's@^partition_name=system$$@partition_name=system_other@g' $in > $out`,
+		Command:         `rm -rf $out && sed -e 's@^mount_point=/$$@mount_point=system_other@g' -e 's@^partition_name=system$$@partition_name=system_other@g' $in > $out`,
+		SandboxDisabled: true,
 	})
 )
 
@@ -98,7 +99,7 @@ func (m *systemOtherImage) GenerateAndroidBuildActions(ctx android.ModuleContext
 	stagingDir := android.PathForModuleOut(ctx, "system_other").OutputPath
 	stagingDirTimestamp := android.PathForModuleOut(ctx, "staging_dir.timestamp")
 
-	builder := android.NewRuleBuilder(pctx, ctx)
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	builder.Command().Textf("rm -rf %s && mkdir -p %s", stagingDir, stagingDir)
 
 	specs := make(map[string]android.PackagingSpec)
@@ -164,7 +165,7 @@ func (m *systemOtherImage) GenerateAndroidBuildActions(ctx android.ModuleContext
 		Output: propFile,
 	})
 
-	builder = android.NewRuleBuilder(pctx, ctx)
+	builder = android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	builder.Command().
 		Textf("PATH=%s:$PATH", strings.Join(pathToolDirs, ":")).
 		BuiltTool("build_image").

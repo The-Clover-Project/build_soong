@@ -32,7 +32,8 @@ var (
 		blueprint.RuleParams{
 			Command: "${objcopy} --output-target=binary ${in} ${out} &&" +
 				"chmod -x ${out}",
-			CommandDeps: []string{"$objcopy"},
+			CommandDeps:     []string{"$objcopy"},
+			SandboxDisabled: true,
 		},
 		"objcopy")
 )
