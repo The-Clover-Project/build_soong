@@ -1360,6 +1360,7 @@ func buildBootImageVariant(ctx android.ModuleContext, image *bootImageVariant, p
 
 	if image.target.Os == android.Android {
 		cmd.Text("$(cat").Input(globalSoong.UffdGcFlag).Text(")")
+		cmd.Text("$(cat").Input(globalSoong.ProfileCodeFlag).Text(")")
 	}
 
 	if global.BootFlags != "" {
@@ -1367,8 +1368,6 @@ func buildBootImageVariant(ctx android.ModuleContext, image *bootImageVariant, p
 	}
 
 	cmd.Text("$(cat").Input(globalSoong.AssumeValueFlags).Text(")")
-
-	cmd.Text("$(cat").Input(globalSoong.ProfileCodeFlag).Text(")")
 
 	if extraFlags != "" {
 		cmd.Flag(extraFlags)
