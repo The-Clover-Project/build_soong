@@ -1275,6 +1275,10 @@ func (c *config) PlatformSdkVersionFull() string {
 	return proptools.StringDefault(c.productVariables.Platform_sdk_version_full, "")
 }
 
+func (c *config) PlatformProspectiveSdkVersionFull() string {
+	return proptools.StringDefault(c.productVariables.Platform_prospective_sdk_version_full, "")
+}
+
 func (c *config) RawPlatformSdkVersion() *int {
 	return c.productVariables.Platform_sdk_version
 }
@@ -1288,7 +1292,11 @@ func (c *config) PlatformSdkCodename() string {
 }
 
 func (c *config) PlatformSdkExtensionVersion() int {
-	return *c.productVariables.Platform_sdk_extension_version
+	version := 1
+	if c.productVariables.Platform_sdk_extension_version != nil {
+		version = *c.productVariables.Platform_sdk_extension_version
+	}
+	return version
 }
 
 func (c *config) PlatformBaseSdkExtensionVersion() int {
