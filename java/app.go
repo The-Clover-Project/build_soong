@@ -109,6 +109,11 @@ type appProperties struct {
 	// use to get PRODUCT-agnostic resource data like IDs and type definitions.
 	Export_package_resources *bool
 
+	// If set, aapt2 will emit a file containing a list of resource type names and their ID
+	// mappings, which can be used by `--stable-ids` flag in `aapt2 link` command to assign
+	// fixed IDs for resources. The output file will be named res-ids.txt.
+	Emit_res_ids *bool
+
 	// Specifies that this app should be installed to the priv-app directory,
 	// where the system will grant it additional privileges not available to
 	// normal apps.
@@ -754,6 +759,7 @@ func (a *AndroidApp) aaptBuildActions(ctx android.ModuleContext) {
 			excludedLibs:                   a.usesLibraryProperties.Exclude_uses_libs,
 			enforceDefaultTargetSdkVersion: a.enforceDefaultTargetSdkVersion(),
 			forceNonFinalResourceIDs:       nonFinalIds,
+			emitResIds:                     Bool(a.appProperties.Emit_res_ids),
 			extraLinkFlags:                 aaptLinkFlags,
 			aconfigTextFiles:               aconfigTextFilePaths,
 			usesLibrary:                    &a.usesLibrary,
@@ -1223,6 +1229,9 @@ func (a *AndroidApp) setOutputFiles(ctx android.ModuleContext) {
 	}
 	if a.rJar != nil {
 		ctx.SetOutputFiles([]android.Path{a.rJar}, ".aapt.jar")
+	}
+	if a.aapt.resIdsFile.Valid() {
+		ctx.SetOutputFiles([]android.Path{a.aapt.resIdsFile.Path()}, ".res-ids.txt")
 	}
 	ctx.SetOutputFiles([]android.Path{a.outputFile}, ".apk")
 	ctx.SetOutputFiles([]android.Path{a.exportPackage}, ".export-package.apk")
