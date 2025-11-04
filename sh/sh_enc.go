@@ -5,7 +5,10 @@ package sh
 import (
 	"android/soong/android"
 	"bytes"
+	"fmt"
 	"github.com/google/blueprint/gobtools"
+	"github.com/google/blueprint/proptools"
+	"reflect"
 )
 
 // begin of sh_binary.go
@@ -39,6 +42,43 @@ func (r ShBinaryInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		}
 	}
 	return err
+}
+
+func (r ShBinaryInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":sh.ShBinaryInfo")
+	hasher.WriteInt(3)
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.SubDir)
+	hasher.WriteString(":sh.android.Path")
+	val1 := r.OutputFile == nil
+	if val1 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.OutputFile); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val2 := r.OutputFile == nil
+				if val2 {
+					hasher.WriteByte(0)
+				} else {
+					val3 := func(hasher *proptools.Hasher) error { return r.OutputFile.(proptools.CustomHash).CustomHash(hasher) }
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val3); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.OutputFile.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":.[]string")
+	hasher.WriteInt(len(r.Symlinks))
+	for val4 := 0; val4 < len(r.Symlinks); val4++ {
+		hasher.WriteString(":.string")
+		hasher.WriteString(r.Symlinks[val4])
+	}
+	return nil
 }
 
 func (r *ShBinaryInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {

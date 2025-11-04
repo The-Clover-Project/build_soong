@@ -5,7 +5,11 @@ package filesystem
 import (
 	"android/soong/android"
 	"bytes"
+	"fmt"
 	"github.com/google/blueprint/gobtools"
+	"github.com/google/blueprint/proptools"
+	"reflect"
+	"unsafe"
 )
 
 // begin of android_device.go
@@ -20,6 +24,35 @@ func (r ApexKeyPathInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) erro
 		return err
 	}
 	return err
+}
+
+func (r ApexKeyPathInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":filesystem.ApexKeyPathInfo")
+	hasher.WriteInt(1)
+	hasher.WriteString(":filesystem.android.Path")
+	val1 := r.ApexKeyPath == nil
+	if val1 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.ApexKeyPath); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val2 := r.ApexKeyPath == nil
+				if val2 {
+					hasher.WriteByte(0)
+				} else {
+					val3 := func(hasher *proptools.Hasher) error { return r.ApexKeyPath.(proptools.CustomHash).CustomHash(hasher) }
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val3); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.ApexKeyPath.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	return nil
 }
 
 func (r *ApexKeyPathInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
@@ -105,6 +138,169 @@ func (r BootimgInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		return err
 	}
 	return err
+}
+
+func (r BootimgInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":filesystem.BootimgInfo")
+	hasher.WriteInt(10)
+	hasher.WriteString(":filesystem.bootImageType")
+	hasher.WriteString(":.int")
+	hasher.WriteUint64(uint64(int(r.Type)))
+	hasher.WriteString(":.[]string")
+	hasher.WriteInt(len(r.Cmdline))
+	for val1 := 0; val1 < len(r.Cmdline); val1++ {
+		hasher.WriteString(":.string")
+		hasher.WriteString(r.Cmdline[val1])
+	}
+	hasher.WriteString(":filesystem.android.Path")
+	val2 := r.Kernel == nil
+	if val2 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.Kernel); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val3 := r.Kernel == nil
+				if val3 {
+					hasher.WriteByte(0)
+				} else {
+					val4 := func(hasher *proptools.Hasher) error { return r.Kernel.(proptools.CustomHash).CustomHash(hasher) }
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val4); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.Kernel.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":filesystem.android.Path")
+	val5 := r.Dtb == nil
+	if val5 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.Dtb); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val6 := r.Dtb == nil
+				if val6 {
+					hasher.WriteByte(0)
+				} else {
+					val7 := func(hasher *proptools.Hasher) error { return r.Dtb.(proptools.CustomHash).CustomHash(hasher) }
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val7); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.Dtb.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":filesystem.android.Path")
+	val8 := r.Bootconfig == nil
+	if val8 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.Bootconfig); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val9 := r.Bootconfig == nil
+				if val9 {
+					hasher.WriteByte(0)
+				} else {
+					val10 := func(hasher *proptools.Hasher) error { return r.Bootconfig.(proptools.CustomHash).CustomHash(hasher) }
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val10); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.Bootconfig.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":filesystem.android.Path")
+	val11 := r.Output == nil
+	if val11 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.Output); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val12 := r.Output == nil
+				if val12 {
+					hasher.WriteByte(0)
+				} else {
+					val13 := func(hasher *proptools.Hasher) error { return r.Output.(proptools.CustomHash).CustomHash(hasher) }
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val13); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.Output.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":filesystem.android.Path")
+	val14 := r.SignedOutput == nil
+	if val14 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.SignedOutput); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val15 := r.SignedOutput == nil
+				if val15 {
+					hasher.WriteByte(0)
+				} else {
+					val16 := func(hasher *proptools.Hasher) error { return r.SignedOutput.(proptools.CustomHash).CustomHash(hasher) }
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val16); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.SignedOutput.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":filesystem.android.Path")
+	val17 := r.PropFileForMiscInfo == nil
+	if val17 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.PropFileForMiscInfo); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val18 := r.PropFileForMiscInfo == nil
+				if val18 {
+					hasher.WriteByte(0)
+				} else {
+					val19 := func(hasher *proptools.Hasher) error {
+						return r.PropFileForMiscInfo.(proptools.CustomHash).CustomHash(hasher)
+					}
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val19); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.PropFileForMiscInfo.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.HeaderVersion)
+	hasher.WriteString(":.bool")
+	if r.IsPrebuilt {
+		hasher.WriteByte(1)
+	} else {
+		hasher.WriteByte(0)
+	}
+	return nil
 }
 
 func (r *BootimgInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
@@ -216,6 +412,60 @@ func (r ramdiskFragmentInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) 
 	return err
 }
 
+func (r ramdiskFragmentInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":filesystem.ramdiskFragmentInfo")
+	hasher.WriteInt(3)
+	hasher.WriteString(":filesystem.android.Path")
+	val1 := r.Output == nil
+	if val1 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.Output); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val2 := r.Output == nil
+				if val2 {
+					hasher.WriteByte(0)
+				} else {
+					val3 := func(hasher *proptools.Hasher) error { return r.Output.(proptools.CustomHash).CustomHash(hasher) }
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val3); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.Output.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.Ramdisk_name)
+	hasher.WriteString(":filesystem.android.Path")
+	val4 := r.RootDir == nil
+	if val4 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.RootDir); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val5 := r.RootDir == nil
+				if val5 {
+					hasher.WriteByte(0)
+				} else {
+					val6 := func(hasher *proptools.Hasher) error { return r.RootDir.(proptools.CustomHash).CustomHash(hasher) }
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val6); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.RootDir.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	return nil
+}
+
 func (r *ramdiskFragmentInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
@@ -269,6 +519,17 @@ func (r ramdiskFragmentsInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer)
 	return err
 }
 
+func (r ramdiskFragmentsInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":.[]ramdiskFragmentInfo")
+	hasher.WriteInt(len(r))
+	for val1 := 0; val1 < len(r); val1++ {
+		if err := r[val1].CustomHash(hasher); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (r *ramdiskFragmentsInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
@@ -311,6 +572,35 @@ func (r bootloaderInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error
 	return err
 }
 
+func (r bootloaderInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":filesystem.bootloaderInfo")
+	hasher.WriteInt(1)
+	hasher.WriteString(":filesystem.android.Path")
+	val1 := r.bootloaderImg == nil
+	if val1 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.bootloaderImg); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val2 := r.bootloaderImg == nil
+				if val2 {
+					hasher.WriteByte(0)
+				} else {
+					val3 := func(hasher *proptools.Hasher) error { return r.bootloaderImg.(proptools.CustomHash).CustomHash(hasher) }
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val3); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.bootloaderImg.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	return nil
+}
+
 func (r *bootloaderInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
@@ -345,6 +635,37 @@ func (r DtboImgInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		return err
 	}
 	return err
+}
+
+func (r DtboImgInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":filesystem.DtboImgInfo")
+	hasher.WriteInt(1)
+	hasher.WriteString(":filesystem.android.Path")
+	val1 := r.PropFileForMiscInfo == nil
+	if val1 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.PropFileForMiscInfo); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val2 := r.PropFileForMiscInfo == nil
+				if val2 {
+					hasher.WriteByte(0)
+				} else {
+					val3 := func(hasher *proptools.Hasher) error {
+						return r.PropFileForMiscInfo.(proptools.CustomHash).CustomHash(hasher)
+					}
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val3); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.PropFileForMiscInfo.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	return nil
 }
 
 func (r *DtboImgInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
@@ -391,6 +712,58 @@ func (r InstalledFilesStruct) Encode(ctx gobtools.EncContext, buf *bytes.Buffer)
 	return err
 }
 
+func (r InstalledFilesStruct) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":filesystem.InstalledFilesStruct")
+	hasher.WriteInt(2)
+	hasher.WriteString(":filesystem.android.Path")
+	val1 := r.Txt == nil
+	if val1 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.Txt); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val2 := r.Txt == nil
+				if val2 {
+					hasher.WriteByte(0)
+				} else {
+					val3 := func(hasher *proptools.Hasher) error { return r.Txt.(proptools.CustomHash).CustomHash(hasher) }
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val3); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.Txt.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":filesystem.android.Path")
+	val4 := r.Json == nil
+	if val4 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.Json); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val5 := r.Json == nil
+				if val5 {
+					hasher.WriteByte(0)
+				} else {
+					val6 := func(hasher *proptools.Hasher) error { return r.Json.(proptools.CustomHash).CustomHash(hasher) }
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val6); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.Json.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	return nil
+}
+
 func (r *InstalledFilesStruct) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
@@ -434,6 +807,22 @@ func (r InstalledModuleInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) 
 		return err
 	}
 	return err
+}
+
+func (r InstalledModuleInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":filesystem.InstalledModuleInfo")
+	hasher.WriteInt(3)
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.Name)
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.Variation)
+	hasher.WriteString(":.bool")
+	if r.Prebuilt {
+		hasher.WriteByte(1)
+	} else {
+		hasher.WriteByte(0)
+	}
+	return nil
 }
 
 func (r *InstalledModuleInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
@@ -631,6 +1020,409 @@ func (r FilesystemInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error
 		return err
 	}
 	return err
+}
+
+func (r FilesystemInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":filesystem.FilesystemInfo")
+	hasher.WriteInt(28)
+	hasher.WriteString(":filesystem.android.Path")
+	val1 := r.Output == nil
+	if val1 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.Output); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val2 := r.Output == nil
+				if val2 {
+					hasher.WriteByte(0)
+				} else {
+					val3 := func(hasher *proptools.Hasher) error { return r.Output.(proptools.CustomHash).CustomHash(hasher) }
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val3); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.Output.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":filesystem.android.Path")
+	val4 := r.SignedOutputPath == nil
+	if val4 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.SignedOutputPath); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val5 := r.SignedOutputPath == nil
+				if val5 {
+					hasher.WriteByte(0)
+				} else {
+					val6 := func(hasher *proptools.Hasher) error {
+						return r.SignedOutputPath.(proptools.CustomHash).CustomHash(hasher)
+					}
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val6); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.SignedOutputPath.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":filesystem.android.Path")
+	val7 := r.FileListFile == nil
+	if val7 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.FileListFile); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val8 := r.FileListFile == nil
+				if val8 {
+					hasher.WriteByte(0)
+				} else {
+					val9 := func(hasher *proptools.Hasher) error { return r.FileListFile.(proptools.CustomHash).CustomHash(hasher) }
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val9); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.FileListFile.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	if err := r.RootDir.CustomHash(hasher); err != nil {
+		return err
+	}
+	hasher.WriteString(":filesystem.android.Paths")
+	hasher.WriteString(":.[]Path")
+	hasher.WriteInt(len(r.ExtraRootDirs))
+	for val10 := 0; val10 < len(r.ExtraRootDirs); val10++ {
+		hasher.WriteString("android/soong/android:android.Path")
+		val11 := r.ExtraRootDirs[val10] == nil
+		if val11 {
+			hasher.WriteByte(0)
+		} else {
+			if v := reflect.ValueOf(r.ExtraRootDirs[val10]); v.Kind() == reflect.Ptr {
+				if v.IsNil() {
+					panic(fmt.Errorf("nil pointer is not supported in interface"))
+				} else {
+					val12 := r.ExtraRootDirs[val10] == nil
+					if val12 {
+						hasher.WriteByte(0)
+					} else {
+						val13 := func(hasher *proptools.Hasher) error {
+							return r.ExtraRootDirs[val10].(proptools.CustomHash).CustomHash(hasher)
+						}
+						if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val13); err != nil {
+							return err
+						}
+					}
+				}
+			} else {
+				r.ExtraRootDirs[val10].(proptools.CustomHash).CustomHash(hasher)
+			}
+		}
+	}
+	if err := r.RebasedDir.CustomHash(hasher); err != nil {
+		return err
+	}
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.ModuleName)
+	hasher.WriteString(":filesystem.android.Path")
+	val14 := r.BuildImagePropFile == nil
+	if val14 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.BuildImagePropFile); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val15 := r.BuildImagePropFile == nil
+				if val15 {
+					hasher.WriteByte(0)
+				} else {
+					val16 := func(hasher *proptools.Hasher) error {
+						return r.BuildImagePropFile.(proptools.CustomHash).CustomHash(hasher)
+					}
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val16); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.BuildImagePropFile.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":filesystem.android.Paths")
+	hasher.WriteString(":.[]Path")
+	hasher.WriteInt(len(r.BuildImagePropFileDeps))
+	for val17 := 0; val17 < len(r.BuildImagePropFileDeps); val17++ {
+		hasher.WriteString("android/soong/android:android.Path")
+		val18 := r.BuildImagePropFileDeps[val17] == nil
+		if val18 {
+			hasher.WriteByte(0)
+		} else {
+			if v := reflect.ValueOf(r.BuildImagePropFileDeps[val17]); v.Kind() == reflect.Ptr {
+				if v.IsNil() {
+					panic(fmt.Errorf("nil pointer is not supported in interface"))
+				} else {
+					val19 := r.BuildImagePropFileDeps[val17] == nil
+					if val19 {
+						hasher.WriteByte(0)
+					} else {
+						val20 := func(hasher *proptools.Hasher) error {
+							return r.BuildImagePropFileDeps[val17].(proptools.CustomHash).CustomHash(hasher)
+						}
+						if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val20); err != nil {
+							return err
+						}
+					}
+				}
+			} else {
+				r.BuildImagePropFileDeps[val17].(proptools.CustomHash).CustomHash(hasher)
+			}
+		}
+	}
+	hasher.WriteString(":.map[string]android.PackagingSpec")
+	hasher.WriteInt(len(r.SpecsForSystemOther))
+	val21 := make([]string, 0, len(r.SpecsForSystemOther))
+	for val23 := range r.SpecsForSystemOther {
+		val21 = append(val21, val23)
+	}
+	proptools.SortOrdered(val21)
+	for _, val22 := range val21 {
+		hasher.WriteString(":.string")
+		hasher.WriteString(val22)
+		if err := r.SpecsForSystemOther[val22].CustomHash(hasher); err != nil {
+			return err
+		}
+	}
+	hasher.WriteString(":.[]FullInstallPathInfo")
+	hasher.WriteInt(len(r.FullInstallPaths))
+	for val24 := 0; val24 < len(r.FullInstallPaths); val24++ {
+		if err := r.FullInstallPaths[val24].CustomHash(hasher); err != nil {
+			return err
+		}
+	}
+	val26 := func(hasher *proptools.Hasher, val25 InstalledFilesStruct) error {
+		if err := val25.CustomHash(hasher); err != nil {
+			return err
+		}
+		return nil
+	}
+	if err := r.InstalledFilesDepSet.Hash(hasher, "InstalledFilesStruct", val26); err != nil {
+		return err
+	}
+	hasher.WriteString(":filesystem.android.Path")
+	val27 := r.ErofsCompressHints == nil
+	if val27 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.ErofsCompressHints); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val28 := r.ErofsCompressHints == nil
+				if val28 {
+					hasher.WriteByte(0)
+				} else {
+					val29 := func(hasher *proptools.Hasher) error {
+						return r.ErofsCompressHints.(proptools.CustomHash).CustomHash(hasher)
+					}
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val29); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.ErofsCompressHints.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":filesystem.android.Path")
+	val30 := r.SelinuxFc == nil
+	if val30 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.SelinuxFc); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val31 := r.SelinuxFc == nil
+				if val31 {
+					hasher.WriteByte(0)
+				} else {
+					val32 := func(hasher *proptools.Hasher) error { return r.SelinuxFc.(proptools.CustomHash).CustomHash(hasher) }
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val32); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.SelinuxFc.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":filesystem.android.Path")
+	val33 := r.FilesystemConfig == nil
+	if val33 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.FilesystemConfig); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val34 := r.FilesystemConfig == nil
+				if val34 {
+					hasher.WriteByte(0)
+				} else {
+					val35 := func(hasher *proptools.Hasher) error {
+						return r.FilesystemConfig.(proptools.CustomHash).CustomHash(hasher)
+					}
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val35); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.FilesystemConfig.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	val37 := func(hasher *proptools.Hasher, val36 InstalledModuleInfo) error {
+		if err := val36.CustomHash(hasher); err != nil {
+			return err
+		}
+		return nil
+	}
+	if err := r.Owners.Hash(hasher, "InstalledModuleInfo", val37); err != nil {
+		return err
+	}
+	hasher.WriteString(":.bool")
+	if r.HasFsverity {
+		hasher.WriteByte(1)
+	} else {
+		hasher.WriteByte(0)
+	}
+	hasher.WriteString(":filesystem.android.Path")
+	val38 := r.PropFileForMiscInfo == nil
+	if val38 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.PropFileForMiscInfo); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val39 := r.PropFileForMiscInfo == nil
+				if val39 {
+					hasher.WriteByte(0)
+				} else {
+					val40 := func(hasher *proptools.Hasher) error {
+						return r.PropFileForMiscInfo.(proptools.CustomHash).CustomHash(hasher)
+					}
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val40); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.PropFileForMiscInfo.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":.*int64")
+	val41 := r.PartitionSize == nil
+	if val41 {
+		hasher.WriteByte(0)
+	} else {
+		val42 := func(hasher *proptools.Hasher) error {
+			hasher.WriteString(":.int64")
+			hasher.WriteUint64(uint64((*r.PartitionSize)))
+			return nil
+		}
+		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.PartitionSize)), val42); err != nil {
+			return err
+		}
+	}
+	hasher.WriteString(":.bool")
+	if r.UseAvb {
+		hasher.WriteByte(1)
+	} else {
+		hasher.WriteByte(0)
+	}
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.AvbAlgorithm)
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.AvbHashAlgorithm)
+	hasher.WriteString(":filesystem.android.Path")
+	val43 := r.AvbKey == nil
+	if val43 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.AvbKey); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val44 := r.AvbKey == nil
+				if val44 {
+					hasher.WriteByte(0)
+				} else {
+					val45 := func(hasher *proptools.Hasher) error { return r.AvbKey.(proptools.CustomHash).CustomHash(hasher) }
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val45); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.AvbKey.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.PartitionName)
+	hasher.WriteString(":.bool")
+	if r.NoFlashall {
+		hasher.WriteByte(1)
+	} else {
+		hasher.WriteByte(0)
+	}
+	hasher.WriteString(":.bool")
+	if r.HasOrIsRecovery {
+		hasher.WriteByte(1)
+	} else {
+		hasher.WriteByte(0)
+	}
+	hasher.WriteString(":filesystem.android.Path")
+	val46 := r.checkVintfLog == nil
+	if val46 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.checkVintfLog); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val47 := r.checkVintfLog == nil
+				if val47 {
+					hasher.WriteByte(0)
+				} else {
+					val48 := func(hasher *proptools.Hasher) error { return r.checkVintfLog.(proptools.CustomHash).CustomHash(hasher) }
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val48); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.checkVintfLog.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":.bool")
+	if r.Prebuilt {
+		hasher.WriteByte(1)
+	} else {
+		hasher.WriteByte(0)
+	}
+	return nil
 }
 
 func (r *FilesystemInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
@@ -895,6 +1687,52 @@ func (r FullInstallPathInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) 
 	return err
 }
 
+func (r FullInstallPathInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":filesystem.FullInstallPathInfo")
+	hasher.WriteInt(5)
+	hasher.WriteString(":.bool")
+	if r.RequiresFullInstall {
+		hasher.WriteByte(1)
+	} else {
+		hasher.WriteByte(0)
+	}
+	if err := r.FullInstallPath.CustomHash(hasher); err != nil {
+		return err
+	}
+	hasher.WriteString(":filesystem.android.Path")
+	val1 := r.SourcePath == nil
+	if val1 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.SourcePath); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val2 := r.SourcePath == nil
+				if val2 {
+					hasher.WriteByte(0)
+				} else {
+					val3 := func(hasher *proptools.Hasher) error { return r.SourcePath.(proptools.CustomHash).CustomHash(hasher) }
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val3); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.SourcePath.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.SymlinkTarget)
+	hasher.WriteString(":.bool")
+	if r.IsDir {
+		hasher.WriteByte(1)
+	} else {
+		hasher.WriteByte(0)
+	}
+	return nil
+}
+
 func (r *FullInstallPathInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
@@ -939,6 +1777,12 @@ func (r FilesystemDefaultsInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffe
 	return err
 }
 
+func (r FilesystemDefaultsInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":filesystem.FilesystemDefaultsInfo")
+	hasher.WriteInt(0)
+	return nil
+}
+
 func (r *FilesystemDefaultsInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
@@ -965,6 +1809,35 @@ func (r radioInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		return err
 	}
 	return err
+}
+
+func (r radioInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":filesystem.radioInfo")
+	hasher.WriteInt(1)
+	hasher.WriteString(":filesystem.android.Path")
+	val1 := r.image == nil
+	if val1 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.image); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val2 := r.image == nil
+				if val2 {
+					hasher.WriteByte(0)
+				} else {
+					val3 := func(hasher *proptools.Hasher) error { return r.image.(proptools.CustomHash).CustomHash(hasher) }
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val3); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.image.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	return nil
 }
 
 func (r *radioInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
@@ -1018,6 +1891,32 @@ func (r RawBinaryInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error 
 		}
 	}
 	return err
+}
+
+func (r RawBinaryInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":filesystem.RawBinaryInfo")
+	hasher.WriteInt(1)
+	hasher.WriteString(":filesystem.android.SymbolicOutputInfos")
+	hasher.WriteString(":.[]*SymbolicOutputInfo")
+	hasher.WriteInt(len(r.SrcSymbolInfos))
+	for val1 := 0; val1 < len(r.SrcSymbolInfos); val1++ {
+		hasher.WriteString(":.*SymbolicOutputInfo")
+		val2 := r.SrcSymbolInfos[val1] == nil
+		if val2 {
+			hasher.WriteByte(0)
+		} else {
+			val3 := func(hasher *proptools.Hasher) error {
+				if err := (*r.SrcSymbolInfos[val1]).CustomHash(hasher); err != nil {
+					return err
+				}
+				return nil
+			}
+			if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.SrcSymbolInfos[val1])), val3); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func (r *RawBinaryInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
@@ -1098,6 +1997,105 @@ func (r SuperImageInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error
 		return err
 	}
 	return err
+}
+
+func (r SuperImageInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":filesystem.SuperImageInfo")
+	hasher.WriteInt(5)
+	hasher.WriteString(":filesystem.android.Path")
+	val1 := r.SuperImage == nil
+	if val1 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.SuperImage); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val2 := r.SuperImage == nil
+				if val2 {
+					hasher.WriteByte(0)
+				} else {
+					val3 := func(hasher *proptools.Hasher) error { return r.SuperImage.(proptools.CustomHash).CustomHash(hasher) }
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val3); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.SuperImage.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":.map[string]FilesystemInfo")
+	hasher.WriteInt(len(r.SubImageInfo))
+	val4 := make([]string, 0, len(r.SubImageInfo))
+	for val6 := range r.SubImageInfo {
+		val4 = append(val4, val6)
+	}
+	proptools.SortOrdered(val4)
+	for _, val5 := range val4 {
+		hasher.WriteString(":.string")
+		hasher.WriteString(val5)
+		if err := r.SubImageInfo[val5].CustomHash(hasher); err != nil {
+			return err
+		}
+	}
+	hasher.WriteString(":filesystem.android.Path")
+	val7 := r.DynamicPartitionsInfo == nil
+	if val7 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.DynamicPartitionsInfo); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val8 := r.DynamicPartitionsInfo == nil
+				if val8 {
+					hasher.WriteByte(0)
+				} else {
+					val9 := func(hasher *proptools.Hasher) error {
+						return r.DynamicPartitionsInfo.(proptools.CustomHash).CustomHash(hasher)
+					}
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val9); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.DynamicPartitionsInfo.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":filesystem.android.Path")
+	val10 := r.SuperEmptyImage == nil
+	if val10 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.SuperEmptyImage); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val11 := r.SuperEmptyImage == nil
+				if val11 {
+					hasher.WriteByte(0)
+				} else {
+					val12 := func(hasher *proptools.Hasher) error {
+						return r.SuperEmptyImage.(proptools.CustomHash).CustomHash(hasher)
+					}
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val12); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.SuperEmptyImage.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":.bool")
+	if r.AbUpdate {
+		hasher.WriteByte(1)
+	} else {
+		hasher.WriteByte(0)
+	}
+	return nil
 }
 
 func (r *SuperImageInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
@@ -1203,6 +2201,95 @@ func (r vbmetaPartitionInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) 
 	return err
 }
 
+func (r vbmetaPartitionInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":filesystem.vbmetaPartitionInfo")
+	hasher.WriteInt(7)
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.Name)
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.FilesystemPartitionType)
+	hasher.WriteString(":.int")
+	hasher.WriteUint64(uint64(r.RollbackIndexLocation))
+	hasher.WriteString(":filesystem.android.Path")
+	val1 := r.PublicKey == nil
+	if val1 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.PublicKey); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val2 := r.PublicKey == nil
+				if val2 {
+					hasher.WriteByte(0)
+				} else {
+					val3 := func(hasher *proptools.Hasher) error { return r.PublicKey.(proptools.CustomHash).CustomHash(hasher) }
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val3); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.PublicKey.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":filesystem.android.Path")
+	val4 := r.Output == nil
+	if val4 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.Output); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val5 := r.Output == nil
+				if val5 {
+					hasher.WriteByte(0)
+				} else {
+					val6 := func(hasher *proptools.Hasher) error { return r.Output.(proptools.CustomHash).CustomHash(hasher) }
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val6); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.Output.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":filesystem.android.Path")
+	val7 := r.PropFileForMiscInfo == nil
+	if val7 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.PropFileForMiscInfo); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val8 := r.PropFileForMiscInfo == nil
+				if val8 {
+					hasher.WriteByte(0)
+				} else {
+					val9 := func(hasher *proptools.Hasher) error {
+						return r.PropFileForMiscInfo.(proptools.CustomHash).CustomHash(hasher)
+					}
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val9); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.PropFileForMiscInfo.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":.bool")
+	if r.AbOtaBootloaderPartition {
+		hasher.WriteByte(1)
+	} else {
+		hasher.WriteByte(0)
+	}
+	return nil
+}
+
 func (r *vbmetaPartitionInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
@@ -1277,6 +2364,17 @@ func (r vbmetaPartitionInfos) Encode(ctx gobtools.EncContext, buf *bytes.Buffer)
 		}
 	}
 	return err
+}
+
+func (r vbmetaPartitionInfos) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":.[]vbmetaPartitionInfo")
+	hasher.WriteInt(len(r))
+	for val1 := 0; val1 < len(r); val1++ {
+		if err := r[val1].CustomHash(hasher); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (r *vbmetaPartitionInfos) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {

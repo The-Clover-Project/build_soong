@@ -5,7 +5,10 @@ package aidl_library
 import (
 	"android/soong/android"
 	"bytes"
+	"fmt"
 	"github.com/google/blueprint/gobtools"
+	"github.com/google/blueprint/proptools"
+	"reflect"
 )
 
 // begin of aidl_library.go
@@ -39,6 +42,98 @@ func (r AidlLibraryInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) erro
 		return err
 	}
 	return err
+}
+
+func (r AidlLibraryInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":aidl_library.AidlLibraryInfo")
+	hasher.WriteInt(3)
+	hasher.WriteString(":aidl_library.android.Paths")
+	hasher.WriteString(":.[]Path")
+	hasher.WriteInt(len(r.Srcs))
+	for val1 := 0; val1 < len(r.Srcs); val1++ {
+		hasher.WriteString("android/soong/android:android.Path")
+		val2 := r.Srcs[val1] == nil
+		if val2 {
+			hasher.WriteByte(0)
+		} else {
+			if v := reflect.ValueOf(r.Srcs[val1]); v.Kind() == reflect.Ptr {
+				if v.IsNil() {
+					panic(fmt.Errorf("nil pointer is not supported in interface"))
+				} else {
+					val3 := r.Srcs[val1] == nil
+					if val3 {
+						hasher.WriteByte(0)
+					} else {
+						val4 := func(hasher *proptools.Hasher) error { return r.Srcs[val1].(proptools.CustomHash).CustomHash(hasher) }
+						if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val4); err != nil {
+							return err
+						}
+					}
+				}
+			} else {
+				r.Srcs[val1].(proptools.CustomHash).CustomHash(hasher)
+			}
+		}
+	}
+	val9 := func(hasher *proptools.Hasher, val5 android.Path) error {
+		hasher.WriteString(":aidl_library.android.Path")
+		val6 := val5 == nil
+		if val6 {
+			hasher.WriteByte(0)
+		} else {
+			if v := reflect.ValueOf(val5); v.Kind() == reflect.Ptr {
+				if v.IsNil() {
+					panic(fmt.Errorf("nil pointer is not supported in interface"))
+				} else {
+					val7 := val5 == nil
+					if val7 {
+						hasher.WriteByte(0)
+					} else {
+						val8 := func(hasher *proptools.Hasher) error { return val5.(proptools.CustomHash).CustomHash(hasher) }
+						if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val8); err != nil {
+							return err
+						}
+					}
+				}
+			} else {
+				val5.(proptools.CustomHash).CustomHash(hasher)
+			}
+		}
+		return nil
+	}
+	if err := r.IncludeDirs.Hash(hasher, "android.Path", val9); err != nil {
+		return err
+	}
+	val14 := func(hasher *proptools.Hasher, val10 android.Path) error {
+		hasher.WriteString(":aidl_library.android.Path")
+		val11 := val10 == nil
+		if val11 {
+			hasher.WriteByte(0)
+		} else {
+			if v := reflect.ValueOf(val10); v.Kind() == reflect.Ptr {
+				if v.IsNil() {
+					panic(fmt.Errorf("nil pointer is not supported in interface"))
+				} else {
+					val12 := val10 == nil
+					if val12 {
+						hasher.WriteByte(0)
+					} else {
+						val13 := func(hasher *proptools.Hasher) error { return val10.(proptools.CustomHash).CustomHash(hasher) }
+						if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val13); err != nil {
+							return err
+						}
+					}
+				}
+			} else {
+				val10.(proptools.CustomHash).CustomHash(hasher)
+			}
+		}
+		return nil
+	}
+	if err := r.Hdrs.Hash(hasher, "android.Path", val14); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (r *AidlLibraryInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {

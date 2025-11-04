@@ -5,6 +5,7 @@ package bpf
 import (
 	"bytes"
 	"github.com/google/blueprint/gobtools"
+	"github.com/google/blueprint/proptools"
 )
 
 // begin of bpf.go
@@ -19,6 +20,14 @@ func (r BpfInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		return err
 	}
 	return err
+}
+
+func (r BpfInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":bpf.BpfInfo")
+	hasher.WriteInt(1)
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.SubDir)
+	return nil
 }
 
 func (r *BpfInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {

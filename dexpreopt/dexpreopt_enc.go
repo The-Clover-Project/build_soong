@@ -5,7 +5,11 @@ package dexpreopt
 import (
 	"android/soong/android"
 	"bytes"
+	"fmt"
 	"github.com/google/blueprint/gobtools"
+	"github.com/google/blueprint/proptools"
+	"reflect"
+	"unsafe"
 )
 
 // begin of class_loader_context.go
@@ -53,6 +57,64 @@ func (r ClassLoaderContext) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) e
 		}
 	}
 	return err
+}
+
+func (r ClassLoaderContext) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":dexpreopt.ClassLoaderContext")
+	hasher.WriteInt(5)
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.Name)
+	hasher.WriteString(":.bool")
+	if r.Optional {
+		hasher.WriteByte(1)
+	} else {
+		hasher.WriteByte(0)
+	}
+	hasher.WriteString(":dexpreopt.android.Path")
+	val1 := r.Host == nil
+	if val1 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.Host); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val2 := r.Host == nil
+				if val2 {
+					hasher.WriteByte(0)
+				} else {
+					val3 := func(hasher *proptools.Hasher) error { return r.Host.(proptools.CustomHash).CustomHash(hasher) }
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val3); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.Host.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.Device)
+	hasher.WriteString(":.[]*ClassLoaderContext")
+	hasher.WriteInt(len(r.Subcontexts))
+	for val4 := 0; val4 < len(r.Subcontexts); val4++ {
+		hasher.WriteString(":.*ClassLoaderContext")
+		val5 := r.Subcontexts[val4] == nil
+		if val5 {
+			hasher.WriteByte(0)
+		} else {
+			val6 := func(hasher *proptools.Hasher) error {
+				if err := (*r.Subcontexts[val4]).CustomHash(hasher); err != nil {
+					return err
+				}
+				return nil
+			}
+			if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.Subcontexts[val4])), val6); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func (r *ClassLoaderContext) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
