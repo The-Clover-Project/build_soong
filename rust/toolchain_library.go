@@ -102,7 +102,7 @@ var _ toolchainCompiler = (*toolchainLibraryDecorator)(nil)
 
 func rustSetToolchainSource(ctx android.LoadHookContext) {
 	if toolchainLib, ok := ctx.Module().(*Module).compiler.(toolchainCompiler); ok {
-		prefix := filepath.Join("linux-x86", GetRustPrebuiltVersion(ctx))
+		prefix := filepath.Join(GetRustPrebuiltVersion(ctx))
 		versionedCrateRoot := path.Join(prefix, android.String(toolchainLib.toolchainCrateRoot()))
 		versionedSrcs := make([]string, len(toolchainLib.toolchainSrcs()))
 		for i, src := range toolchainLib.toolchainSrcs() {
