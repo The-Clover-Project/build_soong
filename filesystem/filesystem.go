@@ -103,6 +103,7 @@ type filesystem struct {
 	android.ModuleBase
 	android.PackagingBase
 	android.DefaultableModuleBase
+	blueprint.ModuleUsesIncrementalWalkDeps
 
 	properties FilesystemProperties
 

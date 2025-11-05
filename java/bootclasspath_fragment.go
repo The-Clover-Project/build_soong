@@ -252,6 +252,7 @@ type BootclasspathFragmentModule struct {
 	android.DefaultableModuleBase
 	android.ApexModuleBase
 	ClasspathFragmentBase
+	blueprint.ModuleUsesIncrementalWalkDeps
 
 	// True if this fragment is for testing purposes.
 	testFragment bool

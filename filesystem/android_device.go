@@ -166,6 +166,7 @@ type PvmfwProperties struct {
 
 type androidDevice struct {
 	android.ModuleBase
+	blueprint.ModuleUsesIncrementalWalkDeps
 
 	partitionProps PartitionNameProperties
 

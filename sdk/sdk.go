@@ -42,6 +42,7 @@ func registerSdkBuildComponents(ctx android.RegistrationContext) {
 type sdk struct {
 	android.ModuleBase
 	android.DefaultableModuleBase
+	blueprint.ModuleUsesIncrementalWalkDeps
 
 	// The dynamically generated information about the registered SdkMemberType
 	dynamicSdkMemberTypes *dynamicSdkMemberTypes
