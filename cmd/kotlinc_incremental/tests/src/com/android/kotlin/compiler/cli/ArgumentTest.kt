@@ -30,6 +30,7 @@ class ArgumentTest {
     class TestOpts : Options {
         override val passThroughArgs = mutableListOf<String>()
         val mapArgs = mutableMapOf<String, String>()
+        var directory: File? = null
     }
 
     private val opts = TestOpts()
@@ -210,6 +211,40 @@ class ArgumentTest {
         assertThat(opts.passThroughArgs).hasSize(2)
         assertThat(opts.passThroughArgs).contains(fileA.absolutePath)
         assertThat(opts.passThroughArgs).contains(fileB.absolutePath)
+    }
+
+    @Test
+    fun testWritableDirectoryArgument_usesCanonicalPath() {
+        // Verifies that WritableDirectoryArgument resolves the path to its canonical form before
+        // passing it to setDirectory. This is important for path comparisons and to avoid issues
+        // with relative paths containing "." or "..".
+
+        // Setup: Create a directory structure that allows for a non-canonical path.
+        val subDir = tFolder.newFolder("subDir")
+        val targetDir = tFolder.newFolder("targetDir")
+        val nonCanonicalPath = "${tFolder.root.path}/${subDir.name}/../${targetDir.name}"
+
+        // Setup: Create a concrete implementation of WritableDirectoryArgument to test.
+        // The setDirectory method will capture the File object passed to it.
+        val wda =
+            object : WritableDirectoryArgument<TestOpts>() {
+                override val argumentName = "testDir"
+                override val helpText = "help"
+                override val default: String? = null
+
+                override fun setDirectory(dir: File, opts: TestOpts) {
+                    opts.directory = dir
+                }
+            }
+
+        // Action: Parse an argument with the non-canonical path.
+        val arg = "-testDir=$nonCanonicalPath"
+        wda.parse(arg, emptyList<String>().iterator(), opts)
+
+        // Assertion: Verify that the path was canonicalized before being set.
+        assertThat(wda.error).isNull()
+        assertThat(opts.directory).isNotNull()
+        assertThat(opts.directory).isEqualTo(targetDir.canonicalFile)
     }
 
     private fun createInputFileListArgument() =
