@@ -1,0 +1,83 @@
+// Copyright 2025 The Android Open Source Project
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+syntax = "proto3";
+package protos;
+option go_package = "android/soong/testconfigs/protos";
+
+message TestTrigger {
+  string name = 1;
+  string path = 2;
+  repeated string imports = 3;
+  repeated string file_patterns = 4;
+  oneof workflow {
+    TestWorkflowCollection list = 5;
+    TestWorkflowInline inline = 6;
+  }
+}
+
+message TestTriggerCollection {
+  repeated TestTrigger triggers = 1;
+}
+
+message TestWorkflow {
+  string name = 1;
+  TestSchedulingPlan scheduling_plan = 2;
+  TestExecutionPlan execution_plan = 3;
+}
+
+message TestWorkflowCollection {
+  repeated TestWorkflow workflows = 1;
+}
+
+message TestWorkflowInline {
+  TestSchedulingPlan scheduling_plan = 1;
+  repeated ModulePlan tests = 2;
+}
+
+message TestSchedulingPlan {
+  string name = 1;
+}
+
+message TestSchedulingPlanCollection {
+  repeated TestSchedulingPlan plans = 1;
+}
+
+message TestExecutionPlan {
+  string name = 1;
+  repeated ModulePlan tests = 2;
+  repeated KeyValue test_args = 3;
+  TestExecutionMetadata metadata = 4;
+}
+
+message TestExecutionPlanCollection {
+  repeated TestExecutionPlan plans = 1;
+}
+
+message TestExecutionMetadata {
+  repeated string owners = 1;
+  repeated string code_under_test = 2;
+}
+
+message ModulePlan {
+  string module = 1;
+  repeated string include = 2;
+  repeated string exclude = 3;
+  repeated KeyValue module_args = 4;
+}
+
+message KeyValue {
+  string key = 1;
+  string value = 2;
+}
