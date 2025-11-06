@@ -203,6 +203,10 @@ func (a *androidTransitionMutatorAdapter) Split(ctx blueprint.BaseModuleContext)
 	return a.mutator.Split(moduleContext)
 }
 
+func (a *androidTransitionMutatorAdapter) SplitOnDemand(ctx blueprint.BaseModuleContext) []blueprint.TransitionInfo {
+	return nil
+}
+
 func (a *androidTransitionMutatorAdapter) OutgoingTransition(bpctx blueprint.OutgoingTransitionContext,
 	sourceTransitionInfo blueprint.TransitionInfo) blueprint.TransitionInfo {
 	m := bpctx.Module().(Module)
