@@ -792,9 +792,6 @@ func initConfig(cmdArgs CmdArgs, availableEnv map[string]string) (*config, error
 		katiEnabled: cmdArgs.KatiEnabled,
 	}
 
-	variant, ok := os.LookupEnv("TARGET_BUILD_VARIANT")
-	isEngBuild := !ok || variant == "eng"
-
 	newConfig.deviceConfig = &deviceConfig{
 		config: newConfig,
 	}
@@ -830,7 +827,7 @@ func initConfig(cmdArgs CmdArgs, availableEnv map[string]string) (*config, error
 		return &config{}, err
 	}
 
-	newConfig.partialCompileFlags, err = newConfig.parsePartialCompileFlags(isEngBuild)
+	newConfig.partialCompileFlags, err = newConfig.parsePartialCompileFlags(newConfig.Eng())
 	if err != nil {
 		return &config{}, err
 	}
