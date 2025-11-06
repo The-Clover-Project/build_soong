@@ -112,7 +112,7 @@ type apexBundleProperties struct {
 	Sh_binaries []string
 
 	// List of platform_compat_config files that are embedded inside this APEX bundle.
-	Compat_configs []string
+	Compat_configs proptools.Configurable[[]string]
 
 	// List of module names which we don't want to add as transitive deps. This can be used as
 	// a workaround when the current implementation collects more than necessary. For example,
@@ -962,7 +962,7 @@ func (a *apexBundle) DepsMutator(ctx android.BottomUpMutatorContext) {
 	ctx.AddFarVariationDependencies(commonVariation, sscpfTag, a.properties.Systemserverclasspath_fragments.GetOrDefault(ctx, nil)...)
 	ctx.AddFarVariationDependencies(commonVariation, javaLibTag, a.properties.Java_libs...)
 	ctx.AddFarVariationDependencies(commonVariation, fsTag, a.properties.Filesystems...)
-	ctx.AddFarVariationDependencies(commonVariation, compatConfigTag, a.properties.Compat_configs...)
+	ctx.AddFarVariationDependencies(commonVariation, compatConfigTag, a.properties.Compat_configs.GetOrDefault(ctx, nil)...)
 
 	// Add a reverse dependency to all_apex_certs singleton module.
 	// all_apex_certs will use this dependency to collect the certificate of this apex.
