@@ -79,10 +79,6 @@ func FileGroupFactory() Module {
 	return module
 }
 
-func (fg *fileGroup) IncrementalSupported() bool {
-	return true
-}
-
 func (fg *fileGroup) GenerateAndroidBuildActions(ctx ModuleContext) {
 	srcs := PathsForModuleSrcExcludes(ctx, fg.properties.Srcs.GetOrDefault(ctx, nil), fg.properties.Exclude_srcs.GetOrDefault(ctx, nil))
 	srcs = append(srcs, PathsForModuleSrc(ctx, fg.properties.Device_first_srcs.GetOrDefault(ctx, nil))...)

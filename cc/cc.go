@@ -1227,12 +1227,6 @@ type Module struct {
 	converter deviceHostConverter
 }
 
-func (c *Module) IncrementalSupported() bool {
-	return true
-}
-
-var _ blueprint.Incremental = (*Module)(nil)
-
 func (c *Module) SetPreventInstall() {
 	c.Properties.PreventInstall = true
 }

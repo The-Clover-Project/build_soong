@@ -270,10 +270,6 @@ type Module struct {
 	sharedFlags cc.SharedFlags
 }
 
-func (c *Module) IncrementalSupported() bool {
-	return true
-}
-
 func (mod *Module) Header() bool {
 	//TODO: If Rust libraries provide header variants, this needs to be updated.
 	return false
