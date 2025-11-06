@@ -213,4 +213,42 @@ function test_incorrect_api_generating_ap_modification {
   remove_base_dir
 }
 
+function test_remove_inner_class {
+  setup
+  set_partial_compile_flags
+  create_ap_files
+
+  cat > soong-test/java/integration/impllib/ExampleInnerClass.java <<'EOF'
+package soong.java.integration.impllib;
+
+public class ExampleInnerClass {
+  public static class InnerClass {
+  }
+}
+EOF
+
+  run_soong
+  run_ninja ${impl_library_jar}
+
+  if [ -z "$(zipinfo ${impl_library_jar} | grep 'soong/java/integration/impllib/ExampleInnerClass\$InnerClass.class')" ]; then
+    fail "Missing ExampleInnerClass\$InnerClass.class in impl library"
+  fi
+
+  cat > soong-test/java/integration/impllib/ExampleInnerClass.java <<'EOF'
+package soong.java.integration.impllib;
+
+public class ExampleInnerClass {
+}
+EOF
+
+  run_ninja ${impl_library_jar}
+
+  if [ -n "$(zipinfo ${impl_library_jar} | grep 'soong/java/integration/impllib/ExampleInnerClass\$InnerClass.class')" ]; then
+    fail "ExampleInnerClass\$InnerClass.class not removed from impl library"
+  fi
+
+
+  echo "test_remove_inner_class test passed"
+}
+
 scan_and_run_tests "$@"
