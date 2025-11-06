@@ -451,6 +451,7 @@ type apexBundle struct {
 	android.ModuleBase
 	android.DefaultableModuleBase
 	android.OverridableModuleBase
+	blueprint.ModuleUsesIncrementalWalkDeps
 
 	// Properties
 	properties            apexBundleProperties

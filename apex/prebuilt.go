@@ -70,6 +70,8 @@ type prebuilt interface {
 type prebuiltCommon struct {
 	android.ModuleBase
 	java.Dexpreopter
+	blueprint.ModuleUsesIncrementalWalkDeps
+
 	prebuilt android.Prebuilt
 
 	// Properties common to both prebuilt_apex and apex_set.

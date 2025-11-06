@@ -41,6 +41,7 @@ func registerTestPackageZipBuildComponents(ctx android.RegistrationContext) {
 type testPackageZip struct {
 	android.ModuleBase
 	android.DefaultableModuleBase
+	blueprint.ModuleUsesIncrementalWalkDeps
 
 	properties CITestPackageProperties
 

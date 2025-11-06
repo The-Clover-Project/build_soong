@@ -469,6 +469,7 @@ func SkipDexpreoptBootJars(ctx android.PathContext) bool {
 // Singleton module for generating boot image build rules.
 type dexpreoptBootJars struct {
 	android.ModuleBase
+	blueprint.ModuleUsesIncrementalWalkDeps
 
 	// Default boot image config (currently always the Framework boot image extension). It should be
 	// noted that JIT-Zygote builds use ART APEX image instead of the Framework boot image extension,
