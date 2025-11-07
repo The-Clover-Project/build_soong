@@ -16,18 +16,28 @@ package main
 
 import (
 	"flag"
+	"fmt"
+	"os"
+	"strings"
 
 	idi_lib "android/soong/cmd/incremental_dex_input/incremental_dex_input_lib"
 )
 
+type multiString []string
+
+func (ms *multiString) String() string     { return strings.Join(*ms, ", ") }
+func (ms *multiString) Set(s string) error { *ms = append(*ms, s); return nil }
+
 func main() {
 	var classesJar, deps, outputDir, packageOutputDir, dexTarget string
+	var tools multiString
 
 	flag.StringVar(&classesJar, "classesJar", "", "jar file containing compiled java classes")
 	flag.StringVar(&deps, "deps", "", "rsp file enlisting all module deps")
 	flag.StringVar(&dexTarget, "dexTarget", "", "dex output")
 	flag.StringVar(&outputDir, "outputDir", "", "root directory for creating dex entries")
 	flag.StringVar(&packageOutputDir, "packageOutputDir", "", "root directory for creating package based dex entries")
+	flag.Var(&tools, "tool", "tool dependency that causes all java classes to be recompiled when changed")
 
 	flag.Parse()
 
@@ -51,5 +61,11 @@ func main() {
 		panic("must specify --packageOutputDir")
 	}
 
-	idi_lib.GenerateIncrementalInput(classesJar, outputDir, packageOutputDir, dexTarget, deps)
+	executable, err := os.Executable()
+	if err != nil {
+		panic(fmt.Errorf("failed to get path to executable: %w", err))
+	}
+	tools = append(tools, executable)
+
+	idi_lib.GenerateIncrementalInput(classesJar, outputDir, packageOutputDir, dexTarget, deps, tools)
 }
