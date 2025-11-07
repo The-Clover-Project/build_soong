@@ -126,8 +126,8 @@ func GenerateIncrementalInput(classDir, srcs, deps, javacTarget, srcDeps, localH
 		if headersChanged && !incAllSources {
 			incInputList, incAllSources = getUsages(usageMap, incInputList, delF, slices.Concat(addCM, chCM), delCM)
 		}
-		// use usageMap to add all classes that were generated from removed files.
-		classesForRemoval = generateRemovalList(usageMap, delF, classDir)
+		// use usageMap to add all classes that were generated from to be re-compiled or removed files.
+		classesForRemoval = generateRemovalList(usageMap, incInputList, delF, classDir)
 	}
 
 	if incAllSources {
@@ -196,10 +196,10 @@ func getUsages(usageMap map[string]UsageMap, modifiedFiles, deletedFiles, modifi
 	return usages, false
 }
 
-// Returns the list of class files to be removed, as a result of deleting a source file.
-func generateRemovalList(usageMap map[string]UsageMap, delFiles []string, classesDir string) []string {
+// Returns the list of class files to be removed, as a result of re-compiling or deleting a source file.
+func generateRemovalList(usageMap map[string]UsageMap, modifiedFiles, delFiles []string, classesDir string) []string {
 	var classesForRemoval []string
-	for _, delFile := range delFiles {
+	for _, delFile := range slices.Concat(modifiedFiles, delFiles) {
 		if _, exists := usageMap[delFile]; exists {
 			for _, generatedClass := range usageMap[delFile].GeneratedClasses {
 				classesForRemoval = append(classesForRemoval, filepath.Join(classesDir, generatedClass))

@@ -157,17 +157,19 @@ func TestGenerateRemovalList(t *testing.T) {
 	testCases := []struct {
 		name     string
 		classDir string
+		modFiles []string
 		delFiles []string
 		expected []string
 	}{
-		{"Basic", "out/classes", []string{"file1.java", "file2.java"}, []string{"out/classes/Class1", "out/classes/Class2", "out/classes/Class3"}},
-		{"Empty", "out/classes", []string{}, nil},
-		{"NonExistent", "out/classes", []string{"nonexistent.java"}, nil},
+		{"Basic", "out/classes", []string{}, []string{"file1.java", "file2.java"}, []string{"out/classes/Class1", "out/classes/Class2", "out/classes/Class3"}},
+		{"ModFilesRemoval", "out/classes", []string{"file2.java"}, []string{"file1.java"}, []string{"out/classes/Class1", "out/classes/Class2", "out/classes/Class3"}},
+		{"Empty", "out/classes", []string{}, []string{}, nil},
+		{"NonExistent", "out/classes", []string{}, []string{"nonexistent.java"}, nil},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			actual := generateRemovalList(usageMap, tc.delFiles, tc.classDir)
+			actual := generateRemovalList(usageMap, tc.modFiles, tc.delFiles, tc.classDir)
 			sort.Strings(actual)
 			sort.Strings(tc.expected)
 			if !reflect.DeepEqual(actual, tc.expected) {
@@ -326,7 +328,12 @@ func TestGenerateIncrementalInput(t *testing.T) {
 			tf.incOutputPath(),
 			fmt.Sprintf("%s\n%s\n%s", tf.JavaFile1, tf.JavaFile2, tf.JavaFile3), // All files included initially
 			tf.remOutputPath(),
-			"", // No removals initially
+			fmt.Sprintf("%s\n%s\n%s\n%s",
+				filepath.Join(tf.ClassDir, tf.GenClassFile11),
+				filepath.Join(tf.ClassDir, tf.GenClassFile12),
+				filepath.Join(tf.ClassDir, tf.GenClassFile21),
+				filepath.Join(tf.ClassDir, tf.GenClassFile31),
+			),
 		)
 		tf.savePriorState()
 	})
@@ -345,7 +352,7 @@ func TestGenerateIncrementalInput(t *testing.T) {
 			tf.incOutputPath(),
 			fmt.Sprintf("%s", tf.JavaFile3),
 			tf.remOutputPath(),
-			"", // No removals
+			fmt.Sprintf("%s", filepath.Join(tf.ClassDir, tf.GenClassFile31)),
 		)
 		tf.savePriorState()
 	})
@@ -365,7 +372,11 @@ func TestGenerateIncrementalInput(t *testing.T) {
 			tf.incOutputPath(),
 			fmt.Sprintf("%s\n%s", tf.JavaFile1, tf.JavaFile3),
 			tf.remOutputPath(),
-			"", // No removals
+			fmt.Sprintf("%s\n%s\n%s",
+				filepath.Join(tf.ClassDir, tf.GenClassFile11),
+				filepath.Join(tf.ClassDir, tf.GenClassFile12),
+				filepath.Join(tf.ClassDir, tf.GenClassFile31),
+			),
 		)
 		tf.savePriorState()
 	})
@@ -403,7 +414,7 @@ func TestGenerateIncrementalInput(t *testing.T) {
 			tf.incOutputPath(),
 			fmt.Sprintf("%s", tf.JavaFile2),
 			tf.remOutputPath(),
-			"", // No removals
+			filepath.Join(tf.ClassDir, tf.GenClassFile21),
 		)
 		tf.savePriorState()
 	})
@@ -445,7 +456,11 @@ func TestGenerateIncrementalInput(t *testing.T) {
 			tf.incOutputPath(),
 			fmt.Sprintf("%s", tf.JavaFile1), // usages of deleted file
 			tf.remOutputPath(),
-			filepath.Join(tf.ClassDir, "org.another.ClassD"), // class name corresponding to the deleted file path
+			fmt.Sprintf("%s\n%s\n%s",
+				filepath.Join(tf.ClassDir, tf.GenClassFile11),
+				filepath.Join(tf.ClassDir, tf.GenClassFile12),
+				filepath.Join(tf.ClassDir, tf.GenClassFile31),
+			),
 		)
 		tf.savePriorState() // Save state if needed for subsequent tests
 	})
@@ -474,7 +489,10 @@ func TestGenerateIncrementalInput(t *testing.T) {
 			tf.incOutputPath(),
 			fmt.Sprintf("%s", tf.JavaFile1), // usages of modified class
 			tf.remOutputPath(),
-			"",
+			fmt.Sprintf("%s\n%s",
+				filepath.Join(tf.ClassDir, tf.GenClassFile11),
+				filepath.Join(tf.ClassDir, tf.GenClassFile12),
+			),
 		)
 		tf.savePriorState() // Save state if needed for subsequent tests
 	})
@@ -539,8 +557,12 @@ type testFixture struct {
 	HeadersRspFile         string
 	CrossModuleDepsRspFile string
 	JavaFile1              string
+	GenClassFile11         string
+	GenClassFile12         string
 	JavaFile2              string
+	GenClassFile21         string
 	JavaFile3              string
+	GenClassFile31         string
 	DepJar                 string
 	HeaderJar              string
 	CrossModuleJar         string
@@ -563,8 +585,12 @@ func newTestFixture(t *testing.T) *testFixture {
 		HeadersRspFile:         filepath.Join(tmpDir, "localHeaders.rsp"),
 		CrossModuleDepsRspFile: filepath.Join(tmpDir, "crossmoduledeps.rsp"),
 		JavaFile1:              filepath.Join(tmpDir, "src/com/example/ClassA.java"),
+		GenClassFile11:         filepath.Join(tmpDir, "src/com/example/ClassA"),
+		GenClassFile12:         filepath.Join(tmpDir, "src/com/example/ClassB"),
 		JavaFile2:              filepath.Join(tmpDir, "src/com/example/ClassC.java"),
+		GenClassFile21:         filepath.Join(tmpDir, "src/com/example/ClassC"),
 		JavaFile3:              filepath.Join(tmpDir, "src/org/another/ClassD.java"), // Example different package
+		GenClassFile31:         filepath.Join(tmpDir, "src/org/another/ClassD"),
 		DepJar:                 filepath.Join(tmpDir, "deps.jar"),
 		HeaderJar:              filepath.Join(tmpDir, "headers.jar"),
 		CrossModuleJar:         filepath.Join(tmpDir, "crossmodule.jar"),
@@ -590,7 +616,8 @@ func newTestFixture(t *testing.T) *testFixture {
 	writeFile(t, fixture.CrossModuleDepsRspFile, fmt.Sprintf("%s", fixture.CrossModuleJar))
 	writeFile(t, fixture.JavacTargetJar, "Javac Jar")
 	writeFile(t, fixture.JavaSrcDeps, "")
-	createProtoFileWithActualPaths(t, fixture.JavaSrcDeps, fixture.JavaFile1, fixture.JavaFile2, fixture.JavaFile3, fixture.CrossModuleClass)
+	createProtoFileWithActualPaths(t, fixture.JavaSrcDeps, fixture.JavaFile1, fixture.GenClassFile11, fixture.GenClassFile12,
+		fixture.JavaFile2, fixture.GenClassFile21, fixture.JavaFile3, fixture.GenClassFile31, fixture.CrossModuleClass)
 
 	return fixture
 }
@@ -796,28 +823,29 @@ func createProtoFile(t *testing.T, filePath string) string {
 	return filePath
 }
 
-func createProtoFileWithActualPaths(t *testing.T, protoFilePath, javaFile1, javaFile2, javaFile3, crossModuleClass string) string {
+func createProtoFileWithActualPaths(t *testing.T, protoFilePath, javaFile1, genClassFile11, genClassFile12,
+	javaFile2, genClassFile21, javaFile3, genClassFile31, crossModuleClass string) string {
 	t.Helper()
 
 	dep1 := &dependency_proto.FileDependency{
 		FilePath:             proto.String(javaFile1),
 		FileDependencies:     []string{javaFile2, javaFile3},
 		IsDependencyToAll:    proto.Bool(false),
-		GeneratedClasses:     []string{"src/com/example/ClassA", "src/com/example/ClassB"},
+		GeneratedClasses:     []string{genClassFile11, genClassFile12},
 		CrossModuleClassDeps: []string{crossModuleClass},
 	}
 	dep2 := &dependency_proto.FileDependency{
 		FilePath:             proto.String(javaFile2),
 		FileDependencies:     []string{},
 		IsDependencyToAll:    proto.Bool(true),
-		GeneratedClasses:     []string{"src/com/example/ClassC"},
+		GeneratedClasses:     []string{genClassFile21},
 		CrossModuleClassDeps: []string{},
 	}
 	dep3 := &dependency_proto.FileDependency{
 		FilePath:             proto.String(javaFile3),
 		FileDependencies:     []string{},
 		IsDependencyToAll:    proto.Bool(false),
-		GeneratedClasses:     []string{"org.another.ClassD"},
+		GeneratedClasses:     []string{genClassFile31},
 		CrossModuleClassDeps: []string{},
 	}
 
