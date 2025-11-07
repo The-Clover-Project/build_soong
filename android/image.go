@@ -31,6 +31,11 @@ type ImageInterfaceContext interface {
 	Config() Config
 }
 
+type SdvPrimaryImageVariation interface {
+	// IsSdvPrimaryImageVariation is a marker method.
+	IsSdvPrimaryImageVariation()
+}
+
 // ImageInterface is implemented by modules that need to be split by the imageTransitionMutator.
 type ImageInterface interface {
 	// ImageMutatorBegin is called before any other method in the ImageInterface.
@@ -235,6 +240,11 @@ func (imageTransitionMutator) IncomingTransition(ctx IncomingTransitionContext, 
 		IncomingTransitionContext: ctx,
 		kind:                      determineModuleKind(ctx.Module().base(), ctx),
 	})
+
+	if _, ok := ctx.DepTag().(SdvPrimaryImageVariation); ok && len(variations) > 0 {
+		return variations[0]
+	}
+
 	// If there's only 1 possible variation, use that. This is a holdover from when blueprint,
 	// when adding dependencies, would use the only variant of a module regardless of its variations
 	// if only 1 variant existed.
