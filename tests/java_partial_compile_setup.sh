@@ -126,7 +126,8 @@ function write_soong_vars {
         "PartitionQualifiedVariables": null
     },
     "CompatibilityTestcases": null,
-    "VendorApiLevel": "202604"
+    "VendorApiLevel": "202604",
+    "Eng": true
 }
 EOF
 if cmp -s "$tmp_variables_file" "$variables_file"; then
