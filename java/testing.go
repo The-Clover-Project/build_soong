@@ -108,6 +108,7 @@ var prepareForTestWithFrameworkDeps = android.GroupFixturePreparers(
 		// Needed for R8 rules on apps
 		"build/make/core/proguard.flags":             nil,
 		"build/make/core/proguard_basic_keeps.flags": nil,
+		"build/make/core/proguard/enumvalues.flags":  nil,
 		"build/make/core/proguard/kotlin.flags":      nil,
 		"prebuilts/cmdline-tools/shrinker.xml":       nil,
 	}.AddToFixture(),

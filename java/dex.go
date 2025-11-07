@@ -740,6 +740,8 @@ func (d *dexer) r8Flags(ctx android.ModuleContext, dexParams *compileDexParams, 
 	flags := dexParams.flags
 	opt := d.dexProperties.Optimize
 
+	// TODO(b/248580093): Get the base set of Proguard rules from a property
+	// that defaults to a filegroup populated based on build flags.
 	flagFiles := android.Paths{
 		android.PathForSource(ctx, "build/make/core/proguard.flags"),
 	}
@@ -747,6 +749,13 @@ func (d *dexer) r8Flags(ctx android.ModuleContext, dexParams *compileDexParams, 
 	if ctx.Config().UseR8GlobalCheckNotNullFlags() {
 		flagFiles = append(flagFiles, android.PathForSource(ctx,
 			"build/make/core/proguard/checknotnull.flags"))
+	}
+
+	if ctx.Config().OmitR8GlobalEnumKeeps() {
+		// Intentionally blank when global enum keep rules are explicitly omitted.
+	} else {
+		flagFiles = append(flagFiles, android.PathForSource(ctx,
+			"build/make/core/proguard/enumvalues.flags"))
 	}
 
 	flagFiles = append(flagFiles, d.extraProguardFlagsFiles...)
