@@ -86,7 +86,8 @@ var (
 				`echo >> $out.rsp && cat $genAnnoSrcJarList >> $out.rsp; fi && ` +
 				`. ${config.UsePartialCompileFile} && ` +
 				`${config.IncrementalJavacInputCmd} ` +
-				`--srcs $out.rsp --classDir $outDir --deps $javacDeps --javacTarget $out --srcDepsProto $out.proto --localHeaderJars $localHeaderJars --crossModuleJarList $crossModuleJars && ` +
+				`--srcs $out.rsp --classDir $outDir --deps $javacDeps --javacTarget $out --srcDepsProto $out.proto ` +
+				`--localHeaderJars $localHeaderJars --crossModuleJarList $crossModuleJars --tool ${config.DependencyMapperJavacCmd} && ` +
 				`mkdir -p "$outDir" && ` +
 				`cat $out.rem.rsp | xargs rm -f && ` +
 				`(if [ -s $out.inc.rsp ] ; then ` +

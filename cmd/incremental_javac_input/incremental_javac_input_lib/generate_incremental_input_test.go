@@ -338,6 +338,29 @@ func TestGenerateIncrementalInput(t *testing.T) {
 		tf.savePriorState()
 	})
 
+	// --- Subtest: Incremental - Tool modified ---
+	t.Run("Incremental_ToolModified", func(t *testing.T) {
+		modifyFile(t, tf.Tool, "Incremental_ToolModified")
+
+		// Act
+		tf.runGenerator()
+
+		// Assert: All source files should be in inc.rsp
+		checkOutput(
+			t,
+			tf.incOutputPath(),
+			fmt.Sprintf("%s\n%s\n%s", tf.JavaFile1, tf.JavaFile2, tf.JavaFile3),
+			tf.remOutputPath(),
+			fmt.Sprintf("%s\n%s\n%s\n%s",
+				filepath.Join(tf.ClassDir, tf.GenClassFile11),
+				filepath.Join(tf.ClassDir, tf.GenClassFile12),
+				filepath.Join(tf.ClassDir, tf.GenClassFile21),
+				filepath.Join(tf.ClassDir, tf.GenClassFile31),
+			),
+		)
+		tf.savePriorState() // Save state if needed for subsequent tests
+	})
+
 	// --- Subtest: Incremental - One File Modified ---
 	t.Run("Incremental_OneFileModified", func(t *testing.T) {
 		// Arrange: Modify one file (ensure timestamp changes)
@@ -496,6 +519,7 @@ func TestGenerateIncrementalInput(t *testing.T) {
 		)
 		tf.savePriorState() // Save state if needed for subsequent tests
 	})
+
 }
 
 func TestGenerateIncrementalInputPartialCompileOff(t *testing.T) {
@@ -567,6 +591,7 @@ type testFixture struct {
 	HeaderJar              string
 	CrossModuleJar         string
 	CrossModuleClass       string
+	Tool                   string
 }
 
 // newTestFixture creates the temporary directory and necessary files
@@ -595,6 +620,7 @@ func newTestFixture(t *testing.T) *testFixture {
 		HeaderJar:              filepath.Join(tmpDir, "headers.jar"),
 		CrossModuleJar:         filepath.Join(tmpDir, "crossmodule.jar"),
 		CrossModuleClass:       "Class.class",
+		Tool:                   filepath.Join(tmpDir, "tool"),
 	}
 
 	// Create directories and initial file contents
@@ -619,6 +645,8 @@ func newTestFixture(t *testing.T) *testFixture {
 	createProtoFileWithActualPaths(t, fixture.JavaSrcDeps, fixture.JavaFile1, fixture.GenClassFile11, fixture.GenClassFile12,
 		fixture.JavaFile2, fixture.GenClassFile21, fixture.JavaFile3, fixture.GenClassFile31, fixture.CrossModuleClass)
 
+	writeFile(t, fixture.Tool, "tool")
+
 	return fixture
 }
 
@@ -626,7 +654,7 @@ func newTestFixture(t *testing.T) *testFixture {
 func (tf *testFixture) runGenerator() {
 	// Small delay often needed for filesystem timestamp granularity
 	time.Sleep(15 * time.Millisecond)
-	err := GenerateIncrementalInput(tf.ClassDir, tf.SrcRspFile, tf.DepsRspFile, tf.JavacTargetJar, tf.JavaSrcDeps, tf.HeadersRspFile, tf.CrossModuleDepsRspFile)
+	err := GenerateIncrementalInput(tf.ClassDir, tf.SrcRspFile, tf.DepsRspFile, tf.JavacTargetJar, tf.JavaSrcDeps, tf.HeadersRspFile, tf.CrossModuleDepsRspFile, []string{tf.Tool})
 	if err != nil {
 		tf.t.Fatalf("GenerateIncrementalInput() returned an error: %v", err)
 	}

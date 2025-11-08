@@ -17,12 +17,20 @@ package main
 import (
 	"flag"
 	"fmt"
+	"os"
+	"strings"
 
 	iji_lib "android/soong/cmd/incremental_javac_input/incremental_javac_input_lib"
 )
 
+type multiString []string
+
+func (ms *multiString) String() string     { return strings.Join(*ms, ", ") }
+func (ms *multiString) Set(s string) error { *ms = append(*ms, s); return nil }
+
 func main() {
 	var classDir, srcs, deps, javacTarget, srcDepsProto, localHeaderJars, crossModuleJarRsp string
+	var tools multiString
 
 	flag.StringVar(&classDir, "classDir", "", "dir which will contain compiled java classes")
 	flag.StringVar(&srcs, "srcs", "", "rsp file containing java source paths")
@@ -31,6 +39,7 @@ func main() {
 	flag.StringVar(&srcDepsProto, "srcDepsProto", "", "dependency map between src files in a proto")
 	flag.StringVar(&localHeaderJars, "localHeaderJars", "", "rsp file enlisting all local header jars")
 	flag.StringVar(&crossModuleJarRsp, "crossModuleJarList", "", "rsp file listing all kotlin jars used for compilation")
+	flag.Var(&tools, "tool", "tool dependency that causes all java classes to be recompiled when changed")
 
 	flag.Parse()
 
@@ -58,10 +67,16 @@ func main() {
 		panic("must specify --srcs")
 	}
 
+	executable, err := os.Executable()
+	if err != nil {
+		panic(fmt.Errorf("failed to get path to executable: %w", err))
+	}
+	tools = append(tools, executable)
+
 	if srcs != "" {
-		err := iji_lib.GenerateIncrementalInput(classDir, srcs, deps, javacTarget, srcDepsProto, localHeaderJars, crossModuleJarRsp)
+		err := iji_lib.GenerateIncrementalInput(classDir, srcs, deps, javacTarget, srcDepsProto, localHeaderJars, crossModuleJarRsp, tools)
 		if err != nil {
-			panic("errored")
+			panic(fmt.Errorf("GenerateIncrementalInput failed: %w", err))
 		}
 	} else {
 		fmt.Println("No source files provided via --srcs flag.")

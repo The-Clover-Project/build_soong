@@ -44,7 +44,7 @@ type UsageMap struct {
 	CrossModuleClassDependencies []string
 }
 
-func GenerateIncrementalInput(classDir, srcs, deps, javacTarget, srcDeps, localHeaderJars, crossModuleJarRsp string) (err error) {
+func GenerateIncrementalInput(classDir, srcs, deps, javacTarget, srcDeps, localHeaderJars, crossModuleJarRsp string, tools []string) (err error) {
 	incInputPath := javacTarget + ".inc.rsp"
 	removedClassesPath := javacTarget + ".rem.rsp"
 	inputPcState := javacTarget + ".input.pc_state"
@@ -56,7 +56,6 @@ func GenerateIncrementalInput(classDir, srcs, deps, javacTarget, srcDeps, localH
 	var incAllSources bool
 
 	version := ""
-	tools := []string{}
 	// Read the srcRspFile contents
 	srcList := readRspFile(srcs)
 	// run find_input_delta, save [add + ch] as a []string,  and [del] as another []string
