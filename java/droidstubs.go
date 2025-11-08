@@ -998,12 +998,8 @@ func (d *Droidstubs) commonMetalavaStubCmd(ctx android.ModuleContext, rule *andr
 }
 
 // Sandbox rule for generating the everything stubs and other artifacts
-func (d *Droidstubs) everythingStubCmd(ctx android.ModuleContext, params stubsCommandConfigParams) {
+func (d *Droidstubs) everythingStubCmd(ctx android.ModuleContext, params stubsCommandConfigParams, rule *android.RuleBuilder) *android.RuleBuilderCommand {
 	srcJarDir := android.PathForModuleOut(ctx, Everything.String(), "srcjars")
-	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
-	rule.Sbox(android.PathForModuleOut(ctx, Everything.String()),
-		android.PathForModuleOut(ctx, "metalava.sbox.textproto")).
-		SandboxInputs()
 
 	var stubsDir android.OptionalPath
 	if params.generateStubs {
@@ -1041,8 +1037,11 @@ func (d *Droidstubs) everythingStubCmd(ctx android.ModuleContext, params stubsCo
 
 	d.everythingOptionalCmd(ctx, cmd, params.doApiLint, params.doCheckReleased)
 
+	var everythingStubsCmd *android.RuleBuilderCommand
+
 	if params.generateStubs {
-		rule.Command().
+		everythingStubsCmd = rule.Command()
+		everythingStubsCmd.
 			BuiltTool("soong_zip").
 			Flag("-write_if_changed").
 			Flag("-jar").
@@ -1077,7 +1076,7 @@ func (d *Droidstubs) everythingStubCmd(ctx android.ModuleContext, params stubsCo
 
 	zipSyncCleanupCmd(rule, srcJarDir)
 
-	rule.Build("metalava", "metalava merged")
+	return everythingStubsCmd
 }
 
 // Sandbox rule for generating the everything artifacts that are not run by
@@ -1361,8 +1360,12 @@ func (d *Droidstubs) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		validatingNullability: validatingNullability,
 	}
 	stubCmdParams.stubsType = Everything
+	everythingStubsRule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
+	everythingStubsRule.Sbox(android.PathForModuleOut(ctx, Everything.String()),
+		android.PathForModuleOut(ctx, "metalava.sbox.textproto")).
+		SandboxInputs()
 	// Create default (i.e. "everything" stubs) rule for metalava
-	d.everythingStubCmd(ctx, stubCmdParams)
+	everythingStubsCmd := d.everythingStubCmd(ctx, stubCmdParams, everythingStubsRule)
 
 	// The module generates "exportable" (and "runtime" eventually) stubs regardless of whether
 	// aconfig_declarations property is defined or not. If the property is not defined, the module simply
@@ -1474,6 +1477,12 @@ func (d *Droidstubs) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		}
 		rule.Build("metalavaCurrentApiCheck", "check current API")
 
+		if everythingStubsCmd != nil {
+			everythingStubsCmd.Validation(d.checkCurrentApiTimestamp)
+		}
+
+		ctx.CheckbuildFile(d.checkCurrentApiTimestamp)
+
 		android.SetProvider(ctx, UpdateApiProvider, UpdateApiInfo{
 			Name:                 d.Name(),
 			SourceApiFile:        apiFile,
@@ -1496,6 +1505,8 @@ func (d *Droidstubs) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	if removedApiFile != nil {
 		droidInfo.CheckedInRemovedApiFile = removedApiFile
 	}
+
+	everythingStubsRule.Build("metalava", "metalava merged")
 
 	setDroidInfo(ctx, d, &droidInfo.EverythingStubsInfo, Everything)
 	setDroidInfo(ctx, d, &droidInfo.ExportableStubsInfo, Exportable)
