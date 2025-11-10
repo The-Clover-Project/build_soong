@@ -68,6 +68,9 @@ type sdkRepoHostProperties struct {
 	// List of files to strip. This should be a list of files, not modules. This happens after
 	// `deps_remap` and `merge_zips` are applied, but before the `base_dir` is added.
 	Strip_files []string `android:"arch_variant"`
+
+	// Add $(OUT)/soong/framework.aidl into the SDK repo if set to true.
+	Pack_framework_aidl *bool
 }
 
 // android_sdk_repo_host defines an Android SDK repo containing host tools.
@@ -118,6 +121,9 @@ func (s *sdkRepoHost) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		Sbox(dir, android.PathForModuleOut(ctx, "out.sbox.textproto")).
 		SandboxInputs()
 
+	// Always create the dir not rely on BuildNoticeTextOutputFromLicenseMetadata because the notice text may not be generated if there's not other deps.
+	builder.Command().Textf("mkdir -p %s", dir)
+
 	// Get files from modules listed in `deps`
 	packageSpecs := s.GatherPackagingSpecs(ctx)
 
@@ -129,18 +135,21 @@ func (s *sdkRepoHost) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 
 	s.CopySpecsToDir(ctx, builder, packageSpecs, dir)
 
-	noticeFile := android.PathForModuleOut(ctx, "NOTICES.txt")
-	android.BuildNoticeTextOutputFromLicenseMetadata(
-		ctx, noticeFile, "", "",
-		android.BuildNoticeFromLicenseDataArgs{
-			StripPrefix: []string{
-				android.PathForModuleInstall(ctx, "sdk-repo").String() + "/",
-				outputZipFile.String(),
-			},
-		}, ctx.ModuleProxy())
-	builder.Command().Text("cp").
-		Input(noticeFile).
-		Text(filepath.Join(dir.String(), "NOTICE.txt"))
+	// NOTICES can only be generated if there is any deps defined.
+	if len(packageSpecs) > 0 {
+		noticeFile := android.PathForModuleOut(ctx, "NOTICES.txt")
+		android.BuildNoticeTextOutputFromLicenseMetadata(
+			ctx, noticeFile, "", "",
+			android.BuildNoticeFromLicenseDataArgs{
+				StripPrefix: []string{
+					android.PathForModuleInstall(ctx, "sdk-repo").String() + "/",
+					outputZipFile.String(),
+				},
+			}, ctx.ModuleProxy())
+		builder.Command().Text("cp").
+			Input(noticeFile).
+			Text(filepath.Join(dir.String(), "NOTICE.txt"))
+	}
 
 	// Handle `merge_zips` by extracting their contents into our tmpdir
 	for _, zip := range android.PathsForModuleSrc(ctx, s.properties.Merge_zips) {
@@ -156,6 +165,13 @@ func (s *sdkRepoHost) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	for _, src := range android.PathsForModuleSrc(ctx, s.properties.Srcs) {
 		builder.Command().
 			Text("cp").Input(src).Flag(dir.Join(ctx, src.Rel()).String())
+	}
+
+	// Add framework.aidl into our tmpdir.
+	if proptools.BoolDefault(s.properties.Pack_framework_aidl, false) {
+		frameworkAidlPath := android.PathForOutput(ctx, "framework.aidl")
+		builder.Command().
+			Text("cp").Input(frameworkAidlPath).Flag(dir.String())
 	}
 
 	// Handle `strip_files` by calling the necessary strip commands
