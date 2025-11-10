@@ -50,6 +50,9 @@ type RuntimeResourceOverlay struct {
 	android.ModuleBase
 	android.DefaultableModuleBase
 	android.OverridableModuleBase
+	// TODO(b/461815001): remove this and replace usage of WalkDepsProxy with
+	//  VisitDirectDepsProxy and DepSets.
+	blueprint.ModuleUsesIncrementalWalkDeps
 	aapt
 
 	properties            RuntimeResourceOverlayProperties

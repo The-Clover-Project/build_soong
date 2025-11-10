@@ -426,6 +426,9 @@ type ravenwoodLibgroupProperties struct {
 
 type ravenwoodLibgroup struct {
 	android.ModuleBase
+	// TODO(b/461815001): remove this and replace usage of WalkDepsProxy with
+	//  VisitDirectDepsProxy and DepSets.
+	blueprint.ModuleUsesIncrementalWalkDeps
 
 	ravenwoodLibgroupProperties ravenwoodLibgroupProperties
 
