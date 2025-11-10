@@ -118,18 +118,26 @@ func GenerateIncrementalInput(classDir, srcs, deps, javacTarget, srcDeps, localH
 		chCM = filterClassFiles(chCM)
 	}
 
-	// use revDepsMap to find all usages, add them to output, alongside [add + ch] files
-	if fileExists(srcDeps) {
-		usageMap, _ := generateUsageMap(srcDeps)
-		// if including all sources, no need to check the usageMap
-		if headersChanged && !incAllSources {
-			incInputList, incAllSources = getUsages(usageMap, incInputList, delF, slices.Concat(addCM, chCM), delCM)
+	// If we are including all sources, there is no point in expanding it further
+	// or to get a removal set.
+	if !incAllSources {
+		// use revDepsMap to find all usages, add them to output, alongside [add + ch] files
+		if fileExists(srcDeps) {
+			usageMap, _ := generateUsageMap(srcDeps)
+			if headersChanged {
+				incInputList, incAllSources = getUsages(usageMap, incInputList, delF, slices.Concat(addCM, chCM), delCM)
+			}
+			// use usageMap to add all classes that were generated from to be re-compiled or removed files.
+			// if all sources are being compiled, everything will anyway be removed.
+			if !incAllSources {
+				classesForRemoval = generateRemovalList(usageMap, incInputList, delF, classDir)
+			}
 		}
-		// use usageMap to add all classes that were generated from to be re-compiled or removed files.
-		classesForRemoval = generateRemovalList(usageMap, incInputList, delF, classDir)
 	}
 
 	if incAllSources {
+		// Remove the output class directory to prevent any stale files
+		os.RemoveAll(classDir)
 		incInputList = srcList
 	}
 
