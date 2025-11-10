@@ -130,6 +130,7 @@ var cmakeSnapshotSourcesProvider = blueprint.NewProvider[android.Paths]()
 
 type CmakeSnapshot struct {
 	android.ModuleBase
+	blueprint.ModuleUsesIncrementalWalkDeps
 
 	Properties CmakeSnapshotProperties
 

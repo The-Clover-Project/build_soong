@@ -146,10 +146,10 @@ func TestBootclasspathFragments_FragmentDependency(t *testing.T) {
 `,
 	)
 
-	checkAPIScopeStubs := func(message string, info java.HiddenAPIInfo, apiScope java.HiddenAPIScopeHandle, expectedPaths ...string) {
+	checkAPIScopeStubs := func(message string, info java.HiddenAPIInfo, apiScope *java.HiddenAPIScope, expectedPaths ...string) {
 		t.Helper()
 		paths := info.TransitiveStubDexJarsByScope.StubDexJarsForScope(apiScope)
-		android.AssertPathsRelativeToTopEquals(t, fmt.Sprintf("%s %s", message, apiScope.Value()), expectedPaths, paths)
+		android.AssertPathsRelativeToTopEquals(t, fmt.Sprintf("%s %s", message, apiScope), expectedPaths, paths)
 	}
 
 	// Check stub dex paths exported by art.

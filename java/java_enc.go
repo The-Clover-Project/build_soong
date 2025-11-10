@@ -8,7 +8,6 @@ import (
 	"bytes"
 	"github.com/google/blueprint/gobtools"
 	"github.com/google/blueprint/uniquelist"
-	"unique"
 )
 
 // begin of aar.go
@@ -2289,16 +2288,8 @@ func (r HiddenAPIInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error 
 					return err
 				}
 				for val6, val7 := range val5 {
-					val8 := val6 == unique.Handle[HiddenAPIScope]{}
-					if err = gobtools.EncodeBool(buf, val8); err != nil {
+					if err = gobtools.EncodeString(buf, val6); err != nil {
 						return err
-					}
-					if !val8 {
-						if err = gobtools.EncodeReference(ctx, val6, buf, func(v unique.Handle[HiddenAPIScope], buf *bytes.Buffer) error {
-							return v.Value().Encode(ctx, buf)
-						}); err != nil {
-							return err
-						}
 					}
 					if err = gobtools.EncodeInterface(ctx, buf, val7); err != nil {
 						return err
@@ -2374,34 +2365,20 @@ func (r *HiddenAPIInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error
 				return err
 			}
 			if val22 != -1 {
-				val19 = make(map[HiddenAPIScopeHandle]android.Path, val22)
+				val19 = make(map[string]android.Path, val22)
 				for val23 := 0; val23 < int(val22); val23++ {
-					var val24 HiddenAPIScopeHandle
+					var val24 string
 					var val25 android.Path
-					var val28 bool
-					if err = gobtools.DecodeBool(buf, &val28); err != nil {
+					err = gobtools.DecodeString(buf, &val24)
+					if err != nil {
 						return err
 					}
-					if !val28 {
-						tmp, err := gobtools.DecodeReference(ctx, &val24, buf, func(value *unique.Handle[HiddenAPIScope], buf *bytes.Reader) error {
-							var val29 HiddenAPIScope
-							if err = val29.Decode(ctx, buf); err != nil {
-								return err
-							}
-							*value = unique.Make(val29)
-							return nil
-						})
-						if err != nil {
-							return err
-						}
-						val24 = *tmp
-					}
-					if val31, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+					if val28, err := gobtools.DecodeInterface(ctx, buf); err != nil {
 						return err
-					} else if val31 == nil {
+					} else if val28 == nil {
 						val25 = nil
 					} else {
-						val25 = val31.(android.Path)
+						val25 = val28.(android.Path)
 					}
 					val19[val24] = val25
 				}
@@ -2526,16 +2503,8 @@ func (r ModuleStubDexJars) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) er
 			return err
 		}
 		for val1, val2 := range r {
-			val3 := val1 == unique.Handle[HiddenAPIScope]{}
-			if err = gobtools.EncodeBool(buf, val3); err != nil {
+			if err = gobtools.EncodeString(buf, val1); err != nil {
 				return err
-			}
-			if !val3 {
-				if err = gobtools.EncodeReference(ctx, val1, buf, func(v unique.Handle[HiddenAPIScope], buf *bytes.Buffer) error {
-					return v.Value().Encode(ctx, buf)
-				}); err != nil {
-					return err
-				}
 			}
 			if err = gobtools.EncodeInterface(ctx, buf, val2); err != nil {
 				return err
@@ -2554,34 +2523,20 @@ func (r *ModuleStubDexJars) Decode(ctx gobtools.EncContext, buf *bytes.Reader) e
 		return err
 	}
 	if val1 != -1 {
-		(*r) = make(map[HiddenAPIScopeHandle]android.Path, val1)
+		(*r) = make(map[string]android.Path, val1)
 		for val2 := 0; val2 < int(val1); val2++ {
-			var val3 HiddenAPIScopeHandle
+			var val3 string
 			var val4 android.Path
-			var val7 bool
-			if err = gobtools.DecodeBool(buf, &val7); err != nil {
+			err = gobtools.DecodeString(buf, &val3)
+			if err != nil {
 				return err
 			}
-			if !val7 {
-				tmp, err := gobtools.DecodeReference(ctx, &val3, buf, func(value *unique.Handle[HiddenAPIScope], buf *bytes.Reader) error {
-					var val8 HiddenAPIScope
-					if err = val8.Decode(ctx, buf); err != nil {
-						return err
-					}
-					*value = unique.Make(val8)
-					return nil
-				})
-				if err != nil {
-					return err
-				}
-				val3 = *tmp
-			}
-			if val10, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+			if val7, err := gobtools.DecodeInterface(ctx, buf); err != nil {
 				return err
-			} else if val10 == nil {
+			} else if val7 == nil {
 				val4 = nil
 			} else {
-				val4 = val10.(android.Path)
+				val4 = val7.(android.Path)
 			}
 			(*r)[val3] = val4
 		}

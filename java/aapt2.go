@@ -230,7 +230,7 @@ var mergeAssetsRule = pctx.AndroidStaticRule("mergeAssets",
 	})
 
 func aapt2Link(ctx android.ModuleContext,
-	packageRes, genJar, proguardOptions, rTxt android.WritablePath,
+	packageRes, genJar, proguardOptions, rTxt, resIds android.WritablePath,
 	flags []string, deps android.Paths,
 	compiledRes, compiledOverlay, assetPackages android.Paths, splitPackages android.WritablePaths,
 	featureFlagsPaths android.Paths) {
@@ -313,6 +313,11 @@ func aapt2Link(ctx android.ModuleContext,
 		args["postamble"] = `&& ${config.SoongZipCmd} -write_if_changed -jar -o $aapt2GenJar -C $aapt2GenDir -D $aapt2GenDir && ` +
 			`rm -rf $aapt2GenDir`
 		args["flags"] += " --java $aapt2GenDir"
+	}
+
+	if resIds != nil {
+		args["flags"] += " --emit-ids " + resIds.String()
+		implicitOutputs = append(implicitOutputs, resIds)
 	}
 
 	ctx.Build(pctx, android.BuildParams{

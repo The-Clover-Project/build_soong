@@ -41,6 +41,7 @@ func registerBuildComponents(ctx android.RegistrationContext) {
 type sdkRepoHost struct {
 	android.ModuleBase
 	android.PackagingBase
+	blueprint.ModuleUsesIncrementalWalkDeps
 
 	properties sdkRepoHostProperties
 }

@@ -62,10 +62,6 @@ type llndkLibraryProperties struct {
 	Moved_to_apex *bool
 }
 
-func makeLlndkVars(ctx android.MakeVarsContext) {
-
-}
-
 func init() {
 	RegisterLlndkLibraryTxtType(android.InitRegistrationContext)
 	android.RegisterParallelSingletonType("movedToApexLlndkLibraries", movedToApexLlndkLibrariesFactory)
@@ -111,13 +107,17 @@ func (s *movedToApexLlndkLibraries) MakeVars(ctx android.MakeVarsContext) {
 }
 
 func RegisterLlndkLibraryTxtType(ctx android.RegistrationContext) {
-	ctx.RegisterParallelSingletonModuleType("llndk_libraries_txt", llndkLibrariesTxtFactory)
+	ctx.RegisterParallelSingletonType("llndk_libraries_txt", llndkLibrariesTxtSingletonFactory)
+	ctx.RegisterModuleType("llndk_libraries_txt", llndkLibrariesTxtModuleFactory)
 }
 
 type llndkLibrariesTxtModule struct {
-	android.SingletonModuleBase
+	android.ModuleBase
 
-	outputFile  android.OutputPath
+	outputFile android.WritablePath
+}
+
+type llndkLibrariesTxtSingleton struct {
 	moduleNames []string
 	fileNames   []string
 }
@@ -131,16 +131,27 @@ var _ etc.PrebuiltEtcModule = &llndkLibrariesTxtModule{}
 // HWASAN is only part of the LL-NDK in builds in which libc depends on HWASAN.
 // Therefore, by removing the library here, we cause it to only be installed if libc
 // depends on it.
-func llndkLibrariesTxtFactory() android.SingletonModule {
+func llndkLibrariesTxtModuleFactory() android.Module {
 	m := &llndkLibrariesTxtModule{}
 	android.InitAndroidArchModule(m, android.DeviceSupported, android.MultilibCommon)
 	return m
 }
 
+func llndkLibrariesTxtSingletonFactory() android.Singleton {
+	return &llndkLibrariesTxtSingleton{}
+}
+
+func llndkLibrariesTxtPath(ctx android.PathContext) android.WritablePath {
+	return android.PathForIntermediates(ctx, "llndk.libraries.txt")
+}
+
 func (txt *llndkLibrariesTxtModule) GenerateAndroidBuildActions(ctx android.ModuleContext) {
+	if ctx.ModuleName() != "llndk.libraries.txt" || ctx.Namespace().Path != "." {
+		ctx.ModuleErrorf(`llndk_libraries_txt can only be used by a single module named "llndk.libraries.txt" in the root namespace.`)
+	}
 	filename := txt.Name()
 
-	txt.outputFile = android.PathForModuleOut(ctx, filename).OutputPath
+	txt.outputFile = llndkLibrariesTxtPath(ctx)
 
 	installPath := android.PathForModuleInstall(ctx, "etc")
 	ctx.InstallFile(installPath, filename, txt.outputFile)
@@ -162,11 +173,8 @@ func getVndkFileName(info *LinkerInfo) (string, error) {
 	return "", fmt.Errorf("VNDK library should have libraryDecorator or prebuiltLibraryLinker as linker: %T", info)
 }
 
-func (txt *llndkLibrariesTxtModule) GenerateSingletonBuildActions(ctx android.SingletonContext) {
-	if txt.outputFile.String() == "" {
-		// Skip if target file path is empty
-		return
-	}
+func (txt *llndkLibrariesTxtSingleton) GenerateBuildActions(ctx android.SingletonContext) {
+	outputFile := llndkLibrariesTxtPath(ctx)
 
 	ctx.VisitAllModuleProxies(func(m android.ModuleProxy) {
 		ccInfo, ok := android.OtherModuleProvider(ctx, m, CcInfoProvider)
@@ -192,7 +200,7 @@ func (txt *llndkLibrariesTxtModule) GenerateSingletonBuildActions(ctx android.Si
 	txt.moduleNames = android.SortedUniqueStrings(txt.moduleNames)
 	txt.fileNames = android.SortedUniqueStrings(txt.fileNames)
 
-	android.WriteFileRule(ctx, txt.outputFile, strings.Join(txt.fileNames, "\n"))
+	android.WriteFileRule(ctx, outputFile, strings.Join(txt.fileNames, "\n"))
 }
 
 func (txt *llndkLibrariesTxtModule) AndroidMkEntries() []android.AndroidMkEntries {
@@ -207,7 +215,7 @@ func (txt *llndkLibrariesTxtModule) AndroidMkEntries() []android.AndroidMkEntrie
 	}}
 }
 
-func (txt *llndkLibrariesTxtModule) MakeVars(ctx android.MakeVarsContext) {
+func (txt *llndkLibrariesTxtSingleton) MakeVars(ctx android.MakeVarsContext) {
 	ctx.Strict("LLNDK_LIBRARIES", strings.Join(txt.moduleNames, " "))
 }
 

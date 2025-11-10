@@ -61,7 +61,7 @@ var allowedPluginsByName = map[string]bool{
 	"soong-llvm":                             true,
 	"soong-noto-fonts":                       true,
 	"soong-robolectric":                      true,
-	"soong-rust-prebuilts":                   true,
+	"soong-sdv_binary_pdk":                   true,
 	"soong-selinux":                          true,
 	"soong-wayland-protocol-codegen":         true,
 	"treble_report_app":                      true,

@@ -16,6 +16,7 @@ package rust
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"slices"
 	"strconv"
@@ -268,10 +269,6 @@ type Module struct {
 
 	// Shared flags among stubs build rules of this module
 	sharedFlags cc.SharedFlags
-}
-
-func (c *Module) IncrementalSupported() bool {
-	return true
 }
 
 func (mod *Module) Header() bool {
@@ -2022,7 +2019,15 @@ func (mod *Module) depsToPaths(ctx android.ModuleContext) PathDeps {
 	}
 	for _, dep := range directSrcDeps {
 		srcs := dep.Srcs
-		srcProviderDepFiles = append(srcProviderDepFiles, srcs...)
+		outDir := android.PathForOutput(ctx).String() + string(os.PathSeparator)
+		for _, srcFile := range srcs {
+			if strings.HasPrefix(srcFile.String(), outDir) {
+				// Only append generated files from genrules and other source file
+				// producers. This is to ensure filegroups aren't included in this
+				// list and later copied
+				srcProviderDepFiles = append(srcProviderDepFiles, srcFile)
+			}
+		}
 	}
 
 	depPaths.RLibs = append(depPaths.RLibs, rlibDepFiles...)

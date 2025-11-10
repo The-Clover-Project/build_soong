@@ -34,7 +34,6 @@ type AconfigReleaseConfigValue struct {
 type DeclarationsModule struct {
 	android.ModuleBase
 	android.DefaultableModuleBase
-	blueprint.IncrementalModule
 
 	// Properties for "aconfig_declarations"
 	properties struct {
@@ -234,5 +233,3 @@ func (module *DeclarationsModule) GenerateAndroidBuildActions(ctx android.Module
 	android.SetProvider(ctx, android.AconfigDeclarationsProviderKey, providerData.Data[""])
 	android.SetProvider(ctx, android.AconfigReleaseDeclarationsProviderKey, providerData)
 }
-
-var _ blueprint.Incremental = &DeclarationsModule{}

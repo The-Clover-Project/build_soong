@@ -167,8 +167,12 @@ type singletonAdaptor struct {
 var _ testBuildProvider = (*singletonAdaptor)(nil)
 var _ blueprint.Singleton = (*singletonAdaptor)(nil)
 
+type incrementalSingleton interface {
+	IncrementalSupported() bool
+}
+
 func (s *singletonAdaptor) IncrementalSupported() bool {
-	if im, ok := s.Singleton.(blueprint.Incremental); ok {
+	if im, ok := s.Singleton.(incrementalSingleton); ok {
 		return im.IncrementalSupported()
 	}
 	return true

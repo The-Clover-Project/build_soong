@@ -19,6 +19,7 @@ package rust
 import (
 	"path"
 	"path/filepath"
+	"strings"
 
 	"android/soong/android"
 	"android/soong/rust/config"
@@ -36,8 +37,8 @@ func init() {
 		rustToolchainLibraryRlibFactory)
 	android.RegisterModuleType("rust_toolchain_library_dylib",
 		rustToolchainLibraryDylibFactory)
-	android.RegisterModuleType("rust_toolchain_rustc_prebuilt",
-		rustToolchainRustcPrebuiltFactory)
+	android.RegisterModuleType("rust_stdlib_prebuilt_host",
+		rustHostPrebuiltSysrootLibraryFactory)
 }
 
 type toolchainLibraryProperties struct {
@@ -106,7 +107,7 @@ var _ toolchainCompiler = (*toolchainLibraryDecorator)(nil)
 
 func rustSetToolchainSource(ctx android.LoadHookContext) {
 	if toolchainLib, ok := ctx.Module().(*Module).compiler.(toolchainCompiler); ok {
-		prefix := filepath.Join("linux-x86", GetRustPrebuiltVersion(ctx))
+		prefix := filepath.Join(GetRustPrebuiltVersion(ctx))
 		versionedCrateRoot := path.Join(prefix, android.String(toolchainLib.toolchainCrateRoot()))
 		versionedSrcs := make([]string, len(toolchainLib.toolchainSrcs()))
 		for i, src := range toolchainLib.toolchainSrcs() {
@@ -131,46 +132,103 @@ func GetRustPrebuiltVersion(ctx android.LoadHookContext) string {
 	return ctx.Config().GetenvWithDefault("RUST_PREBUILTS_VERSION", config.RustDefaultVersion)
 }
 
-type toolchainRustcPrebuiltProperties struct {
-	// path to rustc prebuilt, relative to the top of the toolchain source
-	Toolchain_prebuilt_src *string
-	// path to deps, relative to the top of the toolchain source
-	Toolchain_deps []string
-	// path to deps, relative to module directory
-	Deps []string
+type hostPrebuiltTargetProps struct {
+	Suffix *string
+	Dylib  struct {
+		Srcs []string
+	}
+	Rlib struct {
+		Srcs []string
+	}
+	Link_dirs          []string
+	Enabled            *bool
+	Force_use_prebuilt *bool
 }
 
-func rustToolchainRustcPrebuiltFactory() android.Module {
-	module := android.NewPrebuiltBuildTool()
-	module.AddProperties(&toolchainRustcPrebuiltProperties{})
-	android.AddLoadHook(module, func(ctx android.LoadHookContext) {
-		var toolchainProps *toolchainRustcPrebuiltProperties
-		for _, p := range ctx.Module().GetProperties() {
-			toolchainProperties, ok := p.(*toolchainRustcPrebuiltProperties)
-			if ok {
-				toolchainProps = toolchainProperties
-			}
+type hostPrebuiltProps struct {
+	Name    *string
+	Enabled *bool
+	Target  struct {
+		Linux_glibc_x86_64 hostPrebuiltTargetProps
+		Linux_glibc_x86    hostPrebuiltTargetProps
+		Linux_musl_x86_64  hostPrebuiltTargetProps
+		Linux_musl_x86     hostPrebuiltTargetProps
+		Darwin_x86_64      hostPrebuiltTargetProps
+	}
+}
+
+func rustHostPrebuiltSysrootLibraryFactory() android.Module {
+	module, _ := NewPrebuiltLibrary(android.HostSupportedNoCross)
+	android.AddLoadHook(module, constructLibProps( /*rlib=*/ true /*solib=*/, true))
+	return module.Init()
+}
+
+func constructLibProps(rlib, solib bool) func(ctx android.LoadHookContext) {
+	return func(ctx android.LoadHookContext) {
+		rustDir := path.Join(GetRustPrebuiltVersion(ctx), "lib", "rustlib")
+		name := android.RemoveOptionalPrebuiltPrefix(ctx.ModuleName())
+		name = strings.Replace(name, ".rust_sysroot", "", -1)
+		_, platform := filepath.Split(ctx.ModuleDir())
+
+		p := hostPrebuiltProps{}
+		p.Enabled = proptools.BoolPtr(false)
+
+		if platform == "linux-x86" && ctx.Config().BuildOS == android.Linux {
+			p.Target.Linux_glibc_x86_64.addPrebuiltToTarget(ctx, name, rustDir, "linux-x86", "x86_64-unknown-linux-gnu", rlib, solib)
+			p.Target.Linux_glibc_x86.addPrebuiltToTarget(ctx, name, rustDir, "linux-x86", "i686-unknown-linux-gnu", rlib, solib)
+		} else if platform == "linux-musl-x86" && ctx.Config().BuildOS == android.LinuxMusl {
+			p.Target.Linux_musl_x86_64.addPrebuiltToTarget(ctx, name, rustDir, "linux-musl-x86", "x86_64-unknown-linux-musl", rlib, solib)
+			p.Target.Linux_musl_x86.addPrebuiltToTarget(ctx, name, rustDir, "linux-musl-x86", "i686-unknown-linux-musl", rlib, solib)
+		} else if platform == "darwin-x86" && ctx.Config().BuildOS == android.Darwin {
+			p.Target.Darwin_x86_64.addPrebuiltToTarget(ctx, name, rustDir, "darwin-x86", "x86_64-apple-darwin", rlib, solib)
+		} else {
+			p.Name = proptools.StringPtr("prebuilt_" + ctx.ModuleName() + "." + platform)
 		}
 
-		if toolchainProps.Toolchain_prebuilt_src == nil {
-			ctx.PropertyErrorf("toolchain_prebuilt_src", "must set path to rustc prebuilt")
-		}
+		ctx.AppendProperties(&p)
+	}
+}
 
-		prefix := filepath.Join(config.HostPrebuiltTag(ctx.Config()), GetRustPrebuiltVersion(ctx))
-		deps := make([]string, 0, len(toolchainProps.Toolchain_deps)+len(toolchainProps.Deps))
-		for _, d := range toolchainProps.Toolchain_deps {
-			deps = append(deps, path.Join(prefix, d))
+func (target *hostPrebuiltTargetProps) addPrebuiltToTarget(ctx android.LoadHookContext, libName, rustDir, platform, arch string, rlib, solib bool) {
+	dir := path.Join(rustDir, arch, "lib")
+	target.Link_dirs = []string{dir}
+	target.Enabled = proptools.BoolPtr(true)
+	target.Force_use_prebuilt = proptools.BoolPtr(true)
+	if rlib {
+		rlib, suffix := getPrebuilt(ctx, dir, libName, ".rlib")
+		target.Rlib.Srcs = []string{rlib}
+		target.Suffix = proptools.StringPtr(suffix)
+	}
+	if solib {
+		// The suffixes are the same between the dylib and the rlib,
+		// so it's okay if we overwrite the rlib suffix
+		var soSuffix string
+		if strings.Contains(platform, "darwin") {
+			soSuffix = ".dylib"
+		} else {
+			soSuffix = ".so"
 		}
-		deps = append(deps, toolchainProps.Deps...)
+		dylib, suffix := getPrebuilt(ctx, dir, libName, soSuffix)
+		target.Dylib.Srcs = []string{dylib}
+		target.Suffix = proptools.StringPtr(suffix)
+	}
+}
 
-		props := struct {
-			Src  *string
-			Deps []string
-		}{
-			Src:  proptools.StringPtr(path.Join(prefix, *toolchainProps.Toolchain_prebuilt_src)),
-			Deps: deps,
-		}
-		ctx.AppendProperties(&props)
-	})
-	return module
+// getPrebuilt returns the module relative Rust library path and the suffix hash.
+func getPrebuilt(ctx android.LoadHookContext, dir, lib, extension string) (string, string) {
+	globPath := path.Join(ctx.ModuleDir(), dir, lib) + "-*" + extension
+	libMatches := ctx.Glob(globPath, nil)
+
+	if len(libMatches) != 1 {
+		ctx.ModuleErrorf("Unexpected number of matches for prebuilt libraries at path %q, found %d matches", globPath, len(libMatches))
+		return "", ""
+	}
+
+	// Collect the suffix by trimming the extension from the Base, then removing the library name and hyphen.
+	suffix := strings.TrimSuffix(libMatches[0].Base(), extension)[len(lib)+1:]
+
+	// Get the relative path from the match by trimming out the module directory.
+	relPath := strings.TrimPrefix(libMatches[0].String(), ctx.ModuleDir()+"/")
+
+	return relPath, suffix
 }

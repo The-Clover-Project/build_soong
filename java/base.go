@@ -634,12 +634,6 @@ type Module struct {
 
 var _ android.InstallableModule = (*Module)(nil)
 
-func (j *Module) IncrementalSupported() bool {
-	return true
-}
-
-var _ blueprint.Incremental = (*Module)(nil)
-
 // To satisfy the InstallableModule interface
 func (j *Module) StaticDependencyTags() []blueprint.DependencyTag {
 	return []blueprint.DependencyTag{staticLibTag}
@@ -1084,7 +1078,13 @@ func (j *Module) aidlFlags(ctx android.ModuleContext, aidlPreprocess android.Opt
 		j.ignoredAidlPermissionList = android.PathsForModuleSrcExcludes(ctx, exceptions, nil)
 	}
 
-	aidlMinSdkVersion := j.MinSdkVersion(ctx).String()
+	sdkVersionString := String(j.deviceProperties.Sdk_version)
+	sdkSpec := android.SdkSpecFrom(ctx, sdkVersionString)
+	effectiveApiLevel, err := sdkSpec.EffectiveVersion(ctx)
+	if err != nil {
+		ctx.PropertyErrorf("sdk_version", "invalid sdk version %q: %v", sdkVersionString, err)
+	}
+	aidlMinSdkVersion := effectiveApiLevel.String()
 	flags = append(flags, "--min_sdk_version="+aidlMinSdkVersion)
 
 	return strings.Join(flags, " "), deps

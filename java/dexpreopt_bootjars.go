@@ -192,20 +192,10 @@ import (
 // provide predefined paths to boot image files (these paths depend only on static build
 // configuration, such as PRODUCT variables, and use hard-coded directory names).
 //
-// 2.3. Singleton
+// 2.3. dexpreopt_bootjars module
 // --------------
 //
-// Build rules for the boot images are generated with a Soong singleton. Because a singleton has no
-// dependencies on other modules, it has to find the modules for the DEX jars using VisitAllModules.
-// Soong loops through all modules and compares each module against a list of bootclasspath library
-// names. Then it generates build rules that copy DEX jars from their intermediate module-specific
-// locations to the hard-coded locations predefined in the boot image configs.
-//
-// It would be possible to use a module with proper dependencies instead, but that would require
-// changes in the way Soong generates variables for Make: a singleton can use one MakeVars() method
-// that writes variables to out/soong/make_vars-*.mk, which is included early by the main makefile,
-// but module(s) would have to use out/soong/Android-*.mk which has a group of LOCAL_* variables
-// for each module, and is included later.
+// Build rules for the boot images are generated in the dexpreopt_bootjars.
 //
 // 2.4. Install rules
 // ------------------
@@ -460,14 +450,14 @@ func (image *bootImageConfig) isEnabled(ctx android.BaseModuleContext) bool {
 	return ctx.OtherModuleExists(image.enabledIfExists)
 }
 
-func dexpreoptBootJarsFactory() android.SingletonModule {
+func dexpreoptBootJarsFactory() android.Module {
 	m := &dexpreoptBootJars{}
 	android.InitAndroidArchModule(m, android.DeviceSupported, android.MultilibCommon)
 	return m
 }
 
 func RegisterDexpreoptBootJarsComponents(ctx android.RegistrationContext) {
-	ctx.RegisterParallelSingletonModuleType("dex_bootjars", dexpreoptBootJarsFactory)
+	ctx.RegisterModuleType("dex_bootjars", dexpreoptBootJarsFactory)
 	ctx.RegisterModuleType("art_boot_images", artBootImagesFactory)
 }
 
@@ -478,7 +468,8 @@ func SkipDexpreoptBootJars(ctx android.PathContext) bool {
 
 // Singleton module for generating boot image build rules.
 type dexpreoptBootJars struct {
-	android.SingletonModuleBase
+	android.ModuleBase
+	blueprint.ModuleUsesIncrementalWalkDeps
 
 	// Default boot image config (currently always the Framework boot image extension). It should be
 	// noted that JIT-Zygote builds use ART APEX image instead of the Framework boot image extension,
@@ -631,6 +622,10 @@ func getBootclasspathFragmentByApex(ctx android.ModuleContext, apexName string) 
 
 // GenerateAndroidBuildActions generates the build rules for boot images.
 func (d *dexpreoptBootJars) GenerateAndroidBuildActions(ctx android.ModuleContext) {
+	if ctx.ModuleName() != "dex_bootjars" || ctx.Namespace().Path != "." {
+		ctx.ModuleErrorf(`dex_bootjars can only be used by a single module named "dex_bootjars" in the root namespace.`)
+	}
+
 	imageConfigs := genBootImageConfigs(ctx)
 	d.defaultBootImage = defaultBootImageConfig(ctx)
 	d.otherImages = make([]*bootImageConfig, 0, len(imageConfigs)-1)
@@ -719,6 +714,10 @@ func (d *dexpreoptBootJars) GenerateAndroidBuildActions(ctx android.ModuleContex
 	)
 
 	d.buildBootZip(ctx)
+
+	d.dexpreoptConfigForMake =
+		android.PathForOutput(ctx, dexpreopt.GetDexpreoptDirName(ctx), "dexpreopt.config")
+	writeGlobalConfigForMake(ctx, d.dexpreoptConfigForMake)
 }
 
 // Build the boot.zip which contains the boot jars and their compilation output
@@ -854,13 +853,6 @@ func (d *dexpreoptBootJars) buildBootZip(ctx android.ModuleContext) {
 
 	ctx.DistForGoal("droidcore", bootZipMetadata)
 	ctx.DistForGoal("droidcore", bootZip)
-}
-
-// GenerateSingletonBuildActions generates build rules for the dexpreopt config for Make.
-func (d *dexpreoptBootJars) GenerateSingletonBuildActions(ctx android.SingletonContext) {
-	d.dexpreoptConfigForMake =
-		android.PathForOutput(ctx, dexpreopt.GetDexpreoptDirName(ctx), "dexpreopt.config")
-	writeGlobalConfigForMake(ctx, d.dexpreoptConfigForMake)
 }
 
 // shouldBuildBootImages determines whether boot images should be built.
@@ -1369,6 +1361,7 @@ func buildBootImageVariant(ctx android.ModuleContext, image *bootImageVariant, p
 
 	if image.target.Os == android.Android {
 		cmd.Text("$(cat").Input(globalSoong.UffdGcFlag).Text(")")
+		cmd.Text("$(cat").Input(globalSoong.ProfileCodeFlag).Text(")")
 	}
 
 	if global.BootFlags != "" {
@@ -1376,8 +1369,6 @@ func buildBootImageVariant(ctx android.ModuleContext, image *bootImageVariant, p
 	}
 
 	cmd.Text("$(cat").Input(globalSoong.AssumeValueFlags).Text(")")
-
-	cmd.Text("$(cat").Input(globalSoong.ProfileCodeFlag).Text(")")
 
 	if extraFlags != "" {
 		cmd.Flag(extraFlags)
@@ -1603,7 +1594,7 @@ func dumpOatRules(ctx android.ModuleContext, image *bootImageConfig) {
 	})
 }
 
-func writeGlobalConfigForMake(ctx android.SingletonContext, path android.WritablePath) {
+func writeGlobalConfigForMake(ctx android.ModuleContext, path android.WritablePath) {
 	data := dexpreopt.GetGlobalConfigRawData(ctx)
 
 	android.WriteFileRule(ctx, path, string(data))
@@ -1612,18 +1603,14 @@ func writeGlobalConfigForMake(ctx android.SingletonContext, path android.Writabl
 // Define Make variables for boot image names, paths, etc. These variables are used in makefiles
 // (make/core/dex_preopt_libart.mk) to generate install rules that copy boot image files to the
 // correct output directories.
-func (d *dexpreoptBootJars) MakeVars(ctx android.MakeVarsContext) {
-	if d.dexpreoptConfigForMake != nil && !SkipDexpreoptBootJars(ctx) {
-		ctx.Strict("DEX_PREOPT_CONFIG_FOR_MAKE", d.dexpreoptConfigForMake.String())
-		ctx.Strict("DEX_PREOPT_SOONG_CONFIG_FOR_MAKE", android.PathForOutput(ctx, "dexpreopt_soong.config").String())
-	}
-
+func (d *dexpreoptBootJars) MakeVars(ctx android.MakeVarsModuleContext) []android.ModuleMakeVarsValue {
+	var makeVars []android.ModuleMakeVarsValue
 	image := d.defaultBootImage
 	if image != nil && !SkipDexpreoptBootJars(ctx) {
 		global := dexpreopt.GetGlobalConfig(ctx)
 		dexPaths, dexLocations := bcpForDexpreopt(ctx, global.PreoptWithUpdatableBcp)
-		ctx.Strict("DEXPREOPT_BOOTCLASSPATH_DEX_FILES", strings.Join(dexPaths.Strings(), " "))
-		ctx.Strict("DEXPREOPT_BOOTCLASSPATH_DEX_LOCATIONS", strings.Join(dexLocations, " "))
+		makeVars = append(makeVars, android.ModuleMakeVarsValue{"DEXPREOPT_BOOTCLASSPATH_DEX_FILES", strings.Join(dexPaths.Strings(), " ")})
+		makeVars = append(makeVars, android.ModuleMakeVarsValue{"DEXPREOPT_BOOTCLASSPATH_DEX_LOCATIONS", strings.Join(dexLocations, " ")})
 
 		// The primary ART boot image is exposed to Make for testing (gtests) and benchmarking
 		// (golem) purposes.
@@ -1634,22 +1621,29 @@ func (d *dexpreoptBootJars) MakeVars(ctx android.MakeVarsContext) {
 					suffix = "_host"
 				}
 				sfx := variant.name + suffix + "_" + variant.target.Arch.ArchType.String()
-				ctx.Strict("DEXPREOPT_IMAGE_VDEX_BUILT_INSTALLED_"+sfx, variant.vdexInstalls.String())
-				ctx.Strict("DEXPREOPT_IMAGE_"+sfx, variant.imagePathOnHost.String())
-				ctx.Strict("DEXPREOPT_IMAGE_DEPS_"+sfx, strings.Join(variant.imagesDeps.Strings(), " "))
-				ctx.Strict("DEXPREOPT_IMAGE_BUILT_INSTALLED_"+sfx, variant.installs.String())
-				ctx.Strict("DEXPREOPT_IMAGE_UNSTRIPPED_BUILT_INSTALLED_"+sfx, variant.unstrippedInstalls.String())
+				makeVars = append(makeVars, android.ModuleMakeVarsValue{"DEXPREOPT_IMAGE_VDEX_BUILT_INSTALLED_" + sfx, variant.vdexInstalls.String()})
+				makeVars = append(makeVars, android.ModuleMakeVarsValue{"DEXPREOPT_IMAGE_" + sfx, variant.imagePathOnHost.String()})
+				makeVars = append(makeVars, android.ModuleMakeVarsValue{"DEXPREOPT_IMAGE_DEPS_" + sfx, strings.Join(variant.imagesDeps.Strings(), " ")})
+				makeVars = append(makeVars, android.ModuleMakeVarsValue{"DEXPREOPT_IMAGE_BUILT_INSTALLED_" + sfx, variant.installs.String()})
+				makeVars = append(makeVars, android.ModuleMakeVarsValue{"DEXPREOPT_IMAGE_UNSTRIPPED_BUILT_INSTALLED_" + sfx, variant.unstrippedInstalls.String()})
 				if variant.licenseMetadataFile.Valid() {
-					ctx.Strict("DEXPREOPT_IMAGE_LICENSE_METADATA_"+sfx, variant.licenseMetadataFile.String())
+					makeVars = append(makeVars, android.ModuleMakeVarsValue{"DEXPREOPT_IMAGE_LICENSE_METADATA_" + sfx, variant.licenseMetadataFile.String()})
 				}
 			}
 			imageLocationsOnHost, imageLocationsOnDevice := current.getAnyAndroidVariant().imageLocations()
-			ctx.Strict("DEXPREOPT_IMAGE_LOCATIONS_ON_HOST"+current.name, strings.Join(imageLocationsOnHost, ":"))
-			ctx.Strict("DEXPREOPT_IMAGE_LOCATIONS_ON_DEVICE"+current.name, strings.Join(imageLocationsOnDevice, ":"))
-			ctx.Strict("DEXPREOPT_IMAGE_ZIP_"+current.name, current.zip.String())
+			makeVars = append(makeVars, android.ModuleMakeVarsValue{"DEXPREOPT_IMAGE_LOCATIONS_ON_HOST" + current.name, strings.Join(imageLocationsOnHost, ":")})
+			makeVars = append(makeVars, android.ModuleMakeVarsValue{"DEXPREOPT_IMAGE_LOCATIONS_ON_DEVICE" + current.name, strings.Join(imageLocationsOnDevice, ":")})
+			makeVars = append(makeVars, android.ModuleMakeVarsValue{"DEXPREOPT_IMAGE_ZIP_" + current.name, current.zip.String()})
 		}
-		ctx.Strict("DEXPREOPT_IMAGE_NAMES", strings.Join(getImageNames(), " "))
+		makeVars = append(makeVars, android.ModuleMakeVarsValue{"DEXPREOPT_IMAGE_NAMES", strings.Join(getImageNames(), " ")})
 	}
+
+	if d.dexpreoptConfigForMake != nil && !SkipDexpreoptBootJars(ctx) {
+		makeVars = append(makeVars, android.ModuleMakeVarsValue{"DEX_PREOPT_CONFIG_FOR_MAKE", d.dexpreoptConfigForMake.String()})
+		makeVars = append(makeVars, android.ModuleMakeVarsValue{"DEX_PREOPT_SOONG_CONFIG_FOR_MAKE", android.PathForOutput(ctx, "dexpreopt_soong.config").String()})
+	}
+
+	return makeVars
 }
 
 // Add one of the outputs in `OutputFile`

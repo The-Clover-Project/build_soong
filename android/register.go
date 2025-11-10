@@ -236,8 +236,6 @@ func ModuleTypeByFactory() map[reflect.Value]string {
 // and test environments.
 type RegistrationContext interface {
 	RegisterModuleType(name string, factory ModuleFactory)
-	RegisterSingletonModuleType(name string, factory SingletonModuleFactory)
-	RegisterParallelSingletonModuleType(name string, factory SingletonModuleFactory)
 	RegisterParallelSingletonType(name string, factory SingletonFactory)
 	RegisterSingletonType(name string, factory SingletonFactory)
 	PreArchMutators(f RegisterMutatorFunc)
@@ -289,23 +287,6 @@ func (ctx *initRegistrationContext) RegisterModuleType(name string, factory Modu
 	}
 	ctx.moduleTypes[name] = factory
 	RegisterModuleType(name, factory)
-	RegisterModuleTypeForDocs(name, reflect.ValueOf(factory))
-}
-
-func (ctx *initRegistrationContext) RegisterSingletonModuleType(name string, factory SingletonModuleFactory) {
-	ctx.registerSingletonModuleType(name, factory, false)
-}
-func (ctx *initRegistrationContext) RegisterParallelSingletonModuleType(name string, factory SingletonModuleFactory) {
-	ctx.registerSingletonModuleType(name, factory, true)
-}
-
-func (ctx *initRegistrationContext) registerSingletonModuleType(name string, factory SingletonModuleFactory, parallel bool) {
-	s, m := SingletonModuleFactoryAdaptor(name, factory)
-	ctx.registerSingletonType(name, s, parallel)
-	ctx.RegisterModuleType(name, m)
-	// Overwrite moduleTypesForDocs with the original factory instead of the lambda returned by
-	// SingletonModuleFactoryAdaptor so that docs can find the module type documentation on the
-	// factory method.
 	RegisterModuleTypeForDocs(name, reflect.ValueOf(factory))
 }
 
