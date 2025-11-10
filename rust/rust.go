@@ -713,6 +713,7 @@ func DefaultsFactory(props ...any) android.Module {
 		&cc.RustBindgenClangProperties{},
 		&ClippyProperties{},
 		&SanitizeProperties{},
+		&cc.StripProperties{},
 		&fuzz.FuzzProperties{},
 	)
 
