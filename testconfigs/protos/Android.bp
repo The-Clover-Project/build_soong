@@ -27,3 +27,20 @@ bootstrap_go_package {
         "test-configs.pb.go",
     ],
 }
+
+python_library_host {
+    name: "test_configs_proto_py",
+    pkg_path: "test_configs_proto",
+    srcs: [
+        "test-configs.proto",
+    ],
+    libs: [
+        "libprotobuf-python",
+    ],
+    proto: {
+        canonical_path_from_root: false,
+    },
+    visibility: [
+        "//tools/asuite/atest",
+    ],
+}
