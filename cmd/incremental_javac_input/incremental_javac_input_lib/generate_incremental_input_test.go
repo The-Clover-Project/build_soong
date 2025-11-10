@@ -328,12 +328,7 @@ func TestGenerateIncrementalInput(t *testing.T) {
 			tf.incOutputPath(),
 			fmt.Sprintf("%s\n%s\n%s", tf.JavaFile1, tf.JavaFile2, tf.JavaFile3), // All files included initially
 			tf.remOutputPath(),
-			fmt.Sprintf("%s\n%s\n%s\n%s",
-				filepath.Join(tf.ClassDir, tf.GenClassFile11),
-				filepath.Join(tf.ClassDir, tf.GenClassFile12),
-				filepath.Join(tf.ClassDir, tf.GenClassFile21),
-				filepath.Join(tf.ClassDir, tf.GenClassFile31),
-			),
+			"", // All previous classes are removed implicitly
 		)
 		tf.savePriorState()
 	})
@@ -351,12 +346,7 @@ func TestGenerateIncrementalInput(t *testing.T) {
 			tf.incOutputPath(),
 			fmt.Sprintf("%s\n%s\n%s", tf.JavaFile1, tf.JavaFile2, tf.JavaFile3),
 			tf.remOutputPath(),
-			fmt.Sprintf("%s\n%s\n%s\n%s",
-				filepath.Join(tf.ClassDir, tf.GenClassFile11),
-				filepath.Join(tf.ClassDir, tf.GenClassFile12),
-				filepath.Join(tf.ClassDir, tf.GenClassFile21),
-				filepath.Join(tf.ClassDir, tf.GenClassFile31),
-			),
+			"", // All previous classes are removed implicitly
 		)
 		tf.savePriorState() // Save state if needed for subsequent tests
 	})
@@ -364,6 +354,7 @@ func TestGenerateIncrementalInput(t *testing.T) {
 	// --- Subtest: Incremental - One File Modified ---
 	t.Run("Incremental_OneFileModified", func(t *testing.T) {
 		// Arrange: Modify one file (ensure timestamp changes)
+		createDir(t, tf.ClassDir)
 		modifyFile(t, tf.JavaFile3, "Incremental_OneFileModified")
 
 		// Act
@@ -383,6 +374,7 @@ func TestGenerateIncrementalInput(t *testing.T) {
 	// --- Subtest: Incremental - One File and Header Modified ---
 	t.Run("Incremental_FileAndHeaderModified", func(t *testing.T) {
 		// Arrange: Modify a different file and the header jar
+		createDir(t, tf.ClassDir)
 		modifyFile(t, tf.JavaFile3, "Incremental_FileAndHeaderModified")
 		modifyFile(t, tf.HeaderJar, "Incremental_FileAndHeaderModified")
 
@@ -407,6 +399,7 @@ func TestGenerateIncrementalInput(t *testing.T) {
 	// --- Subtest: Incremental - Dependency Change ---
 	t.Run("Incremental_DependencyChanged", func(t *testing.T) {
 		// Arrange: Modify the DepJar
+		createDir(t, tf.ClassDir)
 		modifyFile(t, tf.DepJar, "Incremental_DependencyChanged")
 
 		// Act
@@ -426,6 +419,7 @@ func TestGenerateIncrementalInput(t *testing.T) {
 	// --- Subtest: Incremental - File which is dependency to all files is Changed ---
 	t.Run("Incremental_DependencyToAllChanged", func(t *testing.T) {
 		// Arrange: Modify the DepsRspFile or JavaSrcDeps proto
+		createDir(t, tf.ClassDir)
 		modifyFile(t, tf.JavaFile2, "Incremental_DependencyToAllChanged")
 
 		// Act
@@ -445,6 +439,7 @@ func TestGenerateIncrementalInput(t *testing.T) {
 	// --- Subtest: Incremental - File which is dependency to all files is changed along with headers---
 	t.Run("Incremental_DependencyToAllChangedWithHeaders", func(t *testing.T) {
 		// Arrange: Modify the DepsRspFile or JavaSrcDeps proto
+		createDir(t, tf.ClassDir)
 		modifyFile(t, tf.JavaFile2, "Incremental_DependencyToAllChangedWithHeader")
 		modifyFile(t, tf.HeaderJar, "Incremental_DependencyToAllChangedWithHeader")
 
@@ -465,6 +460,7 @@ func TestGenerateIncrementalInput(t *testing.T) {
 	// --- Subtest: Incremental - One File Deleted, Header Modified ---
 	t.Run("Incremental_FileDeletedHeaderModified", func(t *testing.T) {
 		// Arrange: Delete one file and modify header
+		createDir(t, tf.ClassDir)
 		deleteFile(t, tf.JavaFile3, tf.SrcRspFile)
 		// Modify Headers
 		modifyFile(t, tf.HeaderJar, "Incremental_FileDeletedHeaderModified")
@@ -492,6 +488,7 @@ func TestGenerateIncrementalInput(t *testing.T) {
 	t.Run("Incremental_CrossModuleDepsModified", func(t *testing.T) {
 		// Arrange: Modify cross-module jar.
 		// There is no way to modify zip files directly. Just move it somewhere and recreate it.
+		createDir(t, tf.ClassDir)
 		err := os.Rename(tf.CrossModuleJar, tf.CrossModuleJar+".tmp")
 		defer os.Rename(tf.CrossModuleJar+".tmp", tf.CrossModuleJar)
 		if err != nil {
