@@ -37,6 +37,7 @@ func init() {
 
 func androidMakeVarsProvider(ctx MakeVarsContext) {
 	ctx.Strict("MIN_SUPPORTED_SDK_VERSION", ctx.Config().MinSupportedSdkVersion().String())
+	ctx.Strict("BUILD_UUID_FILE", ctx.Config().BuildUUIDFile(ctx).String())
 }
 
 // /////////////////////////////////////////////////////////////////////////////
