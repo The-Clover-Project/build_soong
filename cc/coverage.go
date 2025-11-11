@@ -311,6 +311,10 @@ func (c coverageTransitionMutator) Split(ctx android.BaseModuleContext) []string
 	return []string{""}
 }
 
+func (c coverageTransitionMutator) SplitOnDemand(ctx android.BaseModuleContext) []string {
+	return nil
+}
+
 func (c coverageTransitionMutator) OutgoingTransition(ctx android.OutgoingTransitionContext, sourceVariation string) string {
 	return sourceVariation
 }

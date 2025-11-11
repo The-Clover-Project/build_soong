@@ -68,6 +68,10 @@ func (f *fuzzTransitionMutator) Split(ctx android.BaseModuleContext) []string {
 	return []string{""}
 }
 
+func (f *fuzzTransitionMutator) SplitOnDemand(ctx android.BaseModuleContext) []string {
+	return nil
+}
+
 func (f *fuzzTransitionMutator) OutgoingTransition(ctx android.OutgoingTransitionContext, sourceVariation string) string {
 	m, ok := ctx.Module().(*Module)
 	if !ok {

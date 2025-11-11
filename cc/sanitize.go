@@ -1268,6 +1268,10 @@ func (s *sanitizerSplitMutator) Split(ctx android.BaseModuleContext) []string {
 	return []string{""}
 }
 
+func (s *sanitizerSplitMutator) SplitOnDemand(ctx android.BaseModuleContext) []string {
+	return nil
+}
+
 func (s *sanitizerSplitMutator) OutgoingTransition(ctx android.OutgoingTransitionContext, sourceVariation string) string {
 	if c, ok := ctx.Module().(PlatformSanitizeable); ok {
 		if !c.SanitizableDepTagChecker()(ctx.DepTag()) {

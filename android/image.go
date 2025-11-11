@@ -203,6 +203,10 @@ func (imageTransitionMutator) Split(ctx BaseModuleContext) []string {
 	return getImageVariations(ctx)
 }
 
+func (imageTransitionMutator) SplitOnDemand(ctx BaseModuleContext) []string {
+	return nil
+}
+
 func (imageTransitionMutator) OutgoingTransition(ctx OutgoingTransitionContext, sourceVariation string) string {
 	// Request the appropriate image variation of a dependency from `filesystem`.
 	// imageMutator currently does not split ImageInterface modules for every
