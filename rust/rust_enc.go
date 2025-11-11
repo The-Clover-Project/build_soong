@@ -6,7 +6,11 @@ import (
 	"android/soong/android"
 	"android/soong/cc"
 	"bytes"
+	"fmt"
 	"github.com/google/blueprint/gobtools"
+	"github.com/google/blueprint/proptools"
+	"reflect"
+	"unsafe"
 )
 
 // begin of rust.go
@@ -32,6 +36,24 @@ func (r LibraryInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		return err
 	}
 	return err
+}
+
+func (r LibraryInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":rust.LibraryInfo")
+	hasher.WriteInt(2)
+	hasher.WriteString(":.bool")
+	if r.Rlib {
+		hasher.WriteByte(1)
+	} else {
+		hasher.WriteByte(0)
+	}
+	hasher.WriteString(":.bool")
+	if r.Dylib {
+		hasher.WriteByte(1)
+	} else {
+		hasher.WriteByte(0)
+	}
+	return nil
 }
 
 func (r *LibraryInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
@@ -120,6 +142,101 @@ func (r CompilerInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		return err
 	}
 	return err
+}
+
+func (r CompilerInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":rust.CompilerInfo")
+	hasher.WriteInt(11)
+	hasher.WriteString(":rust.StdLinkage")
+	hasher.WriteString(":.int")
+	hasher.WriteUint64(uint64(int(r.StdLinkageForDevice)))
+	hasher.WriteString(":rust.StdLinkage")
+	hasher.WriteString(":.int")
+	hasher.WriteUint64(uint64(int(r.StdLinkageForNonDevice)))
+	hasher.WriteString(":.bool")
+	if r.NoStdlibs {
+		hasher.WriteByte(1)
+	} else {
+		hasher.WriteByte(0)
+	}
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.CrateName)
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.Edition)
+	if err := r.CargoOutDir.CustomHash(hasher); err != nil {
+		return err
+	}
+	hasher.WriteString(":.[]string")
+	hasher.WriteInt(len(r.Features))
+	for val1 := 0; val1 < len(r.Features); val1++ {
+		hasher.WriteString(":.string")
+		hasher.WriteString(r.Features[val1])
+	}
+	hasher.WriteString(":rust.android.Path")
+	val2 := r.CrateRootPath == nil
+	if val2 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.CrateRootPath); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val3 := r.CrateRootPath == nil
+				if val3 {
+					hasher.WriteByte(0)
+				} else {
+					val4 := func(hasher *proptools.Hasher) error { return r.CrateRootPath.(proptools.CustomHash).CustomHash(hasher) }
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val4); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.CrateRootPath.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":.*LibraryInfo")
+	val5 := r.LibraryInfo == nil
+	if val5 {
+		hasher.WriteByte(0)
+	} else {
+		val6 := func(hasher *proptools.Hasher) error {
+			if err := (*r.LibraryInfo).CustomHash(hasher); err != nil {
+				return err
+			}
+			return nil
+		}
+		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.LibraryInfo)), val6); err != nil {
+			return err
+		}
+	}
+	hasher.WriteString(":rust.android.Path")
+	val7 := r.BuildTarget == nil
+	if val7 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.BuildTarget); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val8 := r.BuildTarget == nil
+				if val8 {
+					hasher.WriteByte(0)
+				} else {
+					val9 := func(hasher *proptools.Hasher) error { return r.BuildTarget.(proptools.CustomHash).CustomHash(hasher) }
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val9); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.BuildTarget.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	if err := r.CheckTarget.CustomHash(hasher); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (r *CompilerInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
@@ -219,6 +336,12 @@ func (r ProtobufDecoratorInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer
 	return err
 }
 
+func (r ProtobufDecoratorInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":rust.ProtobufDecoratorInfo")
+	hasher.WriteInt(0)
+	return nil
+}
+
 func (r *ProtobufDecoratorInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
@@ -259,6 +382,55 @@ func (r SourceProviderInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) e
 		}
 	}
 	return err
+}
+
+func (r SourceProviderInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":rust.SourceProviderInfo")
+	hasher.WriteInt(2)
+	hasher.WriteString(":rust.android.Paths")
+	hasher.WriteString(":.[]Path")
+	hasher.WriteInt(len(r.Srcs))
+	for val1 := 0; val1 < len(r.Srcs); val1++ {
+		hasher.WriteString("android/soong/android:android.Path")
+		val2 := r.Srcs[val1] == nil
+		if val2 {
+			hasher.WriteByte(0)
+		} else {
+			if v := reflect.ValueOf(r.Srcs[val1]); v.Kind() == reflect.Ptr {
+				if v.IsNil() {
+					panic(fmt.Errorf("nil pointer is not supported in interface"))
+				} else {
+					val3 := r.Srcs[val1] == nil
+					if val3 {
+						hasher.WriteByte(0)
+					} else {
+						val4 := func(hasher *proptools.Hasher) error { return r.Srcs[val1].(proptools.CustomHash).CustomHash(hasher) }
+						if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val4); err != nil {
+							return err
+						}
+					}
+				}
+			} else {
+				r.Srcs[val1].(proptools.CustomHash).CustomHash(hasher)
+			}
+		}
+	}
+	hasher.WriteString(":.*ProtobufDecoratorInfo")
+	val5 := r.ProtobufDecoratorInfo == nil
+	if val5 {
+		hasher.WriteByte(0)
+	} else {
+		val6 := func(hasher *proptools.Hasher) error {
+			if err := (*r.ProtobufDecoratorInfo).CustomHash(hasher); err != nil {
+				return err
+			}
+			return nil
+		}
+		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.ProtobufDecoratorInfo)), val6); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (r *SourceProviderInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
@@ -310,6 +482,35 @@ func (r ProcMacroInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error 
 		return err
 	}
 	return err
+}
+
+func (r ProcMacroInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":rust.ProcMacroInfo")
+	hasher.WriteInt(1)
+	hasher.WriteString(":rust.android.Path")
+	val1 := r.Dylib == nil
+	if val1 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.Dylib); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val2 := r.Dylib == nil
+				if val2 {
+					hasher.WriteByte(0)
+				} else {
+					val3 := func(hasher *proptools.Hasher) error { return r.Dylib.(proptools.CustomHash).CustomHash(hasher) }
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val3); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.Dylib.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	return nil
 }
 
 func (r *ProcMacroInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
@@ -406,6 +607,117 @@ func (r RustInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		return err
 	}
 	return err
+}
+
+func (r RustInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":rust.RustInfo")
+	hasher.WriteInt(9)
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.AndroidMkSuffix)
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.RustSubName)
+	val2 := func(hasher *proptools.Hasher, val1 string) error {
+		hasher.WriteString(":.string")
+		hasher.WriteString(val1)
+		return nil
+	}
+	if err := r.TransitiveAndroidMkSharedLibs.Hash(hasher, "string", val2); err != nil {
+		return err
+	}
+	hasher.WriteString(":.*CompilerInfo")
+	val3 := r.CompilerInfo == nil
+	if val3 {
+		hasher.WriteByte(0)
+	} else {
+		val4 := func(hasher *proptools.Hasher) error {
+			if err := (*r.CompilerInfo).CustomHash(hasher); err != nil {
+				return err
+			}
+			return nil
+		}
+		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.CompilerInfo)), val4); err != nil {
+			return err
+		}
+	}
+	hasher.WriteString(":.*cc.SnapshotInfo")
+	val5 := r.SnapshotInfo == nil
+	if val5 {
+		hasher.WriteByte(0)
+	} else {
+		val6 := func(hasher *proptools.Hasher) error {
+			if err := (*r.SnapshotInfo).CustomHash(hasher); err != nil {
+				return err
+			}
+			return nil
+		}
+		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.SnapshotInfo)), val6); err != nil {
+			return err
+		}
+	}
+	hasher.WriteString(":.*SourceProviderInfo")
+	val7 := r.SourceProviderInfo == nil
+	if val7 {
+		hasher.WriteByte(0)
+	} else {
+		val8 := func(hasher *proptools.Hasher) error {
+			if err := (*r.SourceProviderInfo).CustomHash(hasher); err != nil {
+				return err
+			}
+			return nil
+		}
+		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.SourceProviderInfo)), val8); err != nil {
+			return err
+		}
+	}
+	hasher.WriteString(":.*ProcMacroInfo")
+	val9 := r.ProcMacroInfo == nil
+	if val9 {
+		hasher.WriteByte(0)
+	} else {
+		val10 := func(hasher *proptools.Hasher) error {
+			if err := (*r.ProcMacroInfo).CustomHash(hasher); err != nil {
+				return err
+			}
+			return nil
+		}
+		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.ProcMacroInfo)), val10); err != nil {
+			return err
+		}
+	}
+	hasher.WriteString(":rust.android.Paths")
+	hasher.WriteString(":.[]Path")
+	hasher.WriteInt(len(r.XrefRustFiles))
+	for val11 := 0; val11 < len(r.XrefRustFiles); val11++ {
+		hasher.WriteString("android/soong/android:android.Path")
+		val12 := r.XrefRustFiles[val11] == nil
+		if val12 {
+			hasher.WriteByte(0)
+		} else {
+			if v := reflect.ValueOf(r.XrefRustFiles[val11]); v.Kind() == reflect.Ptr {
+				if v.IsNil() {
+					panic(fmt.Errorf("nil pointer is not supported in interface"))
+				} else {
+					val13 := r.XrefRustFiles[val11] == nil
+					if val13 {
+						hasher.WriteByte(0)
+					} else {
+						val14 := func(hasher *proptools.Hasher) error {
+							return r.XrefRustFiles[val11].(proptools.CustomHash).CustomHash(hasher)
+						}
+						if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val14); err != nil {
+							return err
+						}
+					}
+				}
+			} else {
+				r.XrefRustFiles[val11].(proptools.CustomHash).CustomHash(hasher)
+			}
+		}
+	}
+	if err := r.DocTimestampFile.CustomHash(hasher); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (r *RustInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
@@ -614,6 +926,55 @@ func (r RustFlagExporterInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer)
 	return err
 }
 
+func (r RustFlagExporterInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":rust.RustFlagExporterInfo")
+	hasher.WriteInt(7)
+	hasher.WriteString(":.[]string")
+	hasher.WriteInt(len(r.Flags))
+	for val1 := 0; val1 < len(r.Flags); val1++ {
+		hasher.WriteString(":.string")
+		hasher.WriteString(r.Flags[val1])
+	}
+	hasher.WriteString(":.[]string")
+	hasher.WriteInt(len(r.LinkDirs))
+	for val2 := 0; val2 < len(r.LinkDirs); val2++ {
+		hasher.WriteString(":.string")
+		hasher.WriteString(r.LinkDirs[val2])
+	}
+	hasher.WriteString(":.[]string")
+	hasher.WriteInt(len(r.RustLibObjects))
+	for val3 := 0; val3 < len(r.RustLibObjects); val3++ {
+		hasher.WriteString(":.string")
+		hasher.WriteString(r.RustLibObjects[val3])
+	}
+	hasher.WriteString(":.[]string")
+	hasher.WriteInt(len(r.StaticLibObjects))
+	for val4 := 0; val4 < len(r.StaticLibObjects); val4++ {
+		hasher.WriteString(":.string")
+		hasher.WriteString(r.StaticLibObjects[val4])
+	}
+	hasher.WriteString(":.[]string")
+	hasher.WriteInt(len(r.WholeStaticLibObjects))
+	for val5 := 0; val5 < len(r.WholeStaticLibObjects); val5++ {
+		hasher.WriteString(":.string")
+		hasher.WriteString(r.WholeStaticLibObjects[val5])
+	}
+	hasher.WriteString(":.[]string")
+	hasher.WriteInt(len(r.SharedLibPaths))
+	for val6 := 0; val6 < len(r.SharedLibPaths); val6++ {
+		hasher.WriteString(":.string")
+		hasher.WriteString(r.SharedLibPaths[val6])
+	}
+	hasher.WriteString(":.[]cc.RustRlibDep")
+	hasher.WriteInt(len(r.WholeRustRlibDeps))
+	for val7 := 0; val7 < len(r.WholeRustRlibDeps); val7++ {
+		if err := r.WholeRustRlibDeps[val7].CustomHash(hasher); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (r *RustFlagExporterInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
@@ -737,6 +1098,41 @@ func (r RustImplementationDepInfo) Encode(ctx gobtools.EncContext, buf *bytes.Bu
 		return err
 	}
 	return err
+}
+
+func (r RustImplementationDepInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":rust.RustImplementationDepInfo")
+	hasher.WriteInt(1)
+	val5 := func(hasher *proptools.Hasher, val1 android.Path) error {
+		hasher.WriteString(":rust.android.Path")
+		val2 := val1 == nil
+		if val2 {
+			hasher.WriteByte(0)
+		} else {
+			if v := reflect.ValueOf(val1); v.Kind() == reflect.Ptr {
+				if v.IsNil() {
+					panic(fmt.Errorf("nil pointer is not supported in interface"))
+				} else {
+					val3 := val1 == nil
+					if val3 {
+						hasher.WriteByte(0)
+					} else {
+						val4 := func(hasher *proptools.Hasher) error { return val1.(proptools.CustomHash).CustomHash(hasher) }
+						if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val4); err != nil {
+							return err
+						}
+					}
+				}
+			} else {
+				val1.(proptools.CustomHash).CustomHash(hasher)
+			}
+		}
+		return nil
+	}
+	if err := r.NonApexImplementationDeps.Hash(hasher, "android.Path", val5); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (r *RustImplementationDepInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {

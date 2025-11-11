@@ -5,7 +5,10 @@ package tradefed
 import (
 	"android/soong/android"
 	"bytes"
+	"fmt"
 	"github.com/google/blueprint/gobtools"
+	"github.com/google/blueprint/proptools"
+	"reflect"
 )
 
 // begin of providers.go
@@ -112,6 +115,105 @@ func (r BaseTestProviderData) Encode(ctx gobtools.EncContext, buf *bytes.Buffer)
 		return err
 	}
 	return err
+}
+
+func (r BaseTestProviderData) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":tradefed.BaseTestProviderData")
+	hasher.WriteInt(13)
+	hasher.WriteString(":.[]string")
+	hasher.WriteInt(len(r.TestcaseRelDataFiles))
+	for val1 := 0; val1 < len(r.TestcaseRelDataFiles); val1++ {
+		hasher.WriteString(":.string")
+		hasher.WriteString(r.TestcaseRelDataFiles[val1])
+	}
+	hasher.WriteString(":tradefed.android.Path")
+	val2 := r.OutputFile == nil
+	if val2 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.OutputFile); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val3 := r.OutputFile == nil
+				if val3 {
+					hasher.WriteByte(0)
+				} else {
+					val4 := func(hasher *proptools.Hasher) error { return r.OutputFile.(proptools.CustomHash).CustomHash(hasher) }
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val4); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.OutputFile.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":tradefed.android.Path")
+	val5 := r.TestConfig == nil
+	if val5 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.TestConfig); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val6 := r.TestConfig == nil
+				if val6 {
+					hasher.WriteByte(0)
+				} else {
+					val7 := func(hasher *proptools.Hasher) error { return r.TestConfig.(proptools.CustomHash).CustomHash(hasher) }
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val7); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.TestConfig.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":.[]string")
+	hasher.WriteInt(len(r.HostRequiredModuleNames))
+	for val8 := 0; val8 < len(r.HostRequiredModuleNames); val8++ {
+		hasher.WriteString(":.string")
+		hasher.WriteString(r.HostRequiredModuleNames[val8])
+	}
+	hasher.WriteString(":.[]string")
+	hasher.WriteInt(len(r.RequiredModuleNames))
+	for val9 := 0; val9 < len(r.RequiredModuleNames); val9++ {
+		hasher.WriteString(":.string")
+		hasher.WriteString(r.RequiredModuleNames[val9])
+	}
+	hasher.WriteString(":.[]string")
+	hasher.WriteInt(len(r.TestSuites))
+	for val10 := 0; val10 < len(r.TestSuites); val10++ {
+		hasher.WriteString(":.string")
+		hasher.WriteString(r.TestSuites[val10])
+	}
+	hasher.WriteString(":.bool")
+	if r.IsHost {
+		hasher.WriteByte(1)
+	} else {
+		hasher.WriteByte(0)
+	}
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.LocalSdkVersion)
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.LocalCertificate)
+	hasher.WriteString(":.bool")
+	if r.IsUnitTest {
+		hasher.WriteByte(1)
+	} else {
+		hasher.WriteByte(0)
+	}
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.MkInclude)
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.MkAppClass)
+	if err := r.InstallDir.CustomHash(hasher); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (r *BaseTestProviderData) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {

@@ -9,6 +9,7 @@ bootstrap_go_package {
         "blueprint",
         "blueprint-gobtools",
         "blueprint-pathtools",
+        "blueprint-proptools",
         "sbox_proto",
         "soong",
         "soong-android",
