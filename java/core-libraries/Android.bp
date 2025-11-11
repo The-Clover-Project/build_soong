@@ -133,7 +133,10 @@ java_library {
 // directory.
 java_library {
     name: "core-current-stubs-for-system-modules-exportable",
-    visibility: ["//development/sdk"],
+    visibility: [
+        "//development/build",
+        "//development/sdk",
+    ],
     static_libs: [
         "core.current.stubs.exportable",
         // This one is not on device but it's needed when javac compiles code
