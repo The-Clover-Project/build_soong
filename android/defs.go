@@ -51,9 +51,9 @@ var (
 	// A copy rule.
 	Cp = pctx.AndroidStaticRule("Cp",
 		blueprint.RuleParams{
-			Command:         "rm -f $out && cp $cpPreserveSymlinks $cpFlags $in $out$extraCmds",
-			Description:     "cp $out",
-			SandboxDisabled: true,
+			Command:     "${rm} -f $out && ${cp} $cpPreserveSymlinks $cpFlags $in $out$extraCmds",
+			CommandDeps: []string{"${rm}", "${cp}"},
+			Description: "cp $out",
 		},
 		"cpFlags", "extraCmds")
 
@@ -113,9 +113,10 @@ var (
 	// A copy executable rule wrapped with bash with bootstrapping
 	CpExecutableWithBashBootstrap = pctx.AndroidStaticRule("CpExecutableWithBashBootstrap",
 		blueprint.RuleParams{
-			Command:     "/bin/bash -c \"(${rmSrc} -f $out && ${cpSrc} $cpFlags $cpPreserveSymlinks $in $out ) && (${chmodSrc} +x $out$extraCmds )\"",
-			CommandDeps: []string{"${rmSrc}", "${cpSrc}", "${chmodSrc}", "${toybox}"},
-			Description: "cp $out",
+			Command:         "/bin/bash -c \"(${rmSrc} -f $out && ${cpSrc} $cpFlags $cpPreserveSymlinks $in $out ) && (${chmodSrc} +x $out$extraCmds )\"",
+			CommandDeps:     []string{"${rmSrc}", "${cpSrc}", "${chmodSrc}", "${toybox}"},
+			Description:     "cp $out",
+			SandboxDisabled: true,
 		},
 		"cpFlags", "extraCmds")
 
