@@ -95,6 +95,10 @@ func NewSourceFinder(ctx Context, config Config) (f *finder.Finder) {
 			".pk8",
 			".pem",
 			".avbpubkey",
+			".keyblock",
+			".vbpubk",
+			".vbprivk",
+			".versions",
 		},
 	}
 	dumpDir := config.FileListDir()
@@ -124,6 +128,10 @@ func findOtaToolsCertFiles(entries finder.DirEntries) (dirNames []string, fileNa
 	for _, foundName := range entries.FileNames {
 		if strings.HasSuffix(foundName, ".pk8") ||
 			strings.HasSuffix(foundName, ".pem") ||
+			strings.HasSuffix(foundName, ".keyblock") ||
+			strings.HasSuffix(foundName, ".vbpubk") ||
+			strings.HasSuffix(foundName, ".vbprivk") ||
+			strings.HasSuffix(foundName, ".versions") ||
 			strings.HasSuffix(foundName, ".avbpubkey") {
 			matches = append(matches, foundName)
 		}
@@ -220,6 +228,7 @@ func FindSources(ctx Context, config Config, f *finder.Finder) {
 	otatools_cert_files := f.FindMatching("build/make/target/product/security", findOtaToolsCertFiles)
 	otatools_cert_files = append(otatools_cert_files, f.FindMatching("device", findOtaToolsCertFiles)...)
 	otatools_cert_files = append(otatools_cert_files, f.FindMatching("external/avb/test/data", findOtaToolsCertFiles)...)
+	otatools_cert_files = append(otatools_cert_files, f.FindMatching("external/vboot_reference/tests/devkeys", findOtaToolsCertFiles)...)
 	otatools_cert_files = append(otatools_cert_files, f.FindMatching("packages/modules", findOtaToolsCertFiles)...)
 	otatools_cert_files = append(otatools_cert_files, f.FindMatching("vendor", findOtaToolsCertFiles)...)
 	err = dumpListToFile(ctx, config, otatools_cert_files, filepath.Join(dumpDir, "OtaToolsCertFiles.list"))
