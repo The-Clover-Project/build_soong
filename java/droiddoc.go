@@ -123,6 +123,9 @@ type ApiToCheck struct {
 
 	// Arguments to the apicheck tool.
 	Args *string
+
+	// If true, checkapi will run by default when building `droid` for this module.
+	Default_in_droid *bool
 }
 
 type DroiddocProperties struct {
