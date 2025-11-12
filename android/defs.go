@@ -15,6 +15,8 @@
 package android
 
 import (
+	"fmt"
+
 	"github.com/google/blueprint"
 	"github.com/google/blueprint/proptools"
 )
@@ -283,16 +285,25 @@ func init() {
 	pctx.HostBinToolVariable("MergeZipsCmd", "merge_zips")
 	pctx.HostBinToolVariable("AssembleVintf", "assemble_vintf")
 	pctx.SourcePathVariable("toybox", "prebuilts/build-tools/${HostPrebuiltTag}/bin/toybox")
-	pctx.SourcePathVariable("rmSrc", "prebuilts/build-tools/path/${HostPrebuiltTag}/rm")
-	pctx.SourcePathVariable("cpSrc", "prebuilts/build-tools/path/${HostPrebuiltTag}/cp")
-	pctx.SourcePathVariable("chmodSrc", "prebuilts/build-tools/path/${HostPrebuiltTag}/chmod")
 
-	hostBinToolVariables := func(names []string) {
+	hostBinToolSourcePathVariables := func(names []string) {
 		for _, name := range names {
-			pctx.HostBinToolVariable(name, name)
+			pctx.SourcePathVariable(fmt.Sprintf("%sSrc", name), fmt.Sprintf("prebuilts/build-tools/path/${HostPrebuiltTag}/%s", name))
 		}
 	}
 
+	hostBinToolVariables := func(names []string) {
+		for _, name := range names {
+			pctx.VariableFunc(name, func(ctx PackageVarContext) string {
+				if ctx.Config().UseHostMusl() {
+					return fmt.Sprintf("${%sSrc}", name)
+				}
+				return proptools.NinjaAndShellEscape(ctx.Config().HostToolPath(ctx, name).String())
+			})
+		}
+	}
+
+	hostBinToolSourcePathVariables(commonToyboxSymlinks)
 	hostBinToolVariables(commonToyboxSymlinks)
 }
 
