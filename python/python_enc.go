@@ -50,41 +50,19 @@ func init() {
 func (r PythonLibraryInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	var err error
 
-	if r.SrcsPathMappings == nil {
-		if err = gobtools.EncodeInt(buf, -1); err != nil {
-			return err
-		}
-	} else {
-		if err = gobtools.EncodeInt(buf, len(r.SrcsPathMappings)); err != nil {
-			return err
-		}
-		for val1 := 0; val1 < len(r.SrcsPathMappings); val1++ {
-			if err = r.SrcsPathMappings[val1].Encode(ctx, buf); err != nil {
-				return err
-			}
-		}
-	}
-
-	if r.DataPathMappings == nil {
-		if err = gobtools.EncodeInt(buf, -1); err != nil {
-			return err
-		}
-	} else {
-		if err = gobtools.EncodeInt(buf, len(r.DataPathMappings)); err != nil {
-			return err
-		}
-		for val2 := 0; val2 < len(r.DataPathMappings); val2++ {
-			if err = r.DataPathMappings[val2].Encode(ctx, buf); err != nil {
-				return err
-			}
-		}
-	}
-
-	if err = gobtools.EncodeInterface(ctx, buf, r.SrcsZip); err != nil {
+	if err = r.SrcsPathMappings.Encode(ctx, buf); err != nil {
 		return err
 	}
 
-	if err = gobtools.EncodeInterface(ctx, buf, r.PrecompiledSrcsZip); err != nil {
+	if err = r.DataPathMappings.Encode(ctx, buf); err != nil {
+		return err
+	}
+
+	if err = r.SrcsZip.EncodeInterface(ctx, buf); err != nil {
+		return err
+	}
+
+	if err = r.PrecompiledSrcsZip.EncodeInterface(ctx, buf); err != nil {
 		return err
 	}
 
@@ -92,19 +70,8 @@ func (r PythonLibraryInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) er
 		return err
 	}
 
-	if r.BundleSharedLibs == nil {
-		if err = gobtools.EncodeInt(buf, -1); err != nil {
-			return err
-		}
-	} else {
-		if err = gobtools.EncodeInt(buf, len(r.BundleSharedLibs)); err != nil {
-			return err
-		}
-		for val3 := 0; val3 < len(r.BundleSharedLibs); val3++ {
-			if err = gobtools.EncodeInterface(ctx, buf, r.BundleSharedLibs[val3]); err != nil {
-				return err
-			}
-		}
+	if err = r.BundleSharedLibs.EncodeInterface(ctx, buf); err != nil {
+		return err
 	}
 	return err
 }
@@ -112,99 +79,112 @@ func (r PythonLibraryInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) er
 func (r PythonLibraryInfo) CustomHash(hasher *proptools.Hasher) error {
 	hasher.WriteString(":python.PythonLibraryInfo")
 	hasher.WriteInt(6)
-	hasher.WriteString(":.[]pathMapping")
-	hasher.WriteInt(len(r.SrcsPathMappings))
-	for val1 := 0; val1 < len(r.SrcsPathMappings); val1++ {
-		if err := r.SrcsPathMappings[val1].CustomHash(hasher); err != nil {
+	val2 := func(hasher *proptools.Hasher, val1 pathMapping) error {
+		if err := val1.CustomHash(hasher); err != nil {
 			return err
 		}
+		return nil
 	}
-	hasher.WriteString(":.[]pathMapping")
-	hasher.WriteInt(len(r.DataPathMappings))
-	for val2 := 0; val2 < len(r.DataPathMappings); val2++ {
-		if err := r.DataPathMappings[val2].CustomHash(hasher); err != nil {
+	if err := r.SrcsPathMappings.Hash(hasher, "pathMapping", val2); err != nil {
+		return err
+	}
+	val4 := func(hasher *proptools.Hasher, val3 pathMapping) error {
+		if err := val3.CustomHash(hasher); err != nil {
 			return err
 		}
+		return nil
 	}
-	hasher.WriteString(":python.android.Path")
-	val3 := r.SrcsZip == nil
-	if val3 {
-		hasher.WriteByte(0)
-	} else {
-		if v := reflect.ValueOf(r.SrcsZip); v.Kind() == reflect.Ptr {
-			if v.IsNil() {
-				panic(fmt.Errorf("nil pointer is not supported in interface"))
-			} else {
-				val4 := r.SrcsZip == nil
-				if val4 {
-					hasher.WriteByte(0)
-				} else {
-					val5 := func(hasher *proptools.Hasher) error { return r.SrcsZip.(proptools.CustomHash).CustomHash(hasher) }
-					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val5); err != nil {
-						return err
-					}
-				}
-			}
-		} else {
-			r.SrcsZip.(proptools.CustomHash).CustomHash(hasher)
-		}
+	if err := r.DataPathMappings.Hash(hasher, "pathMapping", val4); err != nil {
+		return err
 	}
-	hasher.WriteString(":python.android.Path")
-	val6 := r.PrecompiledSrcsZip == nil
-	if val6 {
-		hasher.WriteByte(0)
-	} else {
-		if v := reflect.ValueOf(r.PrecompiledSrcsZip); v.Kind() == reflect.Ptr {
-			if v.IsNil() {
-				panic(fmt.Errorf("nil pointer is not supported in interface"))
-			} else {
-				val7 := r.PrecompiledSrcsZip == nil
-				if val7 {
-					hasher.WriteByte(0)
-				} else {
-					val8 := func(hasher *proptools.Hasher) error {
-						return r.PrecompiledSrcsZip.(proptools.CustomHash).CustomHash(hasher)
-					}
-					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val8); err != nil {
-						return err
-					}
-				}
-			}
-		} else {
-			r.PrecompiledSrcsZip.(proptools.CustomHash).CustomHash(hasher)
-		}
-	}
-	hasher.WriteString(":.string")
-	hasher.WriteString(r.PkgPath)
-	hasher.WriteString(":python.android.Paths")
-	hasher.WriteString(":.[]Path")
-	hasher.WriteInt(len(r.BundleSharedLibs))
-	for val9 := 0; val9 < len(r.BundleSharedLibs); val9++ {
-		hasher.WriteString("android/soong/android:android.Path")
-		val10 := r.BundleSharedLibs[val9] == nil
-		if val10 {
+	val9 := func(hasher *proptools.Hasher, val5 android.Path) error {
+		hasher.WriteString(":python.android.Path")
+		val6 := val5 == nil
+		if val6 {
 			hasher.WriteByte(0)
 		} else {
-			if v := reflect.ValueOf(r.BundleSharedLibs[val9]); v.Kind() == reflect.Ptr {
+			if v := reflect.ValueOf(val5); v.Kind() == reflect.Ptr {
 				if v.IsNil() {
 					panic(fmt.Errorf("nil pointer is not supported in interface"))
 				} else {
-					val11 := r.BundleSharedLibs[val9] == nil
-					if val11 {
+					val7 := val5 == nil
+					if val7 {
 						hasher.WriteByte(0)
 					} else {
-						val12 := func(hasher *proptools.Hasher) error {
-							return r.BundleSharedLibs[val9].(proptools.CustomHash).CustomHash(hasher)
-						}
-						if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val12); err != nil {
+						val8 := func(hasher *proptools.Hasher) error { return val5.(proptools.CustomHash).CustomHash(hasher) }
+						if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val8); err != nil {
 							return err
 						}
 					}
 				}
 			} else {
-				r.BundleSharedLibs[val9].(proptools.CustomHash).CustomHash(hasher)
+				val5.(proptools.CustomHash).CustomHash(hasher)
 			}
 		}
+		return nil
+	}
+	if err := r.SrcsZip.Hash(hasher, "android.Path", val9); err != nil {
+		return err
+	}
+	val14 := func(hasher *proptools.Hasher, val10 android.Path) error {
+		hasher.WriteString(":python.android.Path")
+		val11 := val10 == nil
+		if val11 {
+			hasher.WriteByte(0)
+		} else {
+			if v := reflect.ValueOf(val10); v.Kind() == reflect.Ptr {
+				if v.IsNil() {
+					panic(fmt.Errorf("nil pointer is not supported in interface"))
+				} else {
+					val12 := val10 == nil
+					if val12 {
+						hasher.WriteByte(0)
+					} else {
+						val13 := func(hasher *proptools.Hasher) error { return val10.(proptools.CustomHash).CustomHash(hasher) }
+						if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val13); err != nil {
+							return err
+						}
+					}
+				}
+			} else {
+				val10.(proptools.CustomHash).CustomHash(hasher)
+			}
+		}
+		return nil
+	}
+	if err := r.PrecompiledSrcsZip.Hash(hasher, "android.Path", val14); err != nil {
+		return err
+	}
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.PkgPath)
+	val19 := func(hasher *proptools.Hasher, val15 android.Path) error {
+		hasher.WriteString(":python.android.Path")
+		val16 := val15 == nil
+		if val16 {
+			hasher.WriteByte(0)
+		} else {
+			if v := reflect.ValueOf(val15); v.Kind() == reflect.Ptr {
+				if v.IsNil() {
+					panic(fmt.Errorf("nil pointer is not supported in interface"))
+				} else {
+					val17 := val15 == nil
+					if val17 {
+						hasher.WriteByte(0)
+					} else {
+						val18 := func(hasher *proptools.Hasher) error { return val15.(proptools.CustomHash).CustomHash(hasher) }
+						if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val18); err != nil {
+							return err
+						}
+					}
+				}
+			} else {
+				val15.(proptools.CustomHash).CustomHash(hasher)
+			}
+		}
+		return nil
+	}
+	if err := r.BundleSharedLibs.Hash(hasher, "android.Path", val19); err != nil {
+		return err
 	}
 	return nil
 }
@@ -212,48 +192,20 @@ func (r PythonLibraryInfo) CustomHash(hasher *proptools.Hasher) error {
 func (r *PythonLibraryInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
-	var val2 int
-	err = gobtools.DecodeInt(buf, &val2)
-	if err != nil {
+	if err = r.SrcsPathMappings.Decode(ctx, buf); err != nil {
 		return err
-	}
-	if val2 != -1 {
-		r.SrcsPathMappings = make([]pathMapping, val2)
-		for val3 := 0; val3 < int(val2); val3++ {
-			if err = r.SrcsPathMappings[val3].Decode(ctx, buf); err != nil {
-				return err
-			}
-		}
 	}
 
-	var val6 int
-	err = gobtools.DecodeInt(buf, &val6)
-	if err != nil {
+	if err = r.DataPathMappings.Decode(ctx, buf); err != nil {
 		return err
-	}
-	if val6 != -1 {
-		r.DataPathMappings = make([]pathMapping, val6)
-		for val7 := 0; val7 < int(val6); val7++ {
-			if err = r.DataPathMappings[val7].Decode(ctx, buf); err != nil {
-				return err
-			}
-		}
 	}
 
-	if val10, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+	if err = r.SrcsZip.DecodeInterface(ctx, buf); err != nil {
 		return err
-	} else if val10 == nil {
-		r.SrcsZip = nil
-	} else {
-		r.SrcsZip = val10.(android.Path)
 	}
 
-	if val12, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+	if err = r.PrecompiledSrcsZip.DecodeInterface(ctx, buf); err != nil {
 		return err
-	} else if val12 == nil {
-		r.PrecompiledSrcsZip = nil
-	} else {
-		r.PrecompiledSrcsZip = val12.(android.Path)
 	}
 
 	err = gobtools.DecodeString(buf, &r.PkgPath)
@@ -261,22 +213,8 @@ func (r *PythonLibraryInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) e
 		return err
 	}
 
-	var val16 int
-	err = gobtools.DecodeInt(buf, &val16)
-	if err != nil {
+	if err = r.BundleSharedLibs.DecodeInterface(ctx, buf); err != nil {
 		return err
-	}
-	if val16 != -1 {
-		r.BundleSharedLibs = make([]android.Path, val16)
-		for val17 := 0; val17 < int(val16); val17++ {
-			if val19, err := gobtools.DecodeInterface(ctx, buf); err != nil {
-				return err
-			} else if val19 == nil {
-				r.BundleSharedLibs[val17] = nil
-			} else {
-				r.BundleSharedLibs[val17] = val19.(android.Path)
-			}
-		}
 	}
 
 	return err
@@ -291,6 +229,10 @@ func (r PythonLibraryInfo) GetTypeId() int16 {
 func (r pathMapping) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	var err error
 
+	if err = gobtools.EncodeString(buf, r.module); err != nil {
+		return err
+	}
+
 	if err = gobtools.EncodeString(buf, r.dest); err != nil {
 		return err
 	}
@@ -303,7 +245,9 @@ func (r pathMapping) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 
 func (r pathMapping) CustomHash(hasher *proptools.Hasher) error {
 	hasher.WriteString(":python.pathMapping")
-	hasher.WriteInt(2)
+	hasher.WriteInt(3)
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.module)
 	hasher.WriteString(":.string")
 	hasher.WriteString(r.dest)
 	hasher.WriteString(":python.android.Path")
@@ -335,17 +279,22 @@ func (r pathMapping) CustomHash(hasher *proptools.Hasher) error {
 func (r *pathMapping) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
+	err = gobtools.DecodeString(buf, &r.module)
+	if err != nil {
+		return err
+	}
+
 	err = gobtools.DecodeString(buf, &r.dest)
 	if err != nil {
 		return err
 	}
 
-	if val3, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+	if val4, err := gobtools.DecodeInterface(ctx, buf); err != nil {
 		return err
-	} else if val3 == nil {
+	} else if val4 == nil {
 		r.src = nil
 	} else {
-		r.src = val3.(android.Path)
+		r.src = val4.(android.Path)
 	}
 
 	return err

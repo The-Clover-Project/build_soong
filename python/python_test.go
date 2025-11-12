@@ -18,6 +18,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -219,7 +220,8 @@ var (
 			},
 			errors: []string{
 				fmt.Sprintf(dupRunfileErrTemplate, "dir/Android.bp:20:6",
-					"bin", "a/b/c/file1.py", "bin", "dir/file1.py",
+					"bin", "a/b/c/file1.py",
+					"lib2", "dir/file1.py",
 					"lib1", "dir/c/file1.py"),
 			},
 		},
@@ -248,6 +250,7 @@ var (
 )
 
 func TestPythonModule(t *testing.T) {
+	t.Parallel()
 	for _, d := range data {
 		d.mockFiles[filepath.Join("common", bpFile)] = []byte(`
 python_library {
@@ -261,6 +264,7 @@ cc_binary {
 `)
 
 		t.Run(d.desc, func(t *testing.T) {
+			t.Parallel()
 			result := android.GroupFixturePreparers(
 				android.PrepareForTestWithDefaults,
 				android.PrepareForTestWithArchMutator,
@@ -328,6 +332,7 @@ func TestTestOnlyProvider(t *testing.T) {
 
 // Don't allow setting test-only on things that are always tests or never tests.
 func TestInvalidTestOnlyTargets(t *testing.T) {
+	t.Parallel()
 	testCases := []string{
 		` python_test { name: "py-test", test_only: true, srcs: ["py-test.py"] } `,
 		` python_test_host { name: "py-test-host", test_only: true, srcs: ["py-test-host.py"] } `,
@@ -335,22 +340,25 @@ func TestInvalidTestOnlyTargets(t *testing.T) {
 	}
 
 	for i, bp := range testCases {
-		ctx := android.GroupFixturePreparers(
-			PrepareForTestWithPythonBuildComponents,
-			android.PrepareForTestWithAllowMissingDependencies).
-			ExtendWithErrorHandler(android.FixtureIgnoreErrors).
-			RunTestWithBp(t, bp)
-		if len(ctx.Errs) != 1 {
-			t.Errorf("Expected err setting test_only in testcase #%d: %d errs", i, len(ctx.Errs))
-			continue
-		}
-		if !strings.Contains(ctx.Errs[0].Error(), "unrecognized property \"test_only\"") {
-			t.Errorf("ERR: %s bad bp: %s", ctx.Errs[0], bp)
-		}
+		t.Run(strconv.Itoa(i), func(t *testing.T) {
+			t.Parallel()
+			ctx := android.GroupFixturePreparers(
+				PrepareForTestWithPythonBuildComponents,
+				android.PrepareForTestWithAllowMissingDependencies).
+				ExtendWithErrorHandler(android.FixtureIgnoreErrors).
+				RunTestWithBp(t, bp)
+			if len(ctx.Errs) != 1 {
+				t.Fatalf("Expected err setting test_only in testcase #%d: %d errs", i, len(ctx.Errs))
+			}
+			if !strings.Contains(ctx.Errs[0].Error(), "unrecognized property \"test_only\"") {
+				t.Errorf("ERR: %s bad bp: %s", ctx.Errs[0], bp)
+			}
+		})
 	}
 }
 
 func TestSharedLib(t *testing.T) {
+	t.Parallel()
 	ctx := android.GroupFixturePreparers(
 		android.PrepareForTestWithDefaults,
 		android.PrepareForTestWithArchMutator,
@@ -385,7 +393,7 @@ func TestSharedLib(t *testing.T) {
 		t.Fatalf("py-lib-host is not Python library!")
 	}
 	// ensure the shared lib is included in the data path mappings
-	dataPathMappings := mod.getDataPathMappings()
+	dataPathMappings := mod.dataPathMappings
 	if len(dataPathMappings) != 1 {
 		t.Fatalf("expected 1 data file, got: %d", len(dataPathMappings))
 	}
@@ -400,13 +408,13 @@ func TestSharedLib(t *testing.T) {
 	android.AssertStringMatches(
 		t,
 		"shared libs",
-		mod.getBundleSharedLibs()[0].String(),
+		mod.bundleSharedLibs[0].String(),
 		"clib-host-2(.so|.dylib)$",
 	)
 	android.AssertStringMatches(
 		t,
 		"shared libs",
-		mod.getBundleSharedLibs()[1].String(),
+		mod.bundleSharedLibs[1].String(),
 		"libc\\+\\+(.so|.dylib)$",
 	)
 
