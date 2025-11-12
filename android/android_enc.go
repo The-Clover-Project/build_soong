@@ -1393,7 +1393,6 @@ func (r AndroidMkInfo) GetTypeId() int16 {
 func init() {
 	ApexInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ApexInfo) })
 	ApexBundleDepsInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ApexBundleDepsInfo) })
-	ApexBundleDepsDataGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ApexBundleDepsData) })
 	ApexBundleTypeInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ApexBundleTypeInfo) })
 	ApexExportsInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ApexExportsInfo) })
 	PrebuiltJsonInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(PrebuiltJsonInfo) })
@@ -1602,79 +1601,6 @@ var ApexBundleDepsInfoGobRegId int16
 
 func (r ApexBundleDepsInfo) GetTypeId() int16 {
 	return ApexBundleDepsInfoGobRegId
-}
-
-func (r ApexBundleDepsData) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
-	var err error
-
-	if err = gobtools.EncodeBool(buf, r.Updatable); err != nil {
-		return err
-	}
-
-	if err = gobtools.EncodeInterface(ctx, buf, r.FlatListPath); err != nil {
-		return err
-	}
-	return err
-}
-
-func (r ApexBundleDepsData) CustomHash(hasher *proptools.Hasher) error {
-	hasher.WriteString(":android.ApexBundleDepsData")
-	hasher.WriteInt(2)
-	hasher.WriteString(":.bool")
-	if r.Updatable {
-		hasher.WriteByte(1)
-	} else {
-		hasher.WriteByte(0)
-	}
-	hasher.WriteString(":android.Path")
-	val1 := r.FlatListPath == nil
-	if val1 {
-		hasher.WriteByte(0)
-	} else {
-		if v := reflect.ValueOf(r.FlatListPath); v.Kind() == reflect.Ptr {
-			if v.IsNil() {
-				panic(fmt.Errorf("nil pointer is not supported in interface"))
-			} else {
-				val2 := r.FlatListPath == nil
-				if val2 {
-					hasher.WriteByte(0)
-				} else {
-					val3 := func(hasher *proptools.Hasher) error { return r.FlatListPath.(proptools.CustomHash).CustomHash(hasher) }
-					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val3); err != nil {
-						return err
-					}
-				}
-			}
-		} else {
-			r.FlatListPath.(proptools.CustomHash).CustomHash(hasher)
-		}
-	}
-	return nil
-}
-
-func (r *ApexBundleDepsData) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
-	var err error
-
-	err = gobtools.DecodeBool(buf, &r.Updatable)
-	if err != nil {
-		return err
-	}
-
-	if val3, err := gobtools.DecodeInterface(ctx, buf); err != nil {
-		return err
-	} else if val3 == nil {
-		r.FlatListPath = nil
-	} else {
-		r.FlatListPath = val3.(Path)
-	}
-
-	return err
-}
-
-var ApexBundleDepsDataGobRegId int16
-
-func (r ApexBundleDepsData) GetTypeId() int16 {
-	return ApexBundleDepsDataGobRegId
 }
 
 func (r ApexBundleTypeInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {

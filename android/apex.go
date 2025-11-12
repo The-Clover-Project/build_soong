@@ -624,14 +624,6 @@ type ApexBundleDepsInfoIntf interface {
 	FullListPath() Path
 }
 
-// @auto-generate: gob
-type ApexBundleDepsData struct {
-	Updatable    bool
-	FlatListPath Path
-}
-
-var ApexBundleDepsDataProvider = blueprint.NewProvider[ApexBundleDepsData]()
-
 // ApexBundleTypeInfo is used to identify the module is a apexBundle module.
 // @auto-generate: gob
 type ApexBundleTypeInfo struct {
