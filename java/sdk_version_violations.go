@@ -164,19 +164,6 @@ var SdkVersionDependencyViolationAllowlist = map[string][]string{
 		"SettingsLib-search-interface", // system -> private
 	},
 
-	"SettingsLibCategory": {
-		"SettingsLibMetadata",   // system -> private
-		"SettingsLibPreference", // system -> private
-	},
-
-	"SettingsLibMainSwitchPreference": {
-		"SettingsLibPreference", // system -> private
-	},
-
-	"SettingsLibSliderPreference": {
-		"SettingsLibPreference", // system -> private
-	},
-
 	"SettingsLibUtils": {
 		"SettingsLibDataStore", // system -> private
 	},
