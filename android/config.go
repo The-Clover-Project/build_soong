@@ -2530,6 +2530,10 @@ func (c *config) UseDexV41() bool {
 	return c.productVariables.GetBuildFlagBool("RELEASE_USE_DEX_V41")
 }
 
+func (c *config) OmitR8GlobalEnumKeeps() bool {
+	return c.productVariables.GetBuildFlagBool("RELEASE_R8_OMIT_GLOBAL_ENUM_KEEPS")
+}
+
 var (
 	mainlineApexContributionBuildFlagsToApexNames = map[string]string{
 		"RELEASE_APEX_CONTRIBUTIONS_ADBD":                    "com.android.adbd",
