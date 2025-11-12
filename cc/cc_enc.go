@@ -2770,7 +2770,7 @@ func (r CcInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		return err
 	}
 
-	if err = gobtools.EncodeBool(buf, r.DoubleLoadable); err != nil {
+	if err = gobtools.EncodeString(buf, r.NotDoubleLoadableReason); err != nil {
 		return err
 	}
 
@@ -2951,12 +2951,8 @@ func (r CcInfo) CustomHash(hasher *proptools.Hasher) error {
 	} else {
 		hasher.WriteByte(0)
 	}
-	hasher.WriteString(":.bool")
-	if r.DoubleLoadable {
-		hasher.WriteByte(1)
-	} else {
-		hasher.WriteByte(0)
-	}
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.NotDoubleLoadableReason)
 	hasher.WriteString(":.[]android.SdkMemberType")
 	hasher.WriteInt(len(r.SdkMemberTypes))
 	for val2 := 0; val2 < len(r.SdkMemberTypes); val2++ {
@@ -3164,7 +3160,7 @@ func (r *CcInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 		return err
 	}
 
-	err = gobtools.DecodeBool(buf, &r.DoubleLoadable)
+	err = gobtools.DecodeString(buf, &r.NotDoubleLoadableReason)
 	if err != nil {
 		return err
 	}
