@@ -179,7 +179,7 @@ func constructLibProps(rlib, solib bool) func(ctx android.LoadHookContext) {
 		} else if platform == "linux-musl-x86" && ctx.Config().BuildOS == android.LinuxMusl {
 			p.Target.Linux_musl_x86_64.addPrebuiltToTarget(ctx, name, rustDir, "linux-musl-x86", "x86_64-unknown-linux-musl", rlib, solib)
 			p.Target.Linux_musl_x86.addPrebuiltToTarget(ctx, name, rustDir, "linux-musl-x86", "i686-unknown-linux-musl", rlib, solib)
-		} else if platform == "darwin-x86" && ctx.Config().BuildOS == android.Darwin {
+		} else if platform == "darwin" && ctx.Config().BuildOS == android.Darwin {
 			p.Target.Darwin_x86_64.addPrebuiltToTarget(ctx, name, rustDir, "darwin-x86", "x86_64-apple-darwin", rlib, solib)
 		} else {
 			p.Name = proptools.StringPtr("prebuilt_" + ctx.ModuleName() + "." + platform)
