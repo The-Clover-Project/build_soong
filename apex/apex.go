@@ -2272,11 +2272,6 @@ func (a *apexBundle) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	a.verifyNativeImplementationLibs(ctx)
 	a.enforceNoVintfInUpdatable(ctx)
 
-	android.SetProvider(ctx, android.ApexBundleDepsDataProvider, android.ApexBundleDepsData{
-		FlatListPath: a.FlatListPath(),
-		Updatable:    a.Updatable(),
-	})
-
 	android.SetProvider(ctx, filesystem.ApexKeyPathInfoProvider, filesystem.ApexKeyPathInfo{a.apexKeysPath})
 
 	android.SetProvider(ctx, java.ApkCertsInfoProvider, a.apkCerts)
