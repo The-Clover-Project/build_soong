@@ -219,7 +219,8 @@ var (
 			},
 			errors: []string{
 				fmt.Sprintf(dupRunfileErrTemplate, "dir/Android.bp:20:6",
-					"bin", "a/b/c/file1.py", "bin", "dir/file1.py",
+					"bin", "a/b/c/file1.py",
+					"lib2", "dir/file1.py",
 					"lib1", "dir/c/file1.py"),
 			},
 		},
@@ -385,7 +386,7 @@ func TestSharedLib(t *testing.T) {
 		t.Fatalf("py-lib-host is not Python library!")
 	}
 	// ensure the shared lib is included in the data path mappings
-	dataPathMappings := mod.getDataPathMappings()
+	dataPathMappings := mod.dataPathMappings
 	if len(dataPathMappings) != 1 {
 		t.Fatalf("expected 1 data file, got: %d", len(dataPathMappings))
 	}
@@ -400,13 +401,13 @@ func TestSharedLib(t *testing.T) {
 	android.AssertStringMatches(
 		t,
 		"shared libs",
-		mod.getBundleSharedLibs()[0].String(),
+		mod.bundleSharedLibs[0].String(),
 		"clib-host-2(.so|.dylib)$",
 	)
 	android.AssertStringMatches(
 		t,
 		"shared libs",
-		mod.getBundleSharedLibs()[1].String(),
+		mod.bundleSharedLibs[1].String(),
 		"libc\\+\\+(.so|.dylib)$",
 	)
 
