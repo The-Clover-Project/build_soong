@@ -49,7 +49,6 @@ def __step_config(ctx, vars, step_config):
         javac_path: javac_inputs,
         java_path: java_inputs,
     })
-
     step_config["rules"].extend([
         {
             "name": "g.java.d8Inc",
@@ -57,14 +56,6 @@ def __step_config(ctx, vars, step_config):
             "remote": True,
             "platform_ref": "java16",
             "timeout": "8m",
-        },
-        {
-            "name": "g.java.r8",
-            "action": "g.java.r8",
-            "remote": True,
-            "platform_ref": "java16",
-            "timeout": "8m",
-            "deps": "none",  # disable remote: failed to get gcc deps: failed to normalize args: unsupported commandline.
         },
         {
             "name": "g.java.javac",
