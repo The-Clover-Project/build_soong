@@ -30,8 +30,8 @@ var (
 
 	xmllintDtd = pctx.AndroidStaticRule("xmllint-dtd",
 		blueprint.RuleParams{
-			Command:         `$XmlLintCmd --dtdvalid $dtd $in > /dev/null && touch -a $out`,
-			CommandDeps:     []string{"$XmlLintCmd"},
+			Command:         `$XmlLintCmd --dtdvalid $dtd $in > /dev/null && ${android.Touch} -a $out`,
+			CommandDeps:     []string{"$XmlLintCmd", "${android.Touch}"},
 			Restat:          true,
 			SandboxDisabled: true,
 		},
@@ -39,8 +39,8 @@ var (
 
 	xmllintXsd = pctx.AndroidStaticRule("xmllint-xsd",
 		blueprint.RuleParams{
-			Command:         `$XmlLintCmd --schema $xsd $in > /dev/null && touch -a $out`,
-			CommandDeps:     []string{"$XmlLintCmd"},
+			Command:         `$XmlLintCmd --schema $xsd $in > /dev/null && ${android.Touch} -a $out`,
+			CommandDeps:     []string{"$XmlLintCmd", "${android.Touch}"},
 			Restat:          true,
 			SandboxDisabled: true,
 		},
@@ -48,14 +48,15 @@ var (
 
 	xmllintMinimal = pctx.AndroidStaticRule("xmllint-minimal",
 		blueprint.RuleParams{
-			Command:         `$XmlLintCmd $in > /dev/null && touch -a $out`,
-			CommandDeps:     []string{"$XmlLintCmd"},
+			Command:         `$XmlLintCmd $in > /dev/null && ${android.Touch} -a $out`,
+			CommandDeps:     []string{"$XmlLintCmd", "${android.Touch}"},
 			Restat:          true,
 			SandboxDisabled: true,
 		})
 )
 
 func init() {
+	pctx.Import("android/soong/android")
 	registerXmlBuildComponents(android.InitRegistrationContext)
 	pctx.HostBinToolVariable("XmlLintCmd", "xmllint")
 }

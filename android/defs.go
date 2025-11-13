@@ -16,6 +16,7 @@ package android
 
 import (
 	"fmt"
+	"unicode"
 
 	"github.com/google/blueprint"
 	"github.com/google/blueprint/proptools"
@@ -51,10 +52,10 @@ var (
 		})
 
 	// A copy rule.
-	Cp = pctx.AndroidStaticRule("Cp",
+	Cp = pctx.AndroidStaticRule("CpRule",
 		blueprint.RuleParams{
-			Command:     "${rm} -f $out && ${cp} $cpPreserveSymlinks $cpFlags $in $out$extraCmds",
-			CommandDeps: []string{"${rm}", "${cp}"},
+			Command:     "${Rm} -f $out && ${Cp} $cpPreserveSymlinks $cpFlags $in $out$extraCmds",
+			CommandDeps: []string{"${Rm}", "${Cp}"},
 			Description: "cp $out",
 		},
 		"cpFlags", "extraCmds")
@@ -62,8 +63,8 @@ var (
 	// A copy rule wrapped with bash.
 	CpWithBash = pctx.AndroidStaticRule("CpWithBash",
 		blueprint.RuleParams{
-			Command:     "/bin/bash -c \"${rm} -f $out && ${cp} $cpFlags $cpPreserveSymlinks $in $out$extraCmds\"",
-			CommandDeps: []string{"${rm}", "${cp}"},
+			Command:     "/bin/bash -c \"${Rm} -f $out && ${Cp} $cpFlags $cpPreserveSymlinks $in $out$extraCmds\"",
+			CommandDeps: []string{"${Rm}", "${Cp}"},
 			Description: "cp $out",
 		},
 		"cpFlags", "extraCmds")
@@ -80,8 +81,8 @@ var (
 	// A copy rule that doesn't preserve symlinks.
 	CpNoPreserveSymlink = pctx.AndroidStaticRule("CpNoPreserveSymlink",
 		blueprint.RuleParams{
-			Command:     "${rm} -f $out && ${cp} $cpFlags $in $out$extraCmds",
-			CommandDeps: []string{"${rm}", "${cp}"},
+			Command:     "${Rm} -f $out && ${Cp} $cpFlags $in $out$extraCmds",
+			CommandDeps: []string{"${Rm}", "${Cp}"},
 			Description: "cp $out",
 		},
 		"cpFlags", "extraCmds")
@@ -89,16 +90,16 @@ var (
 	// A copy rule that only updates the output if it changed.
 	CpIfChanged = pctx.AndroidStaticRule("CpIfChanged",
 		blueprint.RuleParams{
-			Command:     "if ! ${cmp} -s $in $out; then ${cp} $in $out; fi",
-			CommandDeps: []string{"${cmp}", "${cp}"},
+			Command:     "if ! ${Cmp} -s $in $out; then ${Cp} $in $out; fi",
+			CommandDeps: []string{"${Cmp}", "${Cp}"},
 			Description: "cp if changed $out",
 			Restat:      true,
 		})
 
 	CpExecutable = pctx.AndroidStaticRule("CpExecutable",
 		blueprint.RuleParams{
-			Command:     "${rm} -f $out && ${cp} $cpFlags $in $out && ${chmod} +x $out$extraCmds",
-			CommandDeps: []string{"${rm}", "${cp}", "${chmod}"},
+			Command:     "${Rm} -f $out && ${Cp} $cpFlags $in $out && ${Chmod} +x $out$extraCmds",
+			CommandDeps: []string{"${Rm}", "${Cp}", "${Chmod}"},
 			Description: "cp $out",
 		},
 		"cpFlags", "extraCmds")
@@ -106,8 +107,8 @@ var (
 	// A copy executable rule wrapped with bash
 	CpExecutableWithBash = pctx.AndroidStaticRule("CpExecutableWithBash",
 		blueprint.RuleParams{
-			Command:     "/bin/bash -c \"(${rm} -f $out && ${cp} $cpFlags $cpPreserveSymlinks $in $out ) && (${chmod} +x $out$extraCmds )\"",
-			CommandDeps: []string{"${rm}", "${cp}", "${chmod}"},
+			Command:     "/bin/bash -c \"(${Rm} -f $out && ${Cp} $cpFlags $cpPreserveSymlinks $in $out ) && (${Chmod} +x $out$extraCmds )\"",
+			CommandDeps: []string{"${Rm}", "${Cp}", "${Chmod}"},
 			Description: "cp $out",
 		},
 		"cpFlags", "extraCmds")
@@ -123,28 +124,30 @@ var (
 		"cpFlags", "extraCmds")
 
 	// A timestamp touch rule.
-	Touch = pctx.AndroidStaticRule("Touch",
+	Touch = pctx.AndroidStaticRule("TouchRule",
 		blueprint.RuleParams{
-			Command:     "${touch} $out",
-			CommandDeps: []string{"${touch}"},
+			Command:     "${Touch} $out",
+			CommandDeps: []string{"${Touch}"},
 			Description: "touch $out",
 		})
 
 	// A symlink rule.
 	Symlink = pctx.AndroidStaticRule("Symlink",
 		blueprint.RuleParams{
-			Command:     "${rm} -f $out && ${ln} -f -s $fromPath $out",
-			CommandDeps: []string{"${rm}", "${ln}"},
-			Description: "symlink $out",
+			Command:         "${Rm} -f $out && ${Ln} -f -s $fromPath $out",
+			CommandDeps:     []string{"${Rm}", "${Ln}"},
+			Description:     "symlink $out",
+			SandboxDisabled: true,
 		},
 		"fromPath")
 
 	// A symlink rule wrapped with bash
 	SymlinkWithBash = pctx.AndroidStaticRule("SymlinkWithBash",
 		blueprint.RuleParams{
-			Command:     "/bin/bash -c \"${rm} -f $out && ${ln} -sfn $fromPath $out\"",
-			CommandDeps: []string{"${rm}", "${ln}"},
-			Description: "symlink $out",
+			Command:         "/bin/bash -c \"${Rm} -f $out && ${Ln} -sfn $fromPath $out\"",
+			CommandDeps:     []string{"${Rm}", "${Ln}"},
+			Description:     "symlink $out",
+			SandboxDisabled: true,
 		},
 		"fromPath")
 
@@ -153,30 +156,30 @@ var (
 	// Calling ErrorRule() will do that for you and use this rule.
 	errorRule = pctx.AndroidStaticRule("Error",
 		blueprint.RuleParams{
-			Command:     `${echo} $error && false`,
-			CommandDeps: []string{"${echo}"},
+			Command:     `${Echo} $error && false`,
+			CommandDeps: []string{"${Echo}"},
 			Description: "error building $out",
 		},
 		"error")
 
-	Cat = pctx.AndroidStaticRule("Cat",
+	Cat = pctx.AndroidStaticRule("CatRule",
 		blueprint.RuleParams{
-			Command:     "${rm} -f $out && ${cat} $in > $out",
-			CommandDeps: []string{"${rm}", "${cat}"},
+			Command:     "${Rm} -f $out && ${Cat} $in > $out",
+			CommandDeps: []string{"${Rm}", "${Cat}"},
 			Description: "concatenate files to $out",
 		})
 
 	CatAndSort = pctx.AndroidStaticRule("CatAndSort",
 		blueprint.RuleParams{
-			Command:     "${rm} -f $out && ${cat} $in > $out && ${sort} -o $out $out",
-			CommandDeps: []string{"${rm}", "${cat}", "${sort}"},
+			Command:     "${Rm} -f $out && ${Cat} $in > $out && ${Sort} -o $out $out",
+			CommandDeps: []string{"${Rm}", "${Cat}", "${Sort}"},
 			Description: "concatenate sorted file contents to $out",
 		})
 
 	CatAndSortAndUnique = pctx.AndroidStaticRule("CatAndSortAndUnique",
 		blueprint.RuleParams{
-			Command:     "${rm} -f $out && ${cat} $in > $out && ${sort} -u -o $out $out",
-			CommandDeps: []string{"${rm}", "${cat}", "${sort}"},
+			Command:     "${Rm} -f $out && ${Cat} $in > $out && ${Sort} -u -o $out $out",
+			CommandDeps: []string{"${Rm}", "${Cat}", "${Sort}"},
 			Description: "concatenate sorted file contents to $out",
 		})
 
@@ -190,8 +193,8 @@ var (
 		})
 
 	AssembleVintfRule = pctx.StaticRule("AssembleVintfRule", blueprint.RuleParams{
-		Command:     `${rm} -f $out && VINTF_IGNORE_TARGET_FCM_VERSION=true ${AssembleVintf} -i $in -o $out`,
-		CommandDeps: []string{"${AssembleVintf}", "${rm}"},
+		Command:     `${Rm} -f $out && VINTF_IGNORE_TARGET_FCM_VERSION=true ${AssembleVintf} -i $in -o $out`,
+		CommandDeps: []string{"${AssembleVintf}", "${Rm}"},
 		Description: "run assemble_vintf",
 	})
 
@@ -294,7 +297,8 @@ func init() {
 
 	hostBinToolVariables := func(names []string) {
 		for _, name := range names {
-			pctx.VariableFunc(name, func(ctx PackageVarContext) string {
+			varName := string(unicode.ToUpper(rune(name[0]))) + name[1:]
+			pctx.VariableFunc(varName, func(ctx PackageVarContext) string {
 				if ctx.Config().UseHostMusl() {
 					return fmt.Sprintf("${%sSrc}", name)
 				}

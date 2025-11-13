@@ -9220,7 +9220,7 @@ func TestApexSet_ShouldRespectCompressedApexFlag(t *testing.T) {
 
 			build := ctx.ModuleForTests(t, "com.company.android.myapex", "android_common_prebuilt_com.android.myapex").Output("com.company.android.myapex.apex")
 			if compressionEnabled {
-				ensureEquals(t, build.Rule.String(), "android/soong/android.Cp")
+				ensureEquals(t, build.Rule.String(), "android/soong/android.CpRule")
 			} else {
 				ensureEquals(t, build.Rule.String(), "android/apex.decompressApex")
 			}
