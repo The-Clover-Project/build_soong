@@ -15,4 +15,9 @@
 # limitations under the License.
 set -euo pipefail
 
-build/soong/soong_ui.bash --make-mode dist test-configs-zip || exit $?
+build/soong/soong_ui.bash --make-mode dist test-configs-zip reduce-test-configs || exit $?
+
+host_out=$(build/soong/soong_ui.bash --dumpvar-mode HOST_OUT)
+top=$(build/soong/soong_ui.bash --dumpvar-mode --abs TOP)
+
+$host_out/bin/reduce-test-configs -top $top $@ || exit $?
