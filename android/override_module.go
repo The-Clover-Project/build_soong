@@ -36,6 +36,8 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen
+
 // Interface for override module types, e.g. override_android_app, override_apex
 type OverrideModule interface {
 	Module
@@ -260,6 +262,7 @@ var overrideModuleDefaultInfoProvider = blueprint.NewMutatorProvider[overrideTra
 
 var OverrideInfoProvider = blueprint.NewMutatorProvider[OverrideInfo]("override_mutate")
 
+// @auto-generate: gob
 type OverrideInfo struct {
 	OverriddenBy string
 }

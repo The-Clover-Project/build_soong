@@ -20,6 +20,7 @@ func init() {
 	AndroidLibraryInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(AndroidLibraryInfo) })
 	AARImportInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(AARImportInfo) })
 	JniPackageInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(JniPackageInfo) })
+	AARImportDepInSameApexCheckerGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(AARImportDepInSameApexChecker) })
 	AARInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(AARInfo) })
 }
 
@@ -410,6 +411,40 @@ func (r JniPackageInfo) GetTypeId() int16 {
 	return JniPackageInfoGobRegId
 }
 
+func (r AARImportDepInSameApexChecker) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = r.BaseDepInSameApexChecker.Encode(ctx, buf); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r AARImportDepInSameApexChecker) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":java.AARImportDepInSameApexChecker")
+	hasher.WriteInt(1)
+	if err := r.BaseDepInSameApexChecker.CustomHash(hasher); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *AARImportDepInSameApexChecker) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	if err = r.BaseDepInSameApexChecker.Decode(ctx, buf); err != nil {
+		return err
+	}
+
+	return err
+}
+
+var AARImportDepInSameApexCheckerGobRegId int16
+
+func (r AARImportDepInSameApexChecker) GetTypeId() int16 {
+	return AARImportDepInSameApexCheckerGobRegId
+}
+
 func (r AARInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	var err error
 
@@ -714,6 +749,7 @@ func init() {
 	FlagsPackagesGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(FlagsPackages) })
 	AppInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(AppInfo) })
 	CertificateGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(Certificate) })
+	AppDepInSameApexCheckerGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(AppDepInSameApexChecker) })
 	AndroidAppCertificateInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(AndroidAppCertificateInfo) })
 	BundleInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(BundleInfo) })
 }
@@ -1395,6 +1431,40 @@ func (r Certificate) GetTypeId() int16 {
 	return CertificateGobRegId
 }
 
+func (r AppDepInSameApexChecker) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = r.BaseDepInSameApexChecker.Encode(ctx, buf); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r AppDepInSameApexChecker) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":java.AppDepInSameApexChecker")
+	hasher.WriteInt(1)
+	if err := r.BaseDepInSameApexChecker.CustomHash(hasher); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *AppDepInSameApexChecker) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	if err = r.BaseDepInSameApexChecker.Decode(ctx, buf); err != nil {
+		return err
+	}
+
+	return err
+}
+
+var AppDepInSameApexCheckerGobRegId int16
+
+func (r AppDepInSameApexChecker) GetTypeId() int16 {
+	return AppDepInSameApexCheckerGobRegId
+}
+
 func (r AndroidAppCertificateInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	var err error
 
@@ -1489,9 +1559,51 @@ func (r BundleInfo) GetTypeId() int16 {
 
 // end of app.go
 
+// begin of app_import.go
+func init() {
+	AppImportDepInSameApexCheckerGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(AppImportDepInSameApexChecker) })
+}
+
+func (r AppImportDepInSameApexChecker) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = r.BaseDepInSameApexChecker.Encode(ctx, buf); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r AppImportDepInSameApexChecker) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":java.AppImportDepInSameApexChecker")
+	hasher.WriteInt(1)
+	if err := r.BaseDepInSameApexChecker.CustomHash(hasher); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *AppImportDepInSameApexChecker) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	if err = r.BaseDepInSameApexChecker.Decode(ctx, buf); err != nil {
+		return err
+	}
+
+	return err
+}
+
+var AppImportDepInSameApexCheckerGobRegId int16
+
+func (r AppImportDepInSameApexChecker) GetTypeId() int16 {
+	return AppImportDepInSameApexCheckerGobRegId
+}
+
+// end of app_import.go
+
 // begin of base.go
 func init() {
 	OptionalDexJarPathGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(OptionalDexJarPath) })
+	JavaDepInSameApexCheckerGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(JavaDepInSameApexChecker) })
 	JarJarProviderDataGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(JarJarProviderData) })
 	BaseJarJarProviderDataGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(BaseJarJarProviderData) })
 }
@@ -1543,6 +1655,40 @@ var OptionalDexJarPathGobRegId int16
 
 func (r OptionalDexJarPath) GetTypeId() int16 {
 	return OptionalDexJarPathGobRegId
+}
+
+func (r JavaDepInSameApexChecker) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = r.BaseDepInSameApexChecker.Encode(ctx, buf); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r JavaDepInSameApexChecker) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":java.JavaDepInSameApexChecker")
+	hasher.WriteInt(1)
+	if err := r.BaseDepInSameApexChecker.CustomHash(hasher); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *JavaDepInSameApexChecker) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	if err = r.BaseDepInSameApexChecker.Decode(ctx, buf); err != nil {
+		return err
+	}
+
+	return err
+}
+
+var JavaDepInSameApexCheckerGobRegId int16
+
+func (r JavaDepInSameApexChecker) GetTypeId() int16 {
+	return JavaDepInSameApexCheckerGobRegId
 }
 
 func (r JarJarProviderData) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
@@ -1776,6 +1922,7 @@ func (r ApexVariantReference) GetTypeId() int16 {
 func init() {
 	BootclasspathFragmentInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(BootclasspathFragmentInfo) })
 	BootclasspathFragmentApexContentInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(BootclasspathFragmentApexContentInfo) })
+	BootclasspathFragmentDepInSameApexCheckerGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(BootclasspathFragmentDepInSameApexChecker) })
 	ClasspathFragmentValidationInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ClasspathFragmentValidationInfo) })
 }
 
@@ -2169,6 +2316,40 @@ var BootclasspathFragmentApexContentInfoGobRegId int16
 
 func (r BootclasspathFragmentApexContentInfo) GetTypeId() int16 {
 	return BootclasspathFragmentApexContentInfoGobRegId
+}
+
+func (r BootclasspathFragmentDepInSameApexChecker) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = r.BaseDepInSameApexChecker.Encode(ctx, buf); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r BootclasspathFragmentDepInSameApexChecker) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":java.BootclasspathFragmentDepInSameApexChecker")
+	hasher.WriteInt(1)
+	if err := r.BaseDepInSameApexChecker.CustomHash(hasher); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *BootclasspathFragmentDepInSameApexChecker) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	if err = r.BaseDepInSameApexChecker.Decode(ctx, buf); err != nil {
+		return err
+	}
+
+	return err
+}
+
+var BootclasspathFragmentDepInSameApexCheckerGobRegId int16
+
+func (r BootclasspathFragmentDepInSameApexChecker) GetTypeId() int16 {
+	return BootclasspathFragmentDepInSameApexCheckerGobRegId
 }
 
 func (r ClasspathFragmentValidationInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
@@ -5676,6 +5857,7 @@ func init() {
 	jniLibGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(jniLib) })
 	JavaTestInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(JavaTestInfo) })
 	JavaApiImportInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(JavaApiImportInfo) })
+	JavaImportDepInSameApexCheckerGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(JavaImportDepInSameApexChecker) })
 }
 
 func (r ProguardSpecInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
@@ -9222,6 +9404,40 @@ func (r JavaApiImportInfo) GetTypeId() int16 {
 	return JavaApiImportInfoGobRegId
 }
 
+func (r JavaImportDepInSameApexChecker) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = r.BaseDepInSameApexChecker.Encode(ctx, buf); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r JavaImportDepInSameApexChecker) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":java.JavaImportDepInSameApexChecker")
+	hasher.WriteInt(1)
+	if err := r.BaseDepInSameApexChecker.CustomHash(hasher); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *JavaImportDepInSameApexChecker) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	if err = r.BaseDepInSameApexChecker.Decode(ctx, buf); err != nil {
+		return err
+	}
+
+	return err
+}
+
+var JavaImportDepInSameApexCheckerGobRegId int16
+
+func (r JavaImportDepInSameApexChecker) GetTypeId() int16 {
+	return JavaImportDepInSameApexCheckerGobRegId
+}
+
 // end of java.go
 
 // begin of lint.go
@@ -10211,9 +10427,109 @@ func (r RuntimeResourceOverlayInfo) GetTypeId() int16 {
 
 // begin of sdk_library.go
 func init() {
+	SdkLibraryComponentDependencyInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(SdkLibraryComponentDependencyInfo) })
 	ApiScopePathsInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ApiScopePathsInfo) })
 	ApiScopePropsInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ApiScopePropsInfo) })
 	SdkLibraryInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(SdkLibraryInfo) })
+	SdkLibraryDepInSameApexCheckerGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(SdkLibraryDepInSameApexChecker) })
+	SdkLibraryImportDepIsInSameApexCheckerGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(SdkLibraryImportDepIsInSameApexChecker) })
+}
+
+func (r SdkLibraryComponentDependencyInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	val1 := r.OptionalSdkLibraryImplementation == nil
+	if err = gobtools.EncodeBool(buf, val1); err != nil {
+		return err
+	}
+	if !val1 {
+		if err = gobtools.EncodeString(buf, (*r.OptionalSdkLibraryImplementation)); err != nil {
+			return err
+		}
+	}
+
+	val2 := r.SdkLibraryName == nil
+	if err = gobtools.EncodeBool(buf, val2); err != nil {
+		return err
+	}
+	if !val2 {
+		if err = gobtools.EncodeString(buf, (*r.SdkLibraryName)); err != nil {
+			return err
+		}
+	}
+	return err
+}
+
+func (r SdkLibraryComponentDependencyInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":java.SdkLibraryComponentDependencyInfo")
+	hasher.WriteInt(2)
+	hasher.WriteString(":.*string")
+	val1 := r.OptionalSdkLibraryImplementation == nil
+	if val1 {
+		hasher.WriteByte(0)
+	} else {
+		val2 := func(hasher *proptools.Hasher) error {
+			hasher.WriteString(":.string")
+			hasher.WriteString((*r.OptionalSdkLibraryImplementation))
+			return nil
+		}
+		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.OptionalSdkLibraryImplementation)), val2); err != nil {
+			return err
+		}
+	}
+	hasher.WriteString(":.*string")
+	val3 := r.SdkLibraryName == nil
+	if val3 {
+		hasher.WriteByte(0)
+	} else {
+		val4 := func(hasher *proptools.Hasher) error {
+			hasher.WriteString(":.string")
+			hasher.WriteString((*r.SdkLibraryName))
+			return nil
+		}
+		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.SdkLibraryName)), val4); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *SdkLibraryComponentDependencyInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	var val2 bool
+	if err = gobtools.DecodeBool(buf, &val2); err != nil {
+		return err
+	}
+	if !val2 {
+		var val1 string
+		err = gobtools.DecodeString(buf, &val1)
+		if err != nil {
+			return err
+		}
+		r.OptionalSdkLibraryImplementation = &val1
+	}
+
+	var val5 bool
+	if err = gobtools.DecodeBool(buf, &val5); err != nil {
+		return err
+	}
+	if !val5 {
+		var val4 string
+		err = gobtools.DecodeString(buf, &val4)
+		if err != nil {
+			return err
+		}
+		r.SdkLibraryName = &val4
+	}
+
+	return err
+}
+
+var SdkLibraryComponentDependencyInfoGobRegId int16
+
+func (r SdkLibraryComponentDependencyInfo) GetTypeId() int16 {
+	return SdkLibraryComponentDependencyInfoGobRegId
 }
 
 func (r ApiScopePathsInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
@@ -11004,6 +11320,74 @@ var SdkLibraryInfoGobRegId int16
 
 func (r SdkLibraryInfo) GetTypeId() int16 {
 	return SdkLibraryInfoGobRegId
+}
+
+func (r SdkLibraryDepInSameApexChecker) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = r.BaseDepInSameApexChecker.Encode(ctx, buf); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r SdkLibraryDepInSameApexChecker) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":java.SdkLibraryDepInSameApexChecker")
+	hasher.WriteInt(1)
+	if err := r.BaseDepInSameApexChecker.CustomHash(hasher); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *SdkLibraryDepInSameApexChecker) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	if err = r.BaseDepInSameApexChecker.Decode(ctx, buf); err != nil {
+		return err
+	}
+
+	return err
+}
+
+var SdkLibraryDepInSameApexCheckerGobRegId int16
+
+func (r SdkLibraryDepInSameApexChecker) GetTypeId() int16 {
+	return SdkLibraryDepInSameApexCheckerGobRegId
+}
+
+func (r SdkLibraryImportDepIsInSameApexChecker) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = r.BaseDepInSameApexChecker.Encode(ctx, buf); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r SdkLibraryImportDepIsInSameApexChecker) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":java.SdkLibraryImportDepIsInSameApexChecker")
+	hasher.WriteInt(1)
+	if err := r.BaseDepInSameApexChecker.CustomHash(hasher); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *SdkLibraryImportDepIsInSameApexChecker) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	if err = r.BaseDepInSameApexChecker.Decode(ctx, buf); err != nil {
+		return err
+	}
+
+	return err
+}
+
+var SdkLibraryImportDepIsInSameApexCheckerGobRegId int16
+
+func (r SdkLibraryImportDepIsInSameApexChecker) GetTypeId() int16 {
+	return SdkLibraryImportDepIsInSameApexCheckerGobRegId
 }
 
 // end of sdk_library.go

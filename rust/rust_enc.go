@@ -22,6 +22,7 @@ func init() {
 	ProcMacroInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ProcMacroInfo) })
 	RustInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(RustInfo) })
 	RustFlagExporterInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(RustFlagExporterInfo) })
+	RustDepInSameApexCheckerGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(RustDepInSameApexChecker) })
 	RustImplementationDepInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(RustImplementationDepInfo) })
 }
 
@@ -1089,6 +1090,89 @@ var RustFlagExporterInfoGobRegId int16
 
 func (r RustFlagExporterInfo) GetTypeId() int16 {
 	return RustFlagExporterInfoGobRegId
+}
+
+func (r RustDepInSameApexChecker) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = gobtools.EncodeBool(buf, r.Static); err != nil {
+		return err
+	}
+
+	if err = gobtools.EncodeBool(buf, r.HasStubsVariants); err != nil {
+		return err
+	}
+
+	if err = gobtools.EncodeBool(buf, r.ApexExclude); err != nil {
+		return err
+	}
+
+	if err = gobtools.EncodeBool(buf, r.Host); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r RustDepInSameApexChecker) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":rust.RustDepInSameApexChecker")
+	hasher.WriteInt(4)
+	hasher.WriteString(":.bool")
+	if r.Static {
+		hasher.WriteByte(1)
+	} else {
+		hasher.WriteByte(0)
+	}
+	hasher.WriteString(":.bool")
+	if r.HasStubsVariants {
+		hasher.WriteByte(1)
+	} else {
+		hasher.WriteByte(0)
+	}
+	hasher.WriteString(":.bool")
+	if r.ApexExclude {
+		hasher.WriteByte(1)
+	} else {
+		hasher.WriteByte(0)
+	}
+	hasher.WriteString(":.bool")
+	if r.Host {
+		hasher.WriteByte(1)
+	} else {
+		hasher.WriteByte(0)
+	}
+	return nil
+}
+
+func (r *RustDepInSameApexChecker) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	err = gobtools.DecodeBool(buf, &r.Static)
+	if err != nil {
+		return err
+	}
+
+	err = gobtools.DecodeBool(buf, &r.HasStubsVariants)
+	if err != nil {
+		return err
+	}
+
+	err = gobtools.DecodeBool(buf, &r.ApexExclude)
+	if err != nil {
+		return err
+	}
+
+	err = gobtools.DecodeBool(buf, &r.Host)
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
+var RustDepInSameApexCheckerGobRegId int16
+
+func (r RustDepInSameApexChecker) GetTypeId() int16 {
+	return RustDepInSameApexCheckerGobRegId
 }
 
 func (r RustImplementationDepInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {

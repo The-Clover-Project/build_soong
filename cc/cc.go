@@ -4500,6 +4500,7 @@ func (c *Module) GetDepInSameApexChecker() android.DepInSameApexChecker {
 	}
 }
 
+// @auto-generate: gob
 type CcDepInSameApexChecker struct {
 	Static           bool
 	HasStubsVariants bool

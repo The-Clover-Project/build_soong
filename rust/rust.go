@@ -2408,6 +2408,7 @@ func (mod *Module) AlwaysRequiresPlatformApexVariant() bool {
 }
 
 // Implements android.ApexModule
+// @auto-generate: gob
 type RustDepInSameApexChecker struct {
 	Static           bool
 	HasStubsVariants bool

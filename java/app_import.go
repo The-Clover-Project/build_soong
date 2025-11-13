@@ -29,6 +29,8 @@ import (
 	"android/soong/provenance"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen
+
 func init() {
 	RegisterAppImportBuildComponents(android.InitRegistrationContext)
 
@@ -653,6 +655,7 @@ func (m *AndroidAppImport) GetDepInSameApexChecker() android.DepInSameApexChecke
 	return AppImportDepInSameApexChecker{}
 }
 
+// @auto-generate: gob
 type AppImportDepInSameApexChecker struct {
 	android.BaseDepInSameApexChecker
 }

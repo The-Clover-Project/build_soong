@@ -1392,6 +1392,11 @@ func (r AndroidMkInfo) GetTypeId() int16 {
 // begin of apex.go
 func init() {
 	ApexInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ApexInfo) })
+	ApexAvailableInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ApexAvailableInfo) })
+	ApexBundleInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ApexBundleInfo) })
+	PlatformAvailabilityInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(PlatformAvailabilityInfo) })
+	DepInSameApexInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(DepInSameApexInfo) })
+	BaseDepInSameApexCheckerGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(BaseDepInSameApexChecker) })
 	ApexBundleDepsInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ApexBundleDepsInfo) })
 	ApexBundleTypeInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ApexBundleTypeInfo) })
 	ApexExportsInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ApexExportsInfo) })
@@ -1508,6 +1513,207 @@ var ApexInfoGobRegId int16
 
 func (r ApexInfo) GetTypeId() int16 {
 	return ApexInfoGobRegId
+}
+
+func (r ApexAvailableInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if r.ApexAvailableFor == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r.ApexAvailableFor)); err != nil {
+			return err
+		}
+		for val1 := 0; val1 < len(r.ApexAvailableFor); val1++ {
+			if err = gobtools.EncodeString(buf, r.ApexAvailableFor[val1]); err != nil {
+				return err
+			}
+		}
+	}
+	return err
+}
+
+func (r ApexAvailableInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":android.ApexAvailableInfo")
+	hasher.WriteInt(1)
+	hasher.WriteString(":.[]string")
+	hasher.WriteInt(len(r.ApexAvailableFor))
+	for val1 := 0; val1 < len(r.ApexAvailableFor); val1++ {
+		hasher.WriteString(":.string")
+		hasher.WriteString(r.ApexAvailableFor[val1])
+	}
+	return nil
+}
+
+func (r *ApexAvailableInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	var val2 int
+	err = gobtools.DecodeInt(buf, &val2)
+	if err != nil {
+		return err
+	}
+	if val2 != -1 {
+		r.ApexAvailableFor = make([]string, val2)
+		for val3 := 0; val3 < int(val2); val3++ {
+			err = gobtools.DecodeString(buf, &r.ApexAvailableFor[val3])
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return err
+}
+
+var ApexAvailableInfoGobRegId int16
+
+func (r ApexAvailableInfo) GetTypeId() int16 {
+	return ApexAvailableInfoGobRegId
+}
+
+func (r ApexBundleInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+	return err
+}
+
+func (r ApexBundleInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":android.ApexBundleInfo")
+	hasher.WriteInt(0)
+	return nil
+}
+
+func (r *ApexBundleInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	return err
+}
+
+var ApexBundleInfoGobRegId int16
+
+func (r ApexBundleInfo) GetTypeId() int16 {
+	return ApexBundleInfoGobRegId
+}
+
+func (r PlatformAvailabilityInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = gobtools.EncodeBool(buf, r.NotAvailableToPlatform); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r PlatformAvailabilityInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":android.PlatformAvailabilityInfo")
+	hasher.WriteInt(1)
+	hasher.WriteString(":.bool")
+	if r.NotAvailableToPlatform {
+		hasher.WriteByte(1)
+	} else {
+		hasher.WriteByte(0)
+	}
+	return nil
+}
+
+func (r *PlatformAvailabilityInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	err = gobtools.DecodeBool(buf, &r.NotAvailableToPlatform)
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
+var PlatformAvailabilityInfoGobRegId int16
+
+func (r PlatformAvailabilityInfo) GetTypeId() int16 {
+	return PlatformAvailabilityInfoGobRegId
+}
+
+func (r DepInSameApexInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = gobtools.EncodeInterface(ctx, buf, r.Checker); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r DepInSameApexInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":android.DepInSameApexInfo")
+	hasher.WriteInt(1)
+	hasher.WriteString(":android.DepInSameApexChecker")
+	val1 := r.Checker == nil
+	if val1 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.Checker); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val2 := r.Checker == nil
+				if val2 {
+					hasher.WriteByte(0)
+				} else {
+					val3 := func(hasher *proptools.Hasher) error { return r.Checker.(proptools.CustomHash).CustomHash(hasher) }
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val3); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.Checker.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	return nil
+}
+
+func (r *DepInSameApexInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	if val2, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+		return err
+	} else if val2 == nil {
+		r.Checker = nil
+	} else {
+		r.Checker = val2.(DepInSameApexChecker)
+	}
+
+	return err
+}
+
+var DepInSameApexInfoGobRegId int16
+
+func (r DepInSameApexInfo) GetTypeId() int16 {
+	return DepInSameApexInfoGobRegId
+}
+
+func (r BaseDepInSameApexChecker) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+	return err
+}
+
+func (r BaseDepInSameApexChecker) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":android.BaseDepInSameApexChecker")
+	hasher.WriteInt(0)
+	return nil
+}
+
+func (r *BaseDepInSameApexChecker) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	return err
+}
+
+var BaseDepInSameApexCheckerGobRegId int16
+
+func (r BaseDepInSameApexChecker) GetTypeId() int16 {
+	return BaseDepInSameApexCheckerGobRegId
 }
 
 func (r ApexBundleDepsInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
@@ -1908,6 +2114,226 @@ func (r PrebuiltJsonInfo) GetTypeId() int16 {
 
 // end of apex.go
 
+// begin of apex_contributions.go
+func init() {
+	apexContributionsInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(apexContributionsInfo) })
+	PrebuiltSelectionInfoMapGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(PrebuiltSelectionInfoMap) })
+	PrebuiltSelectionInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(PrebuiltSelectionInfo) })
+}
+
+func (r apexContributionsInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = gobtools.EncodeString(buf, r.Name); err != nil {
+		return err
+	}
+
+	if r.Contents == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r.Contents)); err != nil {
+			return err
+		}
+		for val1 := 0; val1 < len(r.Contents); val1++ {
+			if err = gobtools.EncodeString(buf, r.Contents[val1]); err != nil {
+				return err
+			}
+		}
+	}
+
+	if err = gobtools.EncodeString(buf, r.ApiDomain); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r apexContributionsInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":android.apexContributionsInfo")
+	hasher.WriteInt(3)
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.Name)
+	hasher.WriteString(":.[]string")
+	hasher.WriteInt(len(r.Contents))
+	for val1 := 0; val1 < len(r.Contents); val1++ {
+		hasher.WriteString(":.string")
+		hasher.WriteString(r.Contents[val1])
+	}
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.ApiDomain)
+	return nil
+}
+
+func (r *apexContributionsInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	err = gobtools.DecodeString(buf, &r.Name)
+	if err != nil {
+		return err
+	}
+
+	var val3 int
+	err = gobtools.DecodeInt(buf, &val3)
+	if err != nil {
+		return err
+	}
+	if val3 != -1 {
+		r.Contents = make([]string, val3)
+		for val4 := 0; val4 < int(val3); val4++ {
+			err = gobtools.DecodeString(buf, &r.Contents[val4])
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	err = gobtools.DecodeString(buf, &r.ApiDomain)
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
+var apexContributionsInfoGobRegId int16
+
+func (r apexContributionsInfo) GetTypeId() int16 {
+	return apexContributionsInfoGobRegId
+}
+
+func (r PrebuiltSelectionInfoMap) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if r == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r)); err != nil {
+			return err
+		}
+		for val1, val2 := range r {
+			if err = gobtools.EncodeString(buf, val1); err != nil {
+				return err
+			}
+			if err = val2.Encode(ctx, buf); err != nil {
+				return err
+			}
+		}
+	}
+	return err
+}
+
+func (r PrebuiltSelectionInfoMap) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":.map[string]PrebuiltSelectionInfo")
+	hasher.WriteInt(len(r))
+	val1 := make([]string, 0, len(r))
+	for val3 := range r {
+		val1 = append(val1, val3)
+	}
+	proptools.SortOrdered(val1)
+	for _, val2 := range val1 {
+		hasher.WriteString(":.string")
+		hasher.WriteString(val2)
+		if err := r[val2].CustomHash(hasher); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *PrebuiltSelectionInfoMap) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	var val1 int
+	err = gobtools.DecodeInt(buf, &val1)
+	if err != nil {
+		return err
+	}
+	if val1 != -1 {
+		(*r) = make(map[string]PrebuiltSelectionInfo, val1)
+		for val2 := 0; val2 < int(val1); val2++ {
+			var val3 string
+			var val4 PrebuiltSelectionInfo
+			err = gobtools.DecodeString(buf, &val3)
+			if err != nil {
+				return err
+			}
+			if err = val4.Decode(ctx, buf); err != nil {
+				return err
+			}
+			(*r)[val3] = val4
+		}
+	}
+
+	return err
+}
+
+var PrebuiltSelectionInfoMapGobRegId int16
+
+func (r PrebuiltSelectionInfoMap) GetTypeId() int16 {
+	return PrebuiltSelectionInfoMapGobRegId
+}
+
+func (r PrebuiltSelectionInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = gobtools.EncodeString(buf, r.selectedModuleName); err != nil {
+		return err
+	}
+
+	if err = gobtools.EncodeString(buf, r.metadataModuleName); err != nil {
+		return err
+	}
+
+	if err = gobtools.EncodeString(buf, r.apiDomain); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r PrebuiltSelectionInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":android.PrebuiltSelectionInfo")
+	hasher.WriteInt(3)
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.selectedModuleName)
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.metadataModuleName)
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.apiDomain)
+	return nil
+}
+
+func (r *PrebuiltSelectionInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	err = gobtools.DecodeString(buf, &r.selectedModuleName)
+	if err != nil {
+		return err
+	}
+
+	err = gobtools.DecodeString(buf, &r.metadataModuleName)
+	if err != nil {
+		return err
+	}
+
+	err = gobtools.DecodeString(buf, &r.apiDomain)
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
+var PrebuiltSelectionInfoGobRegId int16
+
+func (r PrebuiltSelectionInfo) GetTypeId() int16 {
+	return PrebuiltSelectionInfoGobRegId
+}
+
+// end of apex_contributions.go
+
 // begin of api_levels.go
 func init() {
 	ApiLevelGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ApiLevel) })
@@ -1981,6 +2407,8 @@ func init() {
 	ArchTypeGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ArchType) })
 	OsTypeGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(OsType) })
 	TargetGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(Target) })
+	allOsInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(allOsInfo) })
+	allArchInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(allArchInfo) })
 }
 
 func (r Arch) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
@@ -2339,6 +2767,252 @@ var TargetGobRegId int16
 
 func (r Target) GetTypeId() int16 {
 	return TargetGobRegId
+}
+
+func (r allOsInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if r.Os == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r.Os)); err != nil {
+			return err
+		}
+		for val1, val2 := range r.Os {
+			if err = gobtools.EncodeString(buf, val1); err != nil {
+				return err
+			}
+			if err = val2.Encode(ctx, buf); err != nil {
+				return err
+			}
+		}
+	}
+
+	if r.Variations == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r.Variations)); err != nil {
+			return err
+		}
+		for val3 := 0; val3 < len(r.Variations); val3++ {
+			if err = gobtools.EncodeString(buf, r.Variations[val3]); err != nil {
+				return err
+			}
+		}
+	}
+	return err
+}
+
+func (r allOsInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":android.allOsInfo")
+	hasher.WriteInt(2)
+	hasher.WriteString(":.map[string]OsType")
+	hasher.WriteInt(len(r.Os))
+	val1 := make([]string, 0, len(r.Os))
+	for val3 := range r.Os {
+		val1 = append(val1, val3)
+	}
+	proptools.SortOrdered(val1)
+	for _, val2 := range val1 {
+		hasher.WriteString(":.string")
+		hasher.WriteString(val2)
+		if err := r.Os[val2].CustomHash(hasher); err != nil {
+			return err
+		}
+	}
+	hasher.WriteString(":.[]string")
+	hasher.WriteInt(len(r.Variations))
+	for val4 := 0; val4 < len(r.Variations); val4++ {
+		hasher.WriteString(":.string")
+		hasher.WriteString(r.Variations[val4])
+	}
+	return nil
+}
+
+func (r *allOsInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	var val1 int
+	err = gobtools.DecodeInt(buf, &val1)
+	if err != nil {
+		return err
+	}
+	if val1 != -1 {
+		r.Os = make(map[string]OsType, val1)
+		for val2 := 0; val2 < int(val1); val2++ {
+			var val3 string
+			var val4 OsType
+			err = gobtools.DecodeString(buf, &val3)
+			if err != nil {
+				return err
+			}
+			if err = val4.Decode(ctx, buf); err != nil {
+				return err
+			}
+			r.Os[val3] = val4
+		}
+	}
+
+	var val8 int
+	err = gobtools.DecodeInt(buf, &val8)
+	if err != nil {
+		return err
+	}
+	if val8 != -1 {
+		r.Variations = make([]string, val8)
+		for val9 := 0; val9 < int(val8); val9++ {
+			err = gobtools.DecodeString(buf, &r.Variations[val9])
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	return err
+}
+
+var allOsInfoGobRegId int16
+
+func (r allOsInfo) GetTypeId() int16 {
+	return allOsInfoGobRegId
+}
+
+func (r allArchInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if r.Targets == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r.Targets)); err != nil {
+			return err
+		}
+		for val1, val2 := range r.Targets {
+			if err = gobtools.EncodeString(buf, val1); err != nil {
+				return err
+			}
+			if err = val2.Encode(ctx, buf); err != nil {
+				return err
+			}
+		}
+	}
+
+	if r.MultiTargets == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r.MultiTargets)); err != nil {
+			return err
+		}
+		for val3 := 0; val3 < len(r.MultiTargets); val3++ {
+			if err = r.MultiTargets[val3].Encode(ctx, buf); err != nil {
+				return err
+			}
+		}
+	}
+
+	if err = gobtools.EncodeString(buf, r.Primary); err != nil {
+		return err
+	}
+
+	if err = gobtools.EncodeString(buf, r.Multilib); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r allArchInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":android.allArchInfo")
+	hasher.WriteInt(4)
+	hasher.WriteString(":.map[string]Target")
+	hasher.WriteInt(len(r.Targets))
+	val1 := make([]string, 0, len(r.Targets))
+	for val3 := range r.Targets {
+		val1 = append(val1, val3)
+	}
+	proptools.SortOrdered(val1)
+	for _, val2 := range val1 {
+		hasher.WriteString(":.string")
+		hasher.WriteString(val2)
+		if err := r.Targets[val2].CustomHash(hasher); err != nil {
+			return err
+		}
+	}
+	hasher.WriteString(":.[]Target")
+	hasher.WriteInt(len(r.MultiTargets))
+	for val4 := 0; val4 < len(r.MultiTargets); val4++ {
+		if err := r.MultiTargets[val4].CustomHash(hasher); err != nil {
+			return err
+		}
+	}
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.Primary)
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.Multilib)
+	return nil
+}
+
+func (r *allArchInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	var val1 int
+	err = gobtools.DecodeInt(buf, &val1)
+	if err != nil {
+		return err
+	}
+	if val1 != -1 {
+		r.Targets = make(map[string]Target, val1)
+		for val2 := 0; val2 < int(val1); val2++ {
+			var val3 string
+			var val4 Target
+			err = gobtools.DecodeString(buf, &val3)
+			if err != nil {
+				return err
+			}
+			if err = val4.Decode(ctx, buf); err != nil {
+				return err
+			}
+			r.Targets[val3] = val4
+		}
+	}
+
+	var val8 int
+	err = gobtools.DecodeInt(buf, &val8)
+	if err != nil {
+		return err
+	}
+	if val8 != -1 {
+		r.MultiTargets = make([]Target, val8)
+		for val9 := 0; val9 < int(val8); val9++ {
+			if err = r.MultiTargets[val9].Decode(ctx, buf); err != nil {
+				return err
+			}
+		}
+	}
+
+	err = gobtools.DecodeString(buf, &r.Primary)
+	if err != nil {
+		return err
+	}
+
+	err = gobtools.DecodeString(buf, &r.Multilib)
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
+var allArchInfoGobRegId int16
+
+func (r allArchInfo) GetTypeId() int16 {
+	return allArchInfoGobRegId
 }
 
 // end of arch.go
@@ -9353,6 +10027,47 @@ func (r NoticeModuleInfos) GetTypeId() int16 {
 
 // end of notices.go
 
+// begin of override_module.go
+func init() {
+	OverrideInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(OverrideInfo) })
+}
+
+func (r OverrideInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = gobtools.EncodeString(buf, r.OverriddenBy); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r OverrideInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":android.OverrideInfo")
+	hasher.WriteInt(1)
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.OverriddenBy)
+	return nil
+}
+
+func (r *OverrideInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	err = gobtools.DecodeString(buf, &r.OverriddenBy)
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
+var OverrideInfoGobRegId int16
+
+func (r OverrideInfo) GetTypeId() int16 {
+	return OverrideInfoGobRegId
+}
+
+// end of override_module.go
+
 // begin of package.go
 func init() {
 	packagePropertiesGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(packageProperties) })
@@ -11011,6 +11726,107 @@ func (r PhonyInfo) GetTypeId() int16 {
 }
 
 // end of phony.go
+
+// begin of prebuilt.go
+func init() {
+	PrebuiltInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(PrebuiltInfo) })
+}
+
+func (r PrebuiltInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = gobtools.EncodeBool(buf, r.IsPrebuilt); err != nil {
+		return err
+	}
+
+	if err = gobtools.EncodeBool(buf, r.PrebuiltSourceExists); err != nil {
+		return err
+	}
+
+	if err = gobtools.EncodeBool(buf, r.UsePrebuilt); err != nil {
+		return err
+	}
+
+	if err = gobtools.EncodeBool(buf, r.ReplacedByPrebuilt); err != nil {
+		return err
+	}
+
+	if err = gobtools.EncodeString(buf, r.PartitionTag); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r PrebuiltInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":android.PrebuiltInfo")
+	hasher.WriteInt(5)
+	hasher.WriteString(":.bool")
+	if r.IsPrebuilt {
+		hasher.WriteByte(1)
+	} else {
+		hasher.WriteByte(0)
+	}
+	hasher.WriteString(":.bool")
+	if r.PrebuiltSourceExists {
+		hasher.WriteByte(1)
+	} else {
+		hasher.WriteByte(0)
+	}
+	hasher.WriteString(":.bool")
+	if r.UsePrebuilt {
+		hasher.WriteByte(1)
+	} else {
+		hasher.WriteByte(0)
+	}
+	hasher.WriteString(":.bool")
+	if r.ReplacedByPrebuilt {
+		hasher.WriteByte(1)
+	} else {
+		hasher.WriteByte(0)
+	}
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.PartitionTag)
+	return nil
+}
+
+func (r *PrebuiltInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	err = gobtools.DecodeBool(buf, &r.IsPrebuilt)
+	if err != nil {
+		return err
+	}
+
+	err = gobtools.DecodeBool(buf, &r.PrebuiltSourceExists)
+	if err != nil {
+		return err
+	}
+
+	err = gobtools.DecodeBool(buf, &r.UsePrebuilt)
+	if err != nil {
+		return err
+	}
+
+	err = gobtools.DecodeBool(buf, &r.ReplacedByPrebuilt)
+	if err != nil {
+		return err
+	}
+
+	err = gobtools.DecodeString(buf, &r.PartitionTag)
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
+var PrebuiltInfoGobRegId int16
+
+func (r PrebuiltInfo) GetTypeId() int16 {
+	return PrebuiltInfoGobRegId
+}
+
+// end of prebuilt.go
 
 // begin of provider_keys.go
 func init() {

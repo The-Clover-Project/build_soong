@@ -1204,6 +1204,7 @@ func (e *EmbeddableSdkLibraryComponent) SdkLibraryName() *string {
 
 var SdkLibraryComponentDependencyInfoProvider = blueprint.NewMutatorProvider[SdkLibraryComponentDependencyInfo]("deps")
 
+// @auto-generate: gob
 type SdkLibraryComponentDependencyInfo struct {
 	// For shared libraries, this is the same as the SDK library name. If a Java library or app
 	// depends on a component library (e.g. a stub library) it still needs to know the name of the
@@ -1840,6 +1841,7 @@ func (m *SdkLibrary) GetDepInSameApexChecker() android.DepInSameApexChecker {
 	return SdkLibraryDepInSameApexChecker{}
 }
 
+// @auto-generate: gob
 type SdkLibraryDepInSameApexChecker struct {
 	android.BaseDepInSameApexChecker
 }
@@ -2282,6 +2284,7 @@ func (m *SdkLibraryImport) GetDepInSameApexChecker() android.DepInSameApexChecke
 	return SdkLibraryImportDepIsInSameApexChecker{}
 }
 
+// @auto-generate: gob
 type SdkLibraryImportDepIsInSameApexChecker struct {
 	android.BaseDepInSameApexChecker
 }

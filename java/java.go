@@ -3519,6 +3519,7 @@ func (m *Import) GetDepInSameApexChecker() android.DepInSameApexChecker {
 	return JavaImportDepInSameApexChecker{}
 }
 
+// @auto-generate: gob
 type JavaImportDepInSameApexChecker struct {
 	android.BaseDepInSameApexChecker
 }
