@@ -62,9 +62,9 @@ var (
 	// A copy rule wrapped with bash.
 	CpWithBash = pctx.AndroidStaticRule("CpWithBash",
 		blueprint.RuleParams{
-			Command:         "/bin/bash -c \"rm -f $out && cp $cpFlags $cpPreserveSymlinks $in $out$extraCmds\"",
-			Description:     "cp $out",
-			SandboxDisabled: true,
+			Command:     "/bin/bash -c \"${rm} -f $out && ${cp} $cpFlags $cpPreserveSymlinks $in $out$extraCmds\"",
+			CommandDeps: []string{"${rm}", "${cp}"},
+			Description: "cp $out",
 		},
 		"cpFlags", "extraCmds")
 
@@ -80,35 +80,35 @@ var (
 	// A copy rule that doesn't preserve symlinks.
 	CpNoPreserveSymlink = pctx.AndroidStaticRule("CpNoPreserveSymlink",
 		blueprint.RuleParams{
-			Command:         "rm -f $out && cp $cpFlags $in $out$extraCmds",
-			Description:     "cp $out",
-			SandboxDisabled: true,
+			Command:     "${rm} -f $out && ${cp} $cpFlags $in $out$extraCmds",
+			CommandDeps: []string{"${rm}", "${cp}"},
+			Description: "cp $out",
 		},
 		"cpFlags", "extraCmds")
 
 	// A copy rule that only updates the output if it changed.
 	CpIfChanged = pctx.AndroidStaticRule("CpIfChanged",
 		blueprint.RuleParams{
-			Command:         "if ! cmp -s $in $out; then cp $in $out; fi",
-			Description:     "cp if changed $out",
-			Restat:          true,
-			SandboxDisabled: true,
+			Command:     "if ! ${cmp} -s $in $out; then ${cp} $in $out; fi",
+			CommandDeps: []string{"${cmp}", "${cp}"},
+			Description: "cp if changed $out",
+			Restat:      true,
 		})
 
 	CpExecutable = pctx.AndroidStaticRule("CpExecutable",
 		blueprint.RuleParams{
-			Command:         "rm -f $out && cp $cpFlags $in $out && chmod +x $out$extraCmds",
-			Description:     "cp $out",
-			SandboxDisabled: true,
+			Command:     "${rm} -f $out && ${cp} $cpFlags $in $out && ${chmod} +x $out$extraCmds",
+			CommandDeps: []string{"${rm}", "${cp}", "${chmod}"},
+			Description: "cp $out",
 		},
 		"cpFlags", "extraCmds")
 
 	// A copy executable rule wrapped with bash
 	CpExecutableWithBash = pctx.AndroidStaticRule("CpExecutableWithBash",
 		blueprint.RuleParams{
-			Command:         "/bin/bash -c \"(rm -f $out && cp $cpFlags $cpPreserveSymlinks $in $out ) && (chmod +x $out$extraCmds )\"",
-			Description:     "cp $out",
-			SandboxDisabled: true,
+			Command:     "/bin/bash -c \"(${rm} -f $out && ${cp} $cpFlags $cpPreserveSymlinks $in $out ) && (${chmod} +x $out$extraCmds )\"",
+			CommandDeps: []string{"${rm}", "${cp}", "${chmod}"},
+			Description: "cp $out",
 		},
 		"cpFlags", "extraCmds")
 
@@ -125,26 +125,26 @@ var (
 	// A timestamp touch rule.
 	Touch = pctx.AndroidStaticRule("Touch",
 		blueprint.RuleParams{
-			Command:         "touch $out",
-			Description:     "touch $out",
-			SandboxDisabled: true,
+			Command:     "${touch} $out",
+			CommandDeps: []string{"${touch}"},
+			Description: "touch $out",
 		})
 
 	// A symlink rule.
 	Symlink = pctx.AndroidStaticRule("Symlink",
 		blueprint.RuleParams{
-			Command:         "rm -f $out && ln -f -s $fromPath $out",
-			Description:     "symlink $out",
-			SandboxDisabled: true,
+			Command:     "${rm} -f $out && ${ln} -f -s $fromPath $out",
+			CommandDeps: []string{"${rm}", "${ln}"},
+			Description: "symlink $out",
 		},
 		"fromPath")
 
 	// A symlink rule wrapped with bash
 	SymlinkWithBash = pctx.AndroidStaticRule("SymlinkWithBash",
 		blueprint.RuleParams{
-			Command:         "/bin/bash -c \"rm -f $out && ln -sfn $fromPath $out\"",
-			Description:     "symlink $out",
-			SandboxDisabled: true,
+			Command:     "/bin/bash -c \"${rm} -f $out && ${ln} -sfn $fromPath $out\"",
+			CommandDeps: []string{"${rm}", "${ln}"},
+			Description: "symlink $out",
 		},
 		"fromPath")
 
@@ -153,31 +153,31 @@ var (
 	// Calling ErrorRule() will do that for you and use this rule.
 	errorRule = pctx.AndroidStaticRule("Error",
 		blueprint.RuleParams{
-			Command:         `echo $error && false`,
-			Description:     "error building $out",
-			SandboxDisabled: true,
+			Command:     `${echo} $error && false`,
+			CommandDeps: []string{"${echo}"},
+			Description: "error building $out",
 		},
 		"error")
 
 	Cat = pctx.AndroidStaticRule("Cat",
 		blueprint.RuleParams{
-			Command:         "rm -f $out && cat $in > $out",
-			Description:     "concatenate files to $out",
-			SandboxDisabled: true,
+			Command:     "${rm} -f $out && ${cat} $in > $out",
+			CommandDeps: []string{"${rm}", "${cat}"},
+			Description: "concatenate files to $out",
 		})
 
 	CatAndSort = pctx.AndroidStaticRule("CatAndSort",
 		blueprint.RuleParams{
-			Command:         "rm -f $out && cat $in > $out && sort -o $out $out",
-			Description:     "concatenate sorted file contents to $out",
-			SandboxDisabled: true,
+			Command:     "${rm} -f $out && ${cat} $in > $out && ${sort} -o $out $out",
+			CommandDeps: []string{"${rm}", "${cat}", "${sort}"},
+			Description: "concatenate sorted file contents to $out",
 		})
 
 	CatAndSortAndUnique = pctx.AndroidStaticRule("CatAndSortAndUnique",
 		blueprint.RuleParams{
-			Command:         "rm -f $out && cat $in > $out && sort -u -o $out $out",
-			Description:     "concatenate sorted file contents to $out",
-			SandboxDisabled: true,
+			Command:     "${rm} -f $out && ${cat} $in > $out && ${sort} -u -o $out $out",
+			CommandDeps: []string{"${rm}", "${cat}", "${sort}"},
+			Description: "concatenate sorted file contents to $out",
 		})
 
 	MergeZips = pctx.AndroidStaticRule("MergeZips",
@@ -190,10 +190,9 @@ var (
 		})
 
 	AssembleVintfRule = pctx.StaticRule("AssembleVintfRule", blueprint.RuleParams{
-		Command:         `rm -f $out && VINTF_IGNORE_TARGET_FCM_VERSION=true ${AssembleVintf} -i $in -o $out`,
-		CommandDeps:     []string{"${AssembleVintf}"},
-		Description:     "run assemble_vintf",
-		SandboxDisabled: true,
+		Command:     `${rm} -f $out && VINTF_IGNORE_TARGET_FCM_VERSION=true ${AssembleVintf} -i $in -o $out`,
+		CommandDeps: []string{"${AssembleVintf}", "${rm}"},
+		Description: "run assemble_vintf",
 	})
 
 	// Used only when USE_REWRAPPER=true is set, to restrict non-RBE jobs to the local parallelism value
