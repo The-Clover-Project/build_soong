@@ -329,6 +329,7 @@ func (a *androidDevice) DepsMutator(ctx android.BottomUpMutatorContext) {
 	// For collecting install module information for products not building system.img or system_ext.img.
 	addDependencyIfDefined(a.deviceProps.InfoPartitionProps.System_partition_name)
 	addDependencyIfDefined(a.deviceProps.InfoPartitionProps.System_ext_partition_name)
+	addDependencyIfDefined(a.deviceProps.InfoPartitionProps.Product_partition_name)
 
 	for _, customPartition := range a.partitionProps.Custom_partitions {
 		ctx.AddDependency(ctx.Module(), customPartitionDepTag, customPartition)
