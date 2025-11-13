@@ -16,6 +16,7 @@ package android
 
 import (
 	"github.com/google/blueprint"
+	"github.com/google/blueprint/proptools"
 )
 
 //go:generate go run ../../blueprint/gobtools/codegen
@@ -53,7 +54,7 @@ type licenseProperties struct {
 	// Specifies a short copyright notice to use for the license.
 	Copyright_notice *string
 	// Specifies the path or label for the text of the license.
-	License_text []string `android:"path"`
+	License_text proptools.Configurable[[]string] `android:"path"`
 	// Specifies the package name to which the license applies.
 	Package_name *string
 	// Specifies where this license can be used
@@ -81,7 +82,7 @@ func (m *licenseModule) DepsMutator(ctx BottomUpMutatorContext) {
 
 func (m *licenseModule) GenerateAndroidBuildActions(ctx ModuleContext) {
 	// license modules have no licenses, but license_kinds must refer to license_kind modules
-	namePathProps(&m.base().commonProperties.Effective_license_text, m.properties.Package_name, PathsForModuleSrc(ctx, m.properties.License_text)...)
+	namePathProps(&m.base().commonProperties.Effective_license_text, m.properties.Package_name, PathsForModuleSrc(ctx, m.properties.License_text.GetOrDefault(ctx, nil))...)
 	var conditions []string
 	var kinds []string
 	for _, module := range ctx.GetDirectDepsProxyWithTag(licenseKindTag) {

@@ -767,7 +767,7 @@ func (a *AndroidApp) aaptBuildActions(ctx android.ModuleContext) {
 	)
 
 	// apps manifests are handled by aapt, don't let Module see them
-	a.properties.Manifest = nil
+	a.properties.Manifest = proptools.Configurable[string]{}
 
 	android.SetProvider(ctx, FlagsPackagesProvider, FlagsPackages{
 		AconfigTextFiles: aconfigTextFilePaths,
@@ -1739,7 +1739,7 @@ func (a *AndroidTest) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		a.testProperties.Auto_gen_config, configs, a.testProperties.Test_options.Test_runner_options)
 	a.testConfig = a.FixTestConfig(ctx, testConfig)
 	a.extraTestConfigs = android.PathsForModuleSrc(ctx, a.testProperties.Test_options.Extra_test_configs)
-	a.data = android.PathsForModuleSrc(ctx, a.testProperties.Data)
+	a.data = android.PathsForModuleSrc(ctx, a.testProperties.Data.GetOrDefault(ctx, nil))
 	a.data = append(a.data, android.PathsForModuleSrc(ctx, a.testProperties.Device_common_data)...)
 	a.data = append(a.data, android.PathsForModuleSrc(ctx, a.testProperties.Device_first_data)...)
 	a.data = append(a.data, android.PathsForModuleSrc(ctx, a.testProperties.Device_first_prefer32_data)...)

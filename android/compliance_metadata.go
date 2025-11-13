@@ -240,7 +240,7 @@ func buildComplianceMetadataProvider(ctx *moduleContext, m *ModuleBase) *Complia
 	case "license":
 		licenseModule := m.module.(*licenseModule)
 		complianceMetadataInfo.SetListValue(ComplianceMetadataProp.LIC_LICENSE_KINDS, licenseModule.properties.License_kinds)
-		complianceMetadataInfo.SetListValue(ComplianceMetadataProp.LIC_LICENSE_TEXT, PathsForModuleSrc(ctx, licenseModule.properties.License_text).Strings())
+		complianceMetadataInfo.SetListValue(ComplianceMetadataProp.LIC_LICENSE_TEXT, PathsForModuleSrc(ctx, licenseModule.properties.License_text.GetOrDefault(ctx, nil)).Strings())
 		complianceMetadataInfo.SetStringValue(ComplianceMetadataProp.LIC_PACKAGE_NAME, String(licenseModule.properties.Package_name))
 	case "license_kind":
 		licenseKindModule := m.module.(*licenseKindModule)

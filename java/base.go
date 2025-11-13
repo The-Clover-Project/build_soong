@@ -115,7 +115,7 @@ type CommonProperties struct {
 	Associates []string `android:"arch_variant"`
 
 	// manifest file to be included in resulting jar
-	Manifest *string `android:"path"`
+	Manifest proptools.Configurable[string] `android:"path,replace_instead_of_append"`
 
 	// if not blank, run jarjar using the specified rules file
 	Jarjar_rules *string `android:"path,arch_variant"`
@@ -1233,8 +1233,9 @@ func (j *Module) addGeneratedSrcJars(path android.Path) {
 func (j *Module) compile(ctx android.ModuleContext) *JavaInfo {
 
 	manifest := j.overrideManifest
-	if !manifest.Valid() && j.properties.Manifest != nil {
-		manifest = android.OptionalPathForPath(android.PathForModuleSrc(ctx, *j.properties.Manifest))
+	manifestFromProp := j.properties.Manifest.GetOrDefault(ctx, "")
+	if !manifest.Valid() && manifestFromProp != "" {
+		manifest = android.OptionalPathForPath(android.PathForModuleSrc(ctx, manifestFromProp))
 	}
 
 	// Auto-propagating jarjar rules
