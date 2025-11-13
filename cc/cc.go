@@ -270,6 +270,7 @@ type LinkableInfo struct {
 	// FuzzSharedLibraries returns the shared library dependencies for this module.
 	// Expects that IsFuzzModule returns true.
 	FuzzSharedLibraries      InstallPairs
+	FuzzDependencies         depset.DepSet[FuzzLibraryInstall]
 	IsVndkPrebuiltLibrary    bool
 	HasLLNDKStubs            bool
 	IsLLNDKMovedToApex       bool
@@ -2557,6 +2558,11 @@ func (c *Module) GenerateAndroidBuildActions(actx android.ModuleContext) {
 	c.checkLinkType(ctx)
 	notDoubleLoadableReason := c.checkDoubleLoadableLibraries(ctx)
 
+	var fuzzDependencies depset.DepSet[FuzzLibraryInstall]
+	if c.library != nil && c.Shared() && c.outputFile.Valid() {
+		fuzzDependencies = PropagateSharedLibraryFuzzerDependencies(ctx, c.outputFile, c.isFuzzer())
+	}
+
 	if b, ok := c.compiler.(*baseCompiler); ok {
 		c.hasAidl = b.hasSrcExt(ctx, ".aidl")
 		c.hasLex = b.hasSrcExt(ctx, ".l") || b.hasSrcExt(ctx, ".ll")
@@ -2590,6 +2596,8 @@ func (c *Module) GenerateAndroidBuildActions(actx android.ModuleContext) {
 			linkableInfo.SAbiDumpFiles = library.objs().sAbiDumpFiles
 		}
 	}
+	linkableInfo.FuzzDependencies = fuzzDependencies
+
 	android.SetProvider(ctx, LinkableInfoProvider, linkableInfo)
 	ccInfo := CcInfo{
 		IsPrebuilt:              c.IsPrebuilt(),

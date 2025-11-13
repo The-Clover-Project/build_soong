@@ -15,7 +15,6 @@
 package java
 
 import (
-	"path/filepath"
 	"sort"
 	"strings"
 
@@ -118,26 +117,15 @@ func (j *JavaFuzzTest) DepsMutator(ctx android.BottomUpMutatorContext) {
 func (j *JavaFuzzTest) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	j.fuzzPackagedModule = cc.PackageFuzzModule(ctx, j.fuzzPackagedModule)
 
-	_, sharedDeps := cc.CollectAllSharedDependencies(ctx)
-	for _, dep := range sharedDeps {
-		sharedLibInfo, _ := android.OtherModuleProvider(ctx, dep, cc.SharedLibraryInfoProvider)
-		if sharedLibInfo.SharedLibrary != nil {
-			arch := "lib"
-			if sharedLibInfo.Target.Arch.ArchType.Multilib == "lib64" {
-				arch = "lib64"
-			}
-
-			libPath := android.PathForModuleOut(ctx, filepath.Join(arch, sharedLibInfo.SharedLibrary.Base()))
-			ctx.Build(pctx, android.BuildParams{
-				Rule:   android.Cp,
-				Input:  sharedLibInfo.SharedLibrary,
-				Output: libPath,
-			})
-			j.jniFilePaths = append(j.jniFilePaths, libPath)
-		} else {
-			ctx.PropertyErrorf("jni_libs", "%q of type %q is not supported", dep.Name(), ctx.OtherModuleType(dep))
-		}
-
+	_, jniPairs := cc.CollectAllSharedDependencies(ctx)
+	for _, jni := range jniPairs {
+		libPath := android.PathForModuleOut(ctx, jni.Dst)
+		ctx.Build(pctx, android.BuildParams{
+			Rule:   android.Cp,
+			Input:  jni.Src,
+			Output: libPath,
+		})
+		j.jniFilePaths = append(j.jniFilePaths, libPath)
 	}
 
 	checkMinSdkVersionMts(ctx, j.MinSdkVersion(ctx))

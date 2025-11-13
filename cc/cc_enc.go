@@ -3547,6 +3547,10 @@ func (r LinkableInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		}
 	}
 
+	if err = r.FuzzDependencies.Encode(ctx, buf); err != nil {
+		return err
+	}
+
 	if err = gobtools.EncodeBool(buf, r.IsVndkPrebuiltLibrary); err != nil {
 		return err
 	}
@@ -3585,7 +3589,7 @@ func (r LinkableInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 
 func (r LinkableInfo) CustomHash(hasher *proptools.Hasher) error {
 	hasher.WriteString(":cc.LinkableInfo")
-	hasher.WriteInt(49)
+	hasher.WriteInt(50)
 	hasher.WriteString(":.bool")
 	if r.StaticExecutable {
 		hasher.WriteByte(1)
@@ -3882,6 +3886,15 @@ func (r LinkableInfo) CustomHash(hasher *proptools.Hasher) error {
 			return err
 		}
 	}
+	val18 := func(hasher *proptools.Hasher, val17 FuzzLibraryInstall) error {
+		if err := val17.CustomHash(hasher); err != nil {
+			return err
+		}
+		return nil
+	}
+	if err := r.FuzzDependencies.Hash(hasher, "FuzzLibraryInstall", val18); err != nil {
+		return err
+	}
 	hasher.WriteString(":.bool")
 	if r.IsVndkPrebuiltLibrary {
 		hasher.WriteByte(1)
@@ -3905,11 +3918,11 @@ func (r LinkableInfo) CustomHash(hasher *proptools.Hasher) error {
 	hasher.WriteString(":.string")
 	hasher.WriteString(r.SelectedStl)
 	hasher.WriteString(":.*bool")
-	val17 := r.Xom == nil
-	if val17 {
+	val19 := r.Xom == nil
+	if val19 {
 		hasher.WriteByte(0)
 	} else {
-		val18 := func(hasher *proptools.Hasher) error {
+		val20 := func(hasher *proptools.Hasher) error {
 			hasher.WriteString(":.bool")
 			if *r.Xom {
 				hasher.WriteByte(1)
@@ -3918,7 +3931,7 @@ func (r LinkableInfo) CustomHash(hasher *proptools.Hasher) error {
 			}
 			return nil
 		}
-		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.Xom)), val18); err != nil {
+		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.Xom)), val20); err != nil {
 			return err
 		}
 	}
@@ -4207,6 +4220,10 @@ func (r *LinkableInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error 
 		}
 	}
 
+	if err = r.FuzzDependencies.Decode(ctx, buf); err != nil {
+		return err
+	}
+
 	err = gobtools.DecodeBool(buf, &r.IsVndkPrebuiltLibrary)
 	if err != nil {
 		return err
@@ -4232,17 +4249,17 @@ func (r *LinkableInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error 
 		return err
 	}
 
-	var val72 bool
-	if err = gobtools.DecodeBool(buf, &val72); err != nil {
+	var val73 bool
+	if err = gobtools.DecodeBool(buf, &val73); err != nil {
 		return err
 	}
-	if !val72 {
-		var val71 bool
-		err = gobtools.DecodeBool(buf, &val71)
+	if !val73 {
+		var val72 bool
+		err = gobtools.DecodeBool(buf, &val72)
 		if err != nil {
 			return err
 		}
-		r.Xom = &val71
+		r.Xom = &val72
 	}
 
 	err = gobtools.DecodeBool(buf, &r.XomDisabledByPath)
@@ -4582,6 +4599,134 @@ func (r FdoProfileInfo) GetTypeId() int16 {
 }
 
 // end of fdo_profile.go
+
+// begin of fuzz.go
+func init() {
+	FuzzLibraryInstallGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(FuzzLibraryInstall) })
+}
+
+func (r FuzzLibraryInstall) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = gobtools.EncodeInterface(ctx, buf, r.Src); err != nil {
+		return err
+	}
+
+	if err = gobtools.EncodeBool(buf, r.IsFuzzer); err != nil {
+		return err
+	}
+
+	if err = gobtools.EncodeString(buf, r.JNIDst); err != nil {
+		return err
+	}
+
+	if err = r.InstallDst.Encode(ctx, buf); err != nil {
+		return err
+	}
+
+	if err = r.SymbolsDst.Encode(ctx, buf); err != nil {
+		return err
+	}
+
+	if err = gobtools.EncodeBool(buf, r.HasSymbolsDst); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r FuzzLibraryInstall) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":cc.FuzzLibraryInstall")
+	hasher.WriteInt(6)
+	hasher.WriteString(":cc.android.Path")
+	val1 := r.Src == nil
+	if val1 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.Src); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val2 := r.Src == nil
+				if val2 {
+					hasher.WriteByte(0)
+				} else {
+					val3 := func(hasher *proptools.Hasher) error { return r.Src.(proptools.CustomHash).CustomHash(hasher) }
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val3); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.Src.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":.bool")
+	if r.IsFuzzer {
+		hasher.WriteByte(1)
+	} else {
+		hasher.WriteByte(0)
+	}
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.JNIDst)
+	if err := r.InstallDst.CustomHash(hasher); err != nil {
+		return err
+	}
+	if err := r.SymbolsDst.CustomHash(hasher); err != nil {
+		return err
+	}
+	hasher.WriteString(":.bool")
+	if r.HasSymbolsDst {
+		hasher.WriteByte(1)
+	} else {
+		hasher.WriteByte(0)
+	}
+	return nil
+}
+
+func (r *FuzzLibraryInstall) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	if val2, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+		return err
+	} else if val2 == nil {
+		r.Src = nil
+	} else {
+		r.Src = val2.(android.Path)
+	}
+
+	err = gobtools.DecodeBool(buf, &r.IsFuzzer)
+	if err != nil {
+		return err
+	}
+
+	err = gobtools.DecodeString(buf, &r.JNIDst)
+	if err != nil {
+		return err
+	}
+
+	if err = r.InstallDst.Decode(ctx, buf); err != nil {
+		return err
+	}
+
+	if err = r.SymbolsDst.Decode(ctx, buf); err != nil {
+		return err
+	}
+
+	err = gobtools.DecodeBool(buf, &r.HasSymbolsDst)
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
+var FuzzLibraryInstallGobRegId int16
+
+func (r FuzzLibraryInstall) GetTypeId() int16 {
+	return FuzzLibraryInstallGobRegId
+}
+
+// end of fuzz.go
 
 // begin of image_sdk_traits.go
 func init() {

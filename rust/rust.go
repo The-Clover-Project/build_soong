@@ -1239,6 +1239,7 @@ func (mod *Module) GenerateAndroidBuildActions(actx android.ModuleContext) {
 	if lib, ok := mod.compiler.(cc.VersionedInterface); ok {
 		linkableInfo.StubsVersion = lib.StubsVersion()
 	}
+	linkableInfo.FuzzDependencies = cc.PropagateSharedLibraryFuzzerDependencies(ctx, android.OptionalPath{}, false)
 
 	android.SetProvider(ctx, cc.LinkableInfoProvider, linkableInfo)
 
