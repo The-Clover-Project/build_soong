@@ -1996,12 +1996,16 @@ func (r SuperImageInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error
 	if err = gobtools.EncodeBool(buf, r.AbUpdate); err != nil {
 		return err
 	}
+
+	if err = gobtools.EncodeBool(buf, r.SuperImageInUpdatePackage); err != nil {
+		return err
+	}
 	return err
 }
 
 func (r SuperImageInfo) CustomHash(hasher *proptools.Hasher) error {
 	hasher.WriteString(":filesystem.SuperImageInfo")
-	hasher.WriteInt(5)
+	hasher.WriteInt(6)
 	hasher.WriteString(":filesystem.android.Path")
 	val1 := r.SuperImage == nil
 	if val1 {
@@ -2095,6 +2099,12 @@ func (r SuperImageInfo) CustomHash(hasher *proptools.Hasher) error {
 	} else {
 		hasher.WriteByte(0)
 	}
+	hasher.WriteString(":.bool")
+	if r.SuperImageInUpdatePackage {
+		hasher.WriteByte(1)
+	} else {
+		hasher.WriteByte(0)
+	}
 	return nil
 }
 
@@ -2147,6 +2157,11 @@ func (r *SuperImageInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) erro
 	}
 
 	err = gobtools.DecodeBool(buf, &r.AbUpdate)
+	if err != nil {
+		return err
+	}
+
+	err = gobtools.DecodeBool(buf, &r.SuperImageInUpdatePackage)
 	if err != nil {
 		return err
 	}

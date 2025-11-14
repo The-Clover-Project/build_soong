@@ -201,6 +201,8 @@ type androidDevice struct {
 	customPartitionFilesystemInfos []FilesystemInfo
 
 	stageDeviceFiles []stageDeviceFilePair
+
+	superImageInfo SuperImageInfo
 }
 
 func AndroidDeviceFactory() android.Module {
@@ -438,6 +440,7 @@ func (a *androidDevice) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	if proptools.String(a.partitionProps.Super_partition_name) != "" {
 		superImage := ctx.GetDirectDepProxyWithTag(*a.partitionProps.Super_partition_name, superPartitionDepTag)
 		if info, ok := android.OtherModuleProvider(ctx, superImage, SuperImageProvider); ok {
+			a.superImageInfo = info
 			assertUnset := func(prop *string, propName string) {
 				if prop != nil && *prop != "" {
 					ctx.PropertyErrorf(propName, "Cannot be set because it's already part of the super image")
@@ -712,6 +715,10 @@ func (a *androidDevice) distInstalledFiles(ctx android.ModuleContext) {
 
 func (a *androidDevice) distFiles(ctx android.ModuleContext) {
 	if !ctx.Config().KatiEnabled() && proptools.Bool(a.deviceProps.Main_device) {
+		if a.superImageInfo.SuperImage != nil && !a.superImageInfo.SuperImageInUpdatePackage {
+			ctx.DistForGoal("dist_files", a.superImageInfo.SuperImage)
+		}
+
 		a.distInstalledFiles(ctx)
 
 		namePrefix := ""
