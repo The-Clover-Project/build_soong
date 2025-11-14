@@ -1722,7 +1722,7 @@ func (m *ModuleBase) VintfFragments(ctx ConfigurableEvaluatorContext) []string {
 // generateModuleTarget generates phony targets so that you can do `m <module-name>`.
 // It will be run on every variant of the module, so it relies on the fact that phony targets
 // are deduped to merge all the deps from different variants together.
-func (m *ModuleBase) generateModuleTarget(ctx *moduleContext, testSuiteInstalls []FilePair) {
+func (m *ModuleBase) generateModuleTarget(ctx *moduleContext, testSuiteInstalls []FilePair) *ModuleBuildTargetsInfo {
 	var namespacePrefix string
 	nameSpace := ctx.Namespace().Path
 	if nameSpace != "." {
@@ -1765,7 +1765,7 @@ func (m *ModuleBase) generateModuleTarget(ctx *moduleContext, testSuiteInstalls 
 	}
 	// Act as if you built the required dependencies as well when building the current module
 	for _, dep := range ctx.GetDirectDepsProxyWithTag(RequiredDepTag) {
-		if info, ok := OtherModuleProvider(ctx, dep, ModuleBuildTargetsProvider); ok {
+		if info := GetModuleBuildTargets(ctx, dep); info != nil {
 			if info.OutputsTarget != nil {
 				outputDeps = append(outputDeps, info.OutputsTarget)
 			}
@@ -1852,7 +1852,7 @@ func (m *ModuleBase) generateModuleTarget(ctx *moduleContext, testSuiteInstalls 
 	info.OutputsTarget = outputTarget
 	info.InstallTarget = installTarget
 	info.NamespaceExportedToMake = namespaceExportedToMake
-	SetProvider(ctx, ModuleBuildTargetsProvider, info)
+	return &info
 }
 
 func determineModuleKind(m *ModuleBase, ctx ModuleErrorContext) moduleKind {
@@ -2019,8 +2019,6 @@ type ModuleBuildTargetsInfo struct {
 	BlueprintDir            string
 }
 
-var ModuleBuildTargetsProvider = blueprint.NewProvider[ModuleBuildTargetsInfo]()
-
 // @auto-generate: gob
 type CommonModuleInfo struct {
 	Enabled bool
@@ -2081,8 +2079,12 @@ type CommonModuleInfo struct {
 	ModuleInfoJSON             *ModuleInfoJSONInfo
 	UnstableInfo               *unstableInfo
 	// LicenseMetadata is used to propagate license metadata paths between modules.
-	LicenseMetadata *LicenseMetadataInfo
-	Licenses        *LicensesInfo
+	LicenseMetadata    *LicenseMetadataInfo
+	Licenses           *LicensesInfo
+	Phonies            *PhonyInfo
+	OutputFiles        *OutputFilesInfo
+	ModuleBuildTargets *ModuleBuildTargetsInfo
+	HostToolProvider   *HostToolProviderInfo
 }
 
 // @auto-generate: gob
@@ -2097,8 +2099,6 @@ var CommonModuleInfoProvider = blueprint.NewProvider[*CommonModuleInfo]()
 type HostToolProviderInfo struct {
 	HostToolPath OptionalPath
 }
-
-var HostToolProviderInfoProvider = blueprint.NewProvider[HostToolProviderInfo]()
 
 // @auto-generate: gob
 type DistInfo struct {
@@ -2337,8 +2337,9 @@ func (m *ModuleBase) GenerateBuildActions(blueprintCtx blueprint.ModuleContext) 
 
 	licenseMetadata := buildLicenseMetadata(ctx, ctx.licenseMetadataFile, testSuiteInstalls)
 
+	var moduleTargets *ModuleBuildTargetsInfo
 	if shouldGeneratePhonyTargets(ctx, m) {
-		m.generateModuleTarget(ctx, testSuiteInstalls)
+		moduleTargets = m.generateModuleTarget(ctx, testSuiteInstalls)
 	}
 	if ctx.Failed() {
 		return
@@ -2428,17 +2429,6 @@ func (m *ModuleBase) GenerateBuildActions(blueprintCtx blueprint.ModuleContext) 
 	m.ruleParams = ctx.ruleParams
 	m.variables = ctx.variables
 
-	outputFiles := ctx.GetOutputFiles()
-	if outputFiles.DefaultOutputFiles != nil || outputFiles.TaggedOutputFiles != nil {
-		SetProvider(ctx, OutputFilesProvider, outputFiles)
-	}
-
-	if len(ctx.phonies) > 0 {
-		SetProvider(ctx, ModulePhonyProvider, PhonyInfo{
-			Phonies: ctx.phonies,
-		})
-	}
-
 	if len(ctx.dists) > 0 {
 		SetProvider(ctx, DistProvider, DistInfo{
 			Dists: ctx.dists,
@@ -2480,6 +2470,16 @@ func (m *ModuleBase) GenerateBuildActions(blueprintCtx blueprint.ModuleContext) 
 		UnstableInfo:                                 unstableInfo,
 		LicenseMetadata:                              licenseMetadata,
 		Licenses:                                     licenses,
+		ModuleBuildTargets:                           moduleTargets,
+	}
+	outputFiles := ctx.GetOutputFiles()
+	if outputFiles.DefaultOutputFiles != nil || outputFiles.TaggedOutputFiles != nil {
+		commonData.OutputFiles = &outputFiles
+	}
+	if len(ctx.phonies) > 0 {
+		commonData.Phonies = &PhonyInfo{
+			Phonies: ctx.phonies,
+		}
 	}
 	if len(ctx.moduleInfoJSON) > 0 {
 		commonData.ModuleInfoJSON = &ModuleInfoJSONInfo{
@@ -2535,12 +2535,11 @@ func (m *ModuleBase) GenerateBuildActions(blueprintCtx blueprint.ModuleContext) 
 	if mm, ok := m.module.(interface{ BaseModuleName() string }); ok {
 		commonData.BaseModuleName = mm.BaseModuleName()
 	}
-	SetProvider(ctx, CommonModuleInfoProvider, &commonData)
-
 	if h, ok := m.module.(HostToolProvider); ok {
-		SetProvider(ctx, HostToolProviderInfoProvider, HostToolProviderInfo{
-			HostToolPath: h.HostToolPath()})
+		commonData.HostToolProvider = &HostToolProviderInfo{
+			HostToolPath: h.HostToolPath()}
 	}
+	SetProvider(ctx, CommonModuleInfoProvider, &commonData)
 
 	var hasAndroidMkProvider bool
 	if ctx.Config().KatiEnabled() {
@@ -2584,6 +2583,13 @@ func (m *ModuleBase) GenerateBuildActions(blueprintCtx blueprint.ModuleContext) 
 		// then there are no references directly to the Module and it can be freed.
 		ctx.bp.FreeModuleAfterGenerateBuildActions()
 	}
+}
+
+func GetHostToolProvider(ctx OtherModuleProviderContext, module ModuleOrProxy) *HostToolProviderInfo {
+	if commInfo, ok := OtherModuleProvider(ctx, module, CommonModuleInfoProvider); ok {
+		return commInfo.HostToolProvider
+	}
+	return nil
 }
 
 func (m *ModuleBase) setupTestSuites(ctx ModuleContext, info TestSuiteInfo) []FilePair {
@@ -3314,28 +3320,36 @@ func outputFilesForModule(ctx PathContext, module ModuleOrProxy, tag string) (Pa
 	return nil, fmt.Errorf("module %q is not a SourceFileProducer or having valid output file for tag %q", pathContextName(ctx, module), tag)
 }
 
-// This method uses OutputFilesProvider for output files
+func GetOutputFiles(ctx OtherModuleProviderContext, module ModuleOrProxy) *OutputFilesInfo {
+	if commInfo, ok := OtherModuleProvider(ctx, module, CommonModuleInfoProvider); ok {
+		return commInfo.OutputFiles
+	}
+	return nil
+}
+
+// This method uses OutputFiles from CommonModuleInfo for output files
 // *inter-module-communication*.
 // If mctx module is the same as the param module the output files are obtained
 // from outputFiles property of module base, to avoid both setting and
-// reading OutputFilesProvider before GenerateBuildActions is finished.
-// If a module doesn't have the OutputFilesProvider, nil is returned.
+// reading OutputFiles before GenerateBuildActions is finished.
+// If a module doesn't have the OutputFiles set, nil is returned.
 func outputFilesForModuleFromProvider(ctx PathContext, module ModuleOrProxy, tag string) (Paths, error) {
-	var outputFiles OutputFilesInfo
+	var outputFiles *OutputFilesInfo
 
 	if mctx, isMctx := ctx.(OutputFilesProviderModuleContext); isMctx {
 		if !EqualModules(mctx.Module(), module) {
-			outputFiles, _ = OtherModuleProvider(mctx, module, OutputFilesProvider)
+			outputFiles = GetOutputFiles(mctx, module)
 		} else {
-			outputFiles = mctx.GetOutputFiles()
+			tmp := mctx.GetOutputFiles()
+			outputFiles = &tmp
 		}
 	} else if cta, isCta := ctx.(*singletonContextAdaptor); isCta {
-		outputFiles, _ = OtherModuleProvider(cta, module, OutputFilesProvider)
+		outputFiles = GetOutputFiles(cta, module)
 	} else {
 		return nil, fmt.Errorf("unsupported context %q in method outputFilesForModuleFromProvider", reflect.TypeOf(ctx))
 	}
 
-	if outputFiles.isEmpty() {
+	if outputFiles == nil || outputFiles.isEmpty() {
 		return nil, OutputFilesProviderNotSet
 	}
 
@@ -3362,8 +3376,6 @@ type OutputFilesInfo struct {
 	// the corresponding output files for given tags
 	TaggedOutputFiles map[string]Paths
 }
-
-var OutputFilesProvider = blueprint.NewProvider[OutputFilesInfo]()
 
 type UnsupportedOutputTagError struct {
 	tag string
@@ -3436,6 +3448,13 @@ func AddAncestors(ctx SingletonContext, dirMap map[string]Paths, mmName func(str
 	return SortedKeys(dirMap), topDirs
 }
 
+func GetModuleBuildTargets(ctx OtherModuleProviderContext, module ModuleProxy) *ModuleBuildTargetsInfo {
+	if commInfo, ok := OtherModuleProvider(ctx, module, CommonModuleInfoProvider); ok {
+		return commInfo.ModuleBuildTargets
+	}
+	return nil
+}
+
 func (c *buildTargetSingleton) GenerateBuildActions(ctx SingletonContext) {
 	var checkbuildDeps Paths
 
@@ -3449,8 +3468,8 @@ func (c *buildTargetSingleton) GenerateBuildActions(ctx SingletonContext) {
 	modulesInDir := make(map[string]Paths)
 
 	ctx.VisitAllModuleProxies(func(module ModuleProxy) {
-		info := OtherModuleProviderOrDefault(ctx, module, ModuleBuildTargetsProvider)
-		if !info.NamespaceExportedToMake {
+		info := GetModuleBuildTargets(ctx, module)
+		if info == nil || !info.NamespaceExportedToMake {
 			return
 		}
 

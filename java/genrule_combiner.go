@@ -119,7 +119,7 @@ func (j *GenruleCombiner) GenerateAndroidBuildActions(ctx android.ModuleContext)
 			transitiveImplementationJars = append(transitiveImplementationJars, dep.TransitiveStaticLibsImplementationJars)
 			transitiveResourceJars = append(transitiveResourceJars, dep.TransitiveStaticLibsResourceJars)
 			j.aconfigProtoFiles = append(j.aconfigProtoFiles, dep.AconfigIntermediateCacheOutputPaths...)
-		} else if dep, ok := android.OtherModuleProvider(ctx, m, android.OutputFilesProvider); ok {
+		} else if dep := android.GetOutputFiles(ctx, m); dep != nil {
 			// This is provided by `java_genrule` modules.
 			j.implementationJars = append(j.implementationJars, dep.DefaultOutputFiles...)
 			j.implementationAndResourceJars = append(j.implementationAndResourceJars, dep.DefaultOutputFiles...)
