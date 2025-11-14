@@ -193,9 +193,10 @@ var (
 		})
 
 	AssembleVintfRule = pctx.StaticRule("AssembleVintfRule", blueprint.RuleParams{
-		Command:     `${Rm} -f $out && VINTF_IGNORE_TARGET_FCM_VERSION=true ${AssembleVintf} -i $in -o $out`,
-		CommandDeps: []string{"${AssembleVintf}", "${Rm}"},
-		Description: "run assemble_vintf",
+		Command:         `${Rm} -f $out && VINTF_IGNORE_TARGET_FCM_VERSION=true ${AssembleVintf} -i $in -o $out`,
+		CommandDeps:     []string{"${AssembleVintf}", "${Rm}"},
+		Description:     "run assemble_vintf",
+		SandboxDisabled: true,
 	})
 
 	// Used only when USE_REWRAPPER=true is set, to restrict non-RBE jobs to the local parallelism value
