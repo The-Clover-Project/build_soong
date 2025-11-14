@@ -227,14 +227,10 @@ func (c *ComplianceMetadataInfo) getAllValues() map[string]string {
 	return c.properties
 }
 
-var (
-	ComplianceMetadataProvider = blueprint.NewProvider[*ComplianceMetadataInfo]()
-)
-
 // buildComplianceMetadataProvider starts with the ModuleContext.ComplianceMetadataInfo() and fills in more common metadata
 // for different module types without accessing their private fields but through android.Module interface
-// and public/private fields of package android. The final metadata is stored to a module's ComplianceMetadataProvider.
-func buildComplianceMetadataProvider(ctx *moduleContext, m *ModuleBase) {
+// and public/private fields of package android. The final metadata is stored to a module's CommonModuleInfo.
+func buildComplianceMetadataProvider(ctx *moduleContext, m *ModuleBase) *ComplianceMetadataInfo {
 	complianceMetadataInfo := ctx.ComplianceMetadataInfo()
 	complianceMetadataInfo.SetStringValue(ComplianceMetadataProp.NAME, m.Name())
 	complianceMetadataInfo.SetStringValue(ComplianceMetadataProp.PACKAGE, ctx.ModuleDir())
@@ -288,7 +284,7 @@ func buildComplianceMetadataProvider(ctx *moduleContext, m *ModuleBase) {
 		}
 		ctx.ComplianceMetadataInfo().AddBuiltFiles(builtFiles...)
 	}
-	ctx.setProvider(ComplianceMetadataProvider, complianceMetadataInfo)
+	return complianceMetadataInfo
 }
 
 func init() {
@@ -329,6 +325,13 @@ func writerToCsv(csvWriter *csv.Writer, row []string) {
 	}
 }
 
+func GetComplianceMetadata(ctx OtherModuleProviderContext, module ModuleProxy) *ComplianceMetadataInfo {
+	if commInfo, ok := OtherModuleProvider(ctx, module, CommonModuleInfoProvider); ok {
+		return commInfo.ComplianceMetadata
+	}
+	return nil
+}
+
 // Collect compliance metadata from all Soong modules, write to a CSV file and
 // import compliance metadata from Make and Soong to a sqlite3 database.
 func (c *complianceMetadataSingleton) GenerateBuildActions(ctx SingletonContext) {
@@ -366,7 +369,7 @@ func (c *complianceMetadataSingleton) GenerateBuildActions(ctx SingletonContext)
 			writerToCsv(csvWriter, metadata)
 			return
 		}
-		if metadataInfo, ok := OtherModuleProvider(ctx, module, ComplianceMetadataProvider); ok {
+		if metadataInfo := commonInfo.ComplianceMetadata; metadataInfo != nil {
 			rowId = rowId + 1
 			metadata := []string{strconv.Itoa(rowId)}
 			for _, propertyName := range COMPLIANCE_METADATA_PROPS {
@@ -393,7 +396,7 @@ func (c *complianceMetadataSingleton) GenerateBuildActions(ctx SingletonContext)
 		ctx.VisitAllModuleProxies(func(module ModuleProxy) {
 			// In soong-only build the installed file list is from android_device module
 			if androidDeviceInfo, ok := OtherModuleProvider(ctx, module, AndroidDeviceInfoProvider); ok && androidDeviceInfo.Main_device {
-				if metadataInfo, ok := OtherModuleProvider(ctx, module, ComplianceMetadataProvider); ok {
+				if metadataInfo := GetComplianceMetadata(ctx, module); metadataInfo != nil {
 					if len(metadataInfo.filesContained) > 0 || len(metadataInfo.prebuiltFilesCopied) > 0 {
 						allFiles := make([]string, 0, len(metadataInfo.filesContained)+len(metadataInfo.prebuiltFilesCopied))
 						allFiles = append(allFiles, metadataInfo.filesContained...)
@@ -450,7 +453,7 @@ func (c *complianceMetadataSingleton) GenerateBuildActions(ctx SingletonContext)
 			if !slices.Contains(unbundledApps, module.Name()) {
 				return
 			}
-			if metadataInfo, ok := OtherModuleProvider(ctx, module, ComplianceMetadataProvider); ok && len(metadataInfo.filesContained) > 0 {
+			if metadataInfo := GetComplianceMetadata(ctx, module); metadataInfo != nil && len(metadataInfo.filesContained) > 0 {
 				csvContent := make([]string, 0, len(metadataInfo.filesContained)+1)
 				csvContent = append(csvContent, moduleInstalledFilesCsvHeaders)
 				for i, file := range metadataInfo.filesContained {

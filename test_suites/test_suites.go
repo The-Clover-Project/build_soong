@@ -973,7 +973,7 @@ func buildSharedReport(
 	var componentMetadataFiles android.Paths
 	meta_builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	for _, mod := range testSuiteModules {
-		if provider, ok := android.OtherModuleProvider(ctx, mod, android.LicenseMetadataProvider); ok && provider.LicenseMetadataPath != nil {
+		if provider := android.OtherModulePointerProviderOrDefault(ctx, mod, android.CommonModuleInfoProvider).LicenseMetadata; provider != nil && provider.LicenseMetadataPath != nil {
 			if testSuiteInstalls, ok := android.OtherModuleProvider(ctx, mod, android.TestSuiteInstallsInfoProvider); ok {
 				for _, f := range testSuiteInstalls.Files {
 					if strings.Contains(f.Dst.String(), mod.Name()) && strings.HasPrefix(f.Dst.String(), hostOutSubDir) {

@@ -4,8 +4,6 @@ import (
 	"encoding/json"
 	"io"
 	"slices"
-
-	"github.com/google/blueprint"
 )
 
 //go:generate go run ../../blueprint/gobtools/codegen
@@ -131,5 +129,3 @@ func (m *ModuleInfoJSON) GetClass() []string {
 type ModuleInfoJSONInfo struct {
 	Data []*ModuleInfoJSON
 }
-
-var ModuleInfoJSONProvider = blueprint.NewProvider[ModuleInfoJSONInfo]()

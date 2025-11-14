@@ -2077,6 +2077,12 @@ type CommonModuleInfo struct {
 	ApexAvailableFor           []string
 	ImageVariation             blueprint.Variation
 	IsNonPrimaryImageVariation bool
+	ComplianceMetadata         *ComplianceMetadataInfo
+	ModuleInfoJSON             *ModuleInfoJSONInfo
+	UnstableInfo               *unstableInfo
+	// LicenseMetadata is used to propagate license metadata paths between modules.
+	LicenseMetadata *LicenseMetadataInfo
+	Licenses        *LicensesInfo
 }
 
 // @auto-generate: gob
@@ -2135,7 +2141,7 @@ func (m *ModuleBase) GenerateBuildActions(blueprintCtx blueprint.ModuleContext) 
 		ctx.config.modulesForTests.Insert(ctx.ModuleName(), ctx.Module())
 	}
 
-	setContainerInfo(ctx)
+	unstableInfo := setContainerInfo(ctx)
 	if ctx.Config().Getenv("DISABLE_CONTAINER_CHECK") != "true" {
 		checkContainerViolations(ctx)
 	}
@@ -2193,6 +2199,7 @@ func (m *ModuleBase) GenerateBuildActions(blueprintCtx blueprint.ModuleContext) 
 	}
 
 	var installFiles InstallFilesInfo
+	var licenses *LicensesInfo
 
 	if m.Enabled(ctx) {
 		// ensure all direct android.Module deps are enabled
@@ -2238,7 +2245,7 @@ func (m *ModuleBase) GenerateBuildActions(blueprintCtx blueprint.ModuleContext) 
 			installFiles.InstalledVintfFragmentsPaths = ctx.installedVintfFragmentsPaths
 		}
 
-		licensesPropertyFlattener(ctx)
+		licenses = licensesPropertyFlattener(ctx)
 		if ctx.Failed() {
 			return
 		}
@@ -2328,7 +2335,7 @@ func (m *ModuleBase) GenerateBuildActions(blueprintCtx blueprint.ModuleContext) 
 		testSuiteInstalls = m.setupTestSuites(ctx, ctx.testSuiteInfo)
 	}
 
-	buildLicenseMetadata(ctx, ctx.licenseMetadataFile, testSuiteInstalls)
+	licenseMetadata := buildLicenseMetadata(ctx, ctx.licenseMetadataFile, testSuiteInstalls)
 
 	if shouldGeneratePhonyTargets(ctx, m) {
 		m.generateModuleTarget(ctx, testSuiteInstalls)
@@ -2415,10 +2422,6 @@ func (m *ModuleBase) GenerateBuildActions(blueprintCtx blueprint.ModuleContext) 
 				Required:           required,
 			}
 		}
-
-		SetProvider(ctx, ModuleInfoJSONProvider, ModuleInfoJSONInfo{
-			Data: ctx.moduleInfoJSON,
-		})
 	}
 
 	m.buildParams = ctx.buildParams
@@ -2442,7 +2445,7 @@ func (m *ModuleBase) GenerateBuildActions(blueprintCtx blueprint.ModuleContext) 
 		})
 	}
 
-	buildComplianceMetadataProvider(ctx, m)
+	complianceMetadata := buildComplianceMetadataProvider(ctx, m)
 
 	commonData := CommonModuleInfo{
 		Enabled:                          m.Enabled(ctx),
@@ -2473,6 +2476,15 @@ func (m *ModuleBase) GenerateBuildActions(blueprintCtx blueprint.ModuleContext) 
 		PartitionTag:                                 m.PartitionTag(ctx.DeviceConfig()),
 		ImageVariation:                               m.module.ImageVariation(),
 		IsNonPrimaryImageVariation:                   m.commonProperties.IsNonPrimaryImageVariation,
+		ComplianceMetadata:                           complianceMetadata,
+		UnstableInfo:                                 unstableInfo,
+		LicenseMetadata:                              licenseMetadata,
+		Licenses:                                     licenses,
+	}
+	if len(ctx.moduleInfoJSON) > 0 {
+		commonData.ModuleInfoJSON = &ModuleInfoJSONInfo{
+			Data: ctx.moduleInfoJSON,
+		}
 	}
 	if mm, ok := m.module.(interface {
 		MinSdkVersion(ctx MinSdkVersionFromValueContext) ApiLevel

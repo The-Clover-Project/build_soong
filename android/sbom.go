@@ -100,7 +100,7 @@ func (this *sbomSingleton) GenerateBuildActions(ctx SingletonContext) {
 }
 
 func BuildUnbundledSbom(ctx ModuleContext, module ModuleProxy) {
-	if metadataInfo, ok := OtherModuleProvider(ctx, module, ComplianceMetadataProvider); ok && len(metadataInfo.filesContained) > 0 {
+	if metadataInfo := GetComplianceMetadata(ctx, module); metadataInfo != nil && len(metadataInfo.filesContained) > 0 {
 		buildFingerprintFile := ctx.Config().BuildFingerprintFile(ctx)
 		metadataDb := PathForOutput(ctx, "compliance-metadata", ctx.Config().DeviceProduct(), "compliance-metadata.db")
 		productOut := filepath.Join(ctx.Config().OutDir(), "target", "product", String(ctx.Config().productVariables.DeviceName))
