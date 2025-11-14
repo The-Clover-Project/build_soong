@@ -227,12 +227,13 @@ build_prop {
             "sdk",
         ],
     },
-    // Currently, only microdroid, Ravenwood, and cf system image can refer to system-build.prop
+    // Currently, only microdroid, Ravenwood, cf system image, and sdk-repo*.zip can refer to system-build.prop
     visibility: [
         "//build/soong/fsgen",
         "//packages/modules/Virtualization/build/microdroid",
         "//frameworks/base/ravenwood",
         "//visibility:any_system_partition",
+        "//development/build",
     ],
 }
 
