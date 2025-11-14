@@ -153,3 +153,44 @@ func (r ApexKeyInfo) GetTypeId() int16 {
 }
 
 // end of key.go
+
+// begin of prebuilt.go
+func init() {
+	ApexPrebuiltDepInSameApexCheckerGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ApexPrebuiltDepInSameApexChecker) })
+}
+
+func (r ApexPrebuiltDepInSameApexChecker) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = r.BaseDepInSameApexChecker.Encode(ctx, buf); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r ApexPrebuiltDepInSameApexChecker) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":apex.ApexPrebuiltDepInSameApexChecker")
+	hasher.WriteInt(1)
+	if err := r.BaseDepInSameApexChecker.CustomHash(hasher); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *ApexPrebuiltDepInSameApexChecker) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	if err = r.BaseDepInSameApexChecker.Decode(ctx, buf); err != nil {
+		return err
+	}
+
+	return err
+}
+
+var ApexPrebuiltDepInSameApexCheckerGobRegId int16
+
+func (r ApexPrebuiltDepInSameApexChecker) GetTypeId() int16 {
+	return ApexPrebuiltDepInSameApexCheckerGobRegId
+}
+
+// end of prebuilt.go

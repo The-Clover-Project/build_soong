@@ -414,6 +414,7 @@ func (target Target) Variations() []blueprint.Variation {
 // module.
 type osTransitionMutator struct{}
 
+// @auto-generate: gob
 type allOsInfo struct {
 	Os         map[string]OsType
 	Variations []string
@@ -597,6 +598,7 @@ var DarwinUniversalVariantTag = archDepTag{name: "darwin universal binary"}
 // but will have a common Target that is expected to handle all other selected Targets via ctx.MultiTargets().
 type archTransitionMutator struct{}
 
+// @auto-generate: gob
 type allArchInfo struct {
 	Targets      map[string]Target
 	MultiTargets []Target

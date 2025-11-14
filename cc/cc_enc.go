@@ -553,6 +553,7 @@ func init() {
 	LinkableInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(LinkableInfo) })
 	InstallPairGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(InstallPair) })
 	RustRlibDepGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(RustRlibDep) })
+	CcDepInSameApexCheckerGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(CcDepInSameApexChecker) })
 }
 
 func (r CcMakeVarsInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
@@ -4430,6 +4431,89 @@ var RustRlibDepGobRegId int16
 
 func (r RustRlibDep) GetTypeId() int16 {
 	return RustRlibDepGobRegId
+}
+
+func (r CcDepInSameApexChecker) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = gobtools.EncodeBool(buf, r.Static); err != nil {
+		return err
+	}
+
+	if err = gobtools.EncodeBool(buf, r.HasStubsVariants); err != nil {
+		return err
+	}
+
+	if err = gobtools.EncodeBool(buf, r.IsLlndk); err != nil {
+		return err
+	}
+
+	if err = gobtools.EncodeBool(buf, r.Host); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r CcDepInSameApexChecker) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":cc.CcDepInSameApexChecker")
+	hasher.WriteInt(4)
+	hasher.WriteString(":.bool")
+	if r.Static {
+		hasher.WriteByte(1)
+	} else {
+		hasher.WriteByte(0)
+	}
+	hasher.WriteString(":.bool")
+	if r.HasStubsVariants {
+		hasher.WriteByte(1)
+	} else {
+		hasher.WriteByte(0)
+	}
+	hasher.WriteString(":.bool")
+	if r.IsLlndk {
+		hasher.WriteByte(1)
+	} else {
+		hasher.WriteByte(0)
+	}
+	hasher.WriteString(":.bool")
+	if r.Host {
+		hasher.WriteByte(1)
+	} else {
+		hasher.WriteByte(0)
+	}
+	return nil
+}
+
+func (r *CcDepInSameApexChecker) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	err = gobtools.DecodeBool(buf, &r.Static)
+	if err != nil {
+		return err
+	}
+
+	err = gobtools.DecodeBool(buf, &r.HasStubsVariants)
+	if err != nil {
+		return err
+	}
+
+	err = gobtools.DecodeBool(buf, &r.IsLlndk)
+	if err != nil {
+		return err
+	}
+
+	err = gobtools.DecodeBool(buf, &r.Host)
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
+var CcDepInSameApexCheckerGobRegId int16
+
+func (r CcDepInSameApexChecker) GetTypeId() int16 {
+	return CcDepInSameApexCheckerGobRegId
 }
 
 // end of cc.go

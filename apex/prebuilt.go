@@ -30,6 +30,8 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen
+
 var (
 	extractMatchingApex = pctx.StaticRule(
 		"extractMatchingApex",
@@ -330,6 +332,7 @@ func (m *prebuiltCommon) GetDepInSameApexChecker() android.DepInSameApexChecker 
 	return ApexPrebuiltDepInSameApexChecker{}
 }
 
+// @auto-generate: gob
 type ApexPrebuiltDepInSameApexChecker struct {
 	android.BaseDepInSameApexChecker
 }

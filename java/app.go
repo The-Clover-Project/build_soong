@@ -1441,6 +1441,7 @@ func (m *AndroidApp) GetDepInSameApexChecker() android.DepInSameApexChecker {
 	return AppDepInSameApexChecker{}
 }
 
+// @auto-generate: gob
 type AppDepInSameApexChecker struct {
 	android.BaseDepInSameApexChecker
 }
