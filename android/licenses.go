@@ -173,10 +173,10 @@ func licensesPropertyGatherer(ctx BottomUpMutatorContext) {
 //
 // Validates applicable licenses properties refer only to license modules and license_kinds properties refer
 // only to license_kind modules.
-func licensesPropertyFlattener(ctx ModuleContext) {
+func licensesPropertyFlattener(ctx ModuleContext) *LicensesInfo {
 	m := ctx.Module()
 	if exemptFromRequiredApplicableLicensesProperty(m) {
-		return
+		return nil
 	}
 
 	var licenses []string
@@ -207,10 +207,9 @@ func licensesPropertyFlattener(ctx ModuleContext) {
 	m.base().commonProperties.Effective_license_conditions = SortedUniqueStrings(conditions)
 
 	// Make the license information available for other modules.
-	licenseInfo := LicensesInfo{
+	return &LicensesInfo{
 		Licenses: licenses,
 	}
-	SetProvider(ctx, LicensesInfoProvider, licenseInfo)
 }
 
 // Update a property NamedPath array with a distinct union of its values and a list of new values.
@@ -290,8 +289,6 @@ type LicensesInfo struct {
 	// configuration.
 	Licenses []string
 }
-
-var LicensesInfoProvider = blueprint.NewProvider[LicensesInfo]()
 
 func init() {
 	RegisterMakeVarsProvider(pctx, licensesMakeVarsProvider)

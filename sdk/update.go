@@ -1133,7 +1133,8 @@ func (s *snapshotBuilder) AddPrebuiltModule(member android.SdkMember, moduleType
 	}
 
 	// Where available copy apex_available properties from the member.
-	if info, ok := android.OtherModuleProvider(s.ctx, variant, android.CommonModuleInfoProvider); ok && info.IsApexModule {
+	info, ok := android.OtherModuleProvider(s.ctx, variant, android.CommonModuleInfoProvider)
+	if ok && info.IsApexModule {
 		apexAvailable := info.ApexAvailable
 		if len(apexAvailable) == 0 {
 			// //apex_available:platform is the default.
@@ -1149,8 +1150,8 @@ func (s *snapshotBuilder) AddPrebuiltModule(member android.SdkMember, moduleType
 
 	// The licenses are the same for all variants.
 	mctx := s.ctx
-	licenseInfo, _ := android.OtherModuleProvider(mctx, variant, android.LicensesInfoProvider)
-	if len(licenseInfo.Licenses) > 0 {
+	licenseInfo := info.Licenses
+	if licenseInfo != nil && len(licenseInfo.Licenses) > 0 {
 		m.AddPropertyWithTag("licenses", licenseInfo.Licenses, s.OptionalSdkMemberReferencePropertyTag())
 	}
 

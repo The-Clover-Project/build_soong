@@ -6693,12 +6693,62 @@ func (r CommonModuleInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) err
 	if err = gobtools.EncodeBool(buf, r.IsNonPrimaryImageVariation); err != nil {
 		return err
 	}
+
+	val8 := r.ComplianceMetadata == nil
+	if err = gobtools.EncodeBool(buf, val8); err != nil {
+		return err
+	}
+	if !val8 {
+		if err = (*r.ComplianceMetadata).Encode(ctx, buf); err != nil {
+			return err
+		}
+	}
+
+	val9 := r.ModuleInfoJSON == nil
+	if err = gobtools.EncodeBool(buf, val9); err != nil {
+		return err
+	}
+	if !val9 {
+		if err = (*r.ModuleInfoJSON).Encode(ctx, buf); err != nil {
+			return err
+		}
+	}
+
+	val10 := r.UnstableInfo == nil
+	if err = gobtools.EncodeBool(buf, val10); err != nil {
+		return err
+	}
+	if !val10 {
+		if err = (*r.UnstableInfo).Encode(ctx, buf); err != nil {
+			return err
+		}
+	}
+
+	val11 := r.LicenseMetadata == nil
+	if err = gobtools.EncodeBool(buf, val11); err != nil {
+		return err
+	}
+	if !val11 {
+		if err = (*r.LicenseMetadata).Encode(ctx, buf); err != nil {
+			return err
+		}
+	}
+
+	val12 := r.Licenses == nil
+	if err = gobtools.EncodeBool(buf, val12); err != nil {
+		return err
+	}
+	if !val12 {
+		if err = (*r.Licenses).Encode(ctx, buf); err != nil {
+			return err
+		}
+	}
 	return err
 }
 
 func (r CommonModuleInfo) CustomHash(hasher *proptools.Hasher) error {
 	hasher.WriteString(":android.CommonModuleInfo")
-	hasher.WriteInt(40)
+	hasher.WriteInt(45)
 	hasher.WriteString(":.bool")
 	if r.Enabled {
 		hasher.WriteByte(1)
@@ -6907,6 +6957,81 @@ func (r CommonModuleInfo) CustomHash(hasher *proptools.Hasher) error {
 		hasher.WriteByte(1)
 	} else {
 		hasher.WriteByte(0)
+	}
+	hasher.WriteString(":.*ComplianceMetadataInfo")
+	val8 := r.ComplianceMetadata == nil
+	if val8 {
+		hasher.WriteByte(0)
+	} else {
+		val9 := func(hasher *proptools.Hasher) error {
+			if err := (*r.ComplianceMetadata).CustomHash(hasher); err != nil {
+				return err
+			}
+			return nil
+		}
+		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.ComplianceMetadata)), val9); err != nil {
+			return err
+		}
+	}
+	hasher.WriteString(":.*ModuleInfoJSONInfo")
+	val10 := r.ModuleInfoJSON == nil
+	if val10 {
+		hasher.WriteByte(0)
+	} else {
+		val11 := func(hasher *proptools.Hasher) error {
+			if err := (*r.ModuleInfoJSON).CustomHash(hasher); err != nil {
+				return err
+			}
+			return nil
+		}
+		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.ModuleInfoJSON)), val11); err != nil {
+			return err
+		}
+	}
+	hasher.WriteString(":.*unstableInfo")
+	val12 := r.UnstableInfo == nil
+	if val12 {
+		hasher.WriteByte(0)
+	} else {
+		val13 := func(hasher *proptools.Hasher) error {
+			if err := (*r.UnstableInfo).CustomHash(hasher); err != nil {
+				return err
+			}
+			return nil
+		}
+		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.UnstableInfo)), val13); err != nil {
+			return err
+		}
+	}
+	hasher.WriteString(":.*LicenseMetadataInfo")
+	val14 := r.LicenseMetadata == nil
+	if val14 {
+		hasher.WriteByte(0)
+	} else {
+		val15 := func(hasher *proptools.Hasher) error {
+			if err := (*r.LicenseMetadata).CustomHash(hasher); err != nil {
+				return err
+			}
+			return nil
+		}
+		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.LicenseMetadata)), val15); err != nil {
+			return err
+		}
+	}
+	hasher.WriteString(":.*LicensesInfo")
+	val16 := r.Licenses == nil
+	if val16 {
+		hasher.WriteByte(0)
+	} else {
+		val17 := func(hasher *proptools.Hasher) error {
+			if err := (*r.Licenses).CustomHash(hasher); err != nil {
+				return err
+			}
+			return nil
+		}
+		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.Licenses)), val17); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -7177,6 +7302,66 @@ func (r *CommonModuleInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) er
 	err = gobtools.DecodeBool(buf, &r.IsNonPrimaryImageVariation)
 	if err != nil {
 		return err
+	}
+
+	var val63 bool
+	if err = gobtools.DecodeBool(buf, &val63); err != nil {
+		return err
+	}
+	if !val63 {
+		var val62 ComplianceMetadataInfo
+		if err = val62.Decode(ctx, buf); err != nil {
+			return err
+		}
+		r.ComplianceMetadata = &val62
+	}
+
+	var val66 bool
+	if err = gobtools.DecodeBool(buf, &val66); err != nil {
+		return err
+	}
+	if !val66 {
+		var val65 ModuleInfoJSONInfo
+		if err = val65.Decode(ctx, buf); err != nil {
+			return err
+		}
+		r.ModuleInfoJSON = &val65
+	}
+
+	var val69 bool
+	if err = gobtools.DecodeBool(buf, &val69); err != nil {
+		return err
+	}
+	if !val69 {
+		var val68 unstableInfo
+		if err = val68.Decode(ctx, buf); err != nil {
+			return err
+		}
+		r.UnstableInfo = &val68
+	}
+
+	var val72 bool
+	if err = gobtools.DecodeBool(buf, &val72); err != nil {
+		return err
+	}
+	if !val72 {
+		var val71 LicenseMetadataInfo
+		if err = val71.Decode(ctx, buf); err != nil {
+			return err
+		}
+		r.LicenseMetadata = &val71
+	}
+
+	var val75 bool
+	if err = gobtools.DecodeBool(buf, &val75); err != nil {
+		return err
+	}
+	if !val75 {
+		var val74 LicensesInfo
+		if err = val74.Decode(ctx, buf); err != nil {
+			return err
+		}
+		r.Licenses = &val74
 	}
 
 	return err
