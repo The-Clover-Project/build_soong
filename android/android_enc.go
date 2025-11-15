@@ -6743,12 +6743,52 @@ func (r CommonModuleInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) err
 			return err
 		}
 	}
+
+	val13 := r.Phonies == nil
+	if err = gobtools.EncodeBool(buf, val13); err != nil {
+		return err
+	}
+	if !val13 {
+		if err = (*r.Phonies).Encode(ctx, buf); err != nil {
+			return err
+		}
+	}
+
+	val14 := r.OutputFiles == nil
+	if err = gobtools.EncodeBool(buf, val14); err != nil {
+		return err
+	}
+	if !val14 {
+		if err = (*r.OutputFiles).Encode(ctx, buf); err != nil {
+			return err
+		}
+	}
+
+	val15 := r.ModuleBuildTargets == nil
+	if err = gobtools.EncodeBool(buf, val15); err != nil {
+		return err
+	}
+	if !val15 {
+		if err = (*r.ModuleBuildTargets).Encode(ctx, buf); err != nil {
+			return err
+		}
+	}
+
+	val16 := r.HostToolProvider == nil
+	if err = gobtools.EncodeBool(buf, val16); err != nil {
+		return err
+	}
+	if !val16 {
+		if err = (*r.HostToolProvider).Encode(ctx, buf); err != nil {
+			return err
+		}
+	}
 	return err
 }
 
 func (r CommonModuleInfo) CustomHash(hasher *proptools.Hasher) error {
 	hasher.WriteString(":android.CommonModuleInfo")
-	hasher.WriteInt(45)
+	hasher.WriteInt(49)
 	hasher.WriteString(":.bool")
 	if r.Enabled {
 		hasher.WriteByte(1)
@@ -7030,6 +7070,66 @@ func (r CommonModuleInfo) CustomHash(hasher *proptools.Hasher) error {
 			return nil
 		}
 		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.Licenses)), val17); err != nil {
+			return err
+		}
+	}
+	hasher.WriteString(":.*PhonyInfo")
+	val18 := r.Phonies == nil
+	if val18 {
+		hasher.WriteByte(0)
+	} else {
+		val19 := func(hasher *proptools.Hasher) error {
+			if err := (*r.Phonies).CustomHash(hasher); err != nil {
+				return err
+			}
+			return nil
+		}
+		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.Phonies)), val19); err != nil {
+			return err
+		}
+	}
+	hasher.WriteString(":.*OutputFilesInfo")
+	val20 := r.OutputFiles == nil
+	if val20 {
+		hasher.WriteByte(0)
+	} else {
+		val21 := func(hasher *proptools.Hasher) error {
+			if err := (*r.OutputFiles).CustomHash(hasher); err != nil {
+				return err
+			}
+			return nil
+		}
+		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.OutputFiles)), val21); err != nil {
+			return err
+		}
+	}
+	hasher.WriteString(":.*ModuleBuildTargetsInfo")
+	val22 := r.ModuleBuildTargets == nil
+	if val22 {
+		hasher.WriteByte(0)
+	} else {
+		val23 := func(hasher *proptools.Hasher) error {
+			if err := (*r.ModuleBuildTargets).CustomHash(hasher); err != nil {
+				return err
+			}
+			return nil
+		}
+		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.ModuleBuildTargets)), val23); err != nil {
+			return err
+		}
+	}
+	hasher.WriteString(":.*HostToolProviderInfo")
+	val24 := r.HostToolProvider == nil
+	if val24 {
+		hasher.WriteByte(0)
+	} else {
+		val25 := func(hasher *proptools.Hasher) error {
+			if err := (*r.HostToolProvider).CustomHash(hasher); err != nil {
+				return err
+			}
+			return nil
+		}
+		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.HostToolProvider)), val25); err != nil {
 			return err
 		}
 	}
@@ -7362,6 +7462,54 @@ func (r *CommonModuleInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) er
 			return err
 		}
 		r.Licenses = &val74
+	}
+
+	var val78 bool
+	if err = gobtools.DecodeBool(buf, &val78); err != nil {
+		return err
+	}
+	if !val78 {
+		var val77 PhonyInfo
+		if err = val77.Decode(ctx, buf); err != nil {
+			return err
+		}
+		r.Phonies = &val77
+	}
+
+	var val81 bool
+	if err = gobtools.DecodeBool(buf, &val81); err != nil {
+		return err
+	}
+	if !val81 {
+		var val80 OutputFilesInfo
+		if err = val80.Decode(ctx, buf); err != nil {
+			return err
+		}
+		r.OutputFiles = &val80
+	}
+
+	var val84 bool
+	if err = gobtools.DecodeBool(buf, &val84); err != nil {
+		return err
+	}
+	if !val84 {
+		var val83 ModuleBuildTargetsInfo
+		if err = val83.Decode(ctx, buf); err != nil {
+			return err
+		}
+		r.ModuleBuildTargets = &val83
+	}
+
+	var val87 bool
+	if err = gobtools.DecodeBool(buf, &val87); err != nil {
+		return err
+	}
+	if !val87 {
+		var val86 HostToolProviderInfo
+		if err = val86.Decode(ctx, buf); err != nil {
+			return err
+		}
+		r.HostToolProvider = &val86
 	}
 
 	return err

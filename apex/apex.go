@@ -639,7 +639,7 @@ func newApexFile(ctx android.BaseModuleContext, builtFile android.Path, androidM
 		module:              module,
 	}
 	if !module.IsNil() {
-		if buildTargetsInfo, ok := android.OtherModuleProvider(ctx, module, android.ModuleBuildTargetsProvider); ok {
+		if buildTargetsInfo := android.GetModuleBuildTargets(ctx, module); buildTargetsInfo != nil {
 			ret.checkbuildTarget = buildTargetsInfo.CheckbuildTarget
 		}
 		ret.moduleDir = ctx.OtherModuleDir(module)

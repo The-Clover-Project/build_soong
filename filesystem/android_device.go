@@ -474,8 +474,8 @@ func (a *androidDevice) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		}
 	}
 	ctx.VisitDirectDepsProxyWithTag(filesystemDepTag, func(m android.ModuleProxy) {
-		imageOutput, ok := android.OtherModuleProvider(ctx, m, android.OutputFilesProvider)
-		if !ok {
+		imageOutput := android.GetOutputFiles(ctx, m)
+		if imageOutput == nil {
 			ctx.ModuleErrorf("Partition module %s doesn't set OutputfilesProvider", m.Name())
 		}
 		if len(imageOutput.DefaultOutputFiles) != 1 {
@@ -1203,8 +1203,11 @@ func (a *androidDevice) copyMetadataToTargetZip(ctx android.ModuleContext, build
 	builder.Command().Textf("mkdir -p %s/META", targetFilesDir.String())
 	if proptools.Bool(a.deviceProps.Ab_ota_updater) {
 		ctx.VisitDirectDepsProxyWithTag(targetFilesMetadataDepTag, func(child android.ModuleProxy) {
-			info, _ := android.OtherModuleProvider(ctx, child, android.OutputFilesProvider)
-			builder.Command().Textf("cp").Inputs(info.DefaultOutputFiles).Textf(" %s/META/", targetFilesDir.String())
+			var defFiles android.Paths
+			if info := android.GetOutputFiles(ctx, child); info != nil {
+				defFiles = info.DefaultOutputFiles
+			}
+			builder.Command().Textf("cp").Inputs(defFiles).Textf(" %s/META/", targetFilesDir.String())
 		})
 		builder.Command().Textf("cp").Input(android.PathForSource(ctx, "external/zucchini/version_info.h")).Textf(" %s/META/zucchini_config.txt", targetFilesDir.String())
 		builder.Command().Textf("cp").Input(android.PathForSource(ctx, "system/update_engine/update_engine.conf")).Textf(" %s/META/update_engine_config.txt", targetFilesDir.String())
@@ -1240,8 +1243,8 @@ func (a *androidDevice) copyMetadataToTargetZip(ctx android.ModuleContext, build
 		builder.Command().Textf("cp").Input(abOtaPostInstallConfigFilePath).Textf(" %s/META/", targetFilesDir)
 		// selinuxfc
 		fileContextsModule := ctx.GetDirectDepProxyWithTag("file_contexts_bin_gen", fileContextsDepTag)
-		outputFiles, ok := android.OtherModuleProvider(ctx, fileContextsModule, android.OutputFilesProvider)
-		if !ok || len(outputFiles.DefaultOutputFiles) != 1 {
+		outputFiles := android.GetOutputFiles(ctx, fileContextsModule)
+		if outputFiles == nil || len(outputFiles.DefaultOutputFiles) != 1 {
 			ctx.ModuleErrorf("Expected exactly 1 output file from file_contexts_bin_gen")
 		} else {
 			selinuxFc := outputFiles.DefaultOutputFiles[0]
