@@ -304,6 +304,9 @@ func (module *SdkLibrary) createDroidstubs(mctx android.DefaultableHookContext, 
 	// check against the not-yet-release API
 	props.Check_api.Current.Api_file = proptools.StringPtr(currentApiFileName)
 	props.Check_api.Current.Removed_api_file = proptools.StringPtr(removedApiFileName)
+	if !module.ModuleBuildFromTextStubs() {
+		props.Check_api.Current.Default_in_droid = proptools.BoolPtr(true)
+	}
 
 	// Although a latest API is always provided it may not be a suitable one for
 	// comparing against, e.g. because the API surface does not require backwards

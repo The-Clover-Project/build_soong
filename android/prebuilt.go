@@ -23,6 +23,8 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
+//go:generate go run ../../blueprint/gobtools/codegen
+
 // This file implements common functionality for handling modules that may exist as prebuilts,
 // source, or both.
 
@@ -587,6 +589,7 @@ func PrebuiltSelectModuleMutator(ctx BottomUpMutatorContext) {
 
 var PrebuiltInfoProvider = blueprint.NewMutatorProvider[PrebuiltInfo]("prebuilt_provider")
 
+// @auto-generate: gob
 type PrebuiltInfo struct {
 	IsPrebuilt           bool
 	PrebuiltSourceExists bool

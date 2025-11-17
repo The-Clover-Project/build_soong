@@ -241,7 +241,7 @@ type ModuleContext interface {
 	ExtraModuleInfoJSON() *ModuleInfoJSON
 
 	// SetOutputFiles stores the outputFiles to outputFiles property, which is used
-	// to set the OutputFilesProvider later.
+	// to set the OutputFiles in CommonModuleInfo later.
 	SetOutputFiles(outputFiles Paths, tag string)
 
 	GetOutputFiles() OutputFilesInfo
@@ -306,7 +306,7 @@ type moduleContext struct {
 	module           Module
 	phonies          map[string]Paths
 	// outputFiles stores the output of a module by tag and is used to set
-	// the OutputFilesProvider in GenerateBuildActions
+	// the OutputFiles in CommonModuleInfo in GenerateBuildActions
 	outputFiles OutputFilesInfo
 
 	TransitiveInstallFiles depset.DepSet[InstallPath]

@@ -5,7 +5,10 @@ package build_flags
 import (
 	"android/soong/android"
 	"bytes"
+	"fmt"
 	"github.com/google/blueprint/gobtools"
+	"github.com/google/blueprint/proptools"
+	"reflect"
 )
 
 // begin of declarations.go
@@ -24,6 +27,62 @@ func (r BuildFlagDeclarationsProviderData) Encode(ctx gobtools.EncContext, buf *
 		return err
 	}
 	return err
+}
+
+func (r BuildFlagDeclarationsProviderData) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":build_flags.BuildFlagDeclarationsProviderData")
+	hasher.WriteInt(2)
+	hasher.WriteString(":build_flags.android.WritablePath")
+	val1 := r.IntermediateCacheOutputPath == nil
+	if val1 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.IntermediateCacheOutputPath); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val2 := r.IntermediateCacheOutputPath == nil
+				if val2 {
+					hasher.WriteByte(0)
+				} else {
+					val3 := func(hasher *proptools.Hasher) error {
+						return r.IntermediateCacheOutputPath.(proptools.CustomHash).CustomHash(hasher)
+					}
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val3); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.IntermediateCacheOutputPath.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":build_flags.android.WritablePath")
+	val4 := r.IntermediateDumpOutputPath == nil
+	if val4 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.IntermediateDumpOutputPath); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val5 := r.IntermediateDumpOutputPath == nil
+				if val5 {
+					hasher.WriteByte(0)
+				} else {
+					val6 := func(hasher *proptools.Hasher) error {
+						return r.IntermediateDumpOutputPath.(proptools.CustomHash).CustomHash(hasher)
+					}
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val6); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.IntermediateDumpOutputPath.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	return nil
 }
 
 func (r *BuildFlagDeclarationsProviderData) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
@@ -87,6 +146,45 @@ func (r ReleaseConfigContributionsProviderData) Encode(ctx gobtools.EncContext, 
 	return err
 }
 
+func (r ReleaseConfigContributionsProviderData) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":build_flags.ReleaseConfigContributionsProviderData")
+	hasher.WriteInt(2)
+	if err := r.ContributionDir.CustomHash(hasher); err != nil {
+		return err
+	}
+	hasher.WriteString(":build_flags.android.Paths")
+	hasher.WriteString(":.[]Path")
+	hasher.WriteInt(len(r.ContributionPaths))
+	for val1 := 0; val1 < len(r.ContributionPaths); val1++ {
+		hasher.WriteString("android/soong/android:android.Path")
+		val2 := r.ContributionPaths[val1] == nil
+		if val2 {
+			hasher.WriteByte(0)
+		} else {
+			if v := reflect.ValueOf(r.ContributionPaths[val1]); v.Kind() == reflect.Ptr {
+				if v.IsNil() {
+					panic(fmt.Errorf("nil pointer is not supported in interface"))
+				} else {
+					val3 := r.ContributionPaths[val1] == nil
+					if val3 {
+						hasher.WriteByte(0)
+					} else {
+						val4 := func(hasher *proptools.Hasher) error {
+							return r.ContributionPaths[val1].(proptools.CustomHash).CustomHash(hasher)
+						}
+						if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val4); err != nil {
+							return err
+						}
+					}
+				}
+			} else {
+				r.ContributionPaths[val1].(proptools.CustomHash).CustomHash(hasher)
+			}
+		}
+	}
+	return nil
+}
+
 func (r *ReleaseConfigContributionsProviderData) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
@@ -140,6 +238,112 @@ func (r ReleaseConfigProviderData) Encode(ctx gobtools.EncContext, buf *bytes.Bu
 		return err
 	}
 	return err
+}
+
+func (r ReleaseConfigProviderData) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":build_flags.ReleaseConfigProviderData")
+	hasher.WriteInt(4)
+	hasher.WriteString(":build_flags.android.Path")
+	val1 := r.BuildFlagsProductJson == nil
+	if val1 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.BuildFlagsProductJson); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val2 := r.BuildFlagsProductJson == nil
+				if val2 {
+					hasher.WriteByte(0)
+				} else {
+					val3 := func(hasher *proptools.Hasher) error {
+						return r.BuildFlagsProductJson.(proptools.CustomHash).CustomHash(hasher)
+					}
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val3); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.BuildFlagsProductJson.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":build_flags.android.Path")
+	val4 := r.BuildFlagsSystemJson == nil
+	if val4 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.BuildFlagsSystemJson); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val5 := r.BuildFlagsSystemJson == nil
+				if val5 {
+					hasher.WriteByte(0)
+				} else {
+					val6 := func(hasher *proptools.Hasher) error {
+						return r.BuildFlagsSystemJson.(proptools.CustomHash).CustomHash(hasher)
+					}
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val6); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.BuildFlagsSystemJson.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":build_flags.android.Path")
+	val7 := r.BuildFlagsSystemExtJson == nil
+	if val7 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.BuildFlagsSystemExtJson); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val8 := r.BuildFlagsSystemExtJson == nil
+				if val8 {
+					hasher.WriteByte(0)
+				} else {
+					val9 := func(hasher *proptools.Hasher) error {
+						return r.BuildFlagsSystemExtJson.(proptools.CustomHash).CustomHash(hasher)
+					}
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val9); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.BuildFlagsSystemExtJson.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":build_flags.android.Path")
+	val10 := r.BuildFlagsVendorJson == nil
+	if val10 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.BuildFlagsVendorJson); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val11 := r.BuildFlagsVendorJson == nil
+				if val11 {
+					hasher.WriteByte(0)
+				} else {
+					val12 := func(hasher *proptools.Hasher) error {
+						return r.BuildFlagsVendorJson.(proptools.CustomHash).CustomHash(hasher)
+					}
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val12); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.BuildFlagsVendorJson.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	return nil
 }
 
 func (r *ReleaseConfigProviderData) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
@@ -205,6 +409,112 @@ func (r AllReleaseConfigsProviderData) Encode(ctx gobtools.EncContext, buf *byte
 		return err
 	}
 	return err
+}
+
+func (r AllReleaseConfigsProviderData) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":build_flags.AllReleaseConfigsProviderData")
+	hasher.WriteInt(4)
+	hasher.WriteString(":build_flags.android.Path")
+	val1 := r.AllReleaseConfigsDb == nil
+	if val1 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.AllReleaseConfigsDb); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val2 := r.AllReleaseConfigsDb == nil
+				if val2 {
+					hasher.WriteByte(0)
+				} else {
+					val3 := func(hasher *proptools.Hasher) error {
+						return r.AllReleaseConfigsDb.(proptools.CustomHash).CustomHash(hasher)
+					}
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val3); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.AllReleaseConfigsDb.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":build_flags.android.Path")
+	val4 := r.AllReleaseConfigsTextproto == nil
+	if val4 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.AllReleaseConfigsTextproto); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val5 := r.AllReleaseConfigsTextproto == nil
+				if val5 {
+					hasher.WriteByte(0)
+				} else {
+					val6 := func(hasher *proptools.Hasher) error {
+						return r.AllReleaseConfigsTextproto.(proptools.CustomHash).CustomHash(hasher)
+					}
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val6); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.AllReleaseConfigsTextproto.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":build_flags.android.Path")
+	val7 := r.AllReleaseConfigsJson == nil
+	if val7 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.AllReleaseConfigsJson); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val8 := r.AllReleaseConfigsJson == nil
+				if val8 {
+					hasher.WriteByte(0)
+				} else {
+					val9 := func(hasher *proptools.Hasher) error {
+						return r.AllReleaseConfigsJson.(proptools.CustomHash).CustomHash(hasher)
+					}
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val9); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.AllReleaseConfigsJson.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":build_flags.android.Path")
+	val10 := r.InheritanceGraphDot == nil
+	if val10 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.InheritanceGraphDot); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val11 := r.InheritanceGraphDot == nil
+				if val11 {
+					hasher.WriteByte(0)
+				} else {
+					val12 := func(hasher *proptools.Hasher) error {
+						return r.InheritanceGraphDot.(proptools.CustomHash).CustomHash(hasher)
+					}
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val12); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.InheritanceGraphDot.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	return nil
 }
 
 func (r *AllReleaseConfigsProviderData) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {

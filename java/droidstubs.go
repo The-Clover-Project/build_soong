@@ -396,6 +396,21 @@ func (d *Droidstubs) DocZip(stubsType StubsType) (ret android.Path, err error) {
 	return ret, err
 }
 
+func (d *Droidstubs) MetadataZip(stubsType StubsType) (ret android.Path, err error) {
+	switch stubsType {
+	case Everything:
+		ret, err = d.everythingArtifacts.metadataZip, nil
+	case Exportable:
+		ret, err = d.exportableArtifacts.metadataZip, nil
+	default:
+		ret, err = nil, fmt.Errorf("metadata zip not supported for the stub type %s", stubsType.String())
+	}
+	if ret == nil && err == nil {
+		err = fmt.Errorf("metadata zip is null for the stub type %s", stubsType.String())
+	}
+	return ret, err
+}
+
 func (d *Droidstubs) RemovedApiFilePath(stubsType StubsType) (ret android.Path, err error) {
 	switch stubsType {
 	case Everything:
@@ -998,8 +1013,12 @@ func (d *Droidstubs) commonMetalavaStubCmd(ctx android.ModuleContext, rule *andr
 }
 
 // Sandbox rule for generating the everything stubs and other artifacts
-func (d *Droidstubs) everythingStubCmd(ctx android.ModuleContext, params stubsCommandConfigParams, rule *android.RuleBuilder) *android.RuleBuilderCommand {
+func (d *Droidstubs) everythingStubCmd(ctx android.ModuleContext, params stubsCommandConfigParams) *android.RuleBuilderCommand {
 	srcJarDir := android.PathForModuleOut(ctx, Everything.String(), "srcjars")
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
+	rule.Sbox(android.PathForModuleOut(ctx, Everything.String()),
+		android.PathForModuleOut(ctx, "metalava.sbox.textproto")).
+		SandboxInputs()
 
 	var stubsDir android.OptionalPath
 	if params.generateStubs {
@@ -1075,6 +1094,8 @@ func (d *Droidstubs) everythingStubCmd(ctx android.ModuleContext, params stubsCo
 	}
 
 	zipSyncCleanupCmd(rule, srcJarDir)
+
+	rule.Build("metalava", "metalava merged")
 
 	return everythingStubsCmd
 }
@@ -1314,6 +1335,9 @@ func (d *Droidstubs) setPhonyRules(ctx android.ModuleContext) {
 	if d.checkCurrentApiTimestamp != nil {
 		ctx.Phony(fmt.Sprintf("%s-check-current-api", d.Name()), d.checkCurrentApiTimestamp)
 		ctx.Phony("checkapi", d.checkCurrentApiTimestamp)
+		if proptools.BoolDefault(d.properties.Check_api.Current.Default_in_droid, false) {
+			ctx.Phony("droidcore", d.checkCurrentApiTimestamp)
+		}
 	}
 	if d.checkLastReleasedApiTimestamp != nil {
 		ctx.Phony(fmt.Sprintf("%s-check-last-released-api", d.Name()), d.checkLastReleasedApiTimestamp)
@@ -1360,12 +1384,8 @@ func (d *Droidstubs) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		validatingNullability: validatingNullability,
 	}
 	stubCmdParams.stubsType = Everything
-	everythingStubsRule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
-	everythingStubsRule.Sbox(android.PathForModuleOut(ctx, Everything.String()),
-		android.PathForModuleOut(ctx, "metalava.sbox.textproto")).
-		SandboxInputs()
 	// Create default (i.e. "everything" stubs) rule for metalava
-	everythingStubsCmd := d.everythingStubCmd(ctx, stubCmdParams, everythingStubsRule)
+	d.everythingStubCmd(ctx, stubCmdParams)
 
 	// The module generates "exportable" (and "runtime" eventually) stubs regardless of whether
 	// aconfig_declarations property is defined or not. If the property is not defined, the module simply
@@ -1477,10 +1497,6 @@ func (d *Droidstubs) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		}
 		rule.Build("metalavaCurrentApiCheck", "check current API")
 
-		if everythingStubsCmd != nil {
-			everythingStubsCmd.Validation(d.checkCurrentApiTimestamp)
-		}
-
 		ctx.CheckbuildFile(d.checkCurrentApiTimestamp)
 
 		android.SetProvider(ctx, UpdateApiProvider, UpdateApiInfo{
@@ -1505,8 +1521,6 @@ func (d *Droidstubs) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	if removedApiFile != nil {
 		droidInfo.CheckedInRemovedApiFile = removedApiFile
 	}
-
-	everythingStubsRule.Build("metalava", "metalava merged")
 
 	setDroidInfo(ctx, d, &droidInfo.EverythingStubsInfo, Everything)
 	setDroidInfo(ctx, d, &droidInfo.ExportableStubsInfo, Exportable)
@@ -1580,6 +1594,7 @@ func (d *Droidstubs) setOutputFiles(ctx android.ModuleContext) {
 	addOutputFiles(".removed-api.txt", d.RemovedApiFilePath)
 	addOutputFiles(".annotations.zip", d.AnnotationsZip)
 	addOutputFiles(".api_versions.xml", d.ApiVersionsXmlFilePath)
+	addOutputFiles(".metadata.zip", d.MetadataZip)
 }
 
 func (d *Droidstubs) createApiContribution(ctx android.DefaultableHookContext) {

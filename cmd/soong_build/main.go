@@ -209,7 +209,7 @@ func incrementalValid(config android.Config, configCacheFile string) (*ConfigCac
 		}
 	}
 
-	newConfigCache.EnvDepsHash, err = proptools.CalculateHash(data)
+	newConfigCache.EnvDepsHash, err = proptools.CalculateHashReflection(data)
 	newConfigCache.ProductVariableFileTimestamp = getFileTimestamp(filepath.Join(topDir, cmdlineArgs.SoongVariables))
 	newConfigCache.SoongBuildFileTimestamp = getFileTimestamp(filepath.Join(topDir, config.HostToolDir(), "soong_build"))
 	//TODO(b/344917959): out/soong/dexpreopt.config might need to be checked as well.
@@ -368,7 +368,7 @@ func main() {
 	if ctx.GetIncrementalEnabled() {
 		data, err := shared.EnvFileContents(configuration.EnvDeps())
 		maybeQuit(err, "")
-		configCache.EnvDepsHash, err = proptools.CalculateHash(data)
+		configCache.EnvDepsHash, err = proptools.CalculateHashReflection(data)
 		maybeQuit(err, "")
 		writeConfigCache(configCache, configFile)
 	}

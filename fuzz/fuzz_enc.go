@@ -5,7 +5,11 @@ package fuzz
 import (
 	"android/soong/android"
 	"bytes"
+	"fmt"
 	"github.com/google/blueprint/gobtools"
+	"github.com/google/blueprint/proptools"
+	"reflect"
+	"unsafe"
 )
 
 // begin of fuzz_common.go
@@ -53,6 +57,48 @@ func (r FuzzConfigInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error
 		return err
 	}
 	return err
+}
+
+func (r FuzzConfigInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":fuzz.FuzzConfigInfo")
+	hasher.WriteInt(9)
+	hasher.WriteString(":fuzz.Vector")
+	hasher.WriteString(":.string")
+	hasher.WriteString(string(r.Vector))
+	hasher.WriteString(":fuzz.ServicePrivilege")
+	hasher.WriteString(":.string")
+	hasher.WriteString(string(r.ServicePrivilege))
+	hasher.WriteString(":fuzz.UserData")
+	hasher.WriteString(":.string")
+	hasher.WriteString(string(r.Users))
+	hasher.WriteString(":fuzz.FuzzedCodeUsage")
+	hasher.WriteString(":.string")
+	hasher.WriteString(string(r.FuzzedCodeUsage))
+	hasher.WriteString(":fuzz.AutomaticallyRouteTo")
+	hasher.WriteString(":.string")
+	hasher.WriteString(string(r.AutomaticallyRouteTo))
+	hasher.WriteString(":fuzz.UsePlatformLibs")
+	hasher.WriteString(":.string")
+	hasher.WriteString(string(r.UsePlatformLibs))
+	hasher.WriteString(":.bool")
+	if r.FuzzOnHaikuDevice {
+		hasher.WriteByte(1)
+	} else {
+		hasher.WriteByte(0)
+	}
+	hasher.WriteString(":.bool")
+	if r.FuzzOnHaikuHost {
+		hasher.WriteByte(1)
+	} else {
+		hasher.WriteByte(0)
+	}
+	hasher.WriteString(":.bool")
+	if r.UseForPresubmit {
+		hasher.WriteByte(1)
+	} else {
+		hasher.WriteByte(0)
+	}
+	return nil
 }
 
 func (r *FuzzConfigInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
@@ -175,6 +221,129 @@ func (r FuzzPackagedModuleInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffe
 		}
 	}
 	return err
+}
+
+func (r FuzzPackagedModuleInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":fuzz.FuzzPackagedModuleInfo")
+	hasher.WriteInt(5)
+	hasher.WriteString(":.*FuzzConfigInfo")
+	val1 := r.FuzzConfig == nil
+	if val1 {
+		hasher.WriteByte(0)
+	} else {
+		val2 := func(hasher *proptools.Hasher) error {
+			if err := (*r.FuzzConfig).CustomHash(hasher); err != nil {
+				return err
+			}
+			return nil
+		}
+		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.FuzzConfig)), val2); err != nil {
+			return err
+		}
+	}
+	hasher.WriteString(":fuzz.android.Path")
+	val3 := r.Dictionary == nil
+	if val3 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.Dictionary); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val4 := r.Dictionary == nil
+				if val4 {
+					hasher.WriteByte(0)
+				} else {
+					val5 := func(hasher *proptools.Hasher) error { return r.Dictionary.(proptools.CustomHash).CustomHash(hasher) }
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val5); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.Dictionary.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":fuzz.android.Paths")
+	hasher.WriteString(":.[]Path")
+	hasher.WriteInt(len(r.Corpus))
+	for val6 := 0; val6 < len(r.Corpus); val6++ {
+		hasher.WriteString("android/soong/android:android.Path")
+		val7 := r.Corpus[val6] == nil
+		if val7 {
+			hasher.WriteByte(0)
+		} else {
+			if v := reflect.ValueOf(r.Corpus[val6]); v.Kind() == reflect.Ptr {
+				if v.IsNil() {
+					panic(fmt.Errorf("nil pointer is not supported in interface"))
+				} else {
+					val8 := r.Corpus[val6] == nil
+					if val8 {
+						hasher.WriteByte(0)
+					} else {
+						val9 := func(hasher *proptools.Hasher) error { return r.Corpus[val6].(proptools.CustomHash).CustomHash(hasher) }
+						if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val9); err != nil {
+							return err
+						}
+					}
+				}
+			} else {
+				r.Corpus[val6].(proptools.CustomHash).CustomHash(hasher)
+			}
+		}
+	}
+	hasher.WriteString(":fuzz.android.Path")
+	val10 := r.Config == nil
+	if val10 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.Config); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val11 := r.Config == nil
+				if val11 {
+					hasher.WriteByte(0)
+				} else {
+					val12 := func(hasher *proptools.Hasher) error { return r.Config.(proptools.CustomHash).CustomHash(hasher) }
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val12); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.Config.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":fuzz.android.Paths")
+	hasher.WriteString(":.[]Path")
+	hasher.WriteInt(len(r.Data))
+	for val13 := 0; val13 < len(r.Data); val13++ {
+		hasher.WriteString("android/soong/android:android.Path")
+		val14 := r.Data[val13] == nil
+		if val14 {
+			hasher.WriteByte(0)
+		} else {
+			if v := reflect.ValueOf(r.Data[val13]); v.Kind() == reflect.Ptr {
+				if v.IsNil() {
+					panic(fmt.Errorf("nil pointer is not supported in interface"))
+				} else {
+					val15 := r.Data[val13] == nil
+					if val15 {
+						hasher.WriteByte(0)
+					} else {
+						val16 := func(hasher *proptools.Hasher) error { return r.Data[val13].(proptools.CustomHash).CustomHash(hasher) }
+						if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val16); err != nil {
+							return err
+						}
+					}
+				}
+			} else {
+				r.Data[val13].(proptools.CustomHash).CustomHash(hasher)
+			}
+		}
+	}
+	return nil
 }
 
 func (r *FuzzPackagedModuleInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {

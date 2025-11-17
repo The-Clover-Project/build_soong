@@ -16,6 +16,8 @@ package testconfigs
 
 import "android/soong/android"
 
+var pctx = android.NewPackageContext("android/soong/testconfigs")
+
 func init() {
 	RegisterTestConfigComponents(android.InitRegistrationContext)
 }

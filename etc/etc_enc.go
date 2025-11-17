@@ -5,6 +5,7 @@ package etc
 import (
 	"bytes"
 	"github.com/google/blueprint/gobtools"
+	"github.com/google/blueprint/proptools"
 )
 
 // begin of prebuilt_etc.go
@@ -24,6 +25,16 @@ func (r PrebuiltEtcInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) erro
 		return err
 	}
 	return err
+}
+
+func (r PrebuiltEtcInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":etc.PrebuiltEtcInfo")
+	hasher.WriteInt(2)
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.BaseDir)
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.SubDir)
+	return nil
 }
 
 func (r *PrebuiltEtcInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
@@ -66,6 +77,18 @@ func (r ProductCopyFilesModuleInfo) Encode(ctx gobtools.EncContext, buf *bytes.B
 		}
 	}
 	return err
+}
+
+func (r ProductCopyFilesModuleInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":etc.ProductCopyFilesModuleInfo")
+	hasher.WriteInt(1)
+	hasher.WriteString(":.[]string")
+	hasher.WriteInt(len(r.ProductCopyFileEntries))
+	for val1 := 0; val1 < len(r.ProductCopyFileEntries); val1++ {
+		hasher.WriteString(":.string")
+		hasher.WriteString(r.ProductCopyFileEntries[val1])
+	}
+	return nil
 }
 
 func (r *ProductCopyFilesModuleInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {

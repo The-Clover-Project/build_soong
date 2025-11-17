@@ -912,7 +912,7 @@ func VariableMutator(mctx BottomUpMutatorContext) {
 
 	variableValues := reflect.ValueOf(a.variableProperties).Elem().FieldByName("Product_variables")
 
-	productVariables := reflect.ValueOf(mctx.Config().productVariables)
+	productVariables := reflect.ValueOf(&mctx.Config().productVariables).Elem()
 
 	for i := 0; i < variableValues.NumField(); i++ {
 		variableValue := variableValues.Field(i)

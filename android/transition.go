@@ -16,6 +16,8 @@ package android
 
 import "github.com/google/blueprint"
 
+//go:generate go run ../../blueprint/gobtools/codegen
+
 // TransitionMutator implements a top-down mechanism where a module tells its
 // direct dependencies what variation they should be built in but the dependency
 // has the final say.
@@ -296,6 +298,7 @@ func (v variationTransitionMutatorAdapter) TransitionInfoFromVariation(variation
 }
 
 // variationTransitionInfo is a blueprint.TransitionInfo that contains a single variation string.
+// @auto-generate: gob
 type variationTransitionInfo struct {
 	variation string
 }

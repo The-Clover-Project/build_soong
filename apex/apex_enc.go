@@ -5,7 +5,10 @@ package apex
 import (
 	"android/soong/android"
 	"bytes"
+	"fmt"
 	"github.com/google/blueprint/gobtools"
+	"github.com/google/blueprint/proptools"
+	"reflect"
 )
 
 // begin of apex_sdk_member.go
@@ -20,6 +23,15 @@ func (r apexSdkMemberType) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) er
 		return err
 	}
 	return err
+}
+
+func (r apexSdkMemberType) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":apex.apexSdkMemberType")
+	hasher.WriteInt(1)
+	if err := r.SdkMemberTypeBase.CustomHash(hasher); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (r *apexSdkMemberType) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
@@ -58,6 +70,60 @@ func (r ApexKeyInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	return err
 }
 
+func (r ApexKeyInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":apex.ApexKeyInfo")
+	hasher.WriteInt(2)
+	hasher.WriteString(":apex.android.Path")
+	val1 := r.PublicKeyFile == nil
+	if val1 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.PublicKeyFile); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val2 := r.PublicKeyFile == nil
+				if val2 {
+					hasher.WriteByte(0)
+				} else {
+					val3 := func(hasher *proptools.Hasher) error { return r.PublicKeyFile.(proptools.CustomHash).CustomHash(hasher) }
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val3); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.PublicKeyFile.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":apex.android.Path")
+	val4 := r.PrivateKeyFile == nil
+	if val4 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.PrivateKeyFile); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val5 := r.PrivateKeyFile == nil
+				if val5 {
+					hasher.WriteByte(0)
+				} else {
+					val6 := func(hasher *proptools.Hasher) error {
+						return r.PrivateKeyFile.(proptools.CustomHash).CustomHash(hasher)
+					}
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val6); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.PrivateKeyFile.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	return nil
+}
+
 func (r *ApexKeyInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
@@ -87,3 +153,44 @@ func (r ApexKeyInfo) GetTypeId() int16 {
 }
 
 // end of key.go
+
+// begin of prebuilt.go
+func init() {
+	ApexPrebuiltDepInSameApexCheckerGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ApexPrebuiltDepInSameApexChecker) })
+}
+
+func (r ApexPrebuiltDepInSameApexChecker) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = r.BaseDepInSameApexChecker.Encode(ctx, buf); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r ApexPrebuiltDepInSameApexChecker) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":apex.ApexPrebuiltDepInSameApexChecker")
+	hasher.WriteInt(1)
+	if err := r.BaseDepInSameApexChecker.CustomHash(hasher); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *ApexPrebuiltDepInSameApexChecker) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	if err = r.BaseDepInSameApexChecker.Decode(ctx, buf); err != nil {
+		return err
+	}
+
+	return err
+}
+
+var ApexPrebuiltDepInSameApexCheckerGobRegId int16
+
+func (r ApexPrebuiltDepInSameApexChecker) GetTypeId() int16 {
+	return ApexPrebuiltDepInSameApexCheckerGobRegId
+}
+
+// end of prebuilt.go

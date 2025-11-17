@@ -393,6 +393,12 @@ func (a *androidDevice) getInfoOnlyFsInfos(ctx android.ModuleContext) map[string
 			filesystemInfos["system_ext"] = info
 		}
 	}
+	if a.deviceProps.InfoPartitionProps.Product_partition_name != nil {
+		productPartition := ctx.GetDirectDepProxyWithTag(*a.deviceProps.InfoPartitionProps.Product_partition_name, filesystemDepTag)
+		if info, ok := android.OtherModuleProvider(ctx, productPartition, FilesystemProvider); ok {
+			filesystemInfos["product"] = info
+		}
+	}
 
 	return filesystemInfos
 }

@@ -5,6 +5,7 @@ package testconfigs
 import (
 	"bytes"
 	"github.com/google/blueprint/gobtools"
+	"github.com/google/blueprint/proptools"
 )
 
 // begin of test_execution_plan.go
@@ -47,6 +48,25 @@ func (r TestExecutionPlanProperties) Encode(ctx gobtools.EncContext, buf *bytes.
 		}
 	}
 	return err
+}
+
+func (r TestExecutionPlanProperties) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":testconfigs.TestExecutionPlanProperties")
+	hasher.WriteInt(2)
+	hasher.WriteString(":.[]ModuleProperties")
+	hasher.WriteInt(len(r.Tests))
+	for val1 := 0; val1 < len(r.Tests); val1++ {
+		if err := r.Tests[val1].CustomHash(hasher); err != nil {
+			return err
+		}
+	}
+	hasher.WriteString(":.[]string")
+	hasher.WriteInt(len(r.Args))
+	for val2 := 0; val2 < len(r.Args); val2++ {
+		hasher.WriteString(":.string")
+		hasher.WriteString(r.Args[val2])
+	}
+	return nil
 }
 
 func (r *TestExecutionPlanProperties) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
@@ -144,6 +164,32 @@ func (r ModuleProperties) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) err
 	return err
 }
 
+func (r ModuleProperties) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":testconfigs.ModuleProperties")
+	hasher.WriteInt(4)
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.Module)
+	hasher.WriteString(":.[]string")
+	hasher.WriteInt(len(r.Include))
+	for val1 := 0; val1 < len(r.Include); val1++ {
+		hasher.WriteString(":.string")
+		hasher.WriteString(r.Include[val1])
+	}
+	hasher.WriteString(":.[]string")
+	hasher.WriteInt(len(r.Exclude))
+	for val2 := 0; val2 < len(r.Exclude); val2++ {
+		hasher.WriteString(":.string")
+		hasher.WriteString(r.Exclude[val2])
+	}
+	hasher.WriteString(":.[]string")
+	hasher.WriteInt(len(r.Module_args))
+	for val3 := 0; val3 < len(r.Module_args); val3++ {
+		hasher.WriteString(":.string")
+		hasher.WriteString(r.Module_args[val3])
+	}
+	return nil
+}
+
 func (r *ModuleProperties) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
@@ -219,6 +265,17 @@ func (r TestExecutionPlanInlinable) Encode(ctx gobtools.EncContext, buf *bytes.B
 	return err
 }
 
+func (r TestExecutionPlanInlinable) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":testconfigs.TestExecutionPlanInlinable")
+	hasher.WriteInt(2)
+	if err := r.TestExecutionPlanProperties.CustomHash(hasher); err != nil {
+		return err
+	}
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.Name)
+	return nil
+}
+
 func (r *TestExecutionPlanInlinable) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
@@ -253,6 +310,12 @@ func (r TestSchedulingPlanProperties) Encode(ctx gobtools.EncContext, buf *bytes
 	return err
 }
 
+func (r TestSchedulingPlanProperties) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":testconfigs.TestSchedulingPlanProperties")
+	hasher.WriteInt(0)
+	return nil
+}
+
 func (r *TestSchedulingPlanProperties) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
@@ -276,6 +339,17 @@ func (r TestSchedulingPlanInlinable) Encode(ctx gobtools.EncContext, buf *bytes.
 		return err
 	}
 	return err
+}
+
+func (r TestSchedulingPlanInlinable) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":testconfigs.TestSchedulingPlanInlinable")
+	hasher.WriteInt(2)
+	if err := r.TestSchedulingPlanProperties.CustomHash(hasher); err != nil {
+		return err
+	}
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.Name)
+	return nil
 }
 
 func (r *TestSchedulingPlanInlinable) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
@@ -360,6 +434,33 @@ func (r TestTriggerProperties) Encode(ctx gobtools.EncContext, buf *bytes.Buffer
 		return err
 	}
 	return err
+}
+
+func (r TestTriggerProperties) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":testconfigs.TestTriggerProperties")
+	hasher.WriteInt(4)
+	hasher.WriteString(":.[]string")
+	hasher.WriteInt(len(r.Imports))
+	for val1 := 0; val1 < len(r.Imports); val1++ {
+		hasher.WriteString(":.string")
+		hasher.WriteString(r.Imports[val1])
+	}
+	hasher.WriteString(":.[]string")
+	hasher.WriteInt(len(r.File_patterns))
+	for val2 := 0; val2 < len(r.File_patterns); val2++ {
+		hasher.WriteString(":.string")
+		hasher.WriteString(r.File_patterns[val2])
+	}
+	hasher.WriteString(":.[]string")
+	hasher.WriteInt(len(r.Test_workflows))
+	for val3 := 0; val3 < len(r.Test_workflows); val3++ {
+		hasher.WriteString(":.string")
+		hasher.WriteString(r.Test_workflows[val3])
+	}
+	if err := r.TestTriggerInlineProperties.CustomHash(hasher); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (r *TestTriggerProperties) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
@@ -447,6 +548,22 @@ func (r TestTriggerInlineProperties) Encode(ctx gobtools.EncContext, buf *bytes.
 	return err
 }
 
+func (r TestTriggerInlineProperties) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":testconfigs.TestTriggerInlineProperties")
+	hasher.WriteInt(2)
+	if err := r.Scheduling_plan.CustomHash(hasher); err != nil {
+		return err
+	}
+	hasher.WriteString(":.[]ModuleProperties")
+	hasher.WriteInt(len(r.Tests))
+	for val1 := 0; val1 < len(r.Tests); val1++ {
+		if err := r.Tests[val1].CustomHash(hasher); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 func (r *TestTriggerInlineProperties) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
@@ -490,6 +607,17 @@ func (r TestTriggerInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) erro
 	return err
 }
 
+func (r TestTriggerInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":testconfigs.TestTriggerInfo")
+	hasher.WriteInt(2)
+	if err := r.TestTriggerProperties.CustomHash(hasher); err != nil {
+		return err
+	}
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.modulePath)
+	return nil
+}
+
 func (r *TestTriggerInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
@@ -529,6 +657,18 @@ func (r TestWorkflowProperties) Encode(ctx gobtools.EncContext, buf *bytes.Buffe
 		return err
 	}
 	return err
+}
+
+func (r TestWorkflowProperties) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":testconfigs.TestWorkflowProperties")
+	hasher.WriteInt(2)
+	if err := r.Execution_plan.CustomHash(hasher); err != nil {
+		return err
+	}
+	if err := r.Scheduling_plan.CustomHash(hasher); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (r *TestWorkflowProperties) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {

@@ -5,7 +5,10 @@ package bloaty
 import (
 	"android/soong/android"
 	"bytes"
+	"fmt"
 	"github.com/google/blueprint/gobtools"
+	"github.com/google/blueprint/proptools"
+	"reflect"
 )
 
 // begin of bloaty.go
@@ -31,6 +34,39 @@ func (r measuredFiles) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error 
 		}
 	}
 	return err
+}
+
+func (r measuredFiles) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":bloaty.measuredFiles")
+	hasher.WriteInt(1)
+	hasher.WriteString(":.[]android.WritablePath")
+	hasher.WriteInt(len(r.paths))
+	for val1 := 0; val1 < len(r.paths); val1++ {
+		hasher.WriteString(":bloaty.android.WritablePath")
+		val2 := r.paths[val1] == nil
+		if val2 {
+			hasher.WriteByte(0)
+		} else {
+			if v := reflect.ValueOf(r.paths[val1]); v.Kind() == reflect.Ptr {
+				if v.IsNil() {
+					panic(fmt.Errorf("nil pointer is not supported in interface"))
+				} else {
+					val3 := r.paths[val1] == nil
+					if val3 {
+						hasher.WriteByte(0)
+					} else {
+						val4 := func(hasher *proptools.Hasher) error { return r.paths[val1].(proptools.CustomHash).CustomHash(hasher) }
+						if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val4); err != nil {
+							return err
+						}
+					}
+				}
+			} else {
+				r.paths[val1].(proptools.CustomHash).CustomHash(hasher)
+			}
+		}
+	}
+	return nil
 }
 
 func (r *measuredFiles) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {

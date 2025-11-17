@@ -432,6 +432,7 @@ func (m *BootclasspathFragmentModule) GetDepInSameApexChecker() android.DepInSam
 	return BootclasspathFragmentDepInSameApexChecker{}
 }
 
+// @auto-generate: gob
 type BootclasspathFragmentDepInSameApexChecker struct {
 	android.BaseDepInSameApexChecker
 }

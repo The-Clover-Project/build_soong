@@ -320,7 +320,9 @@ func (b *bindgenDecorator) GenerateSource(ctx ModuleContext, deps PathDeps) andr
 	var cmd, cmdDesc string
 	if b.Properties.Custom_bindgen != "" {
 		m := ctx.GetDirectDepProxyWithTag(b.Properties.Custom_bindgen, customBindgenDepTag)
-		cmd = android.OtherModuleProviderOrDefault(ctx, m, android.HostToolProviderInfoProvider).HostToolPath.String()
+		if info := android.GetHostToolProvider(ctx, m); info != nil {
+			cmd = info.HostToolPath.String()
+		}
 		cmdDesc = b.Properties.Custom_bindgen
 	} else {
 		cmd = "$bindgenCmd"

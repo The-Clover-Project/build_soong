@@ -1748,6 +1748,7 @@ func (m *AARImport) GetDepInSameApexChecker() android.DepInSameApexChecker {
 	return AARImportDepInSameApexChecker{}
 }
 
+// @auto-generate: gob
 type AARImportDepInSameApexChecker struct {
 	android.BaseDepInSameApexChecker
 }

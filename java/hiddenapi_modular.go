@@ -1277,7 +1277,7 @@ func buildRuleToGenerateRemovedDexSignatures(ctx android.ModuleContext, suffix s
 // This information can come from two mechanisms
 // 1. New: Direct deps to _selected_ apexes. The apexes contain a ApexExportsInfo
 // 2. Legacy: An edge to java_sdk_library(_import) module. For prebuilt apexes, this serves as a hook and is populated by deapexers of prebuilt apxes
-// TODO: b/308174306 - Once all mainline modules have been flagged, drop (2)
+// TODO: b/458374506 - Once all mainline modules have been flagged, drop (2)
 func extractBootDexJarsFromModules(ctx android.ModuleContext, contents []android.ModuleProxy) bootDexJarByModule {
 	bootDexJars := bootDexJarByModule{}
 
@@ -1290,7 +1290,7 @@ func extractBootDexJarsFromModules(ctx android.ModuleContext, contents []android
 		}
 	}
 
-	// TODO - b/308174306: Drop the legacy mechanism
+	// TODO - b/458374506: Drop the legacy mechanism
 	for _, module := range contents {
 		if _, exists := bootDexJars[android.RemoveOptionalPrebuiltPrefix(module.Name())]; exists {
 			continue

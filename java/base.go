@@ -1078,13 +1078,7 @@ func (j *Module) aidlFlags(ctx android.ModuleContext, aidlPreprocess android.Opt
 		j.ignoredAidlPermissionList = android.PathsForModuleSrcExcludes(ctx, exceptions, nil)
 	}
 
-	sdkVersionString := String(j.deviceProperties.Sdk_version)
-	sdkSpec := android.SdkSpecFrom(ctx, sdkVersionString)
-	effectiveApiLevel, err := sdkSpec.EffectiveVersion(ctx)
-	if err != nil {
-		ctx.PropertyErrorf("sdk_version", "invalid sdk version %q: %v", sdkVersionString, err)
-	}
-	aidlMinSdkVersion := effectiveApiLevel.String()
+	aidlMinSdkVersion := j.MinSdkVersion(ctx).String()
 	flags = append(flags, "--min_sdk_version="+aidlMinSdkVersion)
 
 	return strings.Join(flags, " "), deps
@@ -2570,6 +2564,7 @@ func (m *Module) GetDepInSameApexChecker() android.DepInSameApexChecker {
 	return JavaDepInSameApexChecker{}
 }
 
+// @auto-generate: gob
 type JavaDepInSameApexChecker struct {
 	android.BaseDepInSameApexChecker
 }

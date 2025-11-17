@@ -14,7 +14,7 @@ import (
 
 var fileSepRegex = regexp.MustCompile("[^[:space:]]+")
 
-func GenerateIncrementalInput(jarFilePath, outputDir, packageOutputDir, dexTarget, deps string) {
+func GenerateIncrementalInput(jarFilePath, outputDir, packageOutputDir, dexTarget, deps string, tools []string) {
 	inputPcState := dexTarget + ".input.pc_state"
 	depsPcState := dexTarget + ".deps.pc_state"
 
@@ -23,7 +23,6 @@ func GenerateIncrementalInput(jarFilePath, outputDir, packageOutputDir, dexTarge
 	includeAllPackages := false
 
 	version := ""
-	tools := []string{}
 	addF, delF, chF := findInputDelta(version, tools, []string{jarFilePath}, inputPcState, dexTarget, true)
 
 	depsList := readRspFile(deps)

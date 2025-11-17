@@ -133,8 +133,15 @@ func (p *PythonBinaryModule) GenerateAndroidBuildActions(ctx android.ModuleConte
 
 func (p *PythonBinaryModule) buildBinary(ctx android.ModuleContext) {
 	embeddedLauncher := p.isEmbeddedLauncherEnabled()
-	depsSrcsZips := p.collectPathsFromTransitiveDeps(ctx, embeddedLauncher)
-	bundleSharedLibs := p.collectSharedLibDeps(ctx)
+	p.checkDuplicatePaths(ctx)
+	var srcsZips android.Paths
+	if embeddedLauncher {
+		srcsZips = p.libraryInfo.PrecompiledSrcsZip.ToList()
+	} else {
+		srcsZips = p.libraryInfo.SrcsZip.ToList()
+	}
+
+	bundleSharedLibs := p.libraryInfo.BundleSharedLibs.ToList()
 	main := ""
 	if p.autorun() {
 		main = p.getPyMainFile(ctx, p.srcsPathMappings)
@@ -152,13 +159,6 @@ func (p *PythonBinaryModule) buildBinary(ctx android.ModuleContext) {
 			}
 		})
 	}
-	srcsZips := make(android.Paths, 0, len(depsSrcsZips)+1)
-	if embeddedLauncher {
-		srcsZips = append(srcsZips, p.precompiledSrcsZip)
-	} else {
-		srcsZips = append(srcsZips, p.srcsZip)
-	}
-	srcsZips = append(srcsZips, depsSrcsZips...)
 	if ctx.Host() && len(bundleSharedLibs) > 0 {
 		// only bundle shared libs for host binaries
 		sharedLibZip := p.zipSharedLibs(ctx, bundleSharedLibs)
@@ -234,8 +234,7 @@ func (b *PythonBinaryModule) autorun() bool {
 }
 
 // find main program path within runfiles tree.
-func (p *PythonBinaryModule) getPyMainFile(ctx android.ModuleContext,
-	srcsPathMappings []pathMapping) string {
+func (p *PythonBinaryModule) getPyMainFile(ctx android.ModuleContext, srcsPathMappings []pathMapping) string {
 	var main string
 	if String(p.binaryProperties.Main) == "" {
 		main = ctx.ModuleName() + pyExt

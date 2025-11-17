@@ -5,7 +5,10 @@ package sysprop
 import (
 	"android/soong/android"
 	"bytes"
+	"fmt"
 	"github.com/google/blueprint/gobtools"
+	"github.com/google/blueprint/proptools"
+	"reflect"
 )
 
 // begin of sysprop_library.go
@@ -24,6 +27,40 @@ func (r SyspropLibraryInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) e
 		return err
 	}
 	return err
+}
+
+func (r SyspropLibraryInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":sysprop.SyspropLibraryInfo")
+	hasher.WriteInt(2)
+	hasher.WriteString(":sysprop.android.WritablePath")
+	val1 := r.CheckApiFileTimeStamp == nil
+	if val1 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.CheckApiFileTimeStamp); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val2 := r.CheckApiFileTimeStamp == nil
+				if val2 {
+					hasher.WriteByte(0)
+				} else {
+					val3 := func(hasher *proptools.Hasher) error {
+						return r.CheckApiFileTimeStamp.(proptools.CustomHash).CustomHash(hasher)
+					}
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val3); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.CheckApiFileTimeStamp.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	if err := r.CurrentApiFile.CustomHash(hasher); err != nil {
+		return err
+	}
+	return nil
 }
 
 func (r *SyspropLibraryInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {

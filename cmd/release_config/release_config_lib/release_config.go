@@ -419,6 +419,7 @@ func (config *ReleaseConfig) GenerateReleaseConfig(configs *ReleaseConfigs) erro
 
 	// Now build the per-partition artifacts
 	config.PartitionBuildFlags = make(map[string]*rc_proto.FlagArtifacts)
+	redactDeclOnly := config.GetFlag("RELEASE_REDACT_FLAGS_WITHOUT_OVERRIDE") != ""
 	for _, v := range config.FlagArtifacts {
 		artifact, err := v.MarshalWithoutTraces()
 		if err != nil {
@@ -426,6 +427,11 @@ func (config *ReleaseConfig) GenerateReleaseConfig(configs *ReleaseConfigs) erro
 		}
 		// Redacted flags return nil when rendered.
 		if artifact == nil {
+			continue
+		}
+		// If there are no flag overrides, we may redact the flag from the partition
+		// artifacts.
+		if redactDeclOnly && len(v.Traces) == 1 && config.GetFlag(*v.FlagDeclaration.Name) == "" {
 			continue
 		}
 		for _, container := range v.FlagDeclaration.Containers {
@@ -467,6 +473,23 @@ func (config *ReleaseConfig) GenerateReleaseConfig(configs *ReleaseConfigs) erro
 	}
 
 	return nil
+}
+
+// Get the marshalled value of a build flag for this release config.
+//
+// This is intended for build flags that affect how we generate artifacts
+// (after the release config has been compiled).
+func (config *ReleaseConfig) GetFlag(name string) string {
+	if !config.compileInProgress && config.ReleaseConfigArtifact == nil {
+		// Because this is an internal function, just panic rather than
+		// return an error.
+		panic("GetFlag called in invalid location")
+	}
+	if fa, ok := config.FlagArtifacts[name]; ok {
+		return MarshalValue(fa.Value)
+	} else {
+		return ""
+	}
 }
 
 // Write the makefile for this targetRelease.

@@ -204,6 +204,7 @@ type testFixture struct {
 	ClassFile2       string
 	ClassFile3       string
 	DepJar           string
+	Tool             string
 }
 
 // newTestFixture creates the temporary directory and necessary files
@@ -223,6 +224,7 @@ func newTestFixture(t *testing.T) *testFixture {
 		ClassFile2:       filepath.Join(tmpDir, "javac/classes/com/example/ClassC.class"),
 		ClassFile3:       filepath.Join(tmpDir, "javac/classes/org/another/ClassD.class"),
 		DepJar:           filepath.Join(tmpDir, "dex/deps.jar"),
+		Tool:             filepath.Join(tmpDir, "tool"),
 	}
 
 	// Create directories and initial file contents
@@ -238,6 +240,8 @@ func newTestFixture(t *testing.T) *testFixture {
 
 	writeFile(t, fixture.DepsRspFile, fmt.Sprintf("%s", fixture.DepJar))
 	writeFile(t, fixture.DexTargetJar, "Dex Jar")
+
+	writeFile(t, fixture.Tool, "tool")
 
 	return fixture
 }
@@ -264,6 +268,24 @@ func TestGenerateIncrementalInput(t *testing.T) {
 			t,
 			tf.incOutputPath(),
 			fmt.Sprintf("%s\n%s", "com/example", "org/another"), // All files included initially
+		)
+		tf.savePriorState()
+	})
+
+	// --- Subtest: Incremental - Tool modified ---
+	t.Run("Incremental_ToolModified", func(t *testing.T) {
+		// Arrange: Modify the Tool
+		modifyFile(t, tf.Tool, "Incremental_ToolModified")
+		createQualifiedTestJar(t, tf.ClassJar, filepath.Join(tf.tmpDir, "javac", "classes"))
+
+		// Act
+		tf.runGenerator()
+
+		// Assert: All source files should be in inc.rsp
+		checkOutput(
+			t,
+			tf.incOutputPath(),
+			fmt.Sprintf("%s\n%s", "com/example", "org/another"),
 		)
 		tf.savePriorState()
 	})
@@ -384,7 +406,7 @@ func createQualifiedTestJar(t *testing.T, outputPath, inputDir string) {
 func (tf *testFixture) runGenerator() {
 	// Small delay often needed for filesystem timestamp granularity
 	time.Sleep(15 * time.Millisecond)
-	GenerateIncrementalInput(tf.ClassJar, tf.DexOutputDir, tf.PackageOutputDir, tf.DexTargetJar, tf.DepsRspFile)
+	GenerateIncrementalInput(tf.ClassJar, tf.DexOutputDir, tf.PackageOutputDir, tf.DexTargetJar, tf.DepsRspFile, []string{tf.Tool})
 }
 
 // returns incOutputPath for testFixture

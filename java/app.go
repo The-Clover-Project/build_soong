@@ -1191,11 +1191,6 @@ func (a *AndroidApp) generateAndroidBuildActions(ctx android.ModuleContext) {
 		android.SetProvider(ctx, JavaInfoProvider, javaInfo)
 	}
 
-	android.SetProvider(ctx, android.ApexBundleDepsDataProvider, android.ApexBundleDepsData{
-		FlatListPath: a.FlatListPath(),
-		Updatable:    a.Updatable(),
-	})
-
 	moduleInfoJSON := ctx.ModuleInfoJSON()
 	moduleInfoJSON.Class = []string{"APPS"}
 	if !a.embeddedJniLibs {
@@ -1446,6 +1441,7 @@ func (m *AndroidApp) GetDepInSameApexChecker() android.DepInSameApexChecker {
 	return AppDepInSameApexChecker{}
 }
 
+// @auto-generate: gob
 type AppDepInSameApexChecker struct {
 	android.BaseDepInSameApexChecker
 }

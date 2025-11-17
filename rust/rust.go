@@ -713,6 +713,7 @@ func DefaultsFactory(props ...any) android.Module {
 		&cc.RustBindgenClangProperties{},
 		&ClippyProperties{},
 		&SanitizeProperties{},
+		&cc.StripProperties{},
 		&fuzz.FuzzProperties{},
 	)
 
@@ -2407,6 +2408,7 @@ func (mod *Module) AlwaysRequiresPlatformApexVariant() bool {
 }
 
 // Implements android.ApexModule
+// @auto-generate: gob
 type RustDepInSameApexChecker struct {
 	Static           bool
 	HasStubsVariants bool

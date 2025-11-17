@@ -187,15 +187,15 @@ type StlInfo struct {
 // Common info about the cc module.
 // @auto-generate: gob
 type CcInfo struct {
-	IsPrebuilt             bool
-	CmakeSnapshotSupported bool
-	HasLlndkStubs          bool
-	DataPaths              []android.DataPath
-	VendorAvailable        bool
-	OdmAvailable           bool
-	ProductAvailable       bool
-	IsVendorPublicLibrary  bool
-	DoubleLoadable         bool
+	IsPrebuilt              bool
+	CmakeSnapshotSupported  bool
+	HasLlndkStubs           bool
+	DataPaths               []android.DataPath
+	VendorAvailable         bool
+	OdmAvailable            bool
+	ProductAvailable        bool
+	IsVendorPublicLibrary   bool
+	NotDoubleLoadableReason string
 	// Allowable SdkMemberTypes of this module type.
 	SdkMemberTypes     []android.SdkMemberType
 	LocalFlags         LocalOrGlobalFlagsInfo
@@ -2555,7 +2555,7 @@ func (c *Module) GenerateAndroidBuildActions(actx android.ModuleContext) {
 	buildComplianceMetadataInfo(ctx, c, deps)
 
 	c.checkLinkType(ctx)
-	c.checkDoubleLoadableLibraries(ctx)
+	notDoubleLoadableReason := c.checkDoubleLoadableLibraries(ctx)
 
 	if b, ok := c.compiler.(*baseCompiler); ok {
 		c.hasAidl = b.hasSrcExt(ctx, ".aidl")
@@ -2592,16 +2592,16 @@ func (c *Module) GenerateAndroidBuildActions(actx android.ModuleContext) {
 	}
 	android.SetProvider(ctx, LinkableInfoProvider, linkableInfo)
 	ccInfo := CcInfo{
-		IsPrebuilt:             c.IsPrebuilt(),
-		CmakeSnapshotSupported: proptools.Bool(c.Properties.Cmake_snapshot_supported),
-		HasLlndkStubs:          c.HasLlndkStubs(),
-		DataPaths:              c.DataPaths(),
-		VendorAvailable:        c.VendorAvailable(),
-		OdmAvailable:           c.OdmAvailable(),
-		ProductAvailable:       c.ProductAvailable(),
-		SdkMemberTypes:         c.sdkMemberTypes,
-		IsVendorPublicLibrary:  c.IsVendorPublicLibrary(),
-		DoubleLoadable:         Bool(c.VendorProperties.Double_loadable),
+		IsPrebuilt:              c.IsPrebuilt(),
+		CmakeSnapshotSupported:  proptools.Bool(c.Properties.Cmake_snapshot_supported),
+		HasLlndkStubs:           c.HasLlndkStubs(),
+		DataPaths:               c.DataPaths(),
+		VendorAvailable:         c.VendorAvailable(),
+		OdmAvailable:            c.OdmAvailable(),
+		ProductAvailable:        c.ProductAvailable(),
+		SdkMemberTypes:          c.sdkMemberTypes,
+		IsVendorPublicLibrary:   c.IsVendorPublicLibrary(),
+		NotDoubleLoadableReason: notDoubleLoadableReason,
 		LocalFlags: LocalOrGlobalFlagsInfo{
 			CommonFlags: c.flags.Local.CommonFlags,
 			CFlags:      c.flags.Local.CFlags,
@@ -3576,61 +3576,65 @@ func (c *Module) checkLinkType(ctx android.ModuleContext) {
 // If a library has a vendor variant and is a (transitive) dependency of an LLNDK library,
 // it is subject to be double loaded. Such lib should be explicitly marked as double_loadable: true
 // or as vndk-sp (vndk: { enabled: true, support_system_process: true}).
-func (c *Module) checkDoubleLoadableLibraries(ctx android.ModuleContext) {
-	check := func(child, parent android.ModuleProxy) bool {
-		ccInfo, ok := android.OtherModuleProvider(ctx, child, CcInfoProvider)
+func (c *Module) checkDoubleLoadableLibraries(ctx android.ModuleContext) string {
+	notDoubleLoadableReason := ""
+	ctx.VisitDirectDepsProxy(func(dep android.ModuleProxy) {
+		ccInfo, ok := android.OtherModuleProvider(ctx, dep, CcInfoProvider)
 		if !ok {
-			return false
+			return
 		}
 
-		linkableInfo, ok := android.OtherModuleProvider(ctx, child, LinkableInfoProvider)
+		linkableInfo, ok := android.OtherModuleProvider(ctx, dep, LinkableInfoProvider)
 		if !ok || !linkableInfo.Shared {
-			return false
+			return
 		}
 
 		// These dependencies are not excercised at runtime. Tracking these will give us
 		// false negative, so skip.
-		depTag := ctx.OtherModuleDependencyTag(child)
+		depTag := ctx.OtherModuleDependencyTag(dep)
 		if IsHeaderDepTag(depTag) {
-			return false
+			return
 		}
 		if depTag == staticVariantTag {
-			return false
+			return
 		}
 		if depTag == StubImplDepTag {
-			return false
+			return
 		}
 		if depTag == android.RequiredDepTag {
-			return false
+			return
+		}
+		if depTag == android.PrebuiltDepTag {
+			return
+		}
+
+		if linkableInfo.IsLlndk {
+			return
 		}
 
 		// Even if target lib has no vendor variant, keep checking dependency
 		// graph in case it depends on vendor_available or product_available
 		// but not double_loadable transtively.
-		if !linkableInfo.HasNonSystemVariants {
-			return true
+		if ccInfo.NotDoubleLoadableReason != "" && notDoubleLoadableReason == "" {
+			notDoubleLoadableReason = ccInfo.NotDoubleLoadableReason
 		}
+	})
 
-		// The happy path. Keep tracking dependencies until we hit a non double-loadable
-		// one.
-		if ccInfo.DoubleLoadable {
-			return true
-		}
-
-		if linkableInfo.IsLlndk {
-			return false
-		}
-
+	if lib, ok := c.linker.(*libraryDecorator); ok && lib.shared() && lib.HasLLNDKStubs() && notDoubleLoadableReason != "" {
 		ctx.ModuleErrorf("links a library %q which is not LL-NDK, "+
-			"VNDK-SP, or explicitly marked as 'double_loadable:true'. "+
-			"Dependency list: %s", ctx.OtherModuleName(child), ctx.GetPathString(false))
-		return false
+			"VNDK-SP, or explicitly marked as 'double_loadable:true'.",
+			notDoubleLoadableReason)
 	}
-	if lib, ok := c.linker.(*libraryDecorator); ok && lib.shared() {
-		if lib.HasLLNDKStubs() {
-			ctx.WalkDepsProxy(check)
-		}
+
+	if c.IsLlndk() {
+		return ""
 	}
+
+	if !android.Bool(c.VendorProperties.Double_loadable) && c.HasNonSystemVariants() {
+		return ctx.ModuleName()
+	}
+
+	return notDoubleLoadableReason
 }
 
 func findApexSdkVersion(ctx android.BaseModuleContext, apexInfo android.ApexInfo) android.ApiLevel {
@@ -4496,6 +4500,7 @@ func (c *Module) GetDepInSameApexChecker() android.DepInSameApexChecker {
 	}
 }
 
+// @auto-generate: gob
 type CcDepInSameApexChecker struct {
 	Static           bool
 	HasStubsVariants bool

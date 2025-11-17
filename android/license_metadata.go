@@ -37,15 +37,15 @@ var (
 	}, "args")
 )
 
-func buildLicenseMetadata(ctx *moduleContext, licenseMetadataFile WritablePath, testSuiteInstalls []FilePair) {
+func buildLicenseMetadata(ctx *moduleContext, licenseMetadataFile WritablePath, testSuiteInstalls []FilePair) *LicenseMetadataInfo {
 	base := ctx.Module().base()
 
 	if !base.Enabled(ctx) {
-		return
+		return nil
 	}
 
 	if exemptFromRequiredApplicableLicensesProperty(ctx.Module()) {
-		return
+		return nil
 	}
 
 	var outputFiles Paths
@@ -68,7 +68,8 @@ func buildLicenseMetadata(ctx *moduleContext, licenseMetadataFile WritablePath, 
 	var allDepMetadataDepSets []depset.DepSet[Path]
 
 	ctx.VisitDirectDepsProxy(func(dep ModuleProxy) {
-		if !OtherModulePointerProviderOrDefault(ctx, dep, CommonModuleInfoProvider).Enabled {
+		commonInfo := OtherModulePointerProviderOrDefault(ctx, dep, CommonModuleInfoProvider)
+		if !commonInfo.Enabled {
 			return
 		}
 
@@ -82,7 +83,7 @@ func buildLicenseMetadata(ctx *moduleContext, licenseMetadataFile WritablePath, 
 			return
 		}
 
-		if info, ok := OtherModuleProvider(ctx, dep, LicenseMetadataProvider); ok {
+		if info := commonInfo.LicenseMetadata; info != nil {
 			allDepMetadataFiles = append(allDepMetadataFiles, info.LicenseMetadataPath)
 			if isContainer || isInstallDepNeeded(ctx, dep) {
 				allDepMetadataDepSets = append(allDepMetadataDepSets, info.LicenseMetadataDepSet)
@@ -183,10 +184,10 @@ func buildLicenseMetadata(ctx *moduleContext, licenseMetadataFile WritablePath, 
 		},
 	})
 
-	SetProvider(ctx, LicenseMetadataProvider, &LicenseMetadataInfo{
+	return &LicenseMetadataInfo{
 		LicenseMetadataPath:   licenseMetadataFile,
 		LicenseMetadataDepSet: depset.New(depset.TOPOLOGICAL, Paths{licenseMetadataFile}, allDepMetadataDepSets),
-	})
+	}
 }
 
 func isContainerFromFileExtensions(installPaths InstallPaths, builtPaths Paths) bool {
@@ -206,9 +207,6 @@ func isContainerFromFileExtensions(installPaths InstallPaths, builtPaths Paths) 
 
 	return false
 }
-
-// LicenseMetadataProvider is used to propagate license metadata paths between modules.
-var LicenseMetadataProvider = blueprint.NewProvider[*LicenseMetadataInfo]()
 
 // LicenseMetadataInfo stores the license metadata path for a module.
 // @auto-generate: gob

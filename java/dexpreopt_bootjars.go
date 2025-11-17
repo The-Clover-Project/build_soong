@@ -515,7 +515,7 @@ func (dbj *dexpreoptBootJars) DepsMutator(ctx android.BottomUpMutatorContext) {
 		// For accessing the boot jars.
 		addDependenciesOntoBootImageModules(ctx, config.modules, dexpreoptBootJar)
 		// Create a dependency on the apex selected using RELEASE_APEX_CONTRIBUTIONS_*
-		// TODO: b/308174306 - Remove the direct depedendency edge to the java_library (source/prebuilt) once all mainline modules
+		// TODO: b/458374506 - Remove the direct depedendency edge to the java_library (source/prebuilt) once all mainline modules
 		// have been flagged using RELEASE_APEX_CONTRIBUTIONS_*
 		apexes := []string{}
 		for i := 0; i < config.modules.Len(); i++ {
@@ -956,7 +956,7 @@ func (m *apexNameToApexExportsInfoMap) javaLibraryDexPathOnHost(ctx android.Modu
 		}
 	}
 	// An apex entry could not be found. Return false.
-	// TODO: b/308174306 - When all the mainline modules have been flagged, make this a hard error
+	// TODO: b/458374506 - When all the mainline modules have been flagged, make this a hard error
 	return nil, false
 }
 
@@ -970,12 +970,12 @@ func ModuleStemForDeapexing(ctx android.OtherModuleProviderContext, m android.Mo
 // This information can come from two mechanisms
 // 1. New: Direct deps to _selected_ apexes. The apexes return a ApexExportsInfo
 // 2. Legacy: An edge to java_library or java_import (java_sdk_library) module. For prebuilt apexes, this serves as a hook and is populated by deapexers of prebuilt apxes
-// TODO: b/308174306 - Once all mainline modules have been flagged, drop (2)
+// TODO: b/458374506 - Once all mainline modules have been flagged, drop (2)
 func getDexJarForApex(ctx android.ModuleContext, pair apexJarModulePair, apexNameToApexExportsInfoMap apexNameToApexExportsInfoMap) android.Path {
 	if dex, found := apexNameToApexExportsInfoMap.javaLibraryDexPathOnHost(ctx, pair.apex, ModuleStemForDeapexing(ctx, pair.jarModule)); found {
 		return dex
 	}
-	// TODO: b/308174306 - Remove the legacy mechanism
+	// TODO: b/458374506 - Remove the legacy mechanism
 	if android.IsConfiguredJarForPlatform(pair.apex) || android.IsModulePrebuilt(ctx, pair.jarModule) {
 		// This gives us the dex jar with the hidden API flags encoded from the monolithic hidden API
 		// files or the dex jar extracted from a prebuilt APEX. We can't use this for a boot jar for
@@ -1141,12 +1141,13 @@ type bootImageVariantOutputs struct {
 // This information can come from two mechanisms
 // 1. New: Direct deps to _selected_ apexes. The apexes return a BootclasspathFragmentApexContentInfo
 // 2. Legacy: An edge to bootclasspath_fragment module. For prebuilt apexes, this serves as a hook and is populated by deapexers of prebuilt apxes
-// TODO: b/308174306 - Once all mainline modules have been flagged, drop (2)
 func getProfilePathForApex(ctx android.ModuleContext, apexName string, apexNameToBcpInfoMap map[string]android.ApexExportsInfo) android.Path {
 	if info, exists := apexNameToBcpInfoMap[apexName]; exists {
 		return info.ProfilePathOnHost
 	}
-	// TODO: b/308174306 - Remove the legacy mechanism
+	// When building with source, the bootclasspath_fragment is still used
+	// to get the profile path.
+	// TODO: b/458374506 - Remove the legacy mechanism
 	fragment := getBootclasspathFragmentByApex(ctx, apexName)
 	if fragment.IsNil() {
 		ctx.ModuleErrorf("Boot image config imports profile from '%[2]s', but a "+
