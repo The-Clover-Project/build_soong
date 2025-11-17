@@ -35,6 +35,8 @@ type PhonyInfo struct {
 	Phonies phonyMap
 }
 
+var ModulePhonyProvider = blueprint.NewProvider[PhonyInfo]()
+
 var SingletonPhonyProvider = blueprint.NewSingletonProvider[PhonyInfo]()
 
 type phonySingleton struct {
@@ -47,8 +49,8 @@ var _ SingletonMakeVarsProvider = (*phonySingleton)(nil)
 func (p *phonySingleton) GenerateBuildActions(ctx SingletonContext) {
 	p.phonyMap = make(phonyMap)
 	ctx.VisitAllModuleProxies(func(m ModuleProxy) {
-		if info, ok := OtherModuleProvider(ctx, m, CommonModuleInfoProvider); ok && info.Phonies != nil {
-			for k, v := range info.Phonies.Phonies {
+		if info, ok := OtherModuleProvider(ctx, m, ModulePhonyProvider); ok {
+			for k, v := range info.Phonies {
 				p.phonyMap[k] = append(p.phonyMap[k], v...)
 			}
 		}

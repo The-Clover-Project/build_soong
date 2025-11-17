@@ -59,20 +59,16 @@ func TestJarGenruleCombinerSingle(t *testing.T) {
 
 	fooMod := ctx.ModuleForTests(t, "foo", "android_common")
 	fooCombined := fooMod.Output("turbine-combined/foo.jar")
-	var fooHeaderJars android.Paths
-	if fooOutputFiles := android.GetOutputFiles(ctx.OtherModuleProviderAdaptor(), fooMod.Module()); fooOutputFiles != nil {
-		fooHeaderJars = fooOutputFiles.TaggedOutputFiles[".hjar"]
-	}
+	fooOutputFiles, _ := android.OtherModuleProvider(ctx.OtherModuleProviderAdaptor(), fooMod.Module(), android.OutputFilesProvider)
+	fooHeaderJars := fooOutputFiles.TaggedOutputFiles[".hjar"]
 
 	genMod := ctx.ModuleForTests(t, "gen", "android_common")
 	gen := genMod.Output("gen.jar")
 
 	jarcombMod := ctx.ModuleForTests(t, "jarcomb", "android_common")
 	jarcombInfo, _ := android.OtherModuleProvider(ctx.OtherModuleProviderAdaptor(), jarcombMod.Module(), JavaInfoProvider)
-	jarcombOutputFiles := android.GetOutputFiles(ctx.OtherModuleProviderAdaptor(), jarcombMod.Module())
-	if jarcombOutputFiles == nil {
-		t.Errorf("jarcomb output files are not set")
-	}
+	jarcombOutputFiles, _ := android.OtherModuleProvider(ctx.OtherModuleProviderAdaptor(), jarcombMod.Module(), android.OutputFilesProvider)
+
 	// Confirm that jarcomb simply forwards the jarcomb implementation and the foo headers.
 	if len(jarcombOutputFiles.DefaultOutputFiles) != 1 ||
 		android.PathRelativeToTop(jarcombOutputFiles.DefaultOutputFiles[0]) != android.PathRelativeToTop(gen.Output) {
@@ -191,10 +187,8 @@ func TestJarGenruleCombinerMulti(t *testing.T) {
 	_ = jarcombTurbine
 	jarcombInfo, _ := android.OtherModuleProvider(ctx.OtherModuleProviderAdaptor(), jarcombMod.Module(), JavaInfoProvider)
 	_ = jarcombInfo
-	var jarcombHeaderJars android.Paths
-	if jarcombOutputFiles := android.GetOutputFiles(ctx.OtherModuleProviderAdaptor(), jarcombMod.Module()); jarcombOutputFiles != nil {
-		jarcombHeaderJars = jarcombOutputFiles.TaggedOutputFiles[".hjar"]
-	}
+	jarcombOutputFiles, _ := android.OtherModuleProvider(ctx.OtherModuleProviderAdaptor(), jarcombMod.Module(), android.OutputFilesProvider)
+	jarcombHeaderJars := jarcombOutputFiles.TaggedOutputFiles[".hjar"]
 
 	if len(jarcomb.Inputs) != 2 ||
 		jarcomb.Inputs[0].String() != gen1.Output.String() ||

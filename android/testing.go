@@ -1133,12 +1133,11 @@ func (m TestingModule) VariablesForTestsRelativeToTop() map[string]string {
 // otherwise returns the result of calling Paths.RelativeToTop
 // on the returned Paths.
 func (m TestingModule) OutputFiles(ctx *TestContext, t *testing.T, tag string) Paths {
-	if outputFiles := GetOutputFiles(ctx.OtherModuleProviderAdaptor(), m.Module()); outputFiles != nil {
-		if tag == "" && outputFiles.DefaultOutputFiles != nil {
-			return outputFiles.DefaultOutputFiles.RelativeToTop()
-		} else if taggedOutputFiles, hasTag := outputFiles.TaggedOutputFiles[tag]; hasTag {
-			return taggedOutputFiles.RelativeToTop()
-		}
+	outputFiles := OtherModuleProviderOrDefault(ctx.OtherModuleProviderAdaptor(), m.Module(), OutputFilesProvider)
+	if tag == "" && outputFiles.DefaultOutputFiles != nil {
+		return outputFiles.DefaultOutputFiles.RelativeToTop()
+	} else if taggedOutputFiles, hasTag := outputFiles.TaggedOutputFiles[tag]; hasTag {
+		return taggedOutputFiles.RelativeToTop()
 	}
 
 	t.Fatal(fmt.Errorf("No test output file has been set for tag %q", tag))
