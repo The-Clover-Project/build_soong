@@ -633,8 +633,8 @@ func (d *dexer) dexCommonFlags(ctx android.ModuleContext,
 		}
 	}
 
-	if ctx.Config().UseR8MinimizedSyntheticNames() {
-		flags = append([]string{"-JDcom.android.tools.r8.desugar.minimizeSyntheticNames=1"}, flags...)
+	if !ctx.Config().UseR8MinimizedSyntheticNames() {
+		flags = append(flags, "--verbose-synthetic-names")
 	}
 
 	// Enable a safe form of list iteration rewriting for D8/R8, though note that D8 impact is
