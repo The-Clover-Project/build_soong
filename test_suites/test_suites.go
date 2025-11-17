@@ -94,10 +94,10 @@ func (t *testSuiteFiles) GenerateBuildActions(ctx android.SingletonContext) {
 
 	ctx.VisitAllModuleProxies(func(m android.ModuleProxy) {
 		commonInfo := android.OtherModuleProviderOrDefault(ctx, m, android.CommonModuleInfoProvider)
-		testSuiteSharedLibsInfo := android.OtherModuleProviderOrDefault(ctx, m, android.TestSuiteSharedLibsInfoProvider)
-		makeName := android.OtherModuleProviderOrDefault(ctx, m, android.MakeNameInfoProvider).Name
+		makeNameInfo := android.OtherModuleProviderOrDefault(ctx, m, android.MakeNameInfoProvider)
+		makeName := makeNameInfo.MakeName
 		if makeName != "" && commonInfo.Target.Os == ctx.Config().BuildOS {
-			sharedLibGraph[makeName] = append(sharedLibGraph[makeName], testSuiteSharedLibsInfo.MakeNames...)
+			sharedLibGraph[makeName] = append(sharedLibGraph[makeName], makeNameInfo.SharedLibsMakeNames...)
 		}
 
 		if tsm, ok := android.OtherModuleProvider(ctx, m, android.TestSuiteInfoProvider); ok {
@@ -112,7 +112,8 @@ func (t *testSuiteFiles) GenerateBuildActions(ctx android.SingletonContext) {
 				}
 			}
 
-			if testSuiteInstalls, ok := android.OtherModuleProvider(ctx, m, android.TestSuiteInstallsInfoProvider); ok {
+			if tsm.TestSuiteInstalls != nil {
+				testSuiteInstalls := tsm.TestSuiteInstalls
 				for _, testSuite := range tsm.TestSuites {
 					for _, f := range testSuiteInstalls.Files {
 						allTestSuiteInstalls[testSuite] = append(allTestSuiteInstalls[testSuite], f.Dst)
@@ -445,7 +446,7 @@ func gatherHostSharedLibs(ctx android.SingletonContext, sharedLibRoots, sharedLi
 			}
 			installFilesProvider := android.OtherModuleProviderOrDefault(ctx, m, android.InstallFilesProvider)
 			for suite, sharedLibModulesInSuite := range suiteToSharedLibModules {
-				if sharedLibModulesInSuite[makeName.Name] {
+				if sharedLibModulesInSuite[makeName.MakeName] {
 					for _, f := range installFilesProvider.InstallFiles {
 						if strings.HasSuffix(f.String(), ".so") && strings.HasPrefix(f.String(), hostOut) {
 							hostSharedLibs[suite] = append(hostSharedLibs[suite], f)
@@ -974,7 +975,8 @@ func buildSharedReport(
 	meta_builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	for _, mod := range testSuiteModules {
 		if provider := android.OtherModulePointerProviderOrDefault(ctx, mod, android.CommonModuleInfoProvider).LicenseMetadata; provider != nil && provider.LicenseMetadataPath != nil {
-			if testSuiteInstalls, ok := android.OtherModuleProvider(ctx, mod, android.TestSuiteInstallsInfoProvider); ok {
+			if testSuite, ok := android.OtherModuleProvider(ctx, mod, android.TestSuiteInfoProvider); ok && testSuite.TestSuiteInstalls != nil {
+				testSuiteInstalls := testSuite.TestSuiteInstalls
 				for _, f := range testSuiteInstalls.Files {
 					if strings.Contains(f.Dst.String(), mod.Name()) && strings.HasPrefix(f.Dst.String(), hostOutSubDir) {
 						if f.Dst.Ext() == ".jar" || f.Dst.Ext() == ".apk" {

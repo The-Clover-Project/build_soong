@@ -2745,8 +2745,8 @@ func (m *ModuleBase) setupTestSuites(ctx ModuleContext, info TestSuiteInfo) []Fi
 		}
 	}
 
+	info.TestSuiteInstalls = &TestSuiteInstallsInfo{installs, oneVariantInstalls}
 	SetProvider(ctx, TestSuiteInfoProvider, info)
-	SetProvider(ctx, TestSuiteInstallsInfoProvider, TestSuiteInstallsInfo{installs, oneVariantInstalls})
 
 	return slices.Concat(installs, oneVariantInstalls)
 }
