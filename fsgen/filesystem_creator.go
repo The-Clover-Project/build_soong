@@ -1716,8 +1716,8 @@ func createFailingCommand(ctx android.ModuleContext, message string) android.Pat
 
 func createVbmetaDiff(ctx android.ModuleContext, vbmetaModuleName string, vbmetaPartitionName string) android.Path {
 	vbmetaModule := ctx.GetDirectDepProxyWithTag(vbmetaModuleName, generatedVbmetaPartitionDepTag)
-	outputFilesProvider, ok := android.OtherModuleProvider(ctx, vbmetaModule, android.OutputFilesProvider)
-	if !ok {
+	outputFilesProvider := android.GetOutputFiles(ctx, vbmetaModule)
+	if outputFilesProvider == nil {
 		ctx.ModuleErrorf("Expected module %s to provide OutputFiles", vbmetaModule)
 	}
 	if len(outputFilesProvider.DefaultOutputFiles) != 1 {
