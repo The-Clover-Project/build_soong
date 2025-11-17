@@ -514,7 +514,7 @@ func ExistentPathsForSources(ctx PathGlobContext, paths []string) Paths {
 //   - glob, relative to the local module directory, resolves as filepath(s), relative to the local
 //     source directory.
 //   - other modules using the ":name{.tag}" syntax. These modules must implement SourceFileProducer
-//     or set the OutputFiles in CommonModuleInfo. These resolve as a filepath to an output filepath or generated
+//     or set the OutputFilesProvider. These resolve as a filepath to an output filepath or generated
 //     source filepath.
 //
 // Properties passed as the paths argument must have been annotated with struct tag
@@ -542,7 +542,7 @@ type SourceInput struct {
 //   - glob, relative to the local module directory, resolves as filepath(s), relative to the local
 //     source directory. Not valid in excludes.
 //   - other modules using the ":name{.tag}" syntax. These modules must implement SourceFileProducer
-//     or set the OutputFiles in CommonModuleInfo. These resolve as a filepath to an output filepath or generated
+//     or set the OutputFilesProvider. These resolve as a filepath to an output filepath or generated
 //     source filepath.
 //
 // excluding the items (similarly resolved
@@ -740,7 +740,7 @@ func GetModuleProxyFromPathDep(ctx ModuleWithDepsPathContext, moduleName, tag st
 //   - glob, relative to the local module directory, resolves as filepath(s), relative to the local
 //     source directory. Not valid in excludes.
 //   - other modules using the ":name{.tag}" syntax. These modules must implement SourceFileProducer
-//     or set the OutputFiles in CommonModuleInfo. These resolve as a filepath to an output filepath or generated
+//     or set the OutputFilesProvider. These resolve as a filepath to an output filepath or generated
 //     source filepath.
 //
 // and a list of the module names of missing module dependencies are returned as the second return.
