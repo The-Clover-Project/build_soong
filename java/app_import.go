@@ -97,6 +97,9 @@ type AndroidAppImport struct {
 	android.ModuleBase
 	android.DefaultableModuleBase
 	android.ApexModuleBase
+	// TODO(b/461815001): remove this and replace usage of WalkDepsProxy with
+	//  VisitDirectDepsProxy and DepSets.
+	blueprint.ModuleUsesIncrementalWalkDeps
 	prebuilt android.Prebuilt
 
 	properties       AndroidAppImportProperties
