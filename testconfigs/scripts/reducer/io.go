@@ -140,7 +140,7 @@ func (reducer *TestConfigReducer) loadModifiedFiles() error {
 func (reducer *TestConfigReducer) loadModifiedFilesFromRepoDiff() ([]string, error) {
 	modifiedFiles := []string{}
 
-	modifiedFilesCmd := exec.Command("repo", "forall", "-p", "-c", "git diff --name-only @{u}...HEAD")
+	modifiedFilesCmd := exec.Command("repo", "forall", "-p", "-c", "git diff --name-only $(git merge-base @{u} HEAD)")
 	modifiedFilesCmd.Dir = reducer.Top
 
 	modifiedFilesOut, _ := modifiedFilesCmd.CombinedOutput()
