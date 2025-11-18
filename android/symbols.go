@@ -51,9 +51,6 @@ type SymbolicOutputInfo struct {
 // @auto-generate: gob
 type SymbolicOutputInfos []*SymbolicOutputInfo
 
-// SymbolInfosProvider provides necessary information to generate the symbols.zip
-var SymbolInfosProvider = blueprint.NewProvider[SymbolicOutputInfos]()
-
 func (s *SymbolicOutputInfos) SortedUniqueSymbolicOutputPaths() Paths {
 	ret := make(Paths, len(*s))
 	for i, info := range *s {
@@ -77,15 +74,16 @@ type symbolsContext interface {
 }
 
 // Defines the build rules to generate the symbols.zip file and the merged elf mapping textproto
-// file. Modules in depModules that provide [SymbolInfosProvider] and are exported to make
+// file. Modules in depModules that provide [SymbolInfos] and are exported to make
 // will be listed in the symbols.zip and the merged proto file.
 func BuildSymbolsZip(ctx symbolsContext, depModules []ModuleProxy, extraSymbols *SymbolicOutputInfos, symbolsZipFile, mergedMappingProtoFile WritablePath) (Paths, Paths) {
 	var allSymbolicOutputPaths, allElfMappingProtoPaths Paths
 	for _, mod := range depModules {
-		if commonInfo, _ := OtherModuleProvider(ctx, mod, CommonModuleInfoProvider); commonInfo.SkipAndroidMkProcessing {
+		commonInfo, _ := OtherModuleProvider(ctx, mod, CommonModuleInfoProvider)
+		if commonInfo.SkipAndroidMkProcessing {
 			continue
 		}
-		if symbolInfos, ok := OtherModuleProvider(ctx, mod, SymbolInfosProvider); ok {
+		if symbolInfos := commonInfo.SymbolicOutput; symbolInfos != nil {
 			allSymbolicOutputPaths = append(allSymbolicOutputPaths, symbolInfos.SortedUniqueSymbolicOutputPaths()...)
 			allElfMappingProtoPaths = append(allElfMappingProtoPaths, symbolInfos.SortedUniqueElfMappingProtoPaths()...)
 		}

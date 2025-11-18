@@ -290,7 +290,7 @@ func (r *robolectricTest) GenerateAndroidBuildActions(ctx android.ModuleContext)
 		TestSuites: r.TestSuites(),
 	})
 
-	android.SetProvider(ctx, android.TestOnlyProviderKey, android.TestModuleInformation{
+	ctx.SetTestModuleInfo(&android.TestModuleInformation{
 		TestOnly:       Bool(r.sourceProperties.Test_only),
 		TopLevelTarget: r.sourceProperties.Top_level_test_target,
 	})

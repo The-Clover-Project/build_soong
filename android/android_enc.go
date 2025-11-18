@@ -6783,12 +6783,79 @@ func (r CommonModuleInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) err
 			return err
 		}
 	}
+
+	val17 := r.Logtags == nil
+	if err = gobtools.EncodeBool(buf, val17); err != nil {
+		return err
+	}
+	if !val17 {
+		if err = (*r.Logtags).Encode(ctx, buf); err != nil {
+			return err
+		}
+	}
+
+	val18 := r.TestModuleInfo == nil
+	if err = gobtools.EncodeBool(buf, val18); err != nil {
+		return err
+	}
+	if !val18 {
+		if err = (*r.TestModuleInfo).Encode(ctx, buf); err != nil {
+			return err
+		}
+	}
+
+	val19 := r.SymbolicOutput == nil
+	if err = gobtools.EncodeBool(buf, val19); err != nil {
+		return err
+	}
+	if !val19 {
+		if (*r.SymbolicOutput) == nil {
+			if err = gobtools.EncodeInt(buf, -1); err != nil {
+				return err
+			}
+		} else {
+			if err = gobtools.EncodeInt(buf, len((*r.SymbolicOutput))); err != nil {
+				return err
+			}
+			for val20 := 0; val20 < len((*r.SymbolicOutput)); val20++ {
+				val21 := (*r.SymbolicOutput)[val20] == nil
+				if err = gobtools.EncodeBool(buf, val21); err != nil {
+					return err
+				}
+				if !val21 {
+					if err = (*(*r.SymbolicOutput)[val20]).Encode(ctx, buf); err != nil {
+						return err
+					}
+				}
+			}
+		}
+	}
+
+	val22 := r.IdeInfo == nil
+	if err = gobtools.EncodeBool(buf, val22); err != nil {
+		return err
+	}
+	if !val22 {
+		if err = (*r.IdeInfo).Encode(ctx, buf); err != nil {
+			return err
+		}
+	}
+
+	val23 := r.AconfigPropagatingDeclarations == nil
+	if err = gobtools.EncodeBool(buf, val23); err != nil {
+		return err
+	}
+	if !val23 {
+		if err = (*r.AconfigPropagatingDeclarations).Encode(ctx, buf); err != nil {
+			return err
+		}
+	}
 	return err
 }
 
 func (r CommonModuleInfo) CustomHash(hasher *proptools.Hasher) error {
 	hasher.WriteString(":android.CommonModuleInfo")
-	hasher.WriteInt(49)
+	hasher.WriteInt(54)
 	hasher.WriteString(":.bool")
 	if r.Enabled {
 		hasher.WriteByte(1)
@@ -7130,6 +7197,98 @@ func (r CommonModuleInfo) CustomHash(hasher *proptools.Hasher) error {
 			return nil
 		}
 		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.HostToolProvider)), val25); err != nil {
+			return err
+		}
+	}
+	hasher.WriteString(":.*LogtagsInfo")
+	val26 := r.Logtags == nil
+	if val26 {
+		hasher.WriteByte(0)
+	} else {
+		val27 := func(hasher *proptools.Hasher) error {
+			if err := (*r.Logtags).CustomHash(hasher); err != nil {
+				return err
+			}
+			return nil
+		}
+		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.Logtags)), val27); err != nil {
+			return err
+		}
+	}
+	hasher.WriteString(":.*TestModuleInformation")
+	val28 := r.TestModuleInfo == nil
+	if val28 {
+		hasher.WriteByte(0)
+	} else {
+		val29 := func(hasher *proptools.Hasher) error {
+			if err := (*r.TestModuleInfo).CustomHash(hasher); err != nil {
+				return err
+			}
+			return nil
+		}
+		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.TestModuleInfo)), val29); err != nil {
+			return err
+		}
+	}
+	hasher.WriteString(":.*SymbolicOutputInfos")
+	val30 := r.SymbolicOutput == nil
+	if val30 {
+		hasher.WriteByte(0)
+	} else {
+		val34 := func(hasher *proptools.Hasher) error {
+			hasher.WriteString(":android.SymbolicOutputInfos")
+			hasher.WriteString(":.[]*SymbolicOutputInfo")
+			hasher.WriteInt(len((*r.SymbolicOutput)))
+			for val31 := 0; val31 < len((*r.SymbolicOutput)); val31++ {
+				hasher.WriteString(":.*SymbolicOutputInfo")
+				val32 := (*r.SymbolicOutput)[val31] == nil
+				if val32 {
+					hasher.WriteByte(0)
+				} else {
+					val33 := func(hasher *proptools.Hasher) error {
+						if err := (*(*r.SymbolicOutput)[val31]).CustomHash(hasher); err != nil {
+							return err
+						}
+						return nil
+					}
+					if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer((*r.SymbolicOutput)[val31])), val33); err != nil {
+						return err
+					}
+				}
+			}
+			return nil
+		}
+		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.SymbolicOutput)), val34); err != nil {
+			return err
+		}
+	}
+	hasher.WriteString(":.*IdeInfo")
+	val35 := r.IdeInfo == nil
+	if val35 {
+		hasher.WriteByte(0)
+	} else {
+		val36 := func(hasher *proptools.Hasher) error {
+			if err := (*r.IdeInfo).CustomHash(hasher); err != nil {
+				return err
+			}
+			return nil
+		}
+		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.IdeInfo)), val36); err != nil {
+			return err
+		}
+	}
+	hasher.WriteString(":.*aconfigPropagatingDeclarationsInfo")
+	val37 := r.AconfigPropagatingDeclarations == nil
+	if val37 {
+		hasher.WriteByte(0)
+	} else {
+		val38 := func(hasher *proptools.Hasher) error {
+			if err := (*r.AconfigPropagatingDeclarations).CustomHash(hasher); err != nil {
+				return err
+			}
+			return nil
+		}
+		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.AconfigPropagatingDeclarations)), val38); err != nil {
 			return err
 		}
 	}
@@ -7510,6 +7669,84 @@ func (r *CommonModuleInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) er
 			return err
 		}
 		r.HostToolProvider = &val86
+	}
+
+	var val90 bool
+	if err = gobtools.DecodeBool(buf, &val90); err != nil {
+		return err
+	}
+	if !val90 {
+		var val89 LogtagsInfo
+		if err = val89.Decode(ctx, buf); err != nil {
+			return err
+		}
+		r.Logtags = &val89
+	}
+
+	var val93 bool
+	if err = gobtools.DecodeBool(buf, &val93); err != nil {
+		return err
+	}
+	if !val93 {
+		var val92 TestModuleInformation
+		if err = val92.Decode(ctx, buf); err != nil {
+			return err
+		}
+		r.TestModuleInfo = &val92
+	}
+
+	var val96 bool
+	if err = gobtools.DecodeBool(buf, &val96); err != nil {
+		return err
+	}
+	if !val96 {
+		var val95 SymbolicOutputInfos
+		var val99 int
+		err = gobtools.DecodeInt(buf, &val99)
+		if err != nil {
+			return err
+		}
+		if val99 != -1 {
+			val95 = make([]*SymbolicOutputInfo, val99)
+			for val100 := 0; val100 < int(val99); val100++ {
+				var val102 bool
+				if err = gobtools.DecodeBool(buf, &val102); err != nil {
+					return err
+				}
+				if !val102 {
+					var val101 SymbolicOutputInfo
+					if err = val101.Decode(ctx, buf); err != nil {
+						return err
+					}
+					val95[val100] = &val101
+				}
+			}
+		}
+		r.SymbolicOutput = &val95
+	}
+
+	var val105 bool
+	if err = gobtools.DecodeBool(buf, &val105); err != nil {
+		return err
+	}
+	if !val105 {
+		var val104 IdeInfo
+		if err = val104.Decode(ctx, buf); err != nil {
+			return err
+		}
+		r.IdeInfo = &val104
+	}
+
+	var val108 bool
+	if err = gobtools.DecodeBool(buf, &val108); err != nil {
+		return err
+	}
+	if !val108 {
+		var val107 aconfigPropagatingDeclarationsInfo
+		if err = val107.Decode(ctx, buf); err != nil {
+			return err
+		}
+		r.AconfigPropagatingDeclarations = &val107
 	}
 
 	return err

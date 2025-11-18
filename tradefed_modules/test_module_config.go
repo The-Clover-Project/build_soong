@@ -366,7 +366,7 @@ func (m *testModuleConfigModule) validateBase(ctx android.ModuleContext, depTag 
 //  4. New Module.config / AndroidTest.xml file with our options.
 func (m *testModuleConfigModule) generateManifestAndConfig(ctx android.ModuleContext) {
 	// Keep before early returns.
-	android.SetProvider(ctx, android.TestOnlyProviderKey, android.TestModuleInformation{
+	ctx.SetTestModuleInfo(&android.TestModuleInformation{
 		TestOnly:       true,
 		TopLevelTarget: true,
 	})

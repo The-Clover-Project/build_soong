@@ -2079,12 +2079,17 @@ type CommonModuleInfo struct {
 	ModuleInfoJSON             *ModuleInfoJSONInfo
 	UnstableInfo               *unstableInfo
 	// LicenseMetadata is used to propagate license metadata paths between modules.
-	LicenseMetadata    *LicenseMetadataInfo
-	Licenses           *LicensesInfo
-	Phonies            *PhonyInfo
-	OutputFiles        *OutputFilesInfo
-	ModuleBuildTargets *ModuleBuildTargetsInfo
-	HostToolProvider   *HostToolProviderInfo
+	LicenseMetadata                *LicenseMetadataInfo
+	Licenses                       *LicensesInfo
+	Phonies                        *PhonyInfo
+	OutputFiles                    *OutputFilesInfo
+	ModuleBuildTargets             *ModuleBuildTargetsInfo
+	HostToolProvider               *HostToolProviderInfo
+	Logtags                        *LogtagsInfo
+	TestModuleInfo                 *TestModuleInformation
+	SymbolicOutput                 *SymbolicOutputInfos
+	IdeInfo                        *IdeInfo
+	AconfigPropagatingDeclarations *aconfigPropagatingDeclarationsInfo
 }
 
 // @auto-generate: gob
@@ -2200,6 +2205,8 @@ func (m *ModuleBase) GenerateBuildActions(blueprintCtx blueprint.ModuleContext) 
 
 	var installFiles InstallFilesInfo
 	var licenses *LicensesInfo
+	var aconfigPropagatingDeclarations *aconfigPropagatingDeclarationsInfo
+	var ideInfo IdeInfo
 
 	if m.Enabled(ctx) {
 		// ensure all direct android.Module deps are enabled
@@ -2259,7 +2266,7 @@ func (m *ModuleBase) GenerateBuildActions(blueprintCtx blueprint.ModuleContext) 
 
 		// Call aconfigUpdateAndroidBuildActions to collect merged aconfig files before being used
 		// in m.module.GenerateAndroidBuildActions
-		aconfigUpdateAndroidBuildActions(ctx)
+		aconfigPropagatingDeclarations = aconfigUpdateAndroidBuildActions(ctx)
 		if ctx.Failed() {
 			return
 		}
@@ -2272,10 +2279,8 @@ func (m *ModuleBase) GenerateBuildActions(blueprintCtx blueprint.ModuleContext) 
 		m.module.base().hooks.runPostGenerateAndroidBuildActionsHooks(ctx)
 
 		if x, ok := m.module.(IDEInfo); ok {
-			var result IdeInfo
-			x.IDEInfo(ctx, &result)
-			result.BaseModuleName = x.BaseModuleName()
-			SetProvider(ctx, IdeInfoProviderKey, result)
+			x.IDEInfo(ctx, &ideInfo)
+			ideInfo.BaseModuleName = x.BaseModuleName()
 		}
 
 		if proptools.Bool(m.commonProperties.Unchecked_module) {
@@ -2471,6 +2476,11 @@ func (m *ModuleBase) GenerateBuildActions(blueprintCtx blueprint.ModuleContext) 
 		LicenseMetadata:                              licenseMetadata,
 		Licenses:                                     licenses,
 		ModuleBuildTargets:                           moduleTargets,
+		Logtags:                                      ctx.logTags,
+		TestModuleInfo:                               ctx.testModuleInfo,
+		SymbolicOutput:                               ctx.symbolicOutput,
+		IdeInfo:                                      &ideInfo,
+		AconfigPropagatingDeclarations:               aconfigPropagatingDeclarations,
 	}
 	outputFiles := ctx.GetOutputFiles()
 	if outputFiles.DefaultOutputFiles != nil || outputFiles.TaggedOutputFiles != nil {
@@ -3582,7 +3592,7 @@ type IdeInfo struct {
 }
 
 // Merge merges two IdeInfos and produces a new one, leaving the origional unchanged
-func (i IdeInfo) Merge(other IdeInfo) IdeInfo {
+func (i IdeInfo) Merge(other *IdeInfo) IdeInfo {
 	return IdeInfo{
 		Deps:              mergeStringLists(i.Deps, other.Deps),
 		Srcs:              mergeStringLists(i.Srcs, other.Srcs),
@@ -3605,8 +3615,6 @@ func (i IdeInfo) Merge(other IdeInfo) IdeInfo {
 func mergeStringLists(a, b []string) []string {
 	return FirstUniqueStrings(Concat(a, b))
 }
-
-var IdeInfoProviderKey = blueprint.NewProvider[IdeInfo]()
 
 func CheckBlueprintSyntax(ctx BaseModuleContext, filename string, contents string) []error {
 	bpctx := ctx.blueprintBaseModuleContext()

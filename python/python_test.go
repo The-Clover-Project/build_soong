@@ -311,8 +311,8 @@ func TestTestOnlyProvider(t *testing.T) {
 
 	actualTestOnly := []string{}
 	ctx.VisitAllModules(func(m android.Module) {
-		if provider, ok := android.OtherModuleProvider(ctx.TestContext.OtherModuleProviderAdaptor(), m, android.TestOnlyProviderKey); ok {
-			if provider.TestOnly {
+		if provider, ok := android.OtherModuleProvider(ctx.TestContext.OtherModuleProviderAdaptor(), m, android.CommonModuleInfoProvider); ok && provider.TestModuleInfo != nil {
+			if provider.TestModuleInfo.TestOnly {
 				actualTestOnly = append(actualTestOnly, m.Name())
 			}
 		}

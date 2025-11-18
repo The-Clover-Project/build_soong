@@ -171,7 +171,7 @@ func (j *Module) genSources(ctx android.ModuleContext, srcFiles android.Paths,
 		outSrcFiles = append(outSrcFiles, srcJarFiles...)
 	}
 
-	android.SetProvider(ctx, android.LogtagsProviderKey, &android.LogtagsInfo{
+	ctx.SetLogtagsInfo(&android.LogtagsInfo{
 		Logtags: j.logtagsSrcs,
 	})
 
