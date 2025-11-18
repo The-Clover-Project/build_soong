@@ -28,7 +28,7 @@ var (
 	pctx = android.NewPackageContext("android/soong/rust/config")
 
 	RustDefaultVersion = "1.90.0"
-	RustDefaultBase    = "prebuilts/rust/"
+	RustDefaultBase    = "prebuilts/rust-toolchain/"
 	DefaultEdition     = "2021"
 	Stdlibs            = []string{
 		"libstd",
