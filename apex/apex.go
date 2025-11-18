@@ -2002,7 +2002,7 @@ func (a *apexBundle) depVisitor(vctx *visitorContext, ctx android.ModuleContext,
 			}
 		case kernelModulesTag:
 			if _, ok := android.OtherModuleProvider(ctx, child, android.PrebuiltKernelModulesComplianceMetadataProvider); ok {
-				for _, ps := range android.OtherModuleProviderOrDefault(ctx, child, android.InstallFilesProvider).PackagingSpecs {
+				for _, ps := range android.GetInstallFilesCommon(commonInfo).PackagingSpecs {
 					src := ps.SrcPath()
 					dir := path.Dir(ps.RelPathInPackage())
 					vctx.filesInfo = append(vctx.filesInfo, newApexFile(ctx, src, commonInfo.BaseModuleName, dir, etc, child))

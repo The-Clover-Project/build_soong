@@ -53,7 +53,7 @@ func modulesLicenseMetadata(ctx OtherModuleProviderContext, modules ...ModulePro
 		if isMctx && EqualModules(mctx.Module(), module) {
 			mf = mctx.LicenseMetadataFile()
 		} else {
-			mf = OtherModuleProviderOrDefault(ctx, module, InstallFilesProvider).LicenseMetadataFile
+			mf = GetInstallFiles(ctx, module).LicenseMetadataFile
 		}
 		if mf != nil {
 			result = append(result, mf)

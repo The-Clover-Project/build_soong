@@ -6850,12 +6850,22 @@ func (r CommonModuleInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) err
 			return err
 		}
 	}
+
+	val24 := r.InstallFiles == nil
+	if err = gobtools.EncodeBool(buf, val24); err != nil {
+		return err
+	}
+	if !val24 {
+		if err = (*r.InstallFiles).Encode(ctx, buf); err != nil {
+			return err
+		}
+	}
 	return err
 }
 
 func (r CommonModuleInfo) CustomHash(hasher *proptools.Hasher) error {
 	hasher.WriteString(":android.CommonModuleInfo")
-	hasher.WriteInt(54)
+	hasher.WriteInt(55)
 	hasher.WriteString(":.bool")
 	if r.Enabled {
 		hasher.WriteByte(1)
@@ -7289,6 +7299,21 @@ func (r CommonModuleInfo) CustomHash(hasher *proptools.Hasher) error {
 			return nil
 		}
 		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.AconfigPropagatingDeclarations)), val38); err != nil {
+			return err
+		}
+	}
+	hasher.WriteString(":.*InstallFilesInfo")
+	val39 := r.InstallFiles == nil
+	if val39 {
+		hasher.WriteByte(0)
+	} else {
+		val40 := func(hasher *proptools.Hasher) error {
+			if err := (*r.InstallFiles).CustomHash(hasher); err != nil {
+				return err
+			}
+			return nil
+		}
+		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.InstallFiles)), val40); err != nil {
 			return err
 		}
 	}
@@ -7747,6 +7772,18 @@ func (r *CommonModuleInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) er
 			return err
 		}
 		r.AconfigPropagatingDeclarations = &val107
+	}
+
+	var val111 bool
+	if err = gobtools.DecodeBool(buf, &val111); err != nil {
+		return err
+	}
+	if !val111 {
+		var val110 InstallFilesInfo
+		if err = val110.Decode(ctx, buf); err != nil {
+			return err
+		}
+		r.InstallFiles = &val110
 	}
 
 	return err

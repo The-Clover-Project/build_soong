@@ -1406,8 +1406,8 @@ func (c *RuleBuilderCommand) getToolTransitiveDeps(tool string) InstallPaths {
 	toolModule := c.getToolModule(tool)
 	var transitiveInstallFiles InstallPaths
 	if !toolModule.IsNil() {
-		if installFilesInfo, ok := OtherModuleProvider(c.rule.ctx, toolModule, InstallFilesProvider); ok {
-			transitiveInstallFiles = installFilesInfo.InstallFiles
+		if info := OtherModulePointerProviderOrDefault(c.rule.ctx, toolModule, CommonModuleInfoProvider).InstallFiles; info != nil {
+			transitiveInstallFiles = info.InstallFiles
 		}
 	}
 

@@ -425,7 +425,8 @@ func (g *Module) generateCommonBuildActions(ctx android.ModuleContext) {
 				if h := android.GetHostToolProvider(ctx, module); h != nil {
 					// A HostToolProvider provides the path to a tool, which will be copied
 					// into the sandbox.
-					if !android.OtherModulePointerProviderOrDefault(ctx, module, android.CommonModuleInfoProvider).Enabled {
+					commonInfo := android.OtherModulePointerProviderOrDefault(ctx, module, android.CommonModuleInfoProvider)
+					if !commonInfo.Enabled {
 						if ctx.Config().AllowMissingDependencies() {
 							ctx.AddMissingDependencies([]string{tool})
 						} else {
@@ -438,8 +439,8 @@ func (g *Module) generateCommonBuildActions(ctx android.ModuleContext) {
 						ctx.ModuleErrorf("host tool %q missing output file", tool)
 						return
 					}
-					if specs := android.OtherModuleProviderOrDefault(
-						ctx, module, android.InstallFilesProvider).TransitivePackagingSpecs.ToList(); specs != nil {
+					if specs := android.GetInstallFilesCommon(
+						commonInfo).TransitivePackagingSpecs.ToList(); specs != nil {
 						// If the HostToolProvider has PackgingSpecs, which are definitions of the
 						// required relative locations of the tool and its dependencies, use those
 						// instead.  They will be copied to those relative locations in the sbox
