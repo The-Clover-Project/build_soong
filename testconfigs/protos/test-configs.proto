@@ -15,6 +15,9 @@
 syntax = "proto3";
 package protos;
 option go_package = "android/soong/testconfigs/protos";
+option java_package = "com.android.soong.testconfigs.proto";
+option java_multiple_files = true;
+
 
 // TestConfigs is the top level aggregation structure containing
 // all the information related to test configurations.

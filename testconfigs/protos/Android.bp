@@ -44,3 +44,20 @@ python_library_host {
         "//tools/asuite/atest",
     ],
 }
+
+java_library_host {
+    name: "test_configs_proto_java",
+    visibility: [
+        "//tools/tradefederation/core",
+    ],
+    srcs: [
+        "test-configs.proto",
+    ],
+    libs: [
+        "libprotobuf-java-full",
+    ],
+    proto: {
+        include_dirs: ["external/protobuf/src"],
+        type: "full",
+    },
+}
