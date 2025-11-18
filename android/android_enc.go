@@ -13381,7 +13381,6 @@ func (r TestModuleInformation) GetTypeId() int16 {
 // begin of test_suites.go
 func init() {
 	TestSuiteInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(TestSuiteInfo) })
-	TestSuiteSharedLibsInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(TestSuiteSharedLibsInfo) })
 	MakeNameInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(MakeNameInfo) })
 	FilePairGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(FilePair) })
 	TestSuiteInstallsInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(TestSuiteInstallsInfo) })
@@ -13504,12 +13503,22 @@ func (r TestSuiteInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error 
 	if err = gobtools.EncodeBool(buf, r.IsUnitTest); err != nil {
 		return err
 	}
+
+	val6 := r.TestSuiteInstalls == nil
+	if err = gobtools.EncodeBool(buf, val6); err != nil {
+		return err
+	}
+	if !val6 {
+		if err = (*r.TestSuiteInstalls).Encode(ctx, buf); err != nil {
+			return err
+		}
+	}
 	return err
 }
 
 func (r TestSuiteInfo) CustomHash(hasher *proptools.Hasher) error {
 	hasher.WriteString(":android.TestSuiteInfo")
-	hasher.WriteInt(15)
+	hasher.WriteInt(16)
 	hasher.WriteString(":.string")
 	hasher.WriteString(r.NameSuffix)
 	hasher.WriteString(":.[]string")
@@ -13667,6 +13676,21 @@ func (r TestSuiteInfo) CustomHash(hasher *proptools.Hasher) error {
 	} else {
 		hasher.WriteByte(0)
 	}
+	hasher.WriteString(":.*TestSuiteInstallsInfo")
+	val18 := r.TestSuiteInstalls == nil
+	if val18 {
+		hasher.WriteByte(0)
+	} else {
+		val19 := func(hasher *proptools.Hasher) error {
+			if err := (*r.TestSuiteInstalls).CustomHash(hasher); err != nil {
+				return err
+			}
+			return nil
+		}
+		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.TestSuiteInstalls)), val19); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 
@@ -13808,6 +13832,18 @@ func (r *TestSuiteInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error
 		return err
 	}
 
+	var val37 bool
+	if err = gobtools.DecodeBool(buf, &val37); err != nil {
+		return err
+	}
+	if !val37 {
+		var val36 TestSuiteInstallsInfo
+		if err = val36.Decode(ctx, buf); err != nil {
+			return err
+		}
+		r.TestSuiteInstalls = &val36
+	}
+
 	return err
 }
 
@@ -13817,88 +13853,65 @@ func (r TestSuiteInfo) GetTypeId() int16 {
 	return TestSuiteInfoGobRegId
 }
 
-func (r TestSuiteSharedLibsInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+func (r MakeNameInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	var err error
 
-	if r.MakeNames == nil {
+	if err = gobtools.EncodeString(buf, r.MakeName); err != nil {
+		return err
+	}
+
+	if r.SharedLibsMakeNames == nil {
 		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
 		}
 	} else {
-		if err = gobtools.EncodeInt(buf, len(r.MakeNames)); err != nil {
+		if err = gobtools.EncodeInt(buf, len(r.SharedLibsMakeNames)); err != nil {
 			return err
 		}
-		for val1 := 0; val1 < len(r.MakeNames); val1++ {
-			if err = gobtools.EncodeString(buf, r.MakeNames[val1]); err != nil {
+		for val1 := 0; val1 < len(r.SharedLibsMakeNames); val1++ {
+			if err = gobtools.EncodeString(buf, r.SharedLibsMakeNames[val1]); err != nil {
 				return err
 			}
 		}
-	}
-	return err
-}
-
-func (r TestSuiteSharedLibsInfo) CustomHash(hasher *proptools.Hasher) error {
-	hasher.WriteString(":android.TestSuiteSharedLibsInfo")
-	hasher.WriteInt(1)
-	hasher.WriteString(":.[]string")
-	hasher.WriteInt(len(r.MakeNames))
-	for val1 := 0; val1 < len(r.MakeNames); val1++ {
-		hasher.WriteString(":.string")
-		hasher.WriteString(r.MakeNames[val1])
-	}
-	return nil
-}
-
-func (r *TestSuiteSharedLibsInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
-	var err error
-
-	var val2 int
-	err = gobtools.DecodeInt(buf, &val2)
-	if err != nil {
-		return err
-	}
-	if val2 != -1 {
-		r.MakeNames = make([]string, val2)
-		for val3 := 0; val3 < int(val2); val3++ {
-			err = gobtools.DecodeString(buf, &r.MakeNames[val3])
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	return err
-}
-
-var TestSuiteSharedLibsInfoGobRegId int16
-
-func (r TestSuiteSharedLibsInfo) GetTypeId() int16 {
-	return TestSuiteSharedLibsInfoGobRegId
-}
-
-func (r MakeNameInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
-	var err error
-
-	if err = gobtools.EncodeString(buf, r.Name); err != nil {
-		return err
 	}
 	return err
 }
 
 func (r MakeNameInfo) CustomHash(hasher *proptools.Hasher) error {
 	hasher.WriteString(":android.MakeNameInfo")
-	hasher.WriteInt(1)
+	hasher.WriteInt(2)
 	hasher.WriteString(":.string")
-	hasher.WriteString(r.Name)
+	hasher.WriteString(r.MakeName)
+	hasher.WriteString(":.[]string")
+	hasher.WriteInt(len(r.SharedLibsMakeNames))
+	for val1 := 0; val1 < len(r.SharedLibsMakeNames); val1++ {
+		hasher.WriteString(":.string")
+		hasher.WriteString(r.SharedLibsMakeNames[val1])
+	}
 	return nil
 }
 
 func (r *MakeNameInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
-	err = gobtools.DecodeString(buf, &r.Name)
+	err = gobtools.DecodeString(buf, &r.MakeName)
 	if err != nil {
 		return err
+	}
+
+	var val3 int
+	err = gobtools.DecodeInt(buf, &val3)
+	if err != nil {
+		return err
+	}
+	if val3 != -1 {
+		r.SharedLibsMakeNames = make([]string, val3)
+		for val4 := 0; val4 < int(val3); val4++ {
+			err = gobtools.DecodeString(buf, &r.SharedLibsMakeNames[val4])
+			if err != nil {
+				return err
+			}
+		}
 	}
 
 	return err

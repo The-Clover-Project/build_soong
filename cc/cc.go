@@ -2728,17 +2728,14 @@ func (c *Module) GenerateAndroidBuildActions(actx android.ModuleContext) {
 	}
 	android.SetProvider(ctx, CcInfoProvider, &ccInfo)
 
-	android.SetProvider(ctx, android.TestSuiteSharedLibsInfoProvider, android.TestSuiteSharedLibsInfo{
-		MakeNames: c.Properties.AndroidMkSharedLibs,
-	})
-
 	// TODO: Refactor MakeLibName so we don't have to fake CommonModuleInfo like this
 	myCommonInfo := android.CommonModuleInfo{
 		BaseModuleName: c.BaseModuleName(),
 		Target:         ctx.Target(),
 	}
 	android.SetProvider(ctx, android.MakeNameInfoProvider, android.MakeNameInfo{
-		Name: MakeLibName(&ccInfo, linkableInfo, &myCommonInfo, ctx.ModuleName()),
+		SharedLibsMakeNames: c.Properties.AndroidMkSharedLibs,
+		MakeName:            MakeLibName(&ccInfo, linkableInfo, &myCommonInfo, ctx.ModuleName()),
 	})
 
 	c.setOutputFiles(ctx)
