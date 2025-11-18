@@ -1543,10 +1543,10 @@ func (m *ModuleBase) computeInstallDeps(ctx ModuleContext) ([]depset.DepSet[Inst
 	var packagingSpecs []depset.DepSet[PackagingSpec]
 	ctx.VisitDirectDepsProxy(func(dep ModuleProxy) {
 		if isInstallDepNeeded(ctx, dep) {
+			commonInfo := OtherModulePointerProviderOrDefault(ctx, dep, CommonModuleInfoProvider)
 			// Installation is still handled by Make, so anything hidden from Make is not
 			// installable.
-			info := OtherModuleProviderOrDefault(ctx, dep, InstallFilesProvider)
-			commonInfo := OtherModulePointerProviderOrDefault(ctx, dep, CommonModuleInfoProvider)
+			info := GetInstallFilesCommon(commonInfo)
 			if !commonInfo.HideFromMake && !commonInfo.SkipInstall {
 				installDeps = append(installDeps, info.TransitiveInstallFiles)
 			}
@@ -1998,8 +1998,6 @@ type InstallFilesInfo struct {
 	DistFiles TaggedDistFiles
 }
 
-var InstallFilesProvider = blueprint.NewProvider[InstallFilesInfo]()
-
 // @auto-generate: gob
 type SourceFilesInfo struct {
 	Srcs Paths
@@ -2123,6 +2121,7 @@ type CommonModuleInfo struct {
 	PackageInfo                    *PackageInfo
 	AndroidMkData                  *AndroidMkDataInfo
 	BaseJarJarProviderData         *BaseJarJarProviderData
+	InstallFiles                   *InstallFilesInfo
 }
 
 // @auto-generate: gob
@@ -2238,7 +2237,7 @@ func (m *ModuleBase) GenerateBuildActions(blueprintCtx blueprint.ModuleContext) 
 	var installFiles InstallFilesInfo
 	var licenses *LicensesInfo
 	var aconfigPropagatingDeclarations *aconfigPropagatingDeclarationsInfo
-	var ideInfo IdeInfo
+	var ideInfo *IdeInfo
 
 	if m.Enabled(ctx) {
 		// ensure all direct android.Module deps are enabled
@@ -2311,7 +2310,8 @@ func (m *ModuleBase) GenerateBuildActions(blueprintCtx blueprint.ModuleContext) 
 		m.module.base().hooks.runPostGenerateAndroidBuildActionsHooks(ctx)
 
 		if x, ok := m.module.(IDEInfo); ok {
-			x.IDEInfo(ctx, &ideInfo)
+			ideInfo = &IdeInfo{}
+			x.IDEInfo(ctx, ideInfo)
 			ideInfo.BaseModuleName = x.BaseModuleName()
 		}
 
@@ -2363,10 +2363,6 @@ func (m *ModuleBase) GenerateBuildActions(blueprintCtx blueprint.ModuleContext) 
 	ctx.TransitiveInstallFiles = depset.New[InstallPath](depset.TOPOLOGICAL, ctx.installFiles, dependencyInstallFiles)
 	installFiles.TransitiveInstallFiles = ctx.TransitiveInstallFiles
 	installFiles.TransitivePackagingSpecs = depset.New[PackagingSpec](depset.TOPOLOGICAL, ctx.packagingSpecs, dependencyPackagingSpecs)
-
-	if m.Enabled(ctx) {
-		SetProvider(ctx, InstallFilesProvider, installFiles)
-	}
 
 	var testSuiteInstalls []FilePair
 	if ctx.testSuiteInfoSet {
@@ -2512,7 +2508,7 @@ func (m *ModuleBase) GenerateBuildActions(blueprintCtx blueprint.ModuleContext) 
 		Logtags:                                      ctx.logTags,
 		TestModuleInfo:                               ctx.testModuleInfo,
 		SymbolicOutput:                               ctx.symbolicOutput,
-		IdeInfo:                                      &ideInfo,
+		IdeInfo:                                      ideInfo,
 		AconfigPropagatingDeclarations:               aconfigPropagatingDeclarations,
 		MakeNames:                                    ctx.makeNames,
 		SourceFiles:                                  sourceFiles,
@@ -2598,6 +2594,7 @@ func (m *ModuleBase) GenerateBuildActions(blueprintCtx blueprint.ModuleContext) 
 				Class: am.AndroidMk().Class,
 			}
 		}
+		commonData.InstallFiles = &installFiles
 	}
 	SetProvider(ctx, CommonModuleInfoProvider, &commonData)
 
@@ -3592,7 +3589,7 @@ func (c *buildTargetSingleton) GenerateBuildActions(ctx SingletonContext) {
 		info := OtherModuleProviderOrDefault(ctx, module, CommonModuleInfoProvider)
 		if info.Enabled {
 			key := osAndCross{os: info.Target.Os, hostCross: info.Target.HostCross}
-			osDeps[key] = append(osDeps[key], OtherModuleProviderOrDefault(ctx, module, InstallFilesProvider).CheckbuildFiles...)
+			osDeps[key] = append(osDeps[key], GetInstallFilesCommon(info).CheckbuildFiles...)
 		}
 	})
 
@@ -3678,4 +3675,15 @@ func mergeStringLists(a, b []string) []string {
 func CheckBlueprintSyntax(ctx BaseModuleContext, filename string, contents string) []error {
 	bpctx := ctx.blueprintBaseModuleContext()
 	return blueprint.CheckBlueprintSyntax(bpctx.ModuleFactories(), filename, contents)
+}
+
+func GetInstallFilesCommon(common *CommonModuleInfo) InstallFilesInfo {
+	if common != nil && common.InstallFiles != nil {
+		return *common.InstallFiles
+	}
+	return InstallFilesInfo{}
+}
+
+func GetInstallFiles(ctx OtherModuleProviderContext, module ModuleOrProxy) InstallFilesInfo {
+	return GetInstallFilesCommon(OtherModuleProviderOrDefault(ctx, module, CommonModuleInfoProvider))
 }
