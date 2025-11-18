@@ -179,6 +179,8 @@ func init() {
 func HostPrebuiltTag(config android.Config) string {
 	if config.UseHostMusl() {
 		return "linux-musl-x86"
+	} else if config.PrebuiltOS() == "darwin-x86" {
+		return "darwin"
 	} else {
 		return config.PrebuiltOS()
 	}
