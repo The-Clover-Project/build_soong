@@ -52,10 +52,8 @@ func TestTestOnlyProvider(t *testing.T) {
 
 	actualTestOnly := []string{}
 	ctx.VisitAllModules(func(m android.Module) {
-		if provider, ok := android.OtherModuleProvider(ctx.TestContext.OtherModuleProviderAdaptor(), m, android.TestOnlyProviderKey); ok {
-			if provider.TestOnly {
-				actualTestOnly = append(actualTestOnly, m.Name())
-			}
+		if provider, ok := android.OtherModuleProvider(ctx.TestContext.OtherModuleProviderAdaptor(), m, android.CommonModuleInfoProvider); ok && provider.TestModuleInfo != nil && provider.TestModuleInfo.TestOnly {
+			actualTestOnly = append(actualTestOnly, m.Name())
 		}
 	})
 	expectedTestOnlyModules := []string{

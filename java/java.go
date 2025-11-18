@@ -1221,7 +1221,7 @@ func (j *Library) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 
 	j.setInstallRules(ctx)
 
-	android.SetProvider(ctx, android.TestOnlyProviderKey, android.TestModuleInformation{
+	ctx.SetTestModuleInfo(&android.TestModuleInformation{
 		TestOnly:       Bool(j.sourceProperties.Test_only),
 		TopLevelTarget: j.sourceProperties.Top_level_test_target,
 	})

@@ -303,7 +303,7 @@ func (p *PythonLibraryModule) AddDepsOnPythonLauncherAndStdlib(ctx android.Botto
 func (p *PythonLibraryModule) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	expandedSrcs := android.PathsForModuleSrcExcludes(ctx, p.properties.Srcs, p.properties.Exclude_srcs)
 	// Keep before any early returns.
-	android.SetProvider(ctx, android.TestOnlyProviderKey, android.TestModuleInformation{
+	ctx.SetTestModuleInfo(&android.TestModuleInformation{
 		TestOnly:       Bool(p.sourceProperties.Test_only),
 		TopLevelTarget: p.sourceProperties.Top_level_test_target,
 	})

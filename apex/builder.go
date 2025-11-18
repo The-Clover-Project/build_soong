@@ -264,9 +264,9 @@ func (a *apexBundle) buildAconfigFiles(ctx android.ModuleContext) []apexFile {
 		if file.module.IsNil() {
 			continue
 		}
-		if dep, ok := android.OtherModuleProvider(ctx, file.module, android.AconfigPropagatingProviderKey); ok {
-			if len(dep.AconfigFiles) > 0 && dep.AconfigFiles[ctx.ModuleName()] != nil {
-				aconfigFiles = append(aconfigFiles, dep.AconfigFiles[ctx.ModuleName()]...)
+		if dep, ok := android.OtherModuleProvider(ctx, file.module, android.CommonModuleInfoProvider); ok && dep.AconfigPropagatingDeclarations != nil {
+			if len(dep.AconfigPropagatingDeclarations.AconfigFiles) > 0 && dep.AconfigPropagatingDeclarations.AconfigFiles[ctx.ModuleName()] != nil {
+				aconfigFiles = append(aconfigFiles, dep.AconfigPropagatingDeclarations.AconfigFiles[ctx.ModuleName()]...)
 			}
 		}
 
