@@ -4979,7 +4979,7 @@ func init() {
 	BaseJarJarProviderDataGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(BaseJarJarProviderData) })
 	CommonModuleInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(CommonModuleInfo) })
 	ApiLevelOrPlatformGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ApiLevelOrPlatform) })
-	HostToolProviderInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(HostToolProviderInfo) })
+	HostToolInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(HostToolInfo) })
 	DistInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(DistInfo) })
 	GeneratedSourceInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(GeneratedSourceInfo) })
 	katiInstallGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(katiInstall) })
@@ -6927,12 +6927,12 @@ func (r CommonModuleInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) err
 		}
 	}
 
-	val16 := r.HostToolProvider == nil
+	val16 := r.HostToolInfo == nil
 	if err = gobtools.EncodeBool(buf, val16); err != nil {
 		return err
 	}
 	if !val16 {
-		if err = (*r.HostToolProvider).Encode(ctx, buf); err != nil {
+		if err = (*r.HostToolInfo).Encode(ctx, buf); err != nil {
 			return err
 		}
 	}
@@ -7418,18 +7418,18 @@ func (r CommonModuleInfo) CustomHash(hasher *proptools.Hasher) error {
 			return err
 		}
 	}
-	hasher.WriteString(":.*HostToolProviderInfo")
-	val24 := r.HostToolProvider == nil
+	hasher.WriteString(":.*HostToolInfo")
+	val24 := r.HostToolInfo == nil
 	if val24 {
 		hasher.WriteByte(0)
 	} else {
 		val25 := func(hasher *proptools.Hasher) error {
-			if err := (*r.HostToolProvider).CustomHash(hasher); err != nil {
+			if err := (*r.HostToolInfo).CustomHash(hasher); err != nil {
 				return err
 			}
 			return nil
 		}
-		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.HostToolProvider)), val25); err != nil {
+		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.HostToolInfo)), val25); err != nil {
 			return err
 		}
 	}
@@ -8017,11 +8017,11 @@ func (r *CommonModuleInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) er
 		return err
 	}
 	if !val87 {
-		var val86 HostToolProviderInfo
+		var val86 HostToolInfo
 		if err = val86.Decode(ctx, buf); err != nil {
 			return err
 		}
-		r.HostToolProvider = &val86
+		r.HostToolInfo = &val86
 	}
 
 	var val90 bool
@@ -8282,38 +8282,55 @@ func (r ApiLevelOrPlatform) GetTypeId() int16 {
 	return ApiLevelOrPlatformGobRegId
 }
 
-func (r HostToolProviderInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+func (r HostToolInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	var err error
 
 	if err = r.HostToolPath.Encode(ctx, buf); err != nil {
 		return err
 	}
+
+	if err = r.TransitivePackagingSpecs.Encode(ctx, buf); err != nil {
+		return err
+	}
 	return err
 }
 
-func (r HostToolProviderInfo) CustomHash(hasher *proptools.Hasher) error {
-	hasher.WriteString(":android.HostToolProviderInfo")
-	hasher.WriteInt(1)
+func (r HostToolInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":android.HostToolInfo")
+	hasher.WriteInt(2)
 	if err := r.HostToolPath.CustomHash(hasher); err != nil {
+		return err
+	}
+	val2 := func(hasher *proptools.Hasher, val1 PackagingSpec) error {
+		if err := val1.CustomHash(hasher); err != nil {
+			return err
+		}
+		return nil
+	}
+	if err := r.TransitivePackagingSpecs.Hash(hasher, "PackagingSpec", val2); err != nil {
 		return err
 	}
 	return nil
 }
 
-func (r *HostToolProviderInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+func (r *HostToolInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
 	if err = r.HostToolPath.Decode(ctx, buf); err != nil {
 		return err
 	}
 
+	if err = r.TransitivePackagingSpecs.Decode(ctx, buf); err != nil {
+		return err
+	}
+
 	return err
 }
 
-var HostToolProviderInfoGobRegId int16
+var HostToolInfoGobRegId int16
 
-func (r HostToolProviderInfo) GetTypeId() int16 {
-	return HostToolProviderInfoGobRegId
+func (r HostToolInfo) GetTypeId() int16 {
+	return HostToolInfoGobRegId
 }
 
 func (r DistInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {

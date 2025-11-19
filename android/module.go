@@ -2108,7 +2108,7 @@ type CommonModuleInfo struct {
 	Phonies                        *PhonyInfo
 	OutputFiles                    *OutputFilesInfo
 	ModuleBuildTargets             *ModuleBuildTargetsInfo
-	HostToolProvider               *HostToolProviderInfo
+	HostToolInfo                   *HostToolInfo
 	Logtags                        *LogtagsInfo
 	TestModuleInfo                 *TestModuleInformation
 	SymbolicOutput                 *SymbolicOutputInfos
@@ -2133,8 +2133,9 @@ type ApiLevelOrPlatform struct {
 var CommonModuleInfoProvider = blueprint.NewProvider[*CommonModuleInfo]()
 
 // @auto-generate: gob
-type HostToolProviderInfo struct {
-	HostToolPath OptionalPath
+type HostToolInfo struct {
+	HostToolPath             OptionalPath
+	TransitivePackagingSpecs depset.DepSet[PackagingSpec]
 }
 
 // @auto-generate: gob
@@ -2596,10 +2597,9 @@ func (m *ModuleBase) GenerateBuildActions(blueprintCtx blueprint.ModuleContext) 
 	if mm, ok := m.module.(interface{ BaseModuleName() string }); ok {
 		commonData.BaseModuleName = mm.BaseModuleName()
 	}
-	if h, ok := m.module.(HostToolProvider); ok {
-		commonData.HostToolProvider = &HostToolProviderInfo{
-			HostToolPath: h.HostToolPath()}
-	}
+
+	commonData.HostToolInfo = computeHostToolInfo(ctx, m.module, installFiles.TransitivePackagingSpecs)
+
 	if s, ok := m.module.(SourceFileGenerator); ok {
 		commonData.GeneratedSource = &GeneratedSourceInfo{
 			GeneratedSourceFiles: s.GeneratedSourceFiles(),
@@ -2646,9 +2646,32 @@ func (m *ModuleBase) GenerateBuildActions(blueprintCtx blueprint.ModuleContext) 
 	}
 }
 
-func GetHostToolProvider(ctx OtherModuleProviderContext, module ModuleOrProxy) *HostToolProviderInfo {
+// computeHostToolInfo returns a *HostToolInfo to embed into the CommonInfo for this
+// module.  Some dependencies on host tool providers are added in FinalDepsMutators (genrule.toolDepsMutator,
+// and java.dexpreoptToolDepsMutator), too late for the Prebuilts mutator to replace the dependency with the
+// prebuilt if necessary.  If this module has been replaced by a prebuilt return the prebuilt's
+// HostToolInfo, otherwise return this Module's HostToolPath value if it exists.
+func computeHostToolInfo(ctx ModuleContext, m Module, transitivePackagingSpecs depset.DepSet[PackagingSpec]) *HostToolInfo {
+	if m.IsReplacedByPrebuilt() {
+		var info *HostToolInfo
+		ctx.VisitDirectDepsProxyWithTag(PrebuiltDepTag, func(dep ModuleProxy) {
+			if info == nil {
+				info = GetHostToolInfo(ctx, dep)
+			}
+		})
+		return info
+	} else if htp, ok := m.(HostToolProvider); ok {
+		return &HostToolInfo{
+			HostToolPath:             htp.HostToolPath(),
+			TransitivePackagingSpecs: transitivePackagingSpecs,
+		}
+	}
+	return nil
+}
+
+func GetHostToolInfo(ctx OtherModuleProviderContext, module ModuleOrProxy) *HostToolInfo {
 	if commInfo, ok := OtherModuleProvider(ctx, module, CommonModuleInfoProvider); ok {
-		return commInfo.HostToolProvider
+		return commInfo.HostToolInfo
 	}
 	return nil
 }

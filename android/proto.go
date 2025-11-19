@@ -75,7 +75,7 @@ func GetProtoFlags(ctx ModuleContext, p *ProtoProperties) ProtoFlags {
 	}
 
 	ctx.VisitDirectDepsProxyWithTag(ProtoPluginDepTag, func(dep ModuleProxy) {
-		if h := GetHostToolProvider(ctx, dep); h == nil || !h.HostToolPath.Valid() {
+		if h := GetHostToolInfo(ctx, dep); h == nil || !h.HostToolPath.Valid() {
 			ctx.PropertyErrorf("proto.plugin", "module %q is not a host tool provider",
 				ctx.OtherModuleName(dep))
 		} else {
