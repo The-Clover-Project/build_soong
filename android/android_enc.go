@@ -4975,6 +4975,8 @@ func init() {
 	InstallFilesInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(InstallFilesInfo) })
 	SourceFilesInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(SourceFilesInfo) })
 	ModuleBuildTargetsInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ModuleBuildTargetsInfo) })
+	JarJarRenameGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(JarJarRename) })
+	BaseJarJarProviderDataGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(BaseJarJarProviderData) })
 	CommonModuleInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(CommonModuleInfo) })
 	ApiLevelOrPlatformGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ApiLevelOrPlatform) })
 	HostToolProviderInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(HostToolProviderInfo) })
@@ -6454,6 +6456,157 @@ func (r ModuleBuildTargetsInfo) GetTypeId() int16 {
 	return ModuleBuildTargetsInfoGobRegId
 }
 
+func (r JarJarRename) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if r == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r)); err != nil {
+			return err
+		}
+		for val1, val2 := range r {
+			if err = gobtools.EncodeString(buf, val1); err != nil {
+				return err
+			}
+			if err = gobtools.EncodeString(buf, val2); err != nil {
+				return err
+			}
+		}
+	}
+	return err
+}
+
+func (r JarJarRename) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":.map[string]string")
+	hasher.WriteInt(len(r))
+	val1 := make([]string, 0, len(r))
+	for val3 := range r {
+		val1 = append(val1, val3)
+	}
+	proptools.SortOrdered(val1)
+	for _, val2 := range val1 {
+		hasher.WriteString(":.string")
+		hasher.WriteString(val2)
+		hasher.WriteString(":.string")
+		hasher.WriteString(r[val2])
+	}
+	return nil
+}
+
+func (r *JarJarRename) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	var val1 int
+	err = gobtools.DecodeInt(buf, &val1)
+	if err != nil {
+		return err
+	}
+	if val1 != -1 {
+		(*r) = make(map[string]string, val1)
+		for val2 := 0; val2 < int(val1); val2++ {
+			var val3 string
+			var val4 string
+			err = gobtools.DecodeString(buf, &val3)
+			if err != nil {
+				return err
+			}
+			err = gobtools.DecodeString(buf, &val4)
+			if err != nil {
+				return err
+			}
+			(*r)[val3] = val4
+		}
+	}
+
+	return err
+}
+
+var JarJarRenameGobRegId int16
+
+func (r JarJarRename) GetTypeId() int16 {
+	return JarJarRenameGobRegId
+}
+
+func (r BaseJarJarProviderData) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if r.Rename == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r.Rename)); err != nil {
+			return err
+		}
+		for val1, val2 := range r.Rename {
+			if err = gobtools.EncodeString(buf, val1); err != nil {
+				return err
+			}
+			if err = gobtools.EncodeString(buf, val2); err != nil {
+				return err
+			}
+		}
+	}
+	return err
+}
+
+func (r BaseJarJarProviderData) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":android.BaseJarJarProviderData")
+	hasher.WriteInt(1)
+	hasher.WriteString(":android.JarJarRename")
+	hasher.WriteString(":.map[string]string")
+	hasher.WriteInt(len(r.Rename))
+	val1 := make([]string, 0, len(r.Rename))
+	for val3 := range r.Rename {
+		val1 = append(val1, val3)
+	}
+	proptools.SortOrdered(val1)
+	for _, val2 := range val1 {
+		hasher.WriteString(":.string")
+		hasher.WriteString(val2)
+		hasher.WriteString(":.string")
+		hasher.WriteString(r.Rename[val2])
+	}
+	return nil
+}
+
+func (r *BaseJarJarProviderData) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	var val2 int
+	err = gobtools.DecodeInt(buf, &val2)
+	if err != nil {
+		return err
+	}
+	if val2 != -1 {
+		r.Rename = make(map[string]string, val2)
+		for val3 := 0; val3 < int(val2); val3++ {
+			var val4 string
+			var val5 string
+			err = gobtools.DecodeString(buf, &val4)
+			if err != nil {
+				return err
+			}
+			err = gobtools.DecodeString(buf, &val5)
+			if err != nil {
+				return err
+			}
+			r.Rename[val4] = val5
+		}
+	}
+
+	return err
+}
+
+var BaseJarJarProviderDataGobRegId int16
+
+func (r BaseJarJarProviderData) GetTypeId() int16 {
+	return BaseJarJarProviderDataGobRegId
+}
+
 func (r CommonModuleInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	var err error
 
@@ -6920,12 +7073,22 @@ func (r CommonModuleInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) err
 			return err
 		}
 	}
+
+	val31 := r.BaseJarJarProviderData == nil
+	if err = gobtools.EncodeBool(buf, val31); err != nil {
+		return err
+	}
+	if !val31 {
+		if err = (*r.BaseJarJarProviderData).Encode(ctx, buf); err != nil {
+			return err
+		}
+	}
 	return err
 }
 
 func (r CommonModuleInfo) CustomHash(hasher *proptools.Hasher) error {
 	hasher.WriteString(":android.CommonModuleInfo")
-	hasher.WriteInt(61)
+	hasher.WriteInt(62)
 	hasher.WriteString(":.bool")
 	if r.Enabled {
 		hasher.WriteByte(1)
@@ -7464,6 +7627,21 @@ func (r CommonModuleInfo) CustomHash(hasher *proptools.Hasher) error {
 			return nil
 		}
 		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.AndroidMkData)), val52); err != nil {
+			return err
+		}
+	}
+	hasher.WriteString(":.*BaseJarJarProviderData")
+	val53 := r.BaseJarJarProviderData == nil
+	if val53 {
+		hasher.WriteByte(0)
+	} else {
+		val54 := func(hasher *proptools.Hasher) error {
+			if err := (*r.BaseJarJarProviderData).CustomHash(hasher); err != nil {
+				return err
+			}
+			return nil
+		}
+		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.BaseJarJarProviderData)), val54); err != nil {
 			return err
 		}
 	}
@@ -8006,6 +8184,18 @@ func (r *CommonModuleInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) er
 			return err
 		}
 		r.AndroidMkData = &val128
+	}
+
+	var val132 bool
+	if err = gobtools.DecodeBool(buf, &val132); err != nil {
+		return err
+	}
+	if !val132 {
+		var val131 BaseJarJarProviderData
+		if err = val131.Decode(ctx, buf); err != nil {
+			return err
+		}
+		r.BaseJarJarProviderData = &val131
 	}
 
 	return err

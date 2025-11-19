@@ -1605,7 +1605,6 @@ func init() {
 	OptionalDexJarPathGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(OptionalDexJarPath) })
 	JavaDepInSameApexCheckerGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(JavaDepInSameApexChecker) })
 	JarJarProviderDataGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(JarJarProviderData) })
-	BaseJarJarProviderDataGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(BaseJarJarProviderData) })
 }
 
 func (r OptionalDexJarPath) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
@@ -1717,6 +1716,7 @@ func (r JarJarProviderData) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) e
 func (r JarJarProviderData) CustomHash(hasher *proptools.Hasher) error {
 	hasher.WriteString(":java.JarJarProviderData")
 	hasher.WriteInt(1)
+	hasher.WriteString(":java.android.JarJarRename")
 	hasher.WriteString(":.map[string]string")
 	hasher.WriteInt(len(r.Rename))
 	val1 := make([]string, 0, len(r.Rename))
@@ -1736,25 +1736,25 @@ func (r JarJarProviderData) CustomHash(hasher *proptools.Hasher) error {
 func (r *JarJarProviderData) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
-	var val1 int
-	err = gobtools.DecodeInt(buf, &val1)
+	var val2 int
+	err = gobtools.DecodeInt(buf, &val2)
 	if err != nil {
 		return err
 	}
-	if val1 != -1 {
-		r.Rename = make(map[string]string, val1)
-		for val2 := 0; val2 < int(val1); val2++ {
-			var val3 string
+	if val2 != -1 {
+		r.Rename = make(map[string]string, val2)
+		for val3 := 0; val3 < int(val2); val3++ {
 			var val4 string
-			err = gobtools.DecodeString(buf, &val3)
-			if err != nil {
-				return err
-			}
+			var val5 string
 			err = gobtools.DecodeString(buf, &val4)
 			if err != nil {
 				return err
 			}
-			r.Rename[val3] = val4
+			err = gobtools.DecodeString(buf, &val5)
+			if err != nil {
+				return err
+			}
+			r.Rename[val4] = val5
 		}
 	}
 
@@ -1765,40 +1765,6 @@ var JarJarProviderDataGobRegId int16
 
 func (r JarJarProviderData) GetTypeId() int16 {
 	return JarJarProviderDataGobRegId
-}
-
-func (r BaseJarJarProviderData) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
-	var err error
-
-	if err = r.JarJarProviderData.Encode(ctx, buf); err != nil {
-		return err
-	}
-	return err
-}
-
-func (r BaseJarJarProviderData) CustomHash(hasher *proptools.Hasher) error {
-	hasher.WriteString(":java.BaseJarJarProviderData")
-	hasher.WriteInt(1)
-	if err := r.JarJarProviderData.CustomHash(hasher); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (r *BaseJarJarProviderData) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
-	var err error
-
-	if err = r.JarJarProviderData.Decode(ctx, buf); err != nil {
-		return err
-	}
-
-	return err
-}
-
-var BaseJarJarProviderDataGobRegId int16
-
-func (r BaseJarJarProviderData) GetTypeId() int16 {
-	return BaseJarJarProviderDataGobRegId
 }
 
 // end of base.go

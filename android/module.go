@@ -2015,6 +2015,34 @@ type ModuleBuildTargetsInfo struct {
 	BlueprintDir            string
 }
 
+// Mapping of class names: original --> renamed.  If the value is "", the class will be
+// renamed by the next rdep that has the jarjar_prefix attribute (or this module if it has
+// attribute). Rdeps of that module will inherit the renaming.
+// @auto-generate: gob
+type JarJarRename map[string]string
+
+func (this JarJarRename) GetDebugString() string {
+	result := ""
+	for _, k := range SortedKeys(this) {
+		v := this[k]
+		if strings.Contains(k, "android.companion.virtual.flags.FakeFeatureFlagsImpl") {
+			result += k + "--&gt;" + v + ";"
+		}
+	}
+	return result
+}
+
+// BaseJarJarProviderData contains information that will propagate across dependencies regardless of
+// whether they are java modules or not.
+// @auto-generate: gob
+type BaseJarJarProviderData struct {
+	Rename JarJarRename
+}
+
+func (this BaseJarJarProviderData) GetDebugString() string {
+	return this.Rename.GetDebugString()
+}
+
 // @auto-generate: gob
 type CommonModuleInfo struct {
 	Enabled bool
@@ -2093,6 +2121,7 @@ type CommonModuleInfo struct {
 	Containers                     *ContainersInfo
 	PackageInfo                    *PackageInfo
 	AndroidMkData                  *AndroidMkDataInfo
+	BaseJarJarProviderData         *BaseJarJarProviderData
 }
 
 // @auto-generate: gob
@@ -2502,6 +2531,7 @@ func (m *ModuleBase) GenerateBuildActions(blueprintCtx blueprint.ModuleContext) 
 		MakeNames:                                    ctx.makeNames,
 		SourceFiles:                                  sourceFiles,
 		Containers:                                   ctx.containersInfo,
+		BaseJarJarProviderData:                       ctx.baseJarJarProviderData,
 	}
 	outputFiles := ctx.GetOutputFiles()
 	if outputFiles.DefaultOutputFiles != nil || outputFiles.TaggedOutputFiles != nil {

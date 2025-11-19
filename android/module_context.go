@@ -300,6 +300,8 @@ type ModuleContext interface {
 	SetSymbolicOutputInfo(info *SymbolicOutputInfos)
 
 	SetMakeNamesInfo(info *MakeNamesInfo)
+
+	SetBaseJarJarProviderData(data *BaseJarJarProviderData)
 }
 
 type moduleContext struct {
@@ -364,14 +366,16 @@ type moduleContext struct {
 	testSuiteInfo    TestSuiteInfo
 	testSuiteInfoSet bool
 
-	logTags           *LogtagsInfo
-	logTagsSet        bool
-	testModuleInfo    *TestModuleInformation
-	testModuleInfoSet bool
-	symbolicOutput    *SymbolicOutputInfos
-	symbolicOutputSet bool
-	makeNames         *MakeNamesInfo
-	makeNamesSet      bool
+	logTags                   *LogtagsInfo
+	logTagsSet                bool
+	testModuleInfo            *TestModuleInformation
+	testModuleInfoSet         bool
+	symbolicOutput            *SymbolicOutputInfos
+	symbolicOutputSet         bool
+	makeNames                 *MakeNamesInfo
+	makeNamesSet              bool
+	baseJarJarProviderData    *BaseJarJarProviderData
+	baseJarJarProviderDataSet bool
 }
 
 var _ ModuleContext = &moduleContext{}
@@ -1147,4 +1151,12 @@ func (c *moduleContext) SetMakeNamesInfo(info *MakeNamesInfo) {
 	}
 	c.makeNames = info
 	c.makeNamesSet = true
+}
+
+func (c *moduleContext) SetBaseJarJarProviderData(data *BaseJarJarProviderData) {
+	if c.baseJarJarProviderDataSet {
+		panic("Cannot call SetBaseJarJarProviderData twice")
+	}
+	c.baseJarJarProviderData = data
+	c.baseJarJarProviderDataSet = true
 }
