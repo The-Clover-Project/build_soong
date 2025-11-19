@@ -31,9 +31,10 @@ type ImageInterfaceContext interface {
 	Config() Config
 }
 
-type SdvPrimaryImageVariation interface {
-	// IsSdvPrimaryImageVariation is a marker method.
-	IsSdvPrimaryImageVariation()
+type WantsPrimaryImageVariationDeptag interface {
+	// WantsPrimaryImageVariation is a marker method that causes the image mutator's
+	// IncomingTransition to always use the primary (first) image variant.
+	WantsPrimaryImageVariation()
 }
 
 // ImageInterface is implemented by modules that need to be split by the imageTransitionMutator.
@@ -241,7 +242,7 @@ func (imageTransitionMutator) IncomingTransition(ctx IncomingTransitionContext, 
 		kind:                      determineModuleKind(ctx.Module().base(), ctx),
 	})
 
-	if _, ok := ctx.DepTag().(SdvPrimaryImageVariation); ok && len(variations) > 0 {
+	if _, ok := ctx.DepTag().(WantsPrimaryImageVariationDeptag); ok && len(variations) > 0 {
 		return variations[0]
 	}
 
