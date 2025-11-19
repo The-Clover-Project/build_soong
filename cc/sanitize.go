@@ -66,12 +66,13 @@ var (
 	cfiBlocklistFilename = "cfi_blocklist.txt"
 	cfiEnableFlag        = "-fsanitize=cfi"
 	cfiCrossDsoFlag      = "-fsanitize-cfi-cross-dso"
-	cfiCflags            = []string{"-flto=thin", cfiCrossDsoFlag,
+	cfiCflags            = []string{"-flto", cfiCrossDsoFlag,
 		sanitizeIgnorelistPrefix + cfiBlocklistPath + "/" + cfiBlocklistFilename}
 	// -flto and -fvisibility are required by clang when -fsanitize=cfi is
 	// used, but have no effect on assembly files
-	cfiAsflags             = []string{"-flto=thin", "-fvisibility=default"}
-	cfiLdflags             = []string{"-flto=thin", cfiCrossDsoFlag, cfiEnableFlag}
+	cfiAsflags = []string{"-flto", "-fvisibility=default"}
+	cfiLdflags = []string{"-flto", cfiCrossDsoFlag, cfiEnableFlag,
+		"-Wl,-plugin-opt,O1"}
 	cfiExportsMapPath      = "build/soong/cc/config"
 	cfiExportsMapFilename  = "cfi_exports.map"
 	cfiAssemblySupportFlag = "-fno-sanitize-cfi-canonical-jump-tables"

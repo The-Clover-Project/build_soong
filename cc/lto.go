@@ -100,9 +100,9 @@ func (lto *lto) begin(ctx BaseModuleContext) {
 }
 
 func (lto *lto) flags(ctx ModuleContext, flags Flags) Flags {
-	// TODO(b/131771163): Fuzzer controls LTO flags by themselves.
+	// TODO(b/131771163): CFI and Fuzzer controls LTO flags by themselves.
 	// This has be checked late because these properties can be mutated.
-	if ctx.isFuzzer() {
+	if ctx.isCfi() || ctx.isFuzzer() {
 		return flags
 	}
 	if lto.Properties.LtoEnabled {
