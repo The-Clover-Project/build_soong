@@ -718,6 +718,9 @@ func (a *androidDevice) distFiles(ctx android.ModuleContext) {
 		if a.superImageInfo.SuperImage != nil && !a.superImageInfo.SuperImageInUpdatePackage {
 			ctx.DistForGoal("dist_files", a.superImageInfo.SuperImage)
 		}
+		if a.superImageInfo.SuperEmptyImage != nil {
+			ctx.DistForGoal("dist_files", a.superImageInfo.SuperEmptyImage)
+		}
 
 		a.distInstalledFiles(ctx)
 
