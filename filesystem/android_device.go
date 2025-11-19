@@ -515,6 +515,8 @@ func (a *androidDevice) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		}
 	}
 
+	validations = append(validations, a.checkVintf(ctx)...)
+
 	ctx.Build(pctx, android.BuildParams{
 		Rule:        android.Touch,
 		Output:      allImagesStamp,
@@ -556,7 +558,6 @@ func (a *androidDevice) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		ctx.Phony("droid_targets", android.PathForPhony(ctx, "blueprint_tools"))
 	}
 
-	a.checkVintf(ctx)
 	a.runApexSepolicyTests(ctx, allInstalledModules)
 	a.hostInitVerifierCheck(ctx)
 	a.findSharedUIDViolation(ctx)
@@ -2082,13 +2083,13 @@ func (a *androidDevice) buildTrebleLabelingTest(ctx android.ModuleContext) andro
 	return testTimestamp
 }
 
-func (a *androidDevice) checkVintf(ctx android.ModuleContext) {
+func (a *androidDevice) checkVintf(ctx android.ModuleContext) android.Paths {
 	if !proptools.Bool(a.deviceProps.Main_device) {
-		return
+		return nil
 	}
 	if ctx.Config().KatiEnabled() {
 		// Make will generate the vintf checks.
-		return
+		return nil
 	}
 	var checkVintfLogs android.Paths
 	fsInfoMap := a.getFsInfos(ctx)
@@ -2108,6 +2109,7 @@ func (a *androidDevice) checkVintf(ctx android.ModuleContext) {
 	}
 	cmd.ImplicitOutput(android.PathForPhony(ctx, "check-vintf-all"))
 	rule.Build("check-vintf-all", "check-vintf-all")
+	return checkVintfLogs
 }
 
 // Runs checkvintf --check-compat on the staging directories of the partitions per (odm_sku, vendor_sku)
