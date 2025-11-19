@@ -3665,6 +3665,7 @@ type DexImport struct {
 	android.ModuleBase
 	android.DefaultableModuleBase
 	android.ApexModuleBase
+	blueprint.ModuleUsesIncrementalWalkDeps
 	prebuilt android.Prebuilt
 
 	properties DexImportProperties

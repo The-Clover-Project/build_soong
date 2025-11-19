@@ -63,6 +63,7 @@ func (m *componentTestModule) GenerateAndroidBuildActions(ctx ModuleContext) {
 type packageTestModule struct {
 	ModuleBase
 	PackagingBase
+	blueprint.ModuleUsesIncrementalWalkDeps
 	properties struct {
 		Install_deps []string
 	}
