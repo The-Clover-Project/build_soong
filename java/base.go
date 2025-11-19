@@ -2258,45 +2258,74 @@ func (j *Module) useCompose(ctx android.BaseModuleContext) bool {
 	return android.InList("androidx.compose.runtime_runtime", j.staticLibs(ctx))
 }
 
-func collectDepProguardSpecInfo(ctx android.ModuleContext) (transitiveProguardFlags, transitiveUnconditionalExportedFlags []depset.DepSet[android.Path]) {
+type collectDepProguardSpecInfoResults struct {
+	transitiveProguardFlags                      []depset.DepSet[android.Path]
+	transitiveIncludedProguardFlags              []depset.DepSet[android.Path]
+	transitiveUnconditionalExportedFlags         []depset.DepSet[android.Path]
+	transitiveIncludedUnconditionalExportedFlags []depset.DepSet[android.Path]
+}
+
+func collectDepProguardSpecInfo(ctx android.ModuleContext) collectDepProguardSpecInfoResults {
+	var results collectDepProguardSpecInfoResults
 	ctx.VisitDirectDepsProxy(func(m android.ModuleProxy) {
 		depProguardInfo, _ := android.OtherModuleProvider(ctx, m, ProguardSpecInfoProvider)
 		depTag := ctx.OtherModuleDependencyTag(m)
 
-		transitiveUnconditionalExportedFlags = append(transitiveUnconditionalExportedFlags, depProguardInfo.UnconditionallyExportedProguardFlags)
-		transitiveProguardFlags = append(transitiveProguardFlags, depProguardInfo.UnconditionallyExportedProguardFlags)
+		results.transitiveUnconditionalExportedFlags = append(results.transitiveUnconditionalExportedFlags, depProguardInfo.UnconditionallyExportedProguardFlags)
+		results.transitiveIncludedUnconditionalExportedFlags = append(results.transitiveIncludedUnconditionalExportedFlags, depProguardInfo.IncludedUnconditionallyExportedProguardFlags)
+		results.transitiveProguardFlags = append(results.transitiveProguardFlags, depProguardInfo.UnconditionallyExportedProguardFlags)
+		results.transitiveIncludedProguardFlags = append(results.transitiveIncludedProguardFlags, depProguardInfo.IncludedUnconditionallyExportedProguardFlags)
 
 		if depTag == staticLibTag {
-			transitiveProguardFlags = append(transitiveProguardFlags, depProguardInfo.ProguardFlagsFiles)
+			results.transitiveProguardFlags = append(results.transitiveProguardFlags, depProguardInfo.ProguardFlagsFiles)
+			results.transitiveIncludedProguardFlags = append(results.transitiveIncludedProguardFlags, depProguardInfo.IncludedProguardFlagsFiles)
 		}
 	})
 
-	return transitiveProguardFlags, transitiveUnconditionalExportedFlags
+	return results
 }
 
 func (j *Module) collectProguardSpecInfo(ctx android.ModuleContext) ProguardSpecInfo {
-	transitiveProguardFlags, transitiveUnconditionalExportedFlags := collectDepProguardSpecInfo(ctx)
+	transitiveFlags := collectDepProguardSpecInfo(ctx)
 
+	transitiveProguardFlags := transitiveFlags.transitiveProguardFlags
+	transitiveIncludedProguardFlags := transitiveFlags.transitiveIncludedProguardFlags
+	transitiveUnconditionalExportedFlags := transitiveFlags.transitiveUnconditionalExportedFlags
+	transitiveIncludedUnconditionalExportedFlags := transitiveFlags.transitiveIncludedUnconditionalExportedFlags
+
+	proguardFlagsForThisModule := j.ProguardFlagsFiles(ctx)
 	directUnconditionalExportedFlags := android.Paths{}
-	proguardFlagsForThisModule := android.PathsForModuleSrc(ctx, j.ProguardFlagsFiles(ctx))
+	directIncludedUnconditionalExportedFlags := android.Paths{}
 	exportUnconditionally := proptools.Bool(j.dexProperties.Optimize.Export_proguard_flags_files)
 	if exportUnconditionally {
 		// if we explicitly export, then our unconditional exports are the same as our transitive flags
-		transitiveUnconditionalExportedFlags = transitiveProguardFlags
-		directUnconditionalExportedFlags = proguardFlagsForThisModule
+		transitiveUnconditionalExportedFlags = transitiveFlags.transitiveProguardFlags
+		transitiveIncludedUnconditionalExportedFlags = transitiveFlags.transitiveIncludedProguardFlags
+		directUnconditionalExportedFlags = proguardFlagsForThisModule.files
+		directIncludedUnconditionalExportedFlags = proguardFlagsForThisModule.included
 	}
 
 	return ProguardSpecInfo{
 		Export_proguard_flags_files: exportUnconditionally,
-		ProguardFlagsFiles: depset.New[android.Path](
+		ProguardFlagsFiles: depset.New(
 			depset.POSTORDER,
-			proguardFlagsForThisModule,
+			proguardFlagsForThisModule.files,
 			transitiveProguardFlags,
 		),
-		UnconditionallyExportedProguardFlags: depset.New[android.Path](
+		IncludedProguardFlagsFiles: depset.New(
+			depset.POSTORDER,
+			proguardFlagsForThisModule.included,
+			transitiveIncludedProguardFlags,
+		),
+		UnconditionallyExportedProguardFlags: depset.New(
 			depset.POSTORDER,
 			directUnconditionalExportedFlags,
 			transitiveUnconditionalExportedFlags,
+		),
+		IncludedUnconditionallyExportedProguardFlags: depset.New(
+			depset.POSTORDER,
+			directIncludedUnconditionalExportedFlags,
+			transitiveIncludedUnconditionalExportedFlags,
 		),
 	}
 

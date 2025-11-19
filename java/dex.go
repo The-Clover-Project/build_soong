@@ -139,6 +139,11 @@ type DexProperties struct {
 		// Specifies the locations of files containing proguard flags.
 		Proguard_flags_files proptools.Configurable[[]string] `android:"path"`
 
+		// If a proguard file from proguard_flags_files uses -include to include another file,
+		// that included file must be listed here so that the build system knows about the
+		// dependency.
+		Included_proguard_flags_files proptools.Configurable[[]string] `android:"path"`
+
 		// If true, transitive reverse dependencies of this module will have this
 		// module's proguard spec appended to their optimization action
 		Export_proguard_flags_files *bool
@@ -207,11 +212,13 @@ type dexer struct {
 
 	// list of extra proguard flag files
 	extraProguardFlagsFiles android.Paths
-	proguardDictionary      android.OptionalPath
-	proguardConfiguration   android.OptionalPath
-	proguardUsageZip        android.OptionalPath
-	resourcesInput          android.OptionalPath
-	resourcesOutput         android.OptionalPath
+	// list of files included (with a -include directive) from the extraProguardFlagsFiles
+	extraIncludedProguardFlagsFiles android.Paths
+	proguardDictionary              android.OptionalPath
+	proguardConfiguration           android.OptionalPath
+	proguardUsageZip                android.OptionalPath
+	resourcesInput                  android.OptionalPath
+	resourcesOutput                 android.OptionalPath
 
 	providesTransitiveHeaderJarsForR8
 
@@ -279,8 +286,16 @@ func (d *dexer) shrinkEnabled(ctx android.ModuleContext) bool {
 	return d.dexProperties.Optimize.Shrink.GetOrDefault(ctx, d.dexProperties.Optimize.ShrinkByDefault)
 }
 
-func (d *dexer) ProguardFlagsFiles(ctx android.ModuleContext) []string {
-	return d.dexProperties.Optimize.Proguard_flags_files.GetOrDefault(ctx, nil)
+type proguardFlagsFiles struct {
+	files    android.Paths
+	included android.Paths
+}
+
+func (d *dexer) ProguardFlagsFiles(ctx android.ModuleContext) proguardFlagsFiles {
+	return proguardFlagsFiles{
+		files:    android.PathsForModuleSrc(ctx, d.dexProperties.Optimize.Proguard_flags_files.GetOrDefault(ctx, nil)),
+		included: android.PathsForModuleSrc(ctx, d.dexProperties.Optimize.Included_proguard_flags_files.GetOrDefault(ctx, nil)),
+	}
 }
 
 // Removes all outputs of d8Inc rule
@@ -765,9 +780,12 @@ func (d *dexer) r8Flags(ctx android.ModuleContext, dexParams *compileDexParams, 
 	}
 
 	flagFiles = append(flagFiles, d.extraProguardFlagsFiles...)
+	r8Deps = append(r8Deps, d.extraIncludedProguardFlagsFiles...)
 	// TODO(ccross): static android library proguard files
 
-	flagFiles = append(flagFiles, android.PathsForModuleSrc(ctx, d.ProguardFlagsFiles(ctx))...)
+	proguardFlagsFiles := d.ProguardFlagsFiles(ctx)
+	flagFiles = append(flagFiles, proguardFlagsFiles.files...)
+	r8Deps = append(r8Deps, proguardFlagsFiles.included...)
 
 	traceReferencesSources := android.Paths{}
 	ctx.VisitDirectDepsProxyWithTag(traceReferencesTag, func(m android.ModuleProxy) {
