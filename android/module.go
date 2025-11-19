@@ -2003,8 +2003,6 @@ type SourceFilesInfo struct {
 	Srcs Paths
 }
 
-var SourceFilesInfoProvider = blueprint.NewProvider[SourceFilesInfo]()
-
 // ModuleBuildTargetsInfo is used by buildTargetSingleton to create checkbuild and
 // per-directory build targets.
 // @auto-generate: gob
@@ -2089,6 +2087,12 @@ type CommonModuleInfo struct {
 	IdeInfo                        *IdeInfo
 	AconfigPropagatingDeclarations *aconfigPropagatingDeclarationsInfo
 	InstallFiles                   *InstallFilesInfo
+	MakeNames                      *MakeNamesInfo
+	SourceFiles                    *SourceFilesInfo
+	GeneratedSource                *GeneratedSourceInfo
+	Containers                     *ContainersInfo
+	PackageInfo                    *PackageInfo
+	AndroidMkData                  *AndroidMkDataInfo
 }
 
 // @auto-generate: gob
@@ -2141,8 +2145,6 @@ type GeneratedSourceInfo struct {
 	GeneratedHeaderDirs  Paths
 	GeneratedDeps        Paths
 }
-
-var GeneratedSourceInfoProvider = blueprint.NewProvider[GeneratedSourceInfo]()
 
 func (m *ModuleBase) GenerateBuildActions(blueprintCtx blueprint.ModuleContext) {
 	ctx := &moduleContext{
@@ -2334,6 +2336,7 @@ func (m *ModuleBase) GenerateBuildActions(blueprintCtx blueprint.ModuleContext) 
 		ctx.GetMissingDependencies()
 	}
 
+	var sourceFiles *SourceFilesInfo
 	if sourceFileProducer, ok := m.module.(SourceFileProducer); ok {
 		srcs := sourceFileProducer.Srcs()
 		for _, src := range srcs {
@@ -2342,7 +2345,7 @@ func (m *ModuleBase) GenerateBuildActions(blueprintCtx blueprint.ModuleContext) 
 				return
 			}
 		}
-		SetProvider(ctx, SourceFilesInfoProvider, SourceFilesInfo{Srcs: sourceFileProducer.Srcs()})
+		sourceFiles = &SourceFilesInfo{Srcs: sourceFileProducer.Srcs()}
 	}
 
 	ctx.TransitiveInstallFiles = depset.New[InstallPath](depset.TOPOLOGICAL, ctx.installFiles, dependencyInstallFiles)
@@ -2496,6 +2499,9 @@ func (m *ModuleBase) GenerateBuildActions(blueprintCtx blueprint.ModuleContext) 
 		IdeInfo:                                      ideInfo,
 		AconfigPropagatingDeclarations:               aconfigPropagatingDeclarations,
 		InstallFiles:                                 &installFiles,
+		MakeNames:                                    ctx.makeNames,
+		SourceFiles:                                  sourceFiles,
+		Containers:                                   ctx.containersInfo,
 	}
 	outputFiles := ctx.GetOutputFiles()
 	if outputFiles.DefaultOutputFiles != nil || outputFiles.TaggedOutputFiles != nil {
@@ -2564,6 +2570,20 @@ func (m *ModuleBase) GenerateBuildActions(blueprintCtx blueprint.ModuleContext) 
 		commonData.HostToolProvider = &HostToolProviderInfo{
 			HostToolPath: h.HostToolPath()}
 	}
+	if s, ok := m.module.(SourceFileGenerator); ok {
+		commonData.GeneratedSource = &GeneratedSourceInfo{
+			GeneratedSourceFiles: s.GeneratedSourceFiles(),
+			GeneratedHeaderDirs:  s.GeneratedHeaderDirs(),
+			GeneratedDeps:        s.GeneratedDeps(),
+		}
+	}
+	if m.Enabled(ctx) {
+		if am, ok := m.module.(AndroidMkDataProvider); ok {
+			commonData.AndroidMkData = &AndroidMkDataInfo{
+				Class: am.AndroidMk().Class,
+			}
+		}
+	}
 	SetProvider(ctx, CommonModuleInfoProvider, &commonData)
 
 	var hasAndroidMkProvider bool
@@ -2576,23 +2596,9 @@ func (m *ModuleBase) GenerateBuildActions(blueprintCtx blueprint.ModuleContext) 
 		}
 	}
 
-	if s, ok := m.module.(SourceFileGenerator); ok {
-		SetProvider(ctx, GeneratedSourceInfoProvider, GeneratedSourceInfo{
-			GeneratedSourceFiles: s.GeneratedSourceFiles(),
-			GeneratedHeaderDirs:  s.GeneratedHeaderDirs(),
-			GeneratedDeps:        s.GeneratedDeps(),
-		})
-	}
-
 	if m.Enabled(ctx) {
 		if v, ok := m.module.(ModuleMakeVarsProvider); ok {
 			SetProvider(ctx, ModuleMakeVarsInfoProvider, v.MakeVars(ctx))
-		}
-
-		if am, ok := m.module.(AndroidMkDataProvider); ok {
-			SetProvider(ctx, AndroidMkDataInfoProvider, AndroidMkDataInfo{
-				Class: am.AndroidMk().Class,
-			})
 		}
 	}
 
@@ -3333,11 +3339,11 @@ func outputFilesForModule(ctx PathContext, module ModuleOrProxy, tag string) (Pa
 			if sourceFileProducer, ok := module.(SourceFileProducer); ok {
 				return sourceFileProducer.Srcs(), nil
 			}
-		} else if sourceFiles, ok := OtherModuleProvider(octx, module, SourceFilesInfoProvider); ok {
+		} else if commonInfo, ok := OtherModuleProvider(octx, module, CommonModuleInfoProvider); ok && commonInfo.SourceFiles != nil {
 			if tag != "" {
 				return nil, fmt.Errorf("module %q is a SourceFileProducer, which does not support tag %q", pathContextName(ctx, module), tag)
 			}
-			paths := sourceFiles.Srcs
+			paths := commonInfo.SourceFiles.Srcs
 			return paths, nil
 		}
 	}

@@ -256,8 +256,8 @@ type ModuleContext interface {
 	ComplianceMetadataInfo() *ComplianceMetadataInfo
 
 	// Get the information about the containers this module belongs to.
-	getContainersInfo() ContainersInfo
-	setContainersInfo(info ContainersInfo)
+	getContainersInfo() *ContainersInfo
+	setContainersInfo(info *ContainersInfo)
 
 	setAconfigPaths(paths Paths)
 
@@ -298,6 +298,8 @@ type ModuleContext interface {
 	SetTestModuleInfo(info *TestModuleInformation)
 
 	SetSymbolicOutputInfo(info *SymbolicOutputInfos)
+
+	SetMakeNamesInfo(info *MakeNamesInfo)
 }
 
 type moduleContext struct {
@@ -348,7 +350,7 @@ type moduleContext struct {
 
 	// containersInfo stores the information about the containers and the information of the
 	// apexes the module belongs to.
-	containersInfo ContainersInfo
+	containersInfo *ContainersInfo
 
 	// Merged Aconfig files for all transitive deps.
 	aconfigFilePaths Paths
@@ -368,6 +370,8 @@ type moduleContext struct {
 	testModuleInfoSet bool
 	symbolicOutput    *SymbolicOutputInfos
 	symbolicOutputSet bool
+	makeNames         *MakeNamesInfo
+	makeNamesSet      bool
 }
 
 var _ ModuleContext = &moduleContext{}
@@ -1050,11 +1054,11 @@ func (m *moduleContext) TargetRequiredModuleNames() []string {
 	return m.module.TargetRequiredModuleNames()
 }
 
-func (m *moduleContext) getContainersInfo() ContainersInfo {
+func (m *moduleContext) getContainersInfo() *ContainersInfo {
 	return m.containersInfo
 }
 
-func (m *moduleContext) setContainersInfo(info ContainersInfo) {
+func (m *moduleContext) setContainersInfo(info *ContainersInfo) {
 	m.containersInfo = info
 }
 
@@ -1135,4 +1139,12 @@ func (c *moduleContext) SetSymbolicOutputInfo(info *SymbolicOutputInfos) {
 	}
 	c.symbolicOutput = info
 	c.symbolicOutputSet = true
+}
+
+func (c *moduleContext) SetMakeNamesInfo(info *MakeNamesInfo) {
+	if c.makeNamesSet {
+		panic("Cannot call SetMakeNamesInfo twice")
+	}
+	c.makeNames = info
+	c.makeNamesSet = true
 }

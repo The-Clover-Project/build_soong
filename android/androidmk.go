@@ -84,8 +84,6 @@ type AndroidMkDataInfo struct {
 	Class string
 }
 
-var AndroidMkDataInfoProvider = blueprint.NewProvider[AndroidMkDataInfo]()
-
 type AndroidMkExtraFunc func(w io.Writer, outputFile Path)
 
 // Interface for modules to declare their Android.mk outputs. Note that every module needs to

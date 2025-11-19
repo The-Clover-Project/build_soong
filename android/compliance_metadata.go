@@ -355,11 +355,14 @@ func (c *complianceMetadataSingleton) GenerateBuildActions(ctx SingletonContext)
 
 		moduleType := ctx.ModuleType(module)
 		if moduleType == "package" {
-			packageInfo := OtherModuleProviderOrDefault(ctx, module, PackageInfoProvider)
+			var primaryLicenses []string
+			if packageInfo := commonInfo.PackageInfo; packageInfo != nil {
+				primaryLicenses = packageInfo.PrimaryLicenses
+			}
 			metadataMap := map[string]string{
 				ComplianceMetadataProp.NAME:                            ctx.ModuleName(module),
 				ComplianceMetadataProp.MODULE_TYPE:                     ctx.ModuleType(module),
-				ComplianceMetadataProp.PKG_DEFAULT_APPLICABLE_LICENSES: strings.Join(packageInfo.PrimaryLicenses, " "),
+				ComplianceMetadataProp.PKG_DEFAULT_APPLICABLE_LICENSES: strings.Join(primaryLicenses, " "),
 			}
 			rowId = rowId + 1
 			metadata := []string{strconv.Itoa(rowId)}

@@ -15,9 +15,10 @@
 package java
 
 import (
-	"android/soong/android"
 	"fmt"
 	"testing"
+
+	"android/soong/android"
 )
 
 var checkContainerMatch = func(t *testing.T, name string, container string, expected bool, actual bool) {
@@ -156,7 +157,8 @@ func TestJavaContainersModuleProperties(t *testing.T) {
 
 	for _, c := range testcases {
 		m := result.ModuleForTests(t, c.moduleName, "android_common")
-		containers, _ := android.OtherModuleProvider(result.TestContext.OtherModuleProviderAdaptor(), m.Module(), android.ContainersInfoProvider)
+		containers := android.OtherModulePointerProviderOrDefault(result.TestContext.OtherModuleProviderAdaptor(),
+			m.Module(), android.CommonModuleInfoProvider).Containers
 		belongingContainers := containers.BelongingContainers()
 		checkContainerMatch(t, c.moduleName, "system", c.isSystemContainer, android.InList(android.SystemContainer, belongingContainers))
 		checkContainerMatch(t, c.moduleName, "vendor", c.isVendorContainer, android.InList(android.VendorContainer, belongingContainers))

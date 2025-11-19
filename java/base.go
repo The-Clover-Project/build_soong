@@ -2914,16 +2914,17 @@ func (j *Module) collectDeps(ctx android.ModuleContext) deps {
 					JavaInfo: dep,
 				})
 			}
-		} else if dep, ok := android.OtherModuleProvider(ctx, module, android.SourceFilesInfoProvider); ok {
+		} else if commonInfo, ok := android.OtherModuleProvider(ctx, module, android.CommonModuleInfoProvider); ok && commonInfo.SourceFiles != nil {
+			dep := commonInfo.SourceFiles
 			switch tag {
 			case sdkLibTag, libTag:
-				checkProducesJars(ctx, dep, module)
+				checkProducesJars(ctx, *dep, module)
 				deps.classpath = append(deps.classpath, dep.Srcs...)
 				deps.dexClasspath = append(deps.classpath, dep.Srcs...)
 				transitiveClasspathHeaderJars = append(transitiveClasspathHeaderJars,
 					depset.New(depset.PREORDER, dep.Srcs, nil))
 			case staticLibTag:
-				checkProducesJars(ctx, dep, module)
+				checkProducesJars(ctx, *dep, module)
 				deps.classpath = append(deps.classpath, dep.Srcs...)
 				deps.staticJars = append(deps.staticJars, dep.Srcs...)
 				deps.staticHeaderJars = append(deps.staticHeaderJars, dep.Srcs...)
@@ -3167,7 +3168,7 @@ func collectDirectDepsProviders(ctx android.ModuleContext) (result *JarJarProvid
 				default:
 					return RenameUseExclude
 				}
-			} else if _, ok := android.OtherModuleProvider(ctx, m, android.SourceFilesInfoProvider); ok {
+			} else if commonInfo, ok := android.OtherModuleProvider(ctx, m, android.CommonModuleInfoProvider); ok && commonInfo.SourceFiles != nil {
 				switch tag {
 				case sdkLibTag, libTag, staticLibTag:
 					return RenameUseInclude
