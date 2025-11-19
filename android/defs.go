@@ -16,6 +16,7 @@ package android
 
 import (
 	"fmt"
+	"strings"
 	"unicode"
 
 	"github.com/google/blueprint"
@@ -199,6 +200,13 @@ var (
 		SandboxDisabled: true,
 	})
 
+	depfileVerifierRule = pctx.AndroidStaticRule("DepfileVerifierRule",
+		blueprint.RuleParams{
+			Command:     "${Rm} -f $out && ${DepfileVerifier} $in && ${Touch} $out",
+			CommandDeps: []string{"${Rm}", "${Touch}", "${DepfileVerifier}"},
+			Description: "verify depfile",
+		})
+
 	// Used only when USE_REWRAPPER=true is set, to restrict non-RBE jobs to the local parallelism value
 	localPool = blueprint.NewBuiltinPool("local_pool")
 
@@ -288,6 +296,7 @@ func init() {
 
 	pctx.HostBinToolVariable("MergeZipsCmd", "merge_zips")
 	pctx.HostBinToolVariable("AssembleVintf", "assemble_vintf")
+	pctx.HostBinToolVariable("DepfileVerifier", "depfile_verifier")
 	pctx.SourcePathVariable("toybox", "prebuilts/build-tools/${HostPrebuiltTag}/bin/toybox")
 
 	hostBinToolSourcePathVariables := func(names []string) {
@@ -339,4 +348,23 @@ func ErrorRule(ctx BuilderContext, path WritablePath, msg string) {
 // in tests.
 func IsErrorRule(rule blueprint.Rule) bool {
 	return rule == errorRule
+}
+
+// DepfileVerifierRule creates a rule that will check that all the inputs in the given depfile
+// are also listed in the given inputs. It will touch an empty outPath if successful. This can
+// be used as a validation action for
+func DepfileVerifierRule(ctx ModuleContext, outPath WritablePath, depfile Path, inputs Paths) {
+	inputsFile := outPath.AddExtension(ctx, "inputs_list")
+	var inputsFileContents strings.Builder
+	for _, input := range inputs {
+		inputsFileContents.WriteString(input.String())
+		inputsFileContents.WriteString("\n")
+	}
+	WriteFileRuleVerbatim(ctx, inputsFile, inputsFileContents.String())
+
+	ctx.Build(pctx, BuildParams{
+		Rule:   depfileVerifierRule,
+		Inputs: Paths{depfile, inputsFile},
+		Output: outPath,
+	})
 }

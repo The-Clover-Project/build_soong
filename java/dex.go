@@ -467,7 +467,10 @@ var d8r8, d8r8RE = pctx.MultiCommandRemoteStaticRules("d8r8",
 			` -printmapping ${outDict} ` +
 			` -printconfiguration ${outConfig} ` +
 			` -printusage ${outUsage} ` +
-			` --deps-file ${out}.d && ` +
+			// Reclient seems to have a bug where you can't have a depfile be an outputfile, work
+			// around it by outputting to the output file and copying to the depfile location.
+			` --deps-file ${outDepfile} && ` +
+			` cp ${outDepfile} ${out}.d && ` +
 			` touch "${outDict}" "${outConfig}" "${outUsage}"; ` +
 			`fi && ` +
 			`${config.SoongZipCmd} -o ${outUsageZip} -C ${outUsageDir} -f ${outUsage} && ` +
@@ -496,7 +499,7 @@ var d8r8, d8r8RE = pctx.MultiCommandRemoteStaticRules("d8r8",
 		"$r8Template": &remoteexec.REParams{
 			Labels:          map[string]string{"type": "compile", "compiler": "r8"},
 			Inputs:          []string{"$implicits", "${config.R8Jar}"},
-			OutputFiles:     []string{"${outUsage}", "${outConfig}", "${outDict}", "${resourcesOutput}", "${outR8ArtProfile}"},
+			OutputFiles:     []string{"${outDepfile}", "${outUsage}", "${outConfig}", "${outDict}", "${resourcesOutput}", "${outR8ArtProfile}"},
 			ExecStrategy:    "${config.RER8ExecStrategy}",
 			ToolchainInputs: []string{"${config.JavaCmd}"},
 			Platform:        map[string]string{remoteexec.PoolKey: "${config.REJavaPool}"},
@@ -508,7 +511,7 @@ var d8r8, d8r8RE = pctx.MultiCommandRemoteStaticRules("d8r8",
 			ExecStrategy: "${config.RED8ExecStrategy}",
 			Platform:     map[string]string{remoteexec.PoolKey: "${config.REJavaPool}"},
 		},
-	}, []string{"outDir", "outDict", "outConfig", "outUsage", "outUsageZip", "outUsageDir",
+	}, []string{"outDir", "outDict", "outConfig", "outUsage", "outUsageZip", "outUsageDir", "outDepfile",
 		"d8Flags", "r8Flags", "zipFlags", "mergeZipsFlags", "resourcesOutput", "outR8ArtProfile"}, []string{"implicits"})
 
 var r8, r8RE = pctx.MultiCommandRemoteStaticRules("r8",
@@ -521,7 +524,10 @@ var r8, r8RE = pctx.MultiCommandRemoteStaticRules("r8",
 			`-printmapping ${outDict} ` +
 			`-printconfiguration ${outConfig} ` +
 			`-printusage ${outUsage} ` +
-			`--deps-file ${out}.d && ` +
+			// Reclient seems to have a bug where you can't have a depfile be an outputfile, work
+			// around it by outputting to the output file and copying to the depfile location.
+			`--deps-file ${outDepfile} && ` +
+			`cp ${outDepfile} ${out}.d && ` +
 			`touch "${outDict}" "${outConfig}" "${outUsage}" && ` +
 			`${config.SoongZipCmd} -o ${outUsageZip} -C ${outUsageDir} -f ${outUsage} && ` +
 			`rm -rf ${outUsageDir} && ` +
@@ -542,7 +548,7 @@ var r8, r8RE = pctx.MultiCommandRemoteStaticRules("r8",
 		"$r8Template": &remoteexec.REParams{
 			Labels:          map[string]string{"type": "compile", "compiler": "r8"},
 			Inputs:          []string{"$implicits", "${config.R8Jar}"},
-			OutputFiles:     []string{"${outUsage}", "${outConfig}", "${outDict}", "${resourcesOutput}", "${outR8ArtProfile}"},
+			OutputFiles:     []string{"${outDepfile}", "${outUsage}", "${outConfig}", "${outDict}", "${resourcesOutput}", "${outR8ArtProfile}"},
 			ExecStrategy:    "${config.RER8ExecStrategy}",
 			ToolchainInputs: []string{"${config.JavaCmd}"},
 			Platform:        map[string]string{remoteexec.PoolKey: "${config.REJavaPool}"},
@@ -561,7 +567,7 @@ var r8, r8RE = pctx.MultiCommandRemoteStaticRules("r8",
 			ExecStrategy: "${config.RER8ExecStrategy}",
 			Platform:     map[string]string{remoteexec.PoolKey: "${config.REJavaPool}"},
 		},
-	}, []string{"outDir", "outDict", "outConfig", "outUsage", "outUsageZip", "outUsageDir",
+	}, []string{"outDir", "outDict", "outConfig", "outUsage", "outUsageZip", "outUsageDir", "outDepfile",
 		"r8Flags", "zipFlags", "mergeZipsFlags", "resourcesOutput", "outR8ArtProfile"}, []string{"implicits"})
 
 var proguardDictToProto = pctx.AndroidStaticRule("proguard_dict_to_proto", blueprint.RuleParams{
@@ -1054,6 +1060,19 @@ func (d *dexer) compileDex(ctx android.ModuleContext, dexParams *compileDexParam
 			artProfileOutputPath,
 		)
 	}
+
+	// Because proguard files can include other proguard files, check that the user listed
+	// all of them in the bp files by checking the r8 depfile vs the input files.
+	var depfileVerifier android.WritablePath
+	if useR8 {
+		depfile := android.PathForModuleOut(ctx, "dex_depfile_verifier", dexParams.jarName+".d")
+		args["outDepfile"] = depfile.String()
+		implicitOutputs = append(implicitOutputs, depfile)
+		// Need to use a new dex_depfile_verifier folder because the r8 rule rm -rf's the dex folder
+		depfileVerifier = android.PathForModuleOut(ctx, "dex_depfile_verifier", dexParams.jarName+".depfile_verifier")
+		android.DepfileVerifierRule(ctx, depfileVerifier, depfile, append(deps, dexParams.classesJar))
+	}
+
 	ctx.Build(pctx, android.BuildParams{
 		Rule:            rule,
 		Description:     description,
@@ -1062,6 +1081,8 @@ func (d *dexer) compileDex(ctx android.ModuleContext, dexParams *compileDexParam
 		Input:           dexParams.classesJar,
 		Implicits:       deps,
 		Args:            args,
+		// TODO(b/436992217): Enable this check when inputs are properly specified
+		// Validation:      depfileVerifier,
 	})
 	// Run cleanup when d8r8 was used
 	if cleanupD8R8 {
