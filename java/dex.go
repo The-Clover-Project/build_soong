@@ -301,9 +301,9 @@ func (d *dexer) ProguardFlagsFiles(ctx android.ModuleContext) proguardFlagsFiles
 // Removes all outputs of d8Inc rule
 var d8IncClean = pctx.AndroidStaticRule("d8Inc-partialcompileclean",
 	blueprint.RuleParams{
-		Command:         `rm -rf "${outDir}" "${builtOut}" "${d8Deps}"`,
+		Command:         `rm -rf "${outDir}" "${builtOut}" "${d8Deps}" "${outDepfile}"`,
 		SandboxDisabled: true,
-	}, "outDir", "d8Flags", "d8Deps", "zipFlags", "mergeZipsFlags", "builtOut",
+	}, "outDir", "d8Flags", "d8Deps", "zipFlags", "mergeZipsFlags", "builtOut", "outDepfile",
 )
 
 var d8Inc, d8IncRE = pctx.MultiCommandRemoteStaticRules("d8Inc",
@@ -351,11 +351,12 @@ var d8Inc, d8IncRE = pctx.MultiCommandRemoteStaticRules("d8Inc",
 // Include all of the args for d8IncR8, so that we can generate the partialcompileclean target's build using the same list.
 var d8IncR8Clean = pctx.AndroidStaticRule("d8Incr8-partialcompileclean",
 	blueprint.RuleParams{
-		Command: `rm -rf "${outDir}" "${outDict}" "${outConfig}" "${outUsage}" "${outUsageZip}" "${outUsageDir}" ` +
+		Command: `rm -rf "${outDir}" "${outDict}" "${outConfig}" "${outUsage}" "${outUsageZip}" "${outUsageDir}" "${outDepfile}" ` +
 			`"${resourcesOutput}" "${outR8ArtProfile}" ${builtOut} ${d8Deps}`,
 		SandboxDisabled: true,
 	}, "outDir", "outDict", "outConfig", "outUsage", "outUsageZip", "outUsageDir", "builtOut",
-	"d8Flags", "d8Deps", "r8Flags", "zipFlags", "mergeZipsFlags", "resourcesOutput", "outR8ArtProfile", "implicits",
+	"d8Flags", "d8Deps", "r8Flags", "zipFlags", "mergeZipsFlags", "resourcesOutput",
+	"outR8ArtProfile", "implicits", "outDepfile",
 )
 
 var d8IncR8, d8IncR8RE = pctx.MultiCommandRemoteStaticRules("d8Incr8",
@@ -377,7 +378,10 @@ var d8IncR8, d8IncR8RE = pctx.MultiCommandRemoteStaticRules("d8Incr8",
 			` -printmapping ${outDict} ` +
 			` -printconfiguration ${outConfig} ` +
 			` -printusage ${outUsage} ` +
-			` --deps-file ${out}.d && ` +
+			// Reclient seems to have a bug where you can't have a depfile be an outputfile, work
+			// around it by outputting to the output file and copying to the depfile location.
+			` --deps-file ${outDepfile} && ` +
+			` cp ${outDepfile} ${out}.d && ` +
 			` touch "${outDict}" "${outConfig}" "${outUsage}"; ` +
 			`fi && ` +
 			`${config.SoongZipCmd} -o ${outUsageZip} -C ${outUsageDir} -f ${outUsage} && ` +
@@ -422,7 +426,8 @@ var d8IncR8, d8IncR8RE = pctx.MultiCommandRemoteStaticRules("d8Incr8",
 			Platform:     map[string]string{remoteexec.PoolKey: "${config.REJavaPool}"},
 		},
 	}, []string{"outDir", "outDict", "outConfig", "outUsage", "outUsageZip", "outUsageDir",
-		"d8Flags", "d8Deps", "r8Flags", "zipFlags", "mergeZipsFlags", "resourcesOutput", "outR8ArtProfile"}, []string{"implicits"})
+		"outDepfile", "d8Flags", "d8Deps", "r8Flags", "zipFlags", "mergeZipsFlags",
+		"resourcesOutput", "outR8ArtProfile"}, []string{"implicits"})
 
 var d8, d8RE = pctx.MultiCommandRemoteStaticRules("d8",
 	blueprint.RuleParams{
@@ -458,11 +463,12 @@ var d8, d8RE = pctx.MultiCommandRemoteStaticRules("d8",
 // Include all of the args for d8r8, so that we can generate the partialcompileclean target's build using the same list.
 var d8r8Clean = pctx.AndroidStaticRule("d8r8-partialcompileclean",
 	blueprint.RuleParams{
-		Command: `rm -rf "${outDir}" "${outDict}" "${outConfig}" "${outUsage}" "${outUsageZip}" "${outUsageDir}" ` +
+		Command: `rm -rf "${outDir}" "${outDict}" "${outConfig}" "${outUsage}" "${outUsageZip}" "${outUsageDir}" "${outDepfile}" ` +
 			`"${resourcesOutput}" "${outR8ArtProfile}" ${builtOut}`,
 		SandboxDisabled: true,
 	}, "outDir", "outDict", "outConfig", "outUsage", "outUsageZip", "outUsageDir", "builtOut",
-	"d8Flags", "r8Flags", "zipFlags", "mergeZipsFlags", "resourcesOutput", "outR8ArtProfile", "implicits",
+	"d8Flags", "r8Flags", "zipFlags", "mergeZipsFlags", "resourcesOutput", "outR8ArtProfile",
+	"implicits", "outDepfile",
 )
 
 var d8r8, d8r8RE = pctx.MultiCommandRemoteStaticRules("d8r8",
