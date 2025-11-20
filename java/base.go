@@ -3061,21 +3061,11 @@ const (
 
 // @auto-generate: gob
 type JarJarProviderData struct {
-	// Mapping of class names: original --> renamed.  If the value is "", the class will be
-	// renamed by the next rdep that has the jarjar_prefix attribute (or this module if it has
-	// attribute). Rdeps of that module will inherit the renaming.
-	Rename map[string]string
+	Rename android.JarJarRename
 }
 
 func (this JarJarProviderData) GetDebugString() string {
-	result := ""
-	for _, k := range android.SortedKeys(this.Rename) {
-		v := this.Rename[k]
-		if strings.Contains(k, "android.companion.virtual.flags.FakeFeatureFlagsImpl") {
-			result += k + "--&gt;" + v + ";"
-		}
-	}
-	return result
+	return this.Rename.GetDebugString()
 }
 
 var JarJarProvider = blueprint.NewProvider[JarJarProviderData]()
@@ -3085,19 +3075,6 @@ var overridableJarJarPrefix = "com.android.internal.hidden_from_bootclasspath"
 func init() {
 	android.SetJarJarPrefixHandler(mergeJarJarPrefixes)
 }
-
-// BaseJarJarProviderData contains information that will propagate across dependencies regardless of
-// whether they are java modules or not.
-// @auto-generate: gob
-type BaseJarJarProviderData struct {
-	JarJarProviderData JarJarProviderData
-}
-
-func (this BaseJarJarProviderData) GetDebugString() string {
-	return this.JarJarProviderData.GetDebugString()
-}
-
-var BaseJarJarProvider = blueprint.NewProvider[BaseJarJarProviderData]()
 
 // mergeJarJarPrefixes is called immediately before module.GenerateAndroidBuildActions is called.
 // Since there won't be a JarJarProvider, we create the BaseJarJarProvider if any of our deps have
@@ -3111,10 +3088,10 @@ func mergeJarJarPrefixes(ctx android.ModuleContext) {
 	}
 	jarJarData := collectDirectDepsProviders(ctx)
 	if jarJarData != nil {
-		providerData := BaseJarJarProviderData{
-			JarJarProviderData: *jarJarData,
+		providerData := android.BaseJarJarProviderData{
+			Rename: jarJarData.Rename,
 		}
-		android.SetProvider(ctx, BaseJarJarProvider, providerData)
+		ctx.SetBaseJarJarProviderData(&providerData)
 	}
 
 }
@@ -3230,8 +3207,8 @@ func collectDirectDepsProviders(ctx android.ModuleContext) (result *JarJarProvid
 			return
 		}
 
-		merge := func(theirs *JarJarProviderData) {
-			for orig, renamed := range theirs.Rename {
+		merge := func(theirs android.JarJarRename) {
+			for orig, renamed := range theirs {
 				if preexisting, exists := (*result).Rename[orig]; !exists || preexisting == "" {
 					result.Rename[orig] = renamed
 				} else if preexisting != "" && renamed != "" && preexisting != renamed {
@@ -3245,12 +3222,12 @@ func collectDirectDepsProviders(ctx android.ModuleContext) (result *JarJarProvid
 			}
 		}
 		if theirs, ok := android.OtherModuleProvider(ctx, m, JarJarProvider); ok {
-			merge(&theirs)
-		} else if theirs, ok := android.OtherModuleProvider(ctx, m, BaseJarJarProvider); ok {
+			merge(theirs.Rename)
+		} else if theirs := android.OtherModulePointerProviderOrDefault(ctx, m, android.CommonModuleInfoProvider).BaseJarJarProviderData; theirs != nil {
 			// TODO: if every java.Module should have a JarJarProvider, and we find only the
 			// BaseJarJarProvider, then there is a bug.  Consider seeing if m can be cast
 			// to java.Module.
-			merge(&theirs.JarJarProviderData)
+			merge(theirs.Rename)
 		}
 	})
 	return
