@@ -41,8 +41,8 @@ func IsStubTarget(info *LinkableInfo) bool {
 
 // Get target file name to be installed from this module
 func getInstalledFileName(ctx android.SingletonContext, m android.ModuleProxy) string {
-	for _, ps := range android.OtherModuleProviderOrDefault(
-		ctx, m, android.InstallFilesProvider).PackagingSpecs {
+	for _, ps := range android.GetInstallFiles(
+		ctx, m).PackagingSpecs {
 		if name := ps.FileName(); name != "" {
 			return name
 		}

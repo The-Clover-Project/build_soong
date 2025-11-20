@@ -114,8 +114,8 @@ func BuildLinkerConfig(
 	for _, m := range provideModules {
 		ccInfo, ok := android.OtherModuleProvider(ctx, m, cc.CcInfoProvider)
 		if ok && (cc.IsStubTarget(android.OtherModuleProviderOrDefault(ctx, m, cc.LinkableInfoProvider)) || ccInfo.HasLlndkStubs) {
-			for _, ps := range android.OtherModuleProviderOrDefault(
-				ctx, m, android.InstallFilesProvider).PackagingSpecs {
+			for _, ps := range android.GetInstallFiles(
+				ctx, m).PackagingSpecs {
 				provideLibs = append(provideLibs, ps.FileName())
 			}
 		}
