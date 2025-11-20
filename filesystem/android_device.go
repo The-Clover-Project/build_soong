@@ -2137,6 +2137,12 @@ func (a *androidDevice) createMonolithicVintfCompatibleLog(ctx android.ModuleCon
 			if _, exists := fsInfos[partition]; exists {
 				cmd.FlagWithArg("--dirmap ", fmt.Sprintf("/%s:%s", partition, fsInfos[partition].RebasedDir.String())).
 					Implicit(fsInfos[partition].Output)
+			} else if vendor, vendorExists := fsInfos["vendor"]; vendorExists && partition == "odm" {
+				cmd.FlagWithArg("--dirmap ", fmt.Sprintf("/odm:%s/odm", vendor.RebasedDir.String())).
+					Implicit(vendor.Output)
+			} else if system, systemExists := fsInfos["system"]; systemExists && android.InList(partition, []string{"vendor", "product", "system_ext"}) {
+				cmd.FlagWithArg("--dirmap ", fmt.Sprintf("/%s:%s/%s", partition, system.RebasedDir.String(), partition)).
+					Implicit(system.Output)
 			}
 		}
 	}
