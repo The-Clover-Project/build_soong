@@ -57,6 +57,7 @@ type RuleBuilder struct {
 	sbox             bool
 	highmem          bool
 	remoteable       RemoteRuleSupports
+	toolchainPaths   []string
 	rbeParams        *remoteexec.REParams
 	outDir           WritablePath
 	sboxOutSubDir    string
@@ -152,6 +153,11 @@ func (r *RuleBuilder) HighMem() *RuleBuilder {
 func (r *RuleBuilder) Remoteable(supports RemoteRuleSupports) *RuleBuilder {
 	r.remoteable = supports
 	return r
+}
+
+// ToolchianPaths adds toolchain paths.
+func (r *RuleBuilder) ToolchainPaths(paths ...string) {
+	r.toolchainPaths = append(r.toolchainPaths, paths...)
 }
 
 // Rewrapper marks the rule as running inside rewrapper using the given params in order to support
@@ -884,6 +890,10 @@ func (r *RuleBuilder) build(name string, desc string) {
 		tools = append(tools, sboxCmd.tools...)
 		inputs = append(inputs, sboxCmd.inputs...)
 
+		if len(r.toolchainPaths) > 0 {
+			// set PATH for java command etc here.
+			commandString = "PATH=" + strings.Join(r.toolchainPaths, ":") + ":$PATH " + commandString
+		}
 		if r.rbeParams != nil && r.ctx.Config().UseREWrapper() {
 			// RBE needs a list of input files to copy to the remote builder.  For inputs already
 			// listed in an rsp file, pass the rsp file directly to rewrapper.  For the rest,

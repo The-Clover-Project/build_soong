@@ -64,6 +64,16 @@ def __step_config(ctx, vars, step_config):
             "platform_ref": "java16",
             "timeout": "8m",
         },
+        {
+            "name": "m.*.metalava",
+            "action": "m.*.metalava",
+            "inputs": [
+                java_path,
+            ],
+            "remote": True,
+            "platform_ref": "java16",
+            "timeout": "8m",
+        },
     ])
     return step_config
 
