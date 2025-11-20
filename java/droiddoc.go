@@ -392,8 +392,9 @@ func (j *Javadoc) collectDeps(ctx android.ModuleContext) deps {
 				deps.classpath = append(deps.classpath, dep.HeaderJars...)
 				deps.aidlIncludeDirs = append(deps.aidlIncludeDirs, dep.AidlIncludeDirs...)
 				deps.aconfigProtoFiles = append(deps.aconfigProtoFiles, dep.AconfigIntermediateCacheOutputPaths...)
-			} else if dep, ok := android.OtherModuleProvider(ctx, module, android.SourceFilesInfoProvider); ok {
-				checkProducesJars(ctx, dep, module)
+			} else if commonInfo, ok := android.OtherModuleProvider(ctx, module, android.CommonModuleInfoProvider); ok && commonInfo.SourceFiles != nil {
+				dep := commonInfo.SourceFiles
+				checkProducesJars(ctx, *dep, module)
 				deps.classpath = append(deps.classpath, dep.Srcs...)
 			} else {
 				ctx.ModuleErrorf("depends on non-java module %q", otherName)

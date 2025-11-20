@@ -81,9 +81,10 @@ func (t *allTeamsSingleton) GenerateBuildActions(ctx SingletonContext) {
 	ctx.VisitAllModuleProxies(func(module ModuleProxy) {
 		bpFile := ctx.BlueprintFile(module)
 
+		commonInfo := OtherModulePointerProviderOrDefault(ctx, module, CommonModuleInfoProvider)
 		// Package Modules and Team Modules are stored in a map so we can look them up by name for
 		// modules without a team.
-		if pack, ok := OtherModuleProvider(ctx, module, PackageInfoProvider); ok {
+		if pack := commonInfo.PackageInfo; pack != nil {
 			// Packages don't have names, use the blueprint file as the key. we can't get qualifiedModuleId in t context.
 			pkgKey := bpFile
 			t.packages[pkgKey] = pack.Properties
@@ -94,7 +95,6 @@ func (t *allTeamsSingleton) GenerateBuildActions(ctx SingletonContext) {
 			return
 		}
 
-		commonInfo := OtherModulePointerProviderOrDefault(ctx, module, CommonModuleInfoProvider)
 		testModInfo := TestModuleInformation{}
 		if tmi := commonInfo.TestModuleInfo; tmi != nil {
 			testModInfo = *tmi

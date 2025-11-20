@@ -67,9 +67,9 @@ type TestSuiteInfo struct {
 
 var TestSuiteInfoProvider = blueprint.NewProvider[TestSuiteInfo]()
 
-// MakeNameInfo records the AndroidMk names info for the module.
+// MakeNamesInfo records the AndroidMk names info for the module.
 // @auto-generate: gob
-type MakeNameInfo struct {
+type MakeNamesInfo struct {
 	// AndroidMk name for the module.
 	MakeName string
 
@@ -79,8 +79,6 @@ type MakeNameInfo struct {
 	// modules (to track their transitive shared libs).
 	SharedLibsMakeNames []string
 }
-
-var MakeNameInfoProvider = blueprint.NewProvider[MakeNameInfo]()
 
 // @auto-generate: gob
 type FilePair struct {

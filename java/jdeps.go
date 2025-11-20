@@ -73,8 +73,8 @@ func (j *jdepsGeneratorSingleton) GenerateBuildActions(ctx android.SingletonCont
 		dpInfo.Paths = []string{ctx.ModuleDir(module)}
 		moduleInfos[name] = dpInfo
 
-		mkProvider, ok := android.OtherModuleProvider(ctx, module, android.AndroidMkDataInfoProvider)
-		if !ok {
+		mkProvider := commonInfo.AndroidMkData
+		if mkProvider == nil {
 			return
 		}
 		if mkProvider.Class != "" {

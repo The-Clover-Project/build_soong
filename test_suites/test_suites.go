@@ -94,10 +94,14 @@ func (t *testSuiteFiles) GenerateBuildActions(ctx android.SingletonContext) {
 
 	ctx.VisitAllModuleProxies(func(m android.ModuleProxy) {
 		commonInfo := android.OtherModuleProviderOrDefault(ctx, m, android.CommonModuleInfoProvider)
-		makeNameInfo := android.OtherModuleProviderOrDefault(ctx, m, android.MakeNameInfoProvider)
-		makeName := makeNameInfo.MakeName
+		var makeName string
+		var sharedLibsMakeNames []string
+		if makeNameInfo := commonInfo.MakeNames; makeNameInfo != nil {
+			makeName = makeNameInfo.MakeName
+			sharedLibsMakeNames = makeNameInfo.SharedLibsMakeNames
+		}
 		if makeName != "" && commonInfo.Target.Os == ctx.Config().BuildOS {
-			sharedLibGraph[makeName] = append(sharedLibGraph[makeName], makeNameInfo.SharedLibsMakeNames...)
+			sharedLibGraph[makeName] = append(sharedLibGraph[makeName], sharedLibsMakeNames...)
 		}
 
 		if tsm, ok := android.OtherModuleProvider(ctx, m, android.TestSuiteInfoProvider); ok {
@@ -439,11 +443,11 @@ func gatherHostSharedLibs(ctx android.SingletonContext, sharedLibRoots, sharedLi
 	hostSharedLibs := make(map[string]android.Paths)
 
 	ctx.VisitAllModuleProxies(func(m android.ModuleProxy) {
-		if makeName, ok := android.OtherModuleProvider(ctx, m, android.MakeNameInfoProvider); ok {
-			commonInfo := android.OtherModuleProviderOrDefault(ctx, m, android.CommonModuleInfoProvider)
-			if commonInfo.SkipInstall {
-				return
-			}
+		commonInfo := android.OtherModuleProviderOrDefault(ctx, m, android.CommonModuleInfoProvider)
+		if commonInfo.SkipInstall {
+			return
+		}
+		if makeName := commonInfo.MakeNames; makeName != nil {
 			installFilesProvider := android.GetInstallFilesCommon(commonInfo)
 			for suite, sharedLibModulesInSuite := range suiteToSharedLibModules {
 				if sharedLibModulesInSuite[makeName.MakeName] {

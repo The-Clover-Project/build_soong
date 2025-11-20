@@ -1311,7 +1311,7 @@ func (mod *Module) GenerateAndroidBuildActions(actx android.ModuleContext) {
 		BaseModuleName: mod.BaseModuleName(),
 		Target:         ctx.Target(),
 	}
-	android.SetProvider(ctx, android.MakeNameInfoProvider, android.MakeNameInfo{
+	ctx.SetMakeNamesInfo(&android.MakeNamesInfo{
 		SharedLibsMakeNames: testSuiteSharedLibs,
 		MakeName:            rustMakeLibName(rustInfo, linkableInfo, &myCommonInfo, ctx.ModuleName()),
 	})
@@ -1959,10 +1959,10 @@ func (mod *Module) depsToPaths(ctx android.ModuleContext) (PathDeps, []string) {
 			}
 		}
 
-		if srcDep, ok := android.OtherModuleProvider(ctx, dep, android.SourceFilesInfoProvider); ok {
+		if srcDep := commonInfo.SourceFiles; srcDep != nil {
 			if android.IsSourceDepTagWithOutputTag(depTag, "") {
 				// These are usually genrules which don't have per-target variants.
-				directSrcDeps = append(directSrcDeps, srcDep)
+				directSrcDeps = append(directSrcDeps, *srcDep)
 			}
 		}
 	})

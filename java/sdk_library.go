@@ -841,8 +841,8 @@ func (paths *scopePaths) extractStubsSourceAndApiInfoFromApiStubsProvider(ctx an
 
 func extractOutputPaths(ctx android.ModuleContext, dep android.ModuleProxy) (android.Paths, error) {
 	var paths android.Paths
-	if sourceFileProducer, ok := android.OtherModuleProvider(ctx, dep, android.SourceFilesInfoProvider); ok {
-		paths = sourceFileProducer.Srcs
+	if commonInfo, ok := android.OtherModuleProvider(ctx, dep, android.CommonModuleInfoProvider); ok && commonInfo.SourceFiles != nil {
+		paths = commonInfo.SourceFiles.Srcs
 		return paths, nil
 	} else {
 		return nil, fmt.Errorf("module %q does not produce source files", dep)

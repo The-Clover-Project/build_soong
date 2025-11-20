@@ -188,7 +188,8 @@ func (libbpf *libbpfProg) GenerateAndroidBuildActions(ctx android.ModuleContext)
 	ctx.VisitDirectDepsProxy(func(dep android.ModuleProxy) {
 		depTag := ctx.OtherModuleDependencyTag(dep)
 		if depTag == libbpfProgDepTag {
-			if info, ok := android.OtherModuleProvider(ctx, dep, android.GeneratedSourceInfoProvider); ok {
+			if commonInfo, ok := android.OtherModuleProvider(ctx, dep, android.CommonModuleInfoProvider); ok && commonInfo.GeneratedSource != nil {
+				info := commonInfo.GeneratedSource
 				cFlagsDeps = append(cFlagsDeps, info.GeneratedDeps...)
 				dirs := info.GeneratedHeaderDirs
 				for _, dir := range dirs {

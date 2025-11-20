@@ -175,7 +175,7 @@ func (p *PythonBinaryModule) buildBinary(ctx android.ModuleContext) {
 	}
 	p.androidMkSharedLibs = sharedLibs
 
-	android.SetProvider(ctx, android.MakeNameInfoProvider, android.MakeNameInfo{
+	ctx.SetMakeNamesInfo(&android.MakeNamesInfo{
 		SharedLibsMakeNames: p.androidMkSharedLibs,
 		MakeName:            ctx.ModuleName(),
 	})
