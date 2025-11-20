@@ -1719,6 +1719,13 @@ func (a *AndroidTest) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		}
 		a.aapt.manifestValues.applicationId = *applicationId
 	}
+
+	if Bool(a.testProperties.Enable_static_aconfig_pb) {
+		if pb := getCombinedAconfigProtoFile(ctx); pb != nil {
+			a.extraResources = append(a.extraResources, pb)
+		}
+	}
+
 	a.generateAndroidBuildActions(ctx)
 
 	android.SetProvider(ctx, ApkCertInfoProvider, ApkCertInfo{
