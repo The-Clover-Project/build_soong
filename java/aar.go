@@ -1106,6 +1106,7 @@ func (a *AndroidLibrary) GenerateAndroidBuildActions(ctx android.ModuleContext) 
 	exportedProguardFlagsFiles := proguardSpecInfo.ProguardFlagsFiles.ToList()
 	a.extraProguardFlagsFiles = append(a.extraProguardFlagsFiles, exportedProguardFlagsFiles...)
 	a.extraProguardFlagsFiles = append(a.extraProguardFlagsFiles, a.proguardOptionsFile)
+	a.extraIncludedProguardFlagsFiles = append(a.extraIncludedProguardFlagsFiles, proguardSpecInfo.IncludedProguardFlagsFiles.ToList()...)
 
 	combinedExportedProguardFlagFile := android.PathForModuleOut(ctx, "export_proguard_flags")
 	writeCombinedProguardFlagsFile(ctx, combinedExportedProguardFlagFile, exportedProguardFlagsFiles)
@@ -1442,17 +1443,27 @@ func (a *AARImport) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	rTxt := extractedAARDir.Join(ctx, "R.txt")
 	assetsPackage := android.PathForModuleOut(ctx, "assets.zip")
 	proguardFlags := extractedAARDir.Join(ctx, "proguard.txt")
-	transitiveProguardFlags, transitiveUnconditionalExportedFlags := collectDepProguardSpecInfo(ctx)
+	proguardSpecInfo := collectDepProguardSpecInfo(ctx)
 	android.SetProvider(ctx, ProguardSpecInfoProvider, ProguardSpecInfo{
 		ProguardFlagsFiles: depset.New[android.Path](
 			depset.POSTORDER,
 			android.Paths{proguardFlags},
-			transitiveProguardFlags,
+			proguardSpecInfo.transitiveProguardFlags,
+		),
+		IncludedProguardFlagsFiles: depset.New[android.Path](
+			depset.POSTORDER,
+			nil,
+			proguardSpecInfo.transitiveIncludedProguardFlags,
 		),
 		UnconditionallyExportedProguardFlags: depset.New[android.Path](
 			depset.POSTORDER,
 			nil,
-			transitiveUnconditionalExportedFlags,
+			proguardSpecInfo.transitiveUnconditionalExportedFlags,
+		),
+		IncludedUnconditionallyExportedProguardFlags: depset.New[android.Path](
+			depset.POSTORDER,
+			nil,
+			proguardSpecInfo.transitiveIncludedUnconditionalExportedFlags,
 		),
 	})
 

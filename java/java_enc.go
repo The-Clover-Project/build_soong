@@ -5871,7 +5871,15 @@ func (r ProguardSpecInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) err
 		return err
 	}
 
+	if err = r.IncludedProguardFlagsFiles.EncodeInterface(ctx, buf); err != nil {
+		return err
+	}
+
 	if err = r.UnconditionallyExportedProguardFlags.EncodeInterface(ctx, buf); err != nil {
+		return err
+	}
+
+	if err = r.IncludedUnconditionallyExportedProguardFlags.EncodeInterface(ctx, buf); err != nil {
 		return err
 	}
 	return err
@@ -5879,7 +5887,7 @@ func (r ProguardSpecInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) err
 
 func (r ProguardSpecInfo) CustomHash(hasher *proptools.Hasher) error {
 	hasher.WriteString(":java.ProguardSpecInfo")
-	hasher.WriteInt(3)
+	hasher.WriteInt(5)
 	hasher.WriteString(":.bool")
 	if r.Export_proguard_flags_files {
 		hasher.WriteByte(1)
@@ -5941,7 +5949,65 @@ func (r ProguardSpecInfo) CustomHash(hasher *proptools.Hasher) error {
 		}
 		return nil
 	}
-	if err := r.UnconditionallyExportedProguardFlags.Hash(hasher, "android.Path", val10); err != nil {
+	if err := r.IncludedProguardFlagsFiles.Hash(hasher, "android.Path", val10); err != nil {
+		return err
+	}
+	val15 := func(hasher *proptools.Hasher, val11 android.Path) error {
+		hasher.WriteString(":java.android.Path")
+		val12 := val11 == nil
+		if val12 {
+			hasher.WriteByte(0)
+		} else {
+			if v := reflect.ValueOf(val11); v.Kind() == reflect.Ptr {
+				if v.IsNil() {
+					panic(fmt.Errorf("nil pointer is not supported in interface"))
+				} else {
+					val13 := val11 == nil
+					if val13 {
+						hasher.WriteByte(0)
+					} else {
+						val14 := func(hasher *proptools.Hasher) error { return val11.(proptools.CustomHash).CustomHash(hasher) }
+						if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val14); err != nil {
+							return err
+						}
+					}
+				}
+			} else {
+				val11.(proptools.CustomHash).CustomHash(hasher)
+			}
+		}
+		return nil
+	}
+	if err := r.UnconditionallyExportedProguardFlags.Hash(hasher, "android.Path", val15); err != nil {
+		return err
+	}
+	val20 := func(hasher *proptools.Hasher, val16 android.Path) error {
+		hasher.WriteString(":java.android.Path")
+		val17 := val16 == nil
+		if val17 {
+			hasher.WriteByte(0)
+		} else {
+			if v := reflect.ValueOf(val16); v.Kind() == reflect.Ptr {
+				if v.IsNil() {
+					panic(fmt.Errorf("nil pointer is not supported in interface"))
+				} else {
+					val18 := val16 == nil
+					if val18 {
+						hasher.WriteByte(0)
+					} else {
+						val19 := func(hasher *proptools.Hasher) error { return val16.(proptools.CustomHash).CustomHash(hasher) }
+						if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val19); err != nil {
+							return err
+						}
+					}
+				}
+			} else {
+				val16.(proptools.CustomHash).CustomHash(hasher)
+			}
+		}
+		return nil
+	}
+	if err := r.IncludedUnconditionallyExportedProguardFlags.Hash(hasher, "android.Path", val20); err != nil {
 		return err
 	}
 	return nil
@@ -5959,7 +6025,15 @@ func (r *ProguardSpecInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) er
 		return err
 	}
 
+	if err = r.IncludedProguardFlagsFiles.DecodeInterface(ctx, buf); err != nil {
+		return err
+	}
+
 	if err = r.UnconditionallyExportedProguardFlags.DecodeInterface(ctx, buf); err != nil {
+		return err
+	}
+
+	if err = r.IncludedUnconditionallyExportedProguardFlags.DecodeInterface(ctx, buf); err != nil {
 		return err
 	}
 

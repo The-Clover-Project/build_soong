@@ -776,17 +776,22 @@ func (a *AndroidApp) aaptBuildActions(ctx android.ModuleContext) {
 
 func (a *AndroidApp) proguardBuildActions(ctx android.ModuleContext) {
 	var staticLibProguardFlagFiles android.Paths
+	var includedStaticLibProguardFlagFiles android.Paths
 	ctx.VisitDirectDepsProxy(func(m android.ModuleProxy) {
 		depProguardInfo, _ := android.OtherModuleProvider(ctx, m, ProguardSpecInfoProvider)
 		staticLibProguardFlagFiles = append(staticLibProguardFlagFiles, depProguardInfo.UnconditionallyExportedProguardFlags.ToList()...)
+		includedStaticLibProguardFlagFiles = append(includedStaticLibProguardFlagFiles, depProguardInfo.IncludedUnconditionallyExportedProguardFlags.ToList()...)
 		if ctx.OtherModuleDependencyTag(m) == staticLibTag {
 			staticLibProguardFlagFiles = append(staticLibProguardFlagFiles, depProguardInfo.ProguardFlagsFiles.ToList()...)
+			includedStaticLibProguardFlagFiles = append(includedStaticLibProguardFlagFiles, depProguardInfo.IncludedProguardFlagsFiles.ToList()...)
 		}
 	})
 
 	staticLibProguardFlagFiles = android.FirstUniquePaths(staticLibProguardFlagFiles)
+	includedStaticLibProguardFlagFiles = android.FirstUniquePaths(includedStaticLibProguardFlagFiles)
 
 	a.Module.extraProguardFlagsFiles = append(a.Module.extraProguardFlagsFiles, staticLibProguardFlagFiles...)
+	a.Module.extraIncludedProguardFlagsFiles = append(a.Module.extraIncludedProguardFlagsFiles, includedStaticLibProguardFlagFiles...)
 	if !(a.dexer.optimizedResourceShrinkingEnabled(ctx)) {
 		// When using the optimized shrinking the R8 enqueuer will traverse the xml files that become
 		// live for code references and (transitively) mark these as live.

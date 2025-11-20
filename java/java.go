@@ -245,13 +245,22 @@ type ProguardSpecInfo struct {
 	// static_libs edges.
 	Export_proguard_flags_files bool
 
-	// TransitiveDepsProguardSpecFiles is a depset of paths to proguard flags files that are exported from
-	// all transitive deps. This list includes all proguard flags files from transitive static dependencies,
-	// and all proguard flags files from transitive libs dependencies which set `export_proguard_spec: true`.
+	// ProguardFlagsFiles is a depset of paths to proguard flags files that are exported from
+	// all transitive deps. This list includes all proguard flags files from transitive static
+	// dependencies, and all proguard flags files from transitive libs dependencies which set
+	// `export_proguard_spec: true`.
 	ProguardFlagsFiles depset.DepSet[android.Path]
+
+	// IncludedProguardFlagsFiles is a depset of files included (with the -include directive)
+	// from the ProguardFlagsFiles.
+	IncludedProguardFlagsFiles depset.DepSet[android.Path]
 
 	// implementation detail to store transitive proguard flags files from exporting shared deps
 	UnconditionallyExportedProguardFlags depset.DepSet[android.Path]
+
+	// implementation detail to store transitive included proguard flags files from exporting shared
+	// deps
+	IncludedUnconditionallyExportedProguardFlags depset.DepSet[android.Path]
 }
 
 var ProguardSpecInfoProvider = blueprint.NewProvider[ProguardSpecInfo]()
@@ -1190,6 +1199,7 @@ func (j *Library) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	android.SetProvider(ctx, ProguardSpecInfoProvider, proguardSpecInfo)
 	exportedProguardFlagsFiles := proguardSpecInfo.ProguardFlagsFiles.ToList()
 	j.extraProguardFlagsFiles = append(j.extraProguardFlagsFiles, exportedProguardFlagsFiles...)
+	j.extraIncludedProguardFlagsFiles = append(j.extraIncludedProguardFlagsFiles, proguardSpecInfo.IncludedProguardFlagsFiles.ToList()...)
 
 	combinedExportedProguardFlagFile := android.PathForModuleOut(ctx, "export_proguard_flags")
 	writeCombinedProguardFlagsFile(ctx, combinedExportedProguardFlagFile, exportedProguardFlagsFiles)
@@ -3346,17 +3356,27 @@ func (j *Import) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	proguardFlags := android.PathForModuleOut(ctx, "proguard_flags")
 	TransformJarToR8Rules(ctx, proguardFlags, outputFile)
 
-	transitiveProguardFlags, transitiveUnconditionalExportedFlags := collectDepProguardSpecInfo(ctx)
+	proguardSpecInfo := collectDepProguardSpecInfo(ctx)
 	android.SetProvider(ctx, ProguardSpecInfoProvider, ProguardSpecInfo{
 		ProguardFlagsFiles: depset.New[android.Path](
 			depset.POSTORDER,
 			android.Paths{proguardFlags},
-			transitiveProguardFlags,
+			proguardSpecInfo.transitiveProguardFlags,
+		),
+		IncludedProguardFlagsFiles: depset.New[android.Path](
+			depset.POSTORDER,
+			nil,
+			proguardSpecInfo.transitiveIncludedProguardFlags,
 		),
 		UnconditionallyExportedProguardFlags: depset.New[android.Path](
 			depset.POSTORDER,
 			nil,
-			transitiveUnconditionalExportedFlags,
+			proguardSpecInfo.transitiveUnconditionalExportedFlags,
+		),
+		IncludedUnconditionallyExportedProguardFlags: depset.New[android.Path](
+			depset.POSTORDER,
+			nil,
+			proguardSpecInfo.transitiveIncludedUnconditionalExportedFlags,
 		),
 	})
 
