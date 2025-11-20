@@ -72,6 +72,14 @@ python_test_host {
 }
 
 python_binary_host {
+    name: "merge_task_profiles",
+    main: "merge_task_profiles.py",
+    srcs: [
+        "merge_task_profiles.py",
+    ],
+}
+
+python_binary_host {
     name: "jsonmodify",
     main: "jsonmodify.py",
     srcs: [
