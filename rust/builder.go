@@ -404,7 +404,9 @@ func transformSrctoCrate(ctx android.ModuleContext, main android.Path, deps Path
 	} else {
 		rustcFlags = append(rustcFlags, "-C codegen-units=1")
 	}
-
+	if config.GetRustVersion(ctx) >= "1.91" {
+		rustcFlags = append(rustcFlags, "-Cunsafe-allow-abi-mismatch=sanitizer")
+	}
 	// Disallow experimental features
 	modulePath := ctx.ModuleDir()
 	if !android.IsThirdPartyPath(modulePath) && !strings.HasPrefix(modulePath, "prebuilts") {
