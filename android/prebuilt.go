@@ -395,56 +395,6 @@ func GetEmbeddedPrebuilt(module Module) *Prebuilt {
 	return nil
 }
 
-// PrebuiltGetPreferred returns the module that is preferred for the given
-// module. That is either the module itself or the prebuilt counterpart that has
-// taken its place. The given module must be a direct dependency of the current
-// context module, and it must be the source module if both source and prebuilt
-// exist.
-//
-// This function is for use on dependencies after PrebuiltPostDepsMutator has
-// run - any dependency that is registered before that will already reference
-// the right module. This function is only safe to call after all TransitionMutators
-// have run, e.g. in GenerateAndroidBuildActions.
-func PrebuiltGetPreferred(ctx BaseModuleContext, module ModuleProxy) ModuleProxy {
-	if info, ok := OtherModuleProvider(ctx, module, PrebuiltInfoProvider); ok {
-		if !info.ReplacedByPrebuilt {
-			return module
-		}
-		if info.IsPrebuilt {
-			// If we're given a prebuilt then assume there's no source module around.
-			return module
-		}
-	}
-
-	sourceModDepFound := false
-	var prebuiltMod ModuleProxy
-
-	ctx.WalkDepsProxy(func(child, parent ModuleProxy) bool {
-		if !prebuiltMod.IsNil() {
-			return false
-		}
-		if EqualModules(parent, ctx.Module()) {
-			// First level: Only recurse if the module is found as a direct dependency.
-			sourceModDepFound = EqualModules(child, module)
-			return sourceModDepFound
-		}
-		// Second level: Follow PrebuiltDepTag to the prebuilt.
-		if t := ctx.OtherModuleDependencyTag(child); t == PrebuiltDepTag {
-			prebuiltMod = child
-		}
-		return false
-	})
-
-	if prebuiltMod.IsNil() {
-		if !sourceModDepFound {
-			panic(fmt.Errorf("Failed to find source module as a direct dependency: %s", module))
-		} else {
-			panic(fmt.Errorf("Failed to find prebuilt for source module: %s", module))
-		}
-	}
-	return prebuiltMod
-}
-
 func RegisterPrebuiltsPreArchMutators(ctx RegisterMutatorsContext) {
 	ctx.BottomUp("prebuilt_rename", PrebuiltRenameMutator).UsesRename()
 }
