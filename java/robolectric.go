@@ -168,7 +168,7 @@ func (r *robolectricTest) GenerateAndroidBuildActions(ctx android.ModuleContext)
 		DeviceTemplate:          "${RobolectricTestConfigTemplate}",
 		HostTemplate:            "${RobolectricTestConfigTemplate}",
 	})
-	r.data = android.PathsForModuleSrc(ctx, r.testProperties.Data)
+	r.data = android.PathsForModuleSrc(ctx, r.testProperties.Data.GetOrDefault(ctx, nil))
 	r.data = append(r.data, android.PathsForModuleSrc(ctx, r.testProperties.Device_common_data)...)
 	r.data = append(r.data, android.PathsForModuleSrc(ctx, r.testProperties.Device_first_data)...)
 	r.data = append(r.data, android.PathsForModuleSrc(ctx, r.testProperties.Device_first_prefer32_data)...)
