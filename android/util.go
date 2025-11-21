@@ -15,8 +15,11 @@
 package android
 
 import (
+	"bufio"
 	"cmp"
+	"errors"
 	"fmt"
+	"os"
 	"path/filepath"
 	"reflect"
 	"regexp"
@@ -653,4 +656,27 @@ func AppendIfNotZero[T comparable](slice []T, value T) []T {
 		return append(slice, value)
 	}
 	return slice
+}
+
+type bufferedStringWriterCloser struct {
+	*bufio.Writer
+	f *os.File
+}
+
+func (b bufferedStringWriterCloser) Close() error {
+	flushErr := b.Writer.Flush()
+	closeErr := b.f.Close()
+	return errors.Join(flushErr, closeErr)
+}
+
+func openBufferedFile(path string) (*bufferedStringWriterCloser, error) {
+	f, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
+	if err != nil {
+		return nil, err
+	}
+	buf := bufio.NewWriterSize(f, 16*1024*1024)
+	return &bufferedStringWriterCloser{
+		Writer: buf,
+		f:      f,
+	}, nil
 }
