@@ -31,7 +31,7 @@ var (
 	xmllintDtd = pctx.AndroidStaticRule("xmllint-dtd",
 		blueprint.RuleParams{
 			Command:         `$XmlLintCmd --dtdvalid $dtd $in > /dev/null && ${android.Touch} -a $out`,
-			CommandDeps:     []string{"$XmlLintCmd", "${android.Touch}"},
+			CommandDeps:     []string{"$XmlLintCmd", "Touch-deps"},
 			Restat:          true,
 			SandboxDisabled: true,
 		},
@@ -40,7 +40,7 @@ var (
 	xmllintXsd = pctx.AndroidStaticRule("xmllint-xsd",
 		blueprint.RuleParams{
 			Command:         `$XmlLintCmd --schema $xsd $in > /dev/null && ${android.Touch} -a $out`,
-			CommandDeps:     []string{"$XmlLintCmd", "${android.Touch}"},
+			CommandDeps:     []string{"$XmlLintCmd", "Touch-deps"},
 			Restat:          true,
 			SandboxDisabled: true,
 		},
@@ -49,7 +49,7 @@ var (
 	xmllintMinimal = pctx.AndroidStaticRule("xmllint-minimal",
 		blueprint.RuleParams{
 			Command:         `$XmlLintCmd $in > /dev/null && ${android.Touch} -a $out`,
-			CommandDeps:     []string{"$XmlLintCmd", "${android.Touch}"},
+			CommandDeps:     []string{"$XmlLintCmd", "Touch-deps"},
 			Restat:          true,
 			SandboxDisabled: true,
 		})

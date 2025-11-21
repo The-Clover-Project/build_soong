@@ -72,7 +72,7 @@ func (t *prebuiltBuildTool) GenerateAndroidBuildActions(ctx ModuleContext) {
 	deps := PathsForModuleSrc(ctx, t.properties.Deps)
 
 	ctx.Build(pctx, BuildParams{
-		Rule:      CpExecutableWithBashBootstrap,
+		Rule:      CpExecutableWithBash,
 		Output:    installedPath,
 		Input:     sourcePath,
 		Implicits: deps,
@@ -80,8 +80,7 @@ func (t *prebuiltBuildTool) GenerateAndroidBuildActions(ctx ModuleContext) {
 
 	if proptools.BoolDefault(t.properties.Installable, false) {
 		installDir := PathForModuleInstall(ctx, "bin")
-		ctx.InstallExecutableWithBootstrap(installDir, installedPath.Base(), installedPath)
-
+		ctx.InstallExecutable(installDir, installedPath.Base(), installedPath)
 	} else {
 		packagingDir := PathForModuleInstall(ctx, t.BaseModuleName())
 		ctx.PackageFile(packagingDir, sourcePath.String(), sourcePath)
