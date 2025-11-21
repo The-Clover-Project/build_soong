@@ -470,9 +470,6 @@ func (b BootclasspathFragmentDepInSameApexChecker) OutgoingDepIsInSameApex(tag b
 	if _, ok := tag.(hiddenAPIStubsDependencyTag); ok {
 		return false
 	}
-	if _, ok := tag.(android.HostToolDepTagType); ok {
-		return false
-	}
 	panic(fmt.Errorf("boot_image module should not have a dependency tag %s", android.PrettyPrintTag(tag)))
 }
 
