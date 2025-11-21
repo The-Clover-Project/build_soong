@@ -750,7 +750,7 @@ func (f *filesystem) updateAvbInFsInfo(ctx android.ModuleContext, fsInfo *Filesy
 func (f *filesystem) gatherOverriddenModulesPackagingSpecs(ctx android.ModuleContext) {
 	f.overriddenModulesPackagingSpecs = make(map[string]depset.DepSet[android.PackagingSpec])
 	ctx.VisitDirectDepsProxyWithTag(android.OverriddenModuleDepTag, func(proxy android.ModuleProxy) {
-		f.overriddenModulesPackagingSpecs[proxy.Name()] = android.GetInstallFiles(ctx, proxy).TransitivePackagingSpecs
+		f.overriddenModulesPackagingSpecs[proxy.Name()] = android.OtherModuleProviderOrDefault(ctx, proxy, android.InstallFilesProvider).TransitivePackagingSpecs
 	})
 }
 
@@ -1030,8 +1030,8 @@ func (f *filesystem) validateVintfFragments(ctx android.ModuleContext) {
 	packagingSpecs := f.gatherFilteredPackagingSpecs(ctx)
 
 	moduleInFileSystem := func(mod android.ModuleProxy) bool {
-		for _, ps := range android.GetInstallFiles(
-			ctx, mod).PackagingSpecs {
+		for _, ps := range android.OtherModuleProviderOrDefault(
+			ctx, mod, android.InstallFilesProvider).PackagingSpecs {
 			if _, ok := packagingSpecs[ps.RelPathInPackage()]; ok {
 				return true
 			}
@@ -1048,7 +1048,7 @@ func (f *filesystem) validateVintfFragments(ctx android.ModuleContext) {
 			return true
 		}
 
-		if installInfo := android.GetInstallFiles(ctx, child); len(installInfo.VintfFragmentsPaths) > 0 {
+		if installInfo, ok := android.OtherModuleProvider(ctx, child, android.InstallFilesProvider); ok && len(installInfo.VintfFragmentsPaths) > 0 {
 			ctx.PropertyErrorf(
 				"vintf_fragments",
 				"Module %s is referenced by soong-defined filesystem %s with property vintf_fragments(%s) in use."+
@@ -2019,11 +2019,11 @@ func (f *filesystem) getLibsForLinkerConfig(ctx android.ModuleContext) ([]androi
 
 	deps := f.gatherFilteredPackagingSpecs(ctx)
 	ctx.WalkDepsProxy(func(child, parent android.ModuleProxy) bool {
-		commonInfo := android.OtherModulePointerProviderOrDefault(ctx, child, android.CommonModuleInfoProvider)
-		if !commonInfo.Enabled {
+		if !android.OtherModulePointerProviderOrDefault(ctx, child, android.CommonModuleInfoProvider).Enabled {
 			return false
 		}
-		for _, ps := range android.GetInstallFilesCommon(commonInfo).PackagingSpecs {
+		for _, ps := range android.OtherModuleProviderOrDefault(
+			ctx, child, android.InstallFilesProvider).PackagingSpecs {
 			if _, ok := deps[ps.RelPathInPackage()]; ok && ps.Partition() == f.PartitionType() {
 				modulesInPackageByModule[child] = true
 				modulesInPackageByName[child.Name()] = true

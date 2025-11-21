@@ -266,11 +266,11 @@ func extendBuilderCommand(ctx android.ModuleContext, m android.ModuleProxy, buil
 		class = "framework"
 	}
 
-	commonInfo, ok := android.OtherModuleProvider(ctx, m, android.CommonModuleInfoProvider)
-	if !ok || commonInfo.InstallFiles == nil {
+	installedFilesInfo, ok := android.OtherModuleProvider(ctx, m, android.InstallFilesProvider)
+	if !ok {
 		ctx.ModuleErrorf("Module %s doesn't set InstallFilesProvider", m.Name())
 	}
-	installedFilesInfo := commonInfo.InstallFiles
+
 	for _, spec := range installedFilesInfo.PackagingSpecs {
 		if spec.SrcPath() == nil {
 			// Probably a symlink

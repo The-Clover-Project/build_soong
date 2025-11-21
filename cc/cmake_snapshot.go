@@ -487,8 +487,8 @@ func (m *CmakeSnapshot) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		var prebuiltsList android.Paths
 
 		ctx.VisitDirectDepsProxyWithTag(cmakeSnapshotPrebuiltTag, func(dep android.ModuleProxy) {
-			for _, file := range android.GetInstallFiles(
-				ctx, dep).InstallFiles {
+			for _, file := range android.OtherModuleProviderOrDefault(
+				ctx, dep, android.InstallFilesProvider).InstallFiles {
 				prebuiltsList = append(prebuiltsList, file)
 			}
 		})

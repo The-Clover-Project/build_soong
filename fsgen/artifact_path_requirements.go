@@ -157,7 +157,7 @@ func (s *artifactPathRequirementsVerifierSingleton) GenerateBuildActions(ctx and
 			return
 		}
 
-		if installInfo := info.InstallFiles; installInfo != nil {
+		if installInfo, ok := android.OtherModuleProvider(ctx, m, android.InstallFilesProvider); ok {
 			for _, ps := range installInfo.TransitivePackagingSpecs.ToList() {
 				if ps.SkipInstall() || ps.Partition() == "" || ps.InstallInSanitizerDir() {
 					continue

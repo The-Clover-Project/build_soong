@@ -268,7 +268,7 @@ func TestGetDistForGoals(t *testing.T) {
 	}
 	for idx, line := range androidMkLines {
 		expectedLine := strings.ReplaceAll(expectedAndroidMkLines[idx], "meta_lic",
-			GetInstallFiles(ctx, module).LicenseMetadataFile.String())
+			OtherModuleProviderOrDefault(ctx, module, InstallFilesProvider).LicenseMetadataFile.String())
 		if line != expectedLine {
 			t.Errorf(
 				"Expected AndroidMk line to be '%s', got '%s'",
