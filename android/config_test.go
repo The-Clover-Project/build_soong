@@ -120,6 +120,7 @@ func TestBootJarsMarshaling(t *testing.T) {
 }
 
 func assertStringEquals(t *testing.T, expected, actual string) {
+	t.Helper()
 	if actual != expected {
 		t.Errorf("expected %q found %q", expected, actual)
 	}
