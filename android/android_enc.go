@@ -7004,81 +7004,71 @@ func (r CommonModuleInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) err
 		}
 	}
 
-	val24 := r.InstallFiles == nil
+	val24 := r.MakeNames == nil
 	if err = gobtools.EncodeBool(buf, val24); err != nil {
 		return err
 	}
 	if !val24 {
-		if err = (*r.InstallFiles).Encode(ctx, buf); err != nil {
-			return err
-		}
-	}
-
-	val25 := r.MakeNames == nil
-	if err = gobtools.EncodeBool(buf, val25); err != nil {
-		return err
-	}
-	if !val25 {
 		if err = (*r.MakeNames).Encode(ctx, buf); err != nil {
 			return err
 		}
 	}
 
-	val26 := r.SourceFiles == nil
-	if err = gobtools.EncodeBool(buf, val26); err != nil {
+	val25 := r.SourceFiles == nil
+	if err = gobtools.EncodeBool(buf, val25); err != nil {
 		return err
 	}
-	if !val26 {
+	if !val25 {
 		if err = (*r.SourceFiles).Encode(ctx, buf); err != nil {
 			return err
 		}
 	}
 
-	val27 := r.GeneratedSource == nil
-	if err = gobtools.EncodeBool(buf, val27); err != nil {
+	val26 := r.GeneratedSource == nil
+	if err = gobtools.EncodeBool(buf, val26); err != nil {
 		return err
 	}
-	if !val27 {
+	if !val26 {
 		if err = (*r.GeneratedSource).Encode(ctx, buf); err != nil {
 			return err
 		}
 	}
 
-	val28 := r.Containers == nil
-	if err = gobtools.EncodeBool(buf, val28); err != nil {
+	val27 := r.Containers == nil
+	if err = gobtools.EncodeBool(buf, val27); err != nil {
 		return err
 	}
-	if !val28 {
+	if !val27 {
 		if err = (*r.Containers).Encode(ctx, buf); err != nil {
 			return err
 		}
 	}
 
-	val29 := r.PackageInfo == nil
-	if err = gobtools.EncodeBool(buf, val29); err != nil {
+	val28 := r.PackageInfo == nil
+	if err = gobtools.EncodeBool(buf, val28); err != nil {
 		return err
 	}
-	if !val29 {
+	if !val28 {
 		if err = (*r.PackageInfo).Encode(ctx, buf); err != nil {
 			return err
 		}
 	}
 
-	val30 := r.AndroidMkData == nil
-	if err = gobtools.EncodeBool(buf, val30); err != nil {
+	val29 := r.AndroidMkData == nil
+	if err = gobtools.EncodeBool(buf, val29); err != nil {
 		return err
 	}
-	if !val30 {
+	if !val29 {
 		if err = (*r.AndroidMkData).Encode(ctx, buf); err != nil {
 			return err
 		}
 	}
 
-	val31 := r.BaseJarJarProviderData == nil
-	if err = gobtools.EncodeBool(buf, val31); err != nil {
+	val30 := r.BaseJarJarProviderData == nil
+	if err = gobtools.EncodeBool(buf, val30); err != nil {
 		return err
 	}
-	if !val31 {
+	if !val30 {
 		if err = (*r.BaseJarJarProviderData).Encode(ctx, buf); err != nil {
 			return err
 		}
@@ -7088,7 +7078,7 @@ func (r CommonModuleInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) err
 
 func (r CommonModuleInfo) CustomHash(hasher *proptools.Hasher) error {
 	hasher.WriteString(":android.CommonModuleInfo")
-	hasher.WriteInt(62)
+	hasher.WriteInt(61)
 	hasher.WriteString(":.bool")
 	if r.Enabled {
 		hasher.WriteByte(1)
@@ -7525,123 +7515,108 @@ func (r CommonModuleInfo) CustomHash(hasher *proptools.Hasher) error {
 			return err
 		}
 	}
-	hasher.WriteString(":.*InstallFilesInfo")
-	val39 := r.InstallFiles == nil
+	hasher.WriteString(":.*MakeNamesInfo")
+	val39 := r.MakeNames == nil
 	if val39 {
 		hasher.WriteByte(0)
 	} else {
 		val40 := func(hasher *proptools.Hasher) error {
-			if err := (*r.InstallFiles).CustomHash(hasher); err != nil {
-				return err
-			}
-			return nil
-		}
-		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.InstallFiles)), val40); err != nil {
-			return err
-		}
-	}
-	hasher.WriteString(":.*MakeNamesInfo")
-	val41 := r.MakeNames == nil
-	if val41 {
-		hasher.WriteByte(0)
-	} else {
-		val42 := func(hasher *proptools.Hasher) error {
 			if err := (*r.MakeNames).CustomHash(hasher); err != nil {
 				return err
 			}
 			return nil
 		}
-		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.MakeNames)), val42); err != nil {
+		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.MakeNames)), val40); err != nil {
 			return err
 		}
 	}
 	hasher.WriteString(":.*SourceFilesInfo")
-	val43 := r.SourceFiles == nil
-	if val43 {
+	val41 := r.SourceFiles == nil
+	if val41 {
 		hasher.WriteByte(0)
 	} else {
-		val44 := func(hasher *proptools.Hasher) error {
+		val42 := func(hasher *proptools.Hasher) error {
 			if err := (*r.SourceFiles).CustomHash(hasher); err != nil {
 				return err
 			}
 			return nil
 		}
-		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.SourceFiles)), val44); err != nil {
+		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.SourceFiles)), val42); err != nil {
 			return err
 		}
 	}
 	hasher.WriteString(":.*GeneratedSourceInfo")
-	val45 := r.GeneratedSource == nil
-	if val45 {
+	val43 := r.GeneratedSource == nil
+	if val43 {
 		hasher.WriteByte(0)
 	} else {
-		val46 := func(hasher *proptools.Hasher) error {
+		val44 := func(hasher *proptools.Hasher) error {
 			if err := (*r.GeneratedSource).CustomHash(hasher); err != nil {
 				return err
 			}
 			return nil
 		}
-		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.GeneratedSource)), val46); err != nil {
+		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.GeneratedSource)), val44); err != nil {
 			return err
 		}
 	}
 	hasher.WriteString(":.*ContainersInfo")
-	val47 := r.Containers == nil
-	if val47 {
+	val45 := r.Containers == nil
+	if val45 {
 		hasher.WriteByte(0)
 	} else {
-		val48 := func(hasher *proptools.Hasher) error {
+		val46 := func(hasher *proptools.Hasher) error {
 			if err := (*r.Containers).CustomHash(hasher); err != nil {
 				return err
 			}
 			return nil
 		}
-		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.Containers)), val48); err != nil {
+		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.Containers)), val46); err != nil {
 			return err
 		}
 	}
 	hasher.WriteString(":.*PackageInfo")
-	val49 := r.PackageInfo == nil
-	if val49 {
+	val47 := r.PackageInfo == nil
+	if val47 {
 		hasher.WriteByte(0)
 	} else {
-		val50 := func(hasher *proptools.Hasher) error {
+		val48 := func(hasher *proptools.Hasher) error {
 			if err := (*r.PackageInfo).CustomHash(hasher); err != nil {
 				return err
 			}
 			return nil
 		}
-		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.PackageInfo)), val50); err != nil {
+		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.PackageInfo)), val48); err != nil {
 			return err
 		}
 	}
 	hasher.WriteString(":.*AndroidMkDataInfo")
-	val51 := r.AndroidMkData == nil
-	if val51 {
+	val49 := r.AndroidMkData == nil
+	if val49 {
 		hasher.WriteByte(0)
 	} else {
-		val52 := func(hasher *proptools.Hasher) error {
+		val50 := func(hasher *proptools.Hasher) error {
 			if err := (*r.AndroidMkData).CustomHash(hasher); err != nil {
 				return err
 			}
 			return nil
 		}
-		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.AndroidMkData)), val52); err != nil {
+		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.AndroidMkData)), val50); err != nil {
 			return err
 		}
 	}
 	hasher.WriteString(":.*BaseJarJarProviderData")
-	val53 := r.BaseJarJarProviderData == nil
-	if val53 {
+	val51 := r.BaseJarJarProviderData == nil
+	if val51 {
 		hasher.WriteByte(0)
 	} else {
-		val54 := func(hasher *proptools.Hasher) error {
+		val52 := func(hasher *proptools.Hasher) error {
 			if err := (*r.BaseJarJarProviderData).CustomHash(hasher); err != nil {
 				return err
 			}
 			return nil
 		}
-		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.BaseJarJarProviderData)), val54); err != nil {
+		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.BaseJarJarProviderData)), val52); err != nil {
 			return err
 		}
 	}
@@ -8107,11 +8082,11 @@ func (r *CommonModuleInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) er
 		return err
 	}
 	if !val111 {
-		var val110 InstallFilesInfo
+		var val110 MakeNamesInfo
 		if err = val110.Decode(ctx, buf); err != nil {
 			return err
 		}
-		r.InstallFiles = &val110
+		r.MakeNames = &val110
 	}
 
 	var val114 bool
@@ -8119,11 +8094,11 @@ func (r *CommonModuleInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) er
 		return err
 	}
 	if !val114 {
-		var val113 MakeNamesInfo
+		var val113 SourceFilesInfo
 		if err = val113.Decode(ctx, buf); err != nil {
 			return err
 		}
-		r.MakeNames = &val113
+		r.SourceFiles = &val113
 	}
 
 	var val117 bool
@@ -8131,11 +8106,11 @@ func (r *CommonModuleInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) er
 		return err
 	}
 	if !val117 {
-		var val116 SourceFilesInfo
+		var val116 GeneratedSourceInfo
 		if err = val116.Decode(ctx, buf); err != nil {
 			return err
 		}
-		r.SourceFiles = &val116
+		r.GeneratedSource = &val116
 	}
 
 	var val120 bool
@@ -8143,11 +8118,11 @@ func (r *CommonModuleInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) er
 		return err
 	}
 	if !val120 {
-		var val119 GeneratedSourceInfo
+		var val119 ContainersInfo
 		if err = val119.Decode(ctx, buf); err != nil {
 			return err
 		}
-		r.GeneratedSource = &val119
+		r.Containers = &val119
 	}
 
 	var val123 bool
@@ -8155,11 +8130,11 @@ func (r *CommonModuleInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) er
 		return err
 	}
 	if !val123 {
-		var val122 ContainersInfo
+		var val122 PackageInfo
 		if err = val122.Decode(ctx, buf); err != nil {
 			return err
 		}
-		r.Containers = &val122
+		r.PackageInfo = &val122
 	}
 
 	var val126 bool
@@ -8167,11 +8142,11 @@ func (r *CommonModuleInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) er
 		return err
 	}
 	if !val126 {
-		var val125 PackageInfo
+		var val125 AndroidMkDataInfo
 		if err = val125.Decode(ctx, buf); err != nil {
 			return err
 		}
-		r.PackageInfo = &val125
+		r.AndroidMkData = &val125
 	}
 
 	var val129 bool
@@ -8179,23 +8154,11 @@ func (r *CommonModuleInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) er
 		return err
 	}
 	if !val129 {
-		var val128 AndroidMkDataInfo
+		var val128 BaseJarJarProviderData
 		if err = val128.Decode(ctx, buf); err != nil {
 			return err
 		}
-		r.AndroidMkData = &val128
-	}
-
-	var val132 bool
-	if err = gobtools.DecodeBool(buf, &val132); err != nil {
-		return err
-	}
-	if !val132 {
-		var val131 BaseJarJarProviderData
-		if err = val131.Decode(ctx, buf); err != nil {
-			return err
-		}
-		r.BaseJarJarProviderData = &val131
+		r.BaseJarJarProviderData = &val128
 	}
 
 	return err

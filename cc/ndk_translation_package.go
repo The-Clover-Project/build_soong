@@ -16,10 +16,10 @@ package cc
 
 import (
 	"fmt"
-	"path/filepath"
-	"strings"
 
 	"android/soong/android"
+	"path/filepath"
+	"strings"
 
 	"github.com/google/blueprint"
 	"github.com/google/blueprint/proptools"
@@ -134,8 +134,8 @@ func (n *ndkTranslationPackage) GenerateAndroidBuildActions(ctx android.ModuleCo
 
 	ctx.VisitDirectDepsProxy(func(child android.ModuleProxy) {
 		tag := ctx.OtherModuleDependencyTag(child)
+		info := android.OtherModuleProviderOrDefault(ctx, child, android.InstallFilesProvider)
 		commonInfo := android.OtherModulePointerProviderOrDefault(ctx, child, android.CommonModuleInfoProvider)
-		info := android.GetInstallFilesCommon(commonInfo)
 		if tag == ndkTranslationExtraAllowedDepsTag {
 			extraFiles = append(extraFiles, info.PackagingSpecs...)
 			if commonInfo.Target.Arch.ArchType == android.X86_64 || commonInfo.Target.Arch.ArchType == android.Arm64 {

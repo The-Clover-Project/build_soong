@@ -584,8 +584,8 @@ func (p *PackagingBase) GatherPackagingSpecsWithFilterAndModifier(ctx ModuleCont
 		if pi, ok := depTag.(PackagingItem); !ok || !pi.IsPackagingItem() {
 			return
 		}
-		for _, ps := range filteredTransitivePackagingSpecs(GetInstallFiles(
-			ctx, child).TransitivePackagingSpecs).ToList() {
+		for _, ps := range filteredTransitivePackagingSpecs(OtherModuleProviderOrDefault(
+			ctx, child, InstallFilesProvider).TransitivePackagingSpecs).ToList() {
 			if !filterArch(ps) {
 				continue
 			}
@@ -709,8 +709,8 @@ type InterPartitionIncludeVintfsInterface interface {
 // Returns `Vintf_fragments` of the module. This will be collected by the top-level filesystem.
 // `Vintf_fragment_modules` are ignored.
 func getVintFragmentsPaths(ctx ModuleContext, m ModuleProxy) Paths {
+	info := OtherModuleProviderOrDefault(ctx, m, InstallFilesProvider)
 	commonInfo := OtherModulePointerProviderOrDefault(ctx, m, CommonModuleInfoProvider)
-	info := GetInstallFilesCommon(commonInfo)
 	if !commonInfo.HideFromMake && !commonInfo.SkipInstall {
 		return info.VintfFragmentsPaths
 	}
