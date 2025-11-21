@@ -62,7 +62,7 @@ var (
 )
 
 func (f *recoveryBackgroundPictures) GenerateAndroidBuildActions(ctx android.ModuleContext) {
-	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled().
+	rule := android.NewRuleBuilder(pctx, ctx).
 		Sbox(android.PathForModuleOut(ctx, "images"),
 			android.PathForModuleOut(ctx, "gen.sbox.textproto")).
 		SandboxInputs()

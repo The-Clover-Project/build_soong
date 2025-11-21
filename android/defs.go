@@ -36,8 +36,9 @@ var (
 	// Ninja docs for more details.
 	Phony = pctx.AndroidStaticRule("Phony",
 		blueprint.RuleParams{
-			Command:     "# phony $out",
-			Description: "phony $out",
+			Command:         "# phony $out",
+			Description:     "phony $out",
+			SandboxDisabled: true,
 		})
 
 	// GeneratedFile is a rule for indicating that a given file was generated
