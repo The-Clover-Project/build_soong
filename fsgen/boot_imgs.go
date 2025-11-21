@@ -35,6 +35,14 @@ func createBootImageCommon(ctx android.LoadHookContext, kernelPath string, prebu
 	}
 
 	if prebuiltBootImagePath != "" {
+		file := android.ExistentPathForSource(ctx, prebuiltBootImagePath)
+		// If the prebuilt doesn't exist yet, something else in the build is expected to populate it
+		// (along with the corresponding prebuilt vbmeta if necessary).
+		// TODO(b/465530439): this works for the current use case, but may not be the right long-term solution.
+		if !file.Valid() && ctx.Config().KatiEnabled() {
+			return false
+		}
+
 		// prebuilt bootimg
 		ctx.CreateModuleInDirectory(
 			filesystem.PrebuiltBootimgFactory,
