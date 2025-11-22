@@ -1105,8 +1105,7 @@ func (d *dexer) compileDex(ctx android.ModuleContext, dexParams *compileDexParam
 		Input:           dexParams.classesJar,
 		Implicits:       deps,
 		Args:            args,
-		// TODO(b/436992217): Enable this check when inputs are properly specified
-		// Validation:      depfileVerifier,
+		Validation:      depfileVerifier,
 	})
 	// Run cleanup when d8r8 was used
 	if cleanupD8R8 {
