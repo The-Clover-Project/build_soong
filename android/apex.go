@@ -360,6 +360,11 @@ func (m *ApexModuleBase) ApexTransitionMutatorIncoming(ctx IncomingTransitionCon
 		return ApexInfo{}
 	}
 
+	// Required modules should be installed regardless of whether it belongs to the apex or not.
+	if ctx.DepTag() == RequiredDepTag {
+		return ApexInfo{}
+	}
+
 	if !ctx.Module().(ApexModule).UniqueApexVariations() && !m.ApexProperties.UniqueApexVariationsForDeps && !info.ForPrebuiltApex {
 		return info.Minimize()
 	}
