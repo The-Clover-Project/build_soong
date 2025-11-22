@@ -301,3 +301,7 @@ org\.ifaa\.aidl.*
 
 # Lineage HALs
 vendor\.lineage\..*
+
+###################################################
+# Xiaomi Extensions
+com.xiaomi.extensions.*
