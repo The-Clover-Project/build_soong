@@ -111,8 +111,8 @@ func (r *rawBinary) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	ctx.VisitDirectDepsProxy(func(proxy android.ModuleProxy) {
 		// Find the src module
 		if android.IsSourceDepTagWithOutputTag(ctx.OtherModuleDependencyTag(proxy), "") {
-			if info, ok := android.OtherModuleProvider(ctx, proxy, android.SymbolInfosProvider); ok {
-				r.symbolsInfo = append(r.symbolsInfo, info...)
+			if info, ok := android.OtherModuleProvider(ctx, proxy, android.CommonModuleInfoProvider); ok && info.SymbolicOutput != nil {
+				r.symbolsInfo = append(r.symbolsInfo, *info.SymbolicOutput...)
 			}
 		}
 	})

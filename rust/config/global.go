@@ -28,7 +28,7 @@ var (
 	pctx = android.NewPackageContext("android/soong/rust/config")
 
 	RustDefaultVersion = "1.90.0"
-	RustDefaultBase    = "prebuilts/rust/"
+	RustDefaultBase    = "prebuilts/rust-toolchain/"
 	DefaultEdition     = "2021"
 	Stdlibs            = []string{
 		"libstd",
@@ -179,6 +179,8 @@ func init() {
 func HostPrebuiltTag(config android.Config) string {
 	if config.UseHostMusl() {
 		return "linux-musl-x86"
+	} else if config.PrebuiltOS() == "darwin-x86" {
+		return "darwin"
 	} else {
 		return config.PrebuiltOS()
 	}

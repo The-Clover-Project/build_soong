@@ -3202,20 +3202,16 @@ func assertTestOnlyAndTopLevel(t *testing.T, ctx *android.TestResult, expectedTe
 	t.Helper()
 	actualTrueModules := []string{}
 	actualTopLevelTests := []string{}
-	addActuals := func(m blueprint.Module, key blueprint.ProviderKey[android.TestModuleInformation]) {
-		if provider, ok := android.OtherModuleProvider(ctx.TestContext.OtherModuleProviderAdaptor(), m, key); ok {
-			if provider.TestOnly {
+
+	ctx.VisitAllModules(func(m android.Module) {
+		if provider, ok := android.OtherModuleProvider(ctx.TestContext.OtherModuleProviderAdaptor(), m, android.CommonModuleInfoProvider); ok && provider.TestModuleInfo != nil {
+			if provider.TestModuleInfo.TestOnly {
 				actualTrueModules = append(actualTrueModules, m.Name())
 			}
-			if provider.TopLevelTarget {
+			if provider.TestModuleInfo.TopLevelTarget {
 				actualTopLevelTests = append(actualTopLevelTests, m.Name())
 			}
 		}
-	}
-
-	ctx.VisitAllModules(func(m android.Module) {
-		addActuals(m, android.TestOnlyProviderKey)
-
 	})
 
 	notEqual, left, right := android.ListSetDifference(expectedTestOnly, actualTrueModules)

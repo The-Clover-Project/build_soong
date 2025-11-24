@@ -1605,7 +1605,6 @@ func init() {
 	OptionalDexJarPathGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(OptionalDexJarPath) })
 	JavaDepInSameApexCheckerGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(JavaDepInSameApexChecker) })
 	JarJarProviderDataGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(JarJarProviderData) })
-	BaseJarJarProviderDataGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(BaseJarJarProviderData) })
 }
 
 func (r OptionalDexJarPath) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
@@ -1717,6 +1716,7 @@ func (r JarJarProviderData) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) e
 func (r JarJarProviderData) CustomHash(hasher *proptools.Hasher) error {
 	hasher.WriteString(":java.JarJarProviderData")
 	hasher.WriteInt(1)
+	hasher.WriteString(":java.android.JarJarRename")
 	hasher.WriteString(":.map[string]string")
 	hasher.WriteInt(len(r.Rename))
 	val1 := make([]string, 0, len(r.Rename))
@@ -1736,25 +1736,25 @@ func (r JarJarProviderData) CustomHash(hasher *proptools.Hasher) error {
 func (r *JarJarProviderData) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
 
-	var val1 int
-	err = gobtools.DecodeInt(buf, &val1)
+	var val2 int
+	err = gobtools.DecodeInt(buf, &val2)
 	if err != nil {
 		return err
 	}
-	if val1 != -1 {
-		r.Rename = make(map[string]string, val1)
-		for val2 := 0; val2 < int(val1); val2++ {
-			var val3 string
+	if val2 != -1 {
+		r.Rename = make(map[string]string, val2)
+		for val3 := 0; val3 < int(val2); val3++ {
 			var val4 string
-			err = gobtools.DecodeString(buf, &val3)
-			if err != nil {
-				return err
-			}
+			var val5 string
 			err = gobtools.DecodeString(buf, &val4)
 			if err != nil {
 				return err
 			}
-			r.Rename[val3] = val4
+			err = gobtools.DecodeString(buf, &val5)
+			if err != nil {
+				return err
+			}
+			r.Rename[val4] = val5
 		}
 	}
 
@@ -1765,40 +1765,6 @@ var JarJarProviderDataGobRegId int16
 
 func (r JarJarProviderData) GetTypeId() int16 {
 	return JarJarProviderDataGobRegId
-}
-
-func (r BaseJarJarProviderData) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
-	var err error
-
-	if err = r.JarJarProviderData.Encode(ctx, buf); err != nil {
-		return err
-	}
-	return err
-}
-
-func (r BaseJarJarProviderData) CustomHash(hasher *proptools.Hasher) error {
-	hasher.WriteString(":java.BaseJarJarProviderData")
-	hasher.WriteInt(1)
-	if err := r.JarJarProviderData.CustomHash(hasher); err != nil {
-		return err
-	}
-	return nil
-}
-
-func (r *BaseJarJarProviderData) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
-	var err error
-
-	if err = r.JarJarProviderData.Decode(ctx, buf); err != nil {
-		return err
-	}
-
-	return err
-}
-
-var BaseJarJarProviderDataGobRegId int16
-
-func (r BaseJarJarProviderData) GetTypeId() int16 {
-	return BaseJarJarProviderDataGobRegId
 }
 
 // end of base.go
@@ -5871,7 +5837,15 @@ func (r ProguardSpecInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) err
 		return err
 	}
 
+	if err = r.IncludedProguardFlagsFiles.EncodeInterface(ctx, buf); err != nil {
+		return err
+	}
+
 	if err = r.UnconditionallyExportedProguardFlags.EncodeInterface(ctx, buf); err != nil {
+		return err
+	}
+
+	if err = r.IncludedUnconditionallyExportedProguardFlags.EncodeInterface(ctx, buf); err != nil {
 		return err
 	}
 	return err
@@ -5879,7 +5853,7 @@ func (r ProguardSpecInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) err
 
 func (r ProguardSpecInfo) CustomHash(hasher *proptools.Hasher) error {
 	hasher.WriteString(":java.ProguardSpecInfo")
-	hasher.WriteInt(3)
+	hasher.WriteInt(5)
 	hasher.WriteString(":.bool")
 	if r.Export_proguard_flags_files {
 		hasher.WriteByte(1)
@@ -5941,7 +5915,65 @@ func (r ProguardSpecInfo) CustomHash(hasher *proptools.Hasher) error {
 		}
 		return nil
 	}
-	if err := r.UnconditionallyExportedProguardFlags.Hash(hasher, "android.Path", val10); err != nil {
+	if err := r.IncludedProguardFlagsFiles.Hash(hasher, "android.Path", val10); err != nil {
+		return err
+	}
+	val15 := func(hasher *proptools.Hasher, val11 android.Path) error {
+		hasher.WriteString(":java.android.Path")
+		val12 := val11 == nil
+		if val12 {
+			hasher.WriteByte(0)
+		} else {
+			if v := reflect.ValueOf(val11); v.Kind() == reflect.Ptr {
+				if v.IsNil() {
+					panic(fmt.Errorf("nil pointer is not supported in interface"))
+				} else {
+					val13 := val11 == nil
+					if val13 {
+						hasher.WriteByte(0)
+					} else {
+						val14 := func(hasher *proptools.Hasher) error { return val11.(proptools.CustomHash).CustomHash(hasher) }
+						if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val14); err != nil {
+							return err
+						}
+					}
+				}
+			} else {
+				val11.(proptools.CustomHash).CustomHash(hasher)
+			}
+		}
+		return nil
+	}
+	if err := r.UnconditionallyExportedProguardFlags.Hash(hasher, "android.Path", val15); err != nil {
+		return err
+	}
+	val20 := func(hasher *proptools.Hasher, val16 android.Path) error {
+		hasher.WriteString(":java.android.Path")
+		val17 := val16 == nil
+		if val17 {
+			hasher.WriteByte(0)
+		} else {
+			if v := reflect.ValueOf(val16); v.Kind() == reflect.Ptr {
+				if v.IsNil() {
+					panic(fmt.Errorf("nil pointer is not supported in interface"))
+				} else {
+					val18 := val16 == nil
+					if val18 {
+						hasher.WriteByte(0)
+					} else {
+						val19 := func(hasher *proptools.Hasher) error { return val16.(proptools.CustomHash).CustomHash(hasher) }
+						if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val19); err != nil {
+							return err
+						}
+					}
+				}
+			} else {
+				val16.(proptools.CustomHash).CustomHash(hasher)
+			}
+		}
+		return nil
+	}
+	if err := r.IncludedUnconditionallyExportedProguardFlags.Hash(hasher, "android.Path", val20); err != nil {
 		return err
 	}
 	return nil
@@ -5959,7 +5991,15 @@ func (r *ProguardSpecInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) er
 		return err
 	}
 
+	if err = r.IncludedProguardFlagsFiles.DecodeInterface(ctx, buf); err != nil {
+		return err
+	}
+
 	if err = r.UnconditionallyExportedProguardFlags.DecodeInterface(ctx, buf); err != nil {
+		return err
+	}
+
+	if err = r.IncludedUnconditionallyExportedProguardFlags.DecodeInterface(ctx, buf); err != nil {
 		return err
 	}
 

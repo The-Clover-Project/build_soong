@@ -48,8 +48,6 @@ type PackageInfo struct {
 	PrimaryLicenses []string
 }
 
-var PackageInfoProvider = blueprint.NewProvider[PackageInfo]()
-
 type packageModule struct {
 	ModuleBase
 
@@ -70,11 +68,10 @@ func (p *packageModule) DepsMutator(ctx BottomUpMutatorContext) {
 func (p *packageModule) GenerateBuildActions(ctx blueprint.ModuleContext) {
 	ctx.SetProvider(CommonModuleInfoProvider, &CommonModuleInfo{
 		Enabled: true,
-	})
-
-	ctx.SetProvider(PackageInfoProvider, PackageInfo{
-		Properties:      p.properties,
-		PrimaryLicenses: p.primaryLicensesProperty.getStrings(),
+		PackageInfo: &PackageInfo{
+			Properties:      p.properties,
+			PrimaryLicenses: p.primaryLicensesProperty.getStrings(),
+		},
 	})
 }
 

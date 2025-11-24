@@ -76,7 +76,7 @@ type aaptProperties struct {
 	// list of directories relative to the Blueprints file containing assets.
 	// Defaults to ["assets"] if a directory called assets exists.  Set to []
 	// to disable the default.
-	Asset_dirs []string
+	Asset_dirs proptools.Configurable[[]string]
 
 	// list of directories relative to the Blueprints file containing
 	// Android resources.  Defaults to ["res"] if a directory called res exists.
@@ -87,7 +87,7 @@ type aaptProperties struct {
 	Resource_zips []string `android:"path"`
 
 	// path to AndroidManifest.xml.  If unset, defaults to "AndroidManifest.xml".
-	Manifest *string `android:"path"`
+	Manifest proptools.Configurable[string] `android:"path,replace_instead_of_append"`
 
 	// paths to additional manifest files to merge with main manifest.
 	Additional_manifests []string `android:"path"`
@@ -291,9 +291,9 @@ func (a *aapt) aapt2Flags(ctx android.ModuleContext, sdkContext android.SdkConte
 	})
 	var assetDirs android.Paths
 	if doNotIncludeAssetDirImplicitly {
-		assetDirs = android.PathsForModuleSrc(ctx, a.aaptProperties.Asset_dirs)
+		assetDirs = android.PathsForModuleSrc(ctx, a.aaptProperties.Asset_dirs.GetOrDefault(ctx, nil))
 	} else {
-		assetDirs = android.PathsWithOptionalDefaultForModuleSrc(ctx, a.aaptProperties.Asset_dirs, "assets")
+		assetDirs = android.PathsWithOptionalDefaultForModuleSrc(ctx, a.aaptProperties.Asset_dirs.GetOrDefault(ctx, nil), "assets")
 	}
 	a.assetDirs = assetDirs
 
@@ -490,7 +490,7 @@ func (a *aapt) buildActions(ctx android.ModuleContext, opts aaptBuildActionOptio
 	var manifestFilePath android.Path
 	if opts.manifestForAapt != nil {
 		manifestFilePath = opts.manifestForAapt
-	} else if a.isLibrary && packageNameProp.IsPresent() && a.aaptProperties.Manifest == nil && a.aaptProperties.Additional_manifests == nil {
+	} else if a.isLibrary && packageNameProp.IsPresent() && a.aaptProperties.Manifest.GetOrDefault(ctx, "") == "" && a.aaptProperties.Additional_manifests == nil {
 		// If the only reason that a library needs a manifest file is to give the package name, allow them to do that in
 		// the module declaration.  If they are already supplying a manifest, then do not autogenerate a manifest file.
 		generatedManifestPath := android.PathForModuleOut(ctx, "GeneratedManifest.xml")
@@ -502,7 +502,7 @@ func (a *aapt) buildActions(ctx android.ModuleContext, opts aaptBuildActionOptio
 		ctx.SetOutputFiles([]android.Path{generatedManifestPath}, ".gen_xml")
 		manifestFilePath = generatedManifestPath
 	} else {
-		manifestFile := proptools.StringDefault(a.aaptProperties.Manifest, "AndroidManifest.xml")
+		manifestFile := a.aaptProperties.Manifest.GetOrDefault(ctx, "AndroidManifest.xml")
 		manifestFilePath = android.PathForModuleSrc(ctx, manifestFile)
 	}
 
@@ -1052,7 +1052,7 @@ func (a *AndroidLibrary) GenerateAndroidBuildActions(ctx android.ModuleContext) 
 	}
 	packageNameProp := a.aaptProperties.Package_name.Get(ctx)
 	if packageNameProp.IsPresent() {
-		if a.aaptProperties.Manifest != nil {
+		if a.aaptProperties.Manifest.GetOrDefault(ctx, "") != "" {
 			ctx.PropertyErrorf("package_name", "cannot be used with `manifest`")
 			return
 		}
@@ -1095,7 +1095,7 @@ func (a *AndroidLibrary) GenerateAndroidBuildActions(ctx android.ModuleContext) 
 	}
 
 	// apps manifests are handled by aapt, don't let Module see them
-	a.properties.Manifest = nil
+	a.properties.Manifest = proptools.Configurable[string]{}
 
 	a.linter.mergedManifest = a.aapt.mergedManifestFile
 	a.linter.manifest = a.aapt.manifestPath
@@ -1106,6 +1106,7 @@ func (a *AndroidLibrary) GenerateAndroidBuildActions(ctx android.ModuleContext) 
 	exportedProguardFlagsFiles := proguardSpecInfo.ProguardFlagsFiles.ToList()
 	a.extraProguardFlagsFiles = append(a.extraProguardFlagsFiles, exportedProguardFlagsFiles...)
 	a.extraProguardFlagsFiles = append(a.extraProguardFlagsFiles, a.proguardOptionsFile)
+	a.extraIncludedProguardFlagsFiles = append(a.extraIncludedProguardFlagsFiles, proguardSpecInfo.IncludedProguardFlagsFiles.ToList()...)
 
 	combinedExportedProguardFlagFile := android.PathForModuleOut(ctx, "export_proguard_flags")
 	writeCombinedProguardFlagsFile(ctx, combinedExportedProguardFlagFile, exportedProguardFlagsFiles)
@@ -1244,7 +1245,7 @@ type AARImportProperties struct {
 	Extract_jni *bool
 
 	// If set, overrides the manifest extracted from the AAR with the provided path.
-	Manifest *string `android:"path"`
+	Manifest proptools.Configurable[string] `android:"path,replace_instead_of_append"`
 }
 
 type AARImport struct {
@@ -1432,9 +1433,8 @@ func (a *AARImport) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	classpathFile := extractedAARDir.Join(ctx, jarName)
 
 	extractedManifest := extractedAARDir.Join(ctx, "AndroidManifest.xml")
-	providedManifest := android.OptionalPathForModuleSrc(ctx, a.properties.Manifest)
-	if providedManifest.Valid() {
-		a.manifest = providedManifest.Path()
+	if manifestFromProp := a.properties.Manifest.GetOrDefault(ctx, ""); manifestFromProp != "" {
+		a.manifest = android.OptionalPathForModuleSrc(ctx, &manifestFromProp).Path()
 	} else {
 		a.manifest = extractedManifest
 	}
@@ -1442,17 +1442,27 @@ func (a *AARImport) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	rTxt := extractedAARDir.Join(ctx, "R.txt")
 	assetsPackage := android.PathForModuleOut(ctx, "assets.zip")
 	proguardFlags := extractedAARDir.Join(ctx, "proguard.txt")
-	transitiveProguardFlags, transitiveUnconditionalExportedFlags := collectDepProguardSpecInfo(ctx)
+	proguardSpecInfo := collectDepProguardSpecInfo(ctx)
 	android.SetProvider(ctx, ProguardSpecInfoProvider, ProguardSpecInfo{
 		ProguardFlagsFiles: depset.New[android.Path](
 			depset.POSTORDER,
 			android.Paths{proguardFlags},
-			transitiveProguardFlags,
+			proguardSpecInfo.transitiveProguardFlags,
+		),
+		IncludedProguardFlagsFiles: depset.New[android.Path](
+			depset.POSTORDER,
+			nil,
+			proguardSpecInfo.transitiveIncludedProguardFlags,
 		),
 		UnconditionallyExportedProguardFlags: depset.New[android.Path](
 			depset.POSTORDER,
 			nil,
-			transitiveUnconditionalExportedFlags,
+			proguardSpecInfo.transitiveUnconditionalExportedFlags,
+		),
+		IncludedUnconditionallyExportedProguardFlags: depset.New[android.Path](
+			depset.POSTORDER,
+			nil,
+			proguardSpecInfo.transitiveIncludedUnconditionalExportedFlags,
 		),
 	})
 

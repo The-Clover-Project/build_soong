@@ -245,13 +245,22 @@ type ProguardSpecInfo struct {
 	// static_libs edges.
 	Export_proguard_flags_files bool
 
-	// TransitiveDepsProguardSpecFiles is a depset of paths to proguard flags files that are exported from
-	// all transitive deps. This list includes all proguard flags files from transitive static dependencies,
-	// and all proguard flags files from transitive libs dependencies which set `export_proguard_spec: true`.
+	// ProguardFlagsFiles is a depset of paths to proguard flags files that are exported from
+	// all transitive deps. This list includes all proguard flags files from transitive static
+	// dependencies, and all proguard flags files from transitive libs dependencies which set
+	// `export_proguard_spec: true`.
 	ProguardFlagsFiles depset.DepSet[android.Path]
+
+	// IncludedProguardFlagsFiles is a depset of files included (with the -include directive)
+	// from the ProguardFlagsFiles.
+	IncludedProguardFlagsFiles depset.DepSet[android.Path]
 
 	// implementation detail to store transitive proguard flags files from exporting shared deps
 	UnconditionallyExportedProguardFlags depset.DepSet[android.Path]
+
+	// implementation detail to store transitive included proguard flags files from exporting shared
+	// deps
+	IncludedUnconditionallyExportedProguardFlags depset.DepSet[android.Path]
 }
 
 var ProguardSpecInfoProvider = blueprint.NewProvider[ProguardSpecInfo]()
@@ -1190,6 +1199,7 @@ func (j *Library) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	android.SetProvider(ctx, ProguardSpecInfoProvider, proguardSpecInfo)
 	exportedProguardFlagsFiles := proguardSpecInfo.ProguardFlagsFiles.ToList()
 	j.extraProguardFlagsFiles = append(j.extraProguardFlagsFiles, exportedProguardFlagsFiles...)
+	j.extraIncludedProguardFlagsFiles = append(j.extraIncludedProguardFlagsFiles, proguardSpecInfo.IncludedProguardFlagsFiles.ToList()...)
 
 	combinedExportedProguardFlagFile := android.PathForModuleOut(ctx, "export_proguard_flags")
 	writeCombinedProguardFlagsFile(ctx, combinedExportedProguardFlagFile, exportedProguardFlagsFiles)
@@ -1221,7 +1231,7 @@ func (j *Library) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 
 	j.setInstallRules(ctx)
 
-	android.SetProvider(ctx, android.TestOnlyProviderKey, android.TestModuleInformation{
+	ctx.SetTestModuleInfo(&android.TestModuleInformation{
 		TestOnly:       Bool(j.sourceProperties.Test_only),
 		TopLevelTarget: j.sourceProperties.Top_level_test_target,
 	})
@@ -1625,7 +1635,7 @@ type testProperties struct {
 
 	// the name of the test configuration (for example "AndroidTest.xml") that should be
 	// installed with the module.
-	Test_config *string `android:"path,arch_variant"`
+	Test_config proptools.Configurable[string] `android:"path,arch_variant,replace_instead_of_append"`
 
 	// the name of the test configuration template (for example "AndroidTestTemplate.xml") that
 	// should be installed with the module.
@@ -1633,7 +1643,7 @@ type testProperties struct {
 
 	// list of files or filegroup modules that provide data that should be installed alongside
 	// the test
-	Data []string `android:"path"`
+	Data proptools.Configurable[[]string] `android:"path"`
 
 	// Same as data, but will add dependencies on modules using the device's os variation and
 	// the common arch variation. Useful for a host test that wants to embed a module built for
@@ -1722,7 +1732,7 @@ type prebuiltTestProperties struct {
 
 	// the name of the test configuration (for example "AndroidTest.xml") that should be
 	// installed with the module.
-	Test_config *string `android:"path,arch_variant"`
+	Test_config proptools.Configurable[string] `android:"path,arch_variant,replace_instead_of_append"`
 }
 
 type Test struct {
@@ -1964,7 +1974,7 @@ func (j *Test) generateAndroidBuildActionsWithConfig(ctx android.ModuleContext, 
 		HostUnitTestTemplate:    "${JavaHostUnitTestConfigTemplate}",
 	})
 
-	j.data = android.PathsForModuleSrc(ctx, j.testProperties.Data)
+	j.data = android.PathsForModuleSrc(ctx, j.testProperties.Data.GetOrDefault(ctx, nil))
 	j.data = append(j.data, android.PathsForModuleSrc(ctx, j.testProperties.Device_common_data)...)
 	j.data = append(j.data, android.PathsForModuleSrc(ctx, j.testProperties.Device_first_data)...)
 	j.data = append(j.data, android.PathsForModuleSrc(ctx, j.testProperties.Device_first_prefer32_data)...)
@@ -2372,7 +2382,7 @@ func (j *Binary) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 
 	// Compile the jar
 	if j.binaryProperties.Main_class != nil {
-		if j.properties.Manifest != nil {
+		if j.properties.Manifest.GetOrDefault(ctx, "") != "" {
 			ctx.PropertyErrorf("main_class", "main_class cannot be used when manifest is set")
 		}
 		manifestFile := android.PathForModuleOut(ctx, "manifest.txt")
@@ -2602,6 +2612,7 @@ func metalavaStubCmd(ctx android.ModuleContext, rule *android.RuleBuilder,
 
 	cmd := rule.Command()
 	cmd.FlagWithArg("ANDROID_PREFS_ROOT=", homeDir.String())
+	rule.ToolchainPaths(filepath.Dir(config.JavaCmd(ctx).String()))
 
 	if metalavaUseRewrapper(ctx) {
 		rule.Remoteable(android.RemoteRuleSupports{RBE: true})
@@ -3345,17 +3356,27 @@ func (j *Import) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	proguardFlags := android.PathForModuleOut(ctx, "proguard_flags")
 	TransformJarToR8Rules(ctx, proguardFlags, outputFile)
 
-	transitiveProguardFlags, transitiveUnconditionalExportedFlags := collectDepProguardSpecInfo(ctx)
+	proguardSpecInfo := collectDepProguardSpecInfo(ctx)
 	android.SetProvider(ctx, ProguardSpecInfoProvider, ProguardSpecInfo{
 		ProguardFlagsFiles: depset.New[android.Path](
 			depset.POSTORDER,
 			android.Paths{proguardFlags},
-			transitiveProguardFlags,
+			proguardSpecInfo.transitiveProguardFlags,
+		),
+		IncludedProguardFlagsFiles: depset.New[android.Path](
+			depset.POSTORDER,
+			nil,
+			proguardSpecInfo.transitiveIncludedProguardFlags,
 		),
 		UnconditionallyExportedProguardFlags: depset.New[android.Path](
 			depset.POSTORDER,
 			nil,
-			transitiveUnconditionalExportedFlags,
+			proguardSpecInfo.transitiveUnconditionalExportedFlags,
+		),
+		IncludedUnconditionallyExportedProguardFlags: depset.New[android.Path](
+			depset.POSTORDER,
+			nil,
+			proguardSpecInfo.transitiveIncludedUnconditionalExportedFlags,
 		),
 	})
 
@@ -3644,6 +3665,7 @@ type DexImport struct {
 	android.ModuleBase
 	android.DefaultableModuleBase
 	android.ApexModuleBase
+	blueprint.ModuleUsesIncrementalWalkDeps
 	prebuilt android.Prebuilt
 
 	properties DexImportProperties

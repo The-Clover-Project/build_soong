@@ -201,6 +201,8 @@ type androidDevice struct {
 	customPartitionFilesystemInfos []FilesystemInfo
 
 	stageDeviceFiles []stageDeviceFilePair
+
+	superImageInfo SuperImageInfo
 }
 
 func AndroidDeviceFactory() android.Module {
@@ -438,6 +440,7 @@ func (a *androidDevice) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	if proptools.String(a.partitionProps.Super_partition_name) != "" {
 		superImage := ctx.GetDirectDepProxyWithTag(*a.partitionProps.Super_partition_name, superPartitionDepTag)
 		if info, ok := android.OtherModuleProvider(ctx, superImage, SuperImageProvider); ok {
+			a.superImageInfo = info
 			assertUnset := func(prop *string, propName string) {
 				if prop != nil && *prop != "" {
 					ctx.PropertyErrorf(propName, "Cannot be set because it's already part of the super image")
@@ -515,6 +518,8 @@ func (a *androidDevice) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		}
 	}
 
+	validations = append(validations, a.checkVintf(ctx)...)
+
 	ctx.Build(pctx, android.BuildParams{
 		Rule:        android.Touch,
 		Output:      allImagesStamp,
@@ -556,7 +561,6 @@ func (a *androidDevice) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		ctx.Phony("droid_targets", android.PathForPhony(ctx, "blueprint_tools"))
 	}
 
-	a.checkVintf(ctx)
 	a.runApexSepolicyTests(ctx, allInstalledModules)
 	a.hostInitVerifierCheck(ctx)
 	a.findSharedUIDViolation(ctx)
@@ -712,6 +716,13 @@ func (a *androidDevice) distInstalledFiles(ctx android.ModuleContext) {
 
 func (a *androidDevice) distFiles(ctx android.ModuleContext) {
 	if !ctx.Config().KatiEnabled() && proptools.Bool(a.deviceProps.Main_device) {
+		if a.superImageInfo.SuperImage != nil && !a.superImageInfo.SuperImageInUpdatePackage {
+			ctx.DistForGoal("dist_files", a.superImageInfo.SuperImage)
+		}
+		if a.superImageInfo.SuperEmptyImage != nil {
+			ctx.DistForGoal("dist_files", a.superImageInfo.SuperEmptyImage)
+		}
+
 		a.distInstalledFiles(ctx)
 
 		namePrefix := ""
@@ -2085,13 +2096,13 @@ func (a *androidDevice) buildTrebleLabelingTest(ctx android.ModuleContext) andro
 	return testTimestamp
 }
 
-func (a *androidDevice) checkVintf(ctx android.ModuleContext) {
+func (a *androidDevice) checkVintf(ctx android.ModuleContext) android.Paths {
 	if !proptools.Bool(a.deviceProps.Main_device) {
-		return
+		return nil
 	}
 	if ctx.Config().KatiEnabled() {
 		// Make will generate the vintf checks.
-		return
+		return nil
 	}
 	var checkVintfLogs android.Paths
 	fsInfoMap := a.getFsInfos(ctx)
@@ -2111,6 +2122,7 @@ func (a *androidDevice) checkVintf(ctx android.ModuleContext) {
 	}
 	cmd.ImplicitOutput(android.PathForPhony(ctx, "check-vintf-all"))
 	rule.Build("check-vintf-all", "check-vintf-all")
+	return checkVintfLogs
 }
 
 // Runs checkvintf --check-compat on the staging directories of the partitions per (odm_sku, vendor_sku)
@@ -2130,6 +2142,12 @@ func (a *androidDevice) createMonolithicVintfCompatibleLog(ctx android.ModuleCon
 			if _, exists := fsInfos[partition]; exists {
 				cmd.FlagWithArg("--dirmap ", fmt.Sprintf("/%s:%s", partition, fsInfos[partition].RebasedDir.String())).
 					Implicit(fsInfos[partition].Output)
+			} else if vendor, vendorExists := fsInfos["vendor"]; vendorExists && partition == "odm" {
+				cmd.FlagWithArg("--dirmap ", fmt.Sprintf("/odm:%s/odm", vendor.RebasedDir.String())).
+					Implicit(vendor.Output)
+			} else if system, systemExists := fsInfos["system"]; systemExists && android.InList(partition, []string{"vendor", "product", "system_ext"}) {
+				cmd.FlagWithArg("--dirmap ", fmt.Sprintf("/%s:%s/%s", partition, system.RebasedDir.String(), partition)).
+					Implicit(system.Output)
 			}
 		}
 	}

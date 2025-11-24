@@ -81,9 +81,10 @@ func (t *allTeamsSingleton) GenerateBuildActions(ctx SingletonContext) {
 	ctx.VisitAllModuleProxies(func(module ModuleProxy) {
 		bpFile := ctx.BlueprintFile(module)
 
+		commonInfo := OtherModulePointerProviderOrDefault(ctx, module, CommonModuleInfoProvider)
 		// Package Modules and Team Modules are stored in a map so we can look them up by name for
 		// modules without a team.
-		if pack, ok := OtherModuleProvider(ctx, module, PackageInfoProvider); ok {
+		if pack := commonInfo.PackageInfo; pack != nil {
 			// Packages don't have names, use the blueprint file as the key. we can't get qualifiedModuleId in t context.
 			pkgKey := bpFile
 			t.packages[pkgKey] = pack.Properties
@@ -95,8 +96,8 @@ func (t *allTeamsSingleton) GenerateBuildActions(ctx SingletonContext) {
 		}
 
 		testModInfo := TestModuleInformation{}
-		if tmi, ok := OtherModuleProvider(ctx, module, TestOnlyProviderKey); ok {
-			testModInfo = tmi
+		if tmi := commonInfo.TestModuleInfo; tmi != nil {
+			testModInfo = *tmi
 		}
 
 		// Some modules, like java_test_host don't set the provider when the module isn't enabled:
@@ -116,7 +117,7 @@ func (t *allTeamsSingleton) GenerateBuildActions(ctx SingletonContext) {
 			testOnly:           testModInfo.TestOnly,
 			topLevelTestTarget: testModInfo.TopLevelTarget,
 			kind:               ctx.ModuleType(module),
-			teamName:           OtherModulePointerProviderOrDefault(ctx, module, CommonModuleInfoProvider).Team,
+			teamName:           commonInfo.Team,
 		}
 		t.teams_for_mods[module.Name()] = entry
 

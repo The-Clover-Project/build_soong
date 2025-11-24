@@ -456,18 +456,22 @@ func generateContainerInfo(ctx ModuleContext) ContainersInfo {
 }
 
 func getContainerModuleInfo(ctx ModuleContext, module ModuleOrProxy) (ContainersInfo, bool) {
+	var info *ContainersInfo
 	if EqualModules(ctx.Module(), module) {
-		return ctx.getContainersInfo(), true
+		info = ctx.getContainersInfo()
+	} else {
+		info = OtherModulePointerProviderOrDefault(ctx, module, CommonModuleInfoProvider).Containers
 	}
-
-	return OtherModuleProvider(ctx, module, ContainersInfoProvider)
+	if info != nil {
+		return *info, true
+	}
+	return ContainersInfo{}, false
 }
 
 func setContainerInfo(ctx ModuleContext) *unstableInfo {
 	if _, ok := ctx.Module().(InstallableModule); ok {
 		containersInfo := generateContainerInfo(ctx)
-		ctx.setContainersInfo(containersInfo)
-		SetProvider(ctx, ContainersInfoProvider, containersInfo)
+		ctx.setContainersInfo(&containersInfo)
 	}
 
 	// Required to determine the unstable container. This provider is set module.go instead of the

@@ -103,18 +103,6 @@ type ModuleContext interface {
 	// dependency tags for which IsInstallDepNeeded returns true.
 	InstallExecutable(installPath InstallPath, name string, srcPath Path, deps ...InstallPath) InstallPath
 
-	// InstallExecutableWithBootstrap creates a rule to copy srcPath to name in the
-	// installPath directory, with the given additional dependencies. The file is
-	// marked executable after copying. It is functionally the same as [InstallExecutable], but
-	// the rule uses the toybox commands from source rather than the ones installed in $HOST_OUT
-	// as the command deps. This is mostly used to install the toybox commands themselves.
-	//
-	// The installed file can be accessed by InstallFilesInfo.InstallFiles, and the PackagingSpec
-	// for the installed file can be accessed by InstallFilesInfo.PackagingSpecs on this module
-	// or by InstallFilesInfo.TransitivePackagingSpecs on modules that depend on this module through
-	// dependency tags for which IsInstallDepNeeded returns true.
-	InstallExecutableWithBootstrap(installPath InstallPath, name string, srcPath Path, deps ...InstallPath) InstallPath
-
 	// InstallFile creates a rule to copy srcPath to name in the installPath directory,
 	// with the given additional dependencies.
 	//
@@ -256,8 +244,8 @@ type ModuleContext interface {
 	ComplianceMetadataInfo() *ComplianceMetadataInfo
 
 	// Get the information about the containers this module belongs to.
-	getContainersInfo() ContainersInfo
-	setContainersInfo(info ContainersInfo)
+	getContainersInfo() *ContainersInfo
+	setContainersInfo(info *ContainersInfo)
 
 	setAconfigPaths(paths Paths)
 
@@ -292,6 +280,16 @@ type ModuleContext interface {
 	// This is similar to OutputFiles, but can be used for files that are not intended to be
 	// consumed by other modules. These files are built as part of checkbuild.
 	ModulePhonyFiles(srcPaths ...Path)
+
+	SetLogtagsInfo(info *LogtagsInfo)
+
+	SetTestModuleInfo(info *TestModuleInformation)
+
+	SetSymbolicOutputInfo(info *SymbolicOutputInfos)
+
+	SetMakeNamesInfo(info *MakeNamesInfo)
+
+	SetBaseJarJarProviderData(data *BaseJarJarProviderData)
 }
 
 type moduleContext struct {
@@ -342,7 +340,7 @@ type moduleContext struct {
 
 	// containersInfo stores the information about the containers and the information of the
 	// apexes the module belongs to.
-	containersInfo ContainersInfo
+	containersInfo *ContainersInfo
 
 	// Merged Aconfig files for all transitive deps.
 	aconfigFilePaths Paths
@@ -355,6 +353,17 @@ type moduleContext struct {
 
 	testSuiteInfo    TestSuiteInfo
 	testSuiteInfoSet bool
+
+	logTags                   *LogtagsInfo
+	logTagsSet                bool
+	testModuleInfo            *TestModuleInformation
+	testModuleInfoSet         bool
+	symbolicOutput            *SymbolicOutputInfos
+	symbolicOutputSet         bool
+	makeNames                 *MakeNamesInfo
+	makeNamesSet              bool
+	baseJarJarProviderData    *BaseJarJarProviderData
+	baseJarJarProviderDataSet bool
 }
 
 var _ ModuleContext = &moduleContext{}
@@ -616,27 +625,22 @@ func (m *moduleContext) requiresFullInstall() bool {
 
 func (m *moduleContext) InstallFile(installPath InstallPath, name string, srcPath Path,
 	deps ...InstallPath) InstallPath {
-	return m.installFile(installPath, name, srcPath, deps, false, true, true, false, nil)
+	return m.installFile(installPath, name, srcPath, deps, false, true, true, nil)
 }
 
 func (m *moduleContext) InstallFileWithoutCheckbuild(installPath InstallPath, name string, srcPath Path,
 	deps ...InstallPath) InstallPath {
-	return m.installFile(installPath, name, srcPath, deps, false, true, false, false, nil)
+	return m.installFile(installPath, name, srcPath, deps, false, true, false, nil)
 }
 
 func (m *moduleContext) InstallExecutable(installPath InstallPath, name string, srcPath Path,
 	deps ...InstallPath) InstallPath {
-	return m.installFile(installPath, name, srcPath, deps, true, true, true, false, nil)
-}
-
-func (m *moduleContext) InstallExecutableWithBootstrap(installPath InstallPath, name string, srcPath Path,
-	deps ...InstallPath) InstallPath {
-	return m.installFile(installPath, name, srcPath, deps, true, true, true, true, nil)
+	return m.installFile(installPath, name, srcPath, deps, true, true, true, nil)
 }
 
 func (m *moduleContext) InstallFileWithExtraFilesZip(installPath InstallPath, name string, srcPath Path,
 	extraZip Path, deps ...InstallPath) InstallPath {
-	return m.installFile(installPath, name, srcPath, deps, false, true, true, false, &extraFilesZip{
+	return m.installFile(installPath, name, srcPath, deps, false, true, true, &extraFilesZip{
 		zip: extraZip,
 		dir: installPath,
 	})
@@ -644,12 +648,12 @@ func (m *moduleContext) InstallFileWithExtraFilesZip(installPath InstallPath, na
 
 func (m *moduleContext) PackageFile(installPath InstallPath, name string, srcPath Path) PackagingSpec {
 	fullInstallPath := installPath.Join(m, name)
-	return m.packageFile(fullInstallPath, srcPath, false, false)
+	return m.packageFile(fullInstallPath, srcPath, false, false, nil)
 }
 
 func (m *moduleContext) PackageFileWithFakeFullInstall(installPath InstallPath, name string, srcPath Path) PackagingSpec {
 	fullInstallPath := installPath.Join(m, name)
-	return m.packageFile(fullInstallPath, srcPath, false, true)
+	return m.packageFile(fullInstallPath, srcPath, false, true, nil)
 }
 
 func (m *moduleContext) getAconfigPaths() Paths {
@@ -673,9 +677,14 @@ func (m *moduleContext) getOwnerAndOverrides() (string, []string) {
 	return owner, overrides
 }
 
-func (m *moduleContext) packageFile(fullInstallPath InstallPath, srcPath Path, executable bool, requiresFullInstall bool) PackagingSpec {
+func (m *moduleContext) packageFile(fullInstallPath InstallPath, srcPath Path, executable bool, requiresFullInstall bool,
+	extraZip *extraFilesZip) PackagingSpec {
 	licenseFiles := m.Module().EffectiveLicenseFiles()
 	owner, overrides := m.getOwnerAndOverrides()
+	zip := OptionalPath{}
+	if extraZip != nil {
+		zip = OptionalPathForPath(extraZip.zip)
+	}
 	spec := PackagingSpec{
 		relPathInPackage:      Rel(m, fullInstallPath.PartitionDir(), fullInstallPath.String()),
 		srcPath:               srcPath,
@@ -693,25 +702,14 @@ func (m *moduleContext) packageFile(fullInstallPath InstallPath, srcPath Path, e
 		installInSanitizerDir: m.InstallInSanitizerDir(),
 		variation:             m.ModuleSubDir(),
 		prebuilt:              IsModulePrebuilt(m, m.Module()),
+		extraZip:              zip,
 	}
 	m.packagingSpecs = append(m.packagingSpecs, spec)
 	return spec
 }
 
-type ruleKey struct {
-	executable bool
-	bootstrap  bool
-}
-
-var ruleMap = map[ruleKey]blueprint.Rule{
-	{executable: true, bootstrap: true}:   CpExecutableWithBashBootstrap,
-	{executable: true, bootstrap: false}:  CpExecutableWithBash,
-	{executable: false, bootstrap: true}:  CpWithBashBootstrap,
-	{executable: false, bootstrap: false}: CpWithBash,
-}
-
 func (m *moduleContext) installFile(installPath InstallPath, name string, srcPath Path, deps []InstallPath,
-	executable bool, hooks bool, checkbuild bool, bootstrap bool, extraZip *extraFilesZip) InstallPath {
+	executable bool, hooks bool, checkbuild bool, extraZip *extraFilesZip) InstallPath {
 	if _, ok := srcPath.(InstallPath); ok {
 		m.ModuleErrorf("Src path cannot be another installed file. Please use a path from source or intermediates instead.")
 	}
@@ -753,7 +751,10 @@ func (m *moduleContext) installFile(installPath InstallPath, name string, srcPat
 			extraFiles:    extraZip,
 		})
 		if !m.Config().KatiEnabled() {
-			rule := ruleMap[ruleKey{executable: executable, bootstrap: bootstrap}]
+			rule := CpWithBash
+			if executable {
+				rule = CpExecutableWithBash
+			}
 
 			extraCmds := ""
 			if extraZip != nil {
@@ -791,7 +792,7 @@ func (m *moduleContext) installFile(installPath InstallPath, name string, srcPat
 		m.installFiles = append(m.installFiles, fullInstallPath)
 	}
 
-	m.packageFile(fullInstallPath, srcPath, executable, m.requiresFullInstall())
+	m.packageFile(fullInstallPath, srcPath, executable, m.requiresFullInstall(), extraZip)
 
 	if checkbuild {
 		if srcPath == nil {
@@ -923,7 +924,7 @@ func (m *moduleContext) InstallTestData(installPath InstallPath, data []DataPath
 	ret := make(InstallPaths, 0, len(data))
 	for _, d := range data {
 		relPath := d.ToRelativeInstallPath()
-		installed := m.installFile(installPath, relPath, d.SrcPath, nil, false, false, true, false, nil)
+		installed := m.installFile(installPath, relPath, d.SrcPath, nil, false, false, true, nil)
 		ret = append(ret, installed)
 	}
 
@@ -1031,11 +1032,11 @@ func (m *moduleContext) TargetRequiredModuleNames() []string {
 	return m.module.TargetRequiredModuleNames()
 }
 
-func (m *moduleContext) getContainersInfo() ContainersInfo {
+func (m *moduleContext) getContainersInfo() *ContainersInfo {
 	return m.containersInfo
 }
 
-func (m *moduleContext) setContainersInfo(info ContainersInfo) {
+func (m *moduleContext) setContainersInfo(info *ContainersInfo) {
 	m.containersInfo = info
 }
 
@@ -1092,4 +1093,44 @@ func (m *moduleContext) ModulePhonyFiles(srcPaths ...Path) {
 		}
 	}
 	m.modulePhonyFiles = append(m.modulePhonyFiles, srcPaths...)
+}
+
+func (c *moduleContext) SetLogtagsInfo(info *LogtagsInfo) {
+	if c.logTagsSet {
+		panic("Cannot call SetLogtagsInfo twice")
+	}
+	c.logTags = info
+	c.logTagsSet = true
+}
+
+func (c *moduleContext) SetTestModuleInfo(info *TestModuleInformation) {
+	if c.testModuleInfoSet {
+		panic("Cannot call SetTestModuleInfo twice")
+	}
+	c.testModuleInfo = info
+	c.testModuleInfoSet = true
+}
+
+func (c *moduleContext) SetSymbolicOutputInfo(info *SymbolicOutputInfos) {
+	if c.symbolicOutputSet {
+		panic("Cannot call SetSymbolicOutputInfo twice")
+	}
+	c.symbolicOutput = info
+	c.symbolicOutputSet = true
+}
+
+func (c *moduleContext) SetMakeNamesInfo(info *MakeNamesInfo) {
+	if c.makeNamesSet {
+		panic("Cannot call SetMakeNamesInfo twice")
+	}
+	c.makeNames = info
+	c.makeNamesSet = true
+}
+
+func (c *moduleContext) SetBaseJarJarProviderData(data *BaseJarJarProviderData) {
+	if c.baseJarJarProviderDataSet {
+		panic("Cannot call SetBaseJarJarProviderData twice")
+	}
+	c.baseJarJarProviderData = data
+	c.baseJarJarProviderDataSet = true
 }

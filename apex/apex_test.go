@@ -3893,13 +3893,36 @@ type fileInApex struct {
 	path   string // path in apex
 	src    string // src path
 	isLink bool
+	isZip  bool
+	isRm   bool
 }
 
 func (f fileInApex) String() string {
+	if f.isZip {
+		return f.src + " unzips to " + f.path
+	}
+	if f.isRm {
+		return "remove " + f.path
+	}
 	return f.src + ":" + f.path
 }
 
 func (f fileInApex) match(expectation string) bool {
+	if f.isZip {
+		if before, after, found := strings.Cut(expectation, " unzips to "); found {
+			matchSrc, _ := path.Match(before, f.src)
+			matchDst, _ := path.Match(after, f.path)
+			return matchSrc && matchDst
+		}
+		return false
+	}
+	if f.isRm {
+		if strings.HasPrefix(expectation, "remove ") {
+			match, _ := path.Match(strings.TrimPrefix(expectation, "remove "), f.path)
+			return match
+		}
+		return false
+	}
 	parts := strings.Split(expectation, ":")
 	if len(parts) == 1 {
 		match, _ := path.Match(parts[0], f.path)
@@ -3927,7 +3950,7 @@ func getFiles(t *testing.T, ctx *android.TestContext, moduleName, variant string
 		}
 		terms := strings.Split(cmd, " ")
 		var dst, src string
-		var isLink bool
+		var isLink, isZip, isRm bool
 		switch terms[0] {
 		case "mkdir":
 		case "cp":
@@ -3945,6 +3968,22 @@ func getFiles(t *testing.T, ctx *android.TestContext, moduleName, variant string
 			dst = terms[len(terms)-1]
 			src = terms[len(terms)-2]
 			isLink = true
+		case "unzip":
+			if len(terms) != 5 {
+				t.Fatal("copyCmds contains invalid unzip command", cmd)
+			}
+			dst = terms[len(terms)-2]
+			src = path.Base(terms[len(terms)-1])
+			isZip = true
+		case "rm":
+			if len(terms) != 3 {
+				t.Fatal("copyCmds contains invalid rm command", cmd)
+			}
+			if terms[1] != "-rf" {
+				t.Fatal("copyCmds contains invalid rm command", cmd)
+			}
+			dst = terms[len(terms)-1]
+			isRm = true
 		default:
 			t.Fatalf("copyCmds should contain mkdir/cp commands only: %q", cmd)
 		}
@@ -3954,7 +3993,7 @@ func getFiles(t *testing.T, ctx *android.TestContext, moduleName, variant string
 				t.Fatal("copyCmds should copy a file to "+apexDir, cmd)
 			}
 			dstFile := dst[index+len(apexDir):]
-			ret = append(ret, fileInApex{path: dstFile, src: src, isLink: isLink})
+			ret = append(ret, fileInApex{path: dstFile, src: src, isLink: isLink, isZip: isZip, isRm: isRm})
 		}
 	}
 	return ret
@@ -8431,15 +8470,11 @@ func TestAppSetBundle(t *testing.T) {
 	bundleConfigRule := mod.Output("bundle_config.json")
 	content := android.ContentFromFileRuleForTests(t, ctx, bundleConfigRule)
 	ensureContains(t, content, `"compression":{"uncompressed_glob":["apex_payload.img","apex_manifest.*"]}`)
-	s := mod.Rule("apexRule").Args["copy_commands"]
-	copyCmds := regexp.MustCompile(" *&& *").Split(s, -1)
-	if len(copyCmds) != 4 {
-		t.Fatalf("Expected 4 commands, got %d in:\n%s", len(copyCmds), s)
-	}
-	ensureMatches(t, copyCmds[0], "^rm -rf .*/app/AppSet@TEST.BUILD_ID$")
-	ensureMatches(t, copyCmds[1], "^mkdir -p .*/app/AppSet@TEST.BUILD_ID$")
-	ensureMatches(t, copyCmds[2], "^cp -f .*/app/AppSet@TEST.BUILD_ID/AppSet.apk$")
-	ensureMatches(t, copyCmds[3], "^unzip .*-d .*/app/AppSet@TEST.BUILD_ID .*/AppSet.zip$")
+	ensureExactContents(t, ctx, "myapex", "android_common_myapex", []string{
+		"remove app/AppSet@TEST.BUILD_ID",
+		"app/AppSet@TEST.BUILD_ID/AppSet.apk",
+		"AppSet.zip unzips to app/AppSet@TEST.BUILD_ID",
+	})
 
 	// Ensure that canned_fs_config has an entry for the app set zip file
 	generateFsRule := mod.Rule("generateFsConfig")

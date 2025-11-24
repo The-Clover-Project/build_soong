@@ -306,6 +306,7 @@ func isModuleInBuildNumberAllowlist(ctx android.ModuleContext) bool {
 			"trusty/vendor/google/aosp/scripts:trusty_desktop_vm_arm64_ext_boot.bin",
 			"trusty/vendor/google/aosp/scripts:trusty_desktop_vm_x86_64.bin",
 			"trusty/vendor/google/aosp/scripts:trusty_desktop_vm_x86_64_ext_boot.bin",
+			"trusty/vendor/google/aosp/scripts:trusty_memshare_vm_arm64.bin",
 			"trusty/vendor/google/aosp/scripts:trusty_security_vm_arm64.bin",
 			"trusty/vendor/google/aosp/scripts:trusty_security_vm_x86_64.elf",
 			"trusty/vendor/google/aosp/scripts:trusty_tee_package",
@@ -344,6 +345,7 @@ func isModuleInBuildDateAllowlist(ctx android.ModuleContext) bool {
 			"trusty/vendor/google/aosp/scripts:trusty_desktop_vm_arm64_ext_boot.bin",
 			"trusty/vendor/google/aosp/scripts:trusty_desktop_vm_x86_64.bin",
 			"trusty/vendor/google/aosp/scripts:trusty_desktop_vm_x86_64_ext_boot.bin",
+			"trusty/vendor/google/aosp/scripts:trusty_memshare_vm_arm64.bin",
 			"trusty/vendor/google/aosp/scripts:trusty_security_vm_arm64.bin",
 			"trusty/vendor/google/aosp/scripts:trusty_security_vm_x86_64.elf",
 			"trusty/vendor/google/aosp/scripts:trusty_tee_package",
@@ -414,32 +416,23 @@ func (g *Module) generateCommonBuildActions(ctx android.ModuleContext) {
 	var packagedTools []android.PackagingSpec
 	if len(g.properties.Tools) > 0 {
 		seenTools := make(map[string]bool)
-		ctx.VisitDirectDepsProxyAllowDisabled(func(proxy android.ModuleProxy) {
-			switch tag := ctx.OtherModuleDependencyTag(proxy).(type) {
+		ctx.VisitDirectDepsProxyAllowDisabled(func(module android.ModuleProxy) {
+			switch tag := ctx.OtherModuleDependencyTag(module).(type) {
 			case hostToolDependencyTag:
-				// Necessary to retrieve any prebuilt replacement for the tool, since
-				// toolDepsMutator runs too late for the prebuilt mutators to have
-				// replaced the dependency.
-				module := android.PrebuiltGetPreferred(ctx, proxy)
 				tool := ctx.OtherModuleName(module)
-				if h := android.GetHostToolProvider(ctx, module); h != nil {
+				if h := android.GetHostToolInfo(ctx, module); h != nil {
 					// A HostToolProvider provides the path to a tool, which will be copied
 					// into the sandbox.
-					if !android.OtherModulePointerProviderOrDefault(ctx, module, android.CommonModuleInfoProvider).Enabled {
+					path := h.HostToolPath
+					if !path.Valid() {
 						if ctx.Config().AllowMissingDependencies() {
 							ctx.AddMissingDependencies([]string{tool})
 						} else {
-							ctx.ModuleErrorf("depends on disabled module %q", tool)
+							ctx.ModuleErrorf("host tool %q missing output file", tool)
 						}
 						return
 					}
-					path := h.HostToolPath
-					if !path.Valid() {
-						ctx.ModuleErrorf("host tool %q missing output file", tool)
-						return
-					}
-					if specs := android.OtherModuleProviderOrDefault(
-						ctx, module, android.InstallFilesProvider).TransitivePackagingSpecs.ToList(); specs != nil {
+					if specs := h.TransitivePackagingSpecs.ToList(); specs != nil {
 						// If the HostToolProvider has PackgingSpecs, which are definitions of the
 						// required relative locations of the tool and its dependencies, use those
 						// instead.  They will be copied to those relative locations in the sbox
@@ -462,7 +455,11 @@ func (g *Module) generateCommonBuildActions(ctx android.ModuleContext) {
 						addLocationLabel(tag.label, toolLocation{android.Paths{path.Path()}})
 					}
 				} else {
-					ctx.ModuleErrorf("%q is not a host tool provider", tool)
+					if ctx.Config().AllowMissingDependencies() {
+						ctx.AddMissingDependencies([]string{tool})
+					} else {
+						ctx.ModuleErrorf("%q is not a host tool provider", tool)
+					}
 					return
 				}
 

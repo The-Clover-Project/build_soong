@@ -693,7 +693,7 @@ func (d *dexpreoptBootJars) GenerateAndroidBuildActions(ctx android.ModuleContex
 			}
 		}
 	}
-	android.SetProvider(ctx, android.SymbolInfosProvider, symbolicOutputInfos)
+	ctx.SetSymbolicOutputInfo(&symbolicOutputInfos)
 	if len(profileInstalls) > 0 {
 		android.SetProvider(ctx, profileInstallInfoProvider, profileInstallInfo{
 			profileInstalls:            profileInstalls,

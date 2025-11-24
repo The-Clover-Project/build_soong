@@ -61,29 +61,24 @@ type TestSuiteInfo struct {
 
 	// Eqivalent of LOCAL_IS_UNIT_TEST in make
 	IsUnitTest bool
+
+	TestSuiteInstalls *TestSuiteInstallsInfo
 }
 
 var TestSuiteInfoProvider = blueprint.NewProvider[TestSuiteInfo]()
 
-// TestSuiteSharedLibsInfo is a provider of AndroidMk names of shared lib modules, for packaging
-// shared libs into test suites. It's not intended as a general-purpose shared lib tracking
-// mechanism. It's added to both test modules (to track their shared libs) and also shared lib
-// modules (to track their transitive shared libs).
+// MakeNamesInfo records the AndroidMk names info for the module.
 // @auto-generate: gob
-type TestSuiteSharedLibsInfo struct {
-	MakeNames []string
+type MakeNamesInfo struct {
+	// AndroidMk name for the module.
+	MakeName string
+
+	// AndroidMk names of shared lib modules, for packaging
+	// shared libs into test suites. It's not intended as a general-purpose shared lib tracking
+	// mechanism. It's added to both test modules (to track their shared libs) and also shared lib
+	// modules (to track their transitive shared libs).
+	SharedLibsMakeNames []string
 }
-
-var TestSuiteSharedLibsInfoProvider = blueprint.NewProvider[TestSuiteSharedLibsInfo]()
-
-// MakeNameInfoProvider records the AndroidMk name for the module. This will match the names
-// referenced in TestSuiteSharedLibsInfo
-// @auto-generate: gob
-type MakeNameInfo struct {
-	Name string
-}
-
-var MakeNameInfoProvider = blueprint.NewProvider[MakeNameInfo]()
 
 // @auto-generate: gob
 type FilePair struct {
@@ -96,5 +91,3 @@ type TestSuiteInstallsInfo struct {
 	Files              []FilePair
 	OneVariantInstalls []FilePair
 }
-
-var TestSuiteInstallsInfoProvider = blueprint.NewProvider[TestSuiteInstallsInfo]()

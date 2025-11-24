@@ -240,7 +240,7 @@ func buildComplianceMetadataProvider(ctx *moduleContext, m *ModuleBase) *Complia
 	case "license":
 		licenseModule := m.module.(*licenseModule)
 		complianceMetadataInfo.SetListValue(ComplianceMetadataProp.LIC_LICENSE_KINDS, licenseModule.properties.License_kinds)
-		complianceMetadataInfo.SetListValue(ComplianceMetadataProp.LIC_LICENSE_TEXT, PathsForModuleSrc(ctx, licenseModule.properties.License_text).Strings())
+		complianceMetadataInfo.SetListValue(ComplianceMetadataProp.LIC_LICENSE_TEXT, PathsForModuleSrc(ctx, licenseModule.properties.License_text.GetOrDefault(ctx, nil)).Strings())
 		complianceMetadataInfo.SetStringValue(ComplianceMetadataProp.LIC_PACKAGE_NAME, String(licenseModule.properties.Package_name))
 	case "license_kind":
 		licenseKindModule := m.module.(*licenseKindModule)
@@ -355,11 +355,14 @@ func (c *complianceMetadataSingleton) GenerateBuildActions(ctx SingletonContext)
 
 		moduleType := ctx.ModuleType(module)
 		if moduleType == "package" {
-			packageInfo := OtherModuleProviderOrDefault(ctx, module, PackageInfoProvider)
+			var primaryLicenses []string
+			if packageInfo := commonInfo.PackageInfo; packageInfo != nil {
+				primaryLicenses = packageInfo.PrimaryLicenses
+			}
 			metadataMap := map[string]string{
 				ComplianceMetadataProp.NAME:                            ctx.ModuleName(module),
 				ComplianceMetadataProp.MODULE_TYPE:                     ctx.ModuleType(module),
-				ComplianceMetadataProp.PKG_DEFAULT_APPLICABLE_LICENSES: strings.Join(packageInfo.PrimaryLicenses, " "),
+				ComplianceMetadataProp.PKG_DEFAULT_APPLICABLE_LICENSES: strings.Join(primaryLicenses, " "),
 			}
 			rowId = rowId + 1
 			metadata := []string{strconv.Itoa(rowId)}

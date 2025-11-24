@@ -125,7 +125,7 @@ type TestProperties struct {
 
 	// the name of the test configuration (for example "AndroidTest.xml") that should be
 	// installed with the module.
-	Test_config *string `android:"path,arch_variant"`
+	Test_config proptools.Configurable[string] `android:"path,arch_variant,replace_instead_of_append"`
 
 	// list of files or filegroup modules that provide data that should be installed alongside
 	// the test.

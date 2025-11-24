@@ -1129,7 +1129,7 @@ func (mod *Module) GenerateAndroidBuildActions(actx android.ModuleContext) {
 		return
 	}
 
-	deps := mod.depsToPaths(ctx)
+	deps, testSuiteSharedLibs := mod.depsToPaths(ctx)
 	// Export linkDirs for CC rust generatedlibs
 	mod.exportedLinkDirs = append(mod.exportedLinkDirs, deps.exportedLinkDirs...)
 	mod.exportedLinkDirs = append(mod.exportedLinkDirs, deps.linkDirs...)
@@ -1239,6 +1239,7 @@ func (mod *Module) GenerateAndroidBuildActions(actx android.ModuleContext) {
 	if lib, ok := mod.compiler.(cc.VersionedInterface); ok {
 		linkableInfo.StubsVersion = lib.StubsVersion()
 	}
+	linkableInfo.FuzzDependencies = cc.PropagateSharedLibraryFuzzerDependencies(ctx, android.OptionalPath{}, false)
 
 	android.SetProvider(ctx, cc.LinkableInfoProvider, linkableInfo)
 
@@ -1310,8 +1311,9 @@ func (mod *Module) GenerateAndroidBuildActions(actx android.ModuleContext) {
 		BaseModuleName: mod.BaseModuleName(),
 		Target:         ctx.Target(),
 	}
-	android.SetProvider(ctx, android.MakeNameInfoProvider, android.MakeNameInfo{
-		Name: rustMakeLibName(rustInfo, linkableInfo, &myCommonInfo, ctx.ModuleName()),
+	ctx.SetMakeNamesInfo(&android.MakeNamesInfo{
+		SharedLibsMakeNames: testSuiteSharedLibs,
+		MakeName:            rustMakeLibName(rustInfo, linkableInfo, &myCommonInfo, ctx.ModuleName()),
 	})
 
 	mod.setOutputFiles(ctx)
@@ -1604,7 +1606,7 @@ func collectIncludedProtos(mod *Module, rustInfo *RustInfo, linkableInfo *cc.Lin
 	}
 }
 
-func (mod *Module) depsToPaths(ctx android.ModuleContext) PathDeps {
+func (mod *Module) depsToPaths(ctx android.ModuleContext) (PathDeps, []string) {
 	var depPaths PathDeps
 
 	directRlibDeps := []*cc.LinkableInfo{}
@@ -1957,19 +1959,15 @@ func (mod *Module) depsToPaths(ctx android.ModuleContext) PathDeps {
 			}
 		}
 
-		if srcDep, ok := android.OtherModuleProvider(ctx, dep, android.SourceFilesInfoProvider); ok {
+		if srcDep := commonInfo.SourceFiles; srcDep != nil {
 			if android.IsSourceDepTagWithOutputTag(depTag, "") {
 				// These are usually genrules which don't have per-target variants.
-				directSrcDeps = append(directSrcDeps, srcDep)
+				directSrcDeps = append(directSrcDeps, *srcDep)
 			}
 		}
 	})
 
 	mod.transitiveAndroidMkSharedLibs = depset.New(depset.PREORDER, directAndroidMkSharedLibs, transitiveAndroidMkSharedLibs)
-
-	android.SetProvider(ctx, android.TestSuiteSharedLibsInfoProvider, android.TestSuiteSharedLibsInfo{
-		MakeNames: append(mod.transitiveAndroidMkSharedLibs.ToList(), mod.Properties.AndroidMkDylibs...),
-	})
 
 	var rlibDepFiles RustLibraries
 	aliases := mod.compiler.Aliases()
@@ -2054,7 +2052,8 @@ func (mod *Module) depsToPaths(ctx android.ModuleContext) PathDeps {
 	depPaths.reexportedWholeCcRlibDeps = android.FirstUniqueFunc(depPaths.reexportedWholeCcRlibDeps, cc.EqRustRlibDeps)
 	depPaths.ccRlibDeps = android.FirstUniqueFunc(depPaths.ccRlibDeps, cc.EqRustRlibDeps)
 
-	return depPaths
+	makeNames := append(mod.transitiveAndroidMkSharedLibs.ToList(), mod.Properties.AndroidMkDylibs...)
+	return depPaths, makeNames
 }
 
 func (mod *Module) InstallInData() bool {

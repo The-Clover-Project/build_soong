@@ -53,7 +53,7 @@ func PythonTestFactory() android.Module {
 type TestProperties struct {
 	// the name of the test configuration (for example "AndroidTest.xml") that should be
 	// installed with the module.
-	Test_config *string `android:"path,arch_variant"`
+	Test_config proptools.Configurable[string] `android:"path,arch_variant,replace_instead_of_append"`
 
 	// the name of the test configuration template (for example "AndroidTestTemplate.xml") that
 	// should be installed with the module.

@@ -14,9 +14,10 @@
 package android
 
 import (
-	"android/soong/android/team_proto"
 	"log"
 	"testing"
+
+	"android/soong/android/team_proto"
 
 	"google.golang.org/protobuf/proto"
 )
@@ -369,7 +370,7 @@ var prepareForTestWithTeamAndFakes = GroupFixturePreparers(
 
 func (f *fakeForTests) GenerateAndroidBuildActions(ctx ModuleContext) {
 	if Bool(f.sourceProperties.Test_only) {
-		SetProvider(ctx, TestOnlyProviderKey, TestModuleInformation{
+		ctx.SetTestModuleInfo(&TestModuleInformation{
 			TestOnly:       Bool(f.sourceProperties.Test_only) && !f.props.Skip,
 			TopLevelTarget: false,
 		})

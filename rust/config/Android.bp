@@ -28,6 +28,5 @@ bootstrap_go_package {
     ],
     visibility: [
         "//build/soong:__subpackages__",
-        "//prebuilts/rust/soong",
     ],
 }

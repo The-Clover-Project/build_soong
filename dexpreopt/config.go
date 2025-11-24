@@ -550,7 +550,7 @@ func dex2oatPathFromDep(ctx android.ModuleContext) android.Path {
 		panic(fmt.Sprintf("Failed to lookup %s dependency", dex2oatBin))
 	}
 
-	dex2oatPath := android.GetHostToolProvider(ctx, dex2oatModule)
+	dex2oatPath := android.GetHostToolInfo(ctx, dex2oatModule)
 	if dex2oatPath == nil || !dex2oatPath.HostToolPath.Valid() {
 		panic(fmt.Sprintf("Failed to find host tool path in %s", dex2oatModule))
 	}

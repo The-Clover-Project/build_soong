@@ -84,6 +84,9 @@ type PackagingSpec struct {
 
 	// Whether the owner module is a prebuilt module or not
 	prebuilt bool
+
+	// Extra files zip to be installed with this packaging spec.
+	extraZip OptionalPath
 }
 
 func (p *PackagingSpec) Owner() string {
@@ -182,6 +185,11 @@ func (p *PackagingSpec) SrcPath() Path {
 // The symlink target of the PackagingSpec. Do not use, for the soong-only migration.
 func (p *PackagingSpec) SymlinkTarget() string {
 	return p.symlinkTarget
+}
+
+// The extra zip file to be installed with this packaging spec.
+func (p *PackagingSpec) ExtraZip() OptionalPath {
+	return p.extraZip
 }
 
 type PackageModule interface {
@@ -493,9 +501,9 @@ func (p *PackagingBase) AddDeps(ctx BottomUpMutatorContext, depTag blueprint.Dep
 		// If a shared variation exists, use that. Static variants do not provide any standalone files
 		// for packaging. Similarly, use the dylib variation of rust library if it exists as
 		// the static lib (rlib) variants are never installed.
-		if ctx.OtherModuleFarDependencyVariantExists([]blueprint.Variation{sharedVariation}, dep) {
+		if ctx.OtherModuleFarDependencyVariantExists(append(targetVariation, sharedVariation), dep) {
 			targetVariation = append(targetVariation, sharedVariation)
-		} else if ctx.OtherModuleFarDependencyVariantExists([]blueprint.Variation{rustLibDylibVariation}, dep) {
+		} else if ctx.OtherModuleFarDependencyVariantExists(append(targetVariation, rustLibDylibVariation), dep) {
 			targetVariation = append(targetVariation, rustLibDylibVariation)
 		}
 
@@ -773,6 +781,11 @@ func (p *PackagingBase) CopySpecsToDirs(ctx ModuleContext, builder *RuleBuilder,
 			}
 			if ps.executable {
 				builder.Command().Textf("chmod a+x %s", destPath)
+			}
+			if ps.extraZip.Valid() {
+				builder.Command().Textf("(unzip -qDD -d '%s'", destDir).
+					Input(ps.extraZip.Path()).
+					Text(" 2>&1 | grep -v \"zipfile is empty\"; exit ${PIPESTATUS[0]} )")
 			}
 		}
 	}

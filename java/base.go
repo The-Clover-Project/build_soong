@@ -115,7 +115,7 @@ type CommonProperties struct {
 	Associates []string `android:"arch_variant"`
 
 	// manifest file to be included in resulting jar
-	Manifest *string `android:"path"`
+	Manifest proptools.Configurable[string] `android:"path,replace_instead_of_append"`
 
 	// if not blank, run jarjar using the specified rules file
 	Jarjar_rules *string `android:"path,arch_variant"`
@@ -497,6 +497,9 @@ type Module struct {
 	android.ModuleBase
 	android.DefaultableModuleBase
 	android.ApexModuleBase
+	// TODO(b/461815001): remove this and replace usage of WalkDepsProxy with
+	//  VisitDirectDepsProxy and DepSets.
+	blueprint.ModuleUsesIncrementalWalkDeps
 
 	// Functionality common to Module and Import.
 	embeddableInModuleAndImport
@@ -1078,8 +1081,17 @@ func (j *Module) aidlFlags(ctx android.ModuleContext, aidlPreprocess android.Opt
 		j.ignoredAidlPermissionList = android.PathsForModuleSrcExcludes(ctx, exceptions, nil)
 	}
 
-	aidlMinSdkVersion := j.MinSdkVersion(ctx).String()
-	flags = append(flags, "--min_sdk_version="+aidlMinSdkVersion)
+	aidlMinSdkVersion := j.MinSdkVersion(ctx)
+
+	// Cap the API level for vendor modules to 34.
+	if j.InstallInVendor() {
+		vendorCap := android.ApiLevelFrom(ctx, "34")
+		if vendorCap.LessThan(aidlMinSdkVersion) {
+			aidlMinSdkVersion = vendorCap
+		}
+	}
+
+	flags = append(flags, "--min_sdk_version="+aidlMinSdkVersion.String())
 
 	return strings.Join(flags, " "), deps
 }
@@ -1221,8 +1233,9 @@ func (j *Module) addGeneratedSrcJars(path android.Path) {
 func (j *Module) compile(ctx android.ModuleContext) *JavaInfo {
 
 	manifest := j.overrideManifest
-	if !manifest.Valid() && j.properties.Manifest != nil {
-		manifest = android.OptionalPathForPath(android.PathForModuleSrc(ctx, *j.properties.Manifest))
+	manifestFromProp := j.properties.Manifest.GetOrDefault(ctx, "")
+	if !manifest.Valid() && manifestFromProp != "" {
+		manifest = android.OptionalPathForPath(android.PathForModuleSrc(ctx, manifestFromProp))
 	}
 
 	// Auto-propagating jarjar rules
@@ -2258,45 +2271,74 @@ func (j *Module) useCompose(ctx android.BaseModuleContext) bool {
 	return android.InList("androidx.compose.runtime_runtime", j.staticLibs(ctx))
 }
 
-func collectDepProguardSpecInfo(ctx android.ModuleContext) (transitiveProguardFlags, transitiveUnconditionalExportedFlags []depset.DepSet[android.Path]) {
+type collectDepProguardSpecInfoResults struct {
+	transitiveProguardFlags                      []depset.DepSet[android.Path]
+	transitiveIncludedProguardFlags              []depset.DepSet[android.Path]
+	transitiveUnconditionalExportedFlags         []depset.DepSet[android.Path]
+	transitiveIncludedUnconditionalExportedFlags []depset.DepSet[android.Path]
+}
+
+func collectDepProguardSpecInfo(ctx android.ModuleContext) collectDepProguardSpecInfoResults {
+	var results collectDepProguardSpecInfoResults
 	ctx.VisitDirectDepsProxy(func(m android.ModuleProxy) {
 		depProguardInfo, _ := android.OtherModuleProvider(ctx, m, ProguardSpecInfoProvider)
 		depTag := ctx.OtherModuleDependencyTag(m)
 
-		transitiveUnconditionalExportedFlags = append(transitiveUnconditionalExportedFlags, depProguardInfo.UnconditionallyExportedProguardFlags)
-		transitiveProguardFlags = append(transitiveProguardFlags, depProguardInfo.UnconditionallyExportedProguardFlags)
+		results.transitiveUnconditionalExportedFlags = append(results.transitiveUnconditionalExportedFlags, depProguardInfo.UnconditionallyExportedProguardFlags)
+		results.transitiveIncludedUnconditionalExportedFlags = append(results.transitiveIncludedUnconditionalExportedFlags, depProguardInfo.IncludedUnconditionallyExportedProguardFlags)
+		results.transitiveProguardFlags = append(results.transitiveProguardFlags, depProguardInfo.UnconditionallyExportedProguardFlags)
+		results.transitiveIncludedProguardFlags = append(results.transitiveIncludedProguardFlags, depProguardInfo.IncludedUnconditionallyExportedProguardFlags)
 
 		if depTag == staticLibTag {
-			transitiveProguardFlags = append(transitiveProguardFlags, depProguardInfo.ProguardFlagsFiles)
+			results.transitiveProguardFlags = append(results.transitiveProguardFlags, depProguardInfo.ProguardFlagsFiles)
+			results.transitiveIncludedProguardFlags = append(results.transitiveIncludedProguardFlags, depProguardInfo.IncludedProguardFlagsFiles)
 		}
 	})
 
-	return transitiveProguardFlags, transitiveUnconditionalExportedFlags
+	return results
 }
 
 func (j *Module) collectProguardSpecInfo(ctx android.ModuleContext) ProguardSpecInfo {
-	transitiveProguardFlags, transitiveUnconditionalExportedFlags := collectDepProguardSpecInfo(ctx)
+	transitiveFlags := collectDepProguardSpecInfo(ctx)
 
+	transitiveProguardFlags := transitiveFlags.transitiveProguardFlags
+	transitiveIncludedProguardFlags := transitiveFlags.transitiveIncludedProguardFlags
+	transitiveUnconditionalExportedFlags := transitiveFlags.transitiveUnconditionalExportedFlags
+	transitiveIncludedUnconditionalExportedFlags := transitiveFlags.transitiveIncludedUnconditionalExportedFlags
+
+	proguardFlagsForThisModule := j.ProguardFlagsFiles(ctx)
 	directUnconditionalExportedFlags := android.Paths{}
-	proguardFlagsForThisModule := android.PathsForModuleSrc(ctx, j.ProguardFlagsFiles(ctx))
+	directIncludedUnconditionalExportedFlags := android.Paths{}
 	exportUnconditionally := proptools.Bool(j.dexProperties.Optimize.Export_proguard_flags_files)
 	if exportUnconditionally {
 		// if we explicitly export, then our unconditional exports are the same as our transitive flags
-		transitiveUnconditionalExportedFlags = transitiveProguardFlags
-		directUnconditionalExportedFlags = proguardFlagsForThisModule
+		transitiveUnconditionalExportedFlags = transitiveFlags.transitiveProguardFlags
+		transitiveIncludedUnconditionalExportedFlags = transitiveFlags.transitiveIncludedProguardFlags
+		directUnconditionalExportedFlags = proguardFlagsForThisModule.files
+		directIncludedUnconditionalExportedFlags = proguardFlagsForThisModule.included
 	}
 
 	return ProguardSpecInfo{
 		Export_proguard_flags_files: exportUnconditionally,
-		ProguardFlagsFiles: depset.New[android.Path](
+		ProguardFlagsFiles: depset.New(
 			depset.POSTORDER,
-			proguardFlagsForThisModule,
+			proguardFlagsForThisModule.files,
 			transitiveProguardFlags,
 		),
-		UnconditionallyExportedProguardFlags: depset.New[android.Path](
+		IncludedProguardFlagsFiles: depset.New(
+			depset.POSTORDER,
+			proguardFlagsForThisModule.included,
+			transitiveIncludedProguardFlags,
+		),
+		UnconditionallyExportedProguardFlags: depset.New(
 			depset.POSTORDER,
 			directUnconditionalExportedFlags,
 			transitiveUnconditionalExportedFlags,
+		),
+		IncludedUnconditionallyExportedProguardFlags: depset.New(
+			depset.POSTORDER,
+			directIncludedUnconditionalExportedFlags,
+			transitiveIncludedUnconditionalExportedFlags,
 		),
 	}
 
@@ -2902,16 +2944,17 @@ func (j *Module) collectDeps(ctx android.ModuleContext) deps {
 					JavaInfo: dep,
 				})
 			}
-		} else if dep, ok := android.OtherModuleProvider(ctx, module, android.SourceFilesInfoProvider); ok {
+		} else if commonInfo, ok := android.OtherModuleProvider(ctx, module, android.CommonModuleInfoProvider); ok && commonInfo.SourceFiles != nil {
+			dep := commonInfo.SourceFiles
 			switch tag {
 			case sdkLibTag, libTag:
-				checkProducesJars(ctx, dep, module)
+				checkProducesJars(ctx, *dep, module)
 				deps.classpath = append(deps.classpath, dep.Srcs...)
 				deps.dexClasspath = append(deps.classpath, dep.Srcs...)
 				transitiveClasspathHeaderJars = append(transitiveClasspathHeaderJars,
 					depset.New(depset.PREORDER, dep.Srcs, nil))
 			case staticLibTag:
-				checkProducesJars(ctx, dep, module)
+				checkProducesJars(ctx, *dep, module)
 				deps.classpath = append(deps.classpath, dep.Srcs...)
 				deps.staticJars = append(deps.staticJars, dep.Srcs...)
 				deps.staticHeaderJars = append(deps.staticHeaderJars, dep.Srcs...)
@@ -3019,21 +3062,11 @@ const (
 
 // @auto-generate: gob
 type JarJarProviderData struct {
-	// Mapping of class names: original --> renamed.  If the value is "", the class will be
-	// renamed by the next rdep that has the jarjar_prefix attribute (or this module if it has
-	// attribute). Rdeps of that module will inherit the renaming.
-	Rename map[string]string
+	Rename android.JarJarRename
 }
 
 func (this JarJarProviderData) GetDebugString() string {
-	result := ""
-	for _, k := range android.SortedKeys(this.Rename) {
-		v := this.Rename[k]
-		if strings.Contains(k, "android.companion.virtual.flags.FakeFeatureFlagsImpl") {
-			result += k + "--&gt;" + v + ";"
-		}
-	}
-	return result
+	return this.Rename.GetDebugString()
 }
 
 var JarJarProvider = blueprint.NewProvider[JarJarProviderData]()
@@ -3043,19 +3076,6 @@ var overridableJarJarPrefix = "com.android.internal.hidden_from_bootclasspath"
 func init() {
 	android.SetJarJarPrefixHandler(mergeJarJarPrefixes)
 }
-
-// BaseJarJarProviderData contains information that will propagate across dependencies regardless of
-// whether they are java modules or not.
-// @auto-generate: gob
-type BaseJarJarProviderData struct {
-	JarJarProviderData JarJarProviderData
-}
-
-func (this BaseJarJarProviderData) GetDebugString() string {
-	return this.JarJarProviderData.GetDebugString()
-}
-
-var BaseJarJarProvider = blueprint.NewProvider[BaseJarJarProviderData]()
 
 // mergeJarJarPrefixes is called immediately before module.GenerateAndroidBuildActions is called.
 // Since there won't be a JarJarProvider, we create the BaseJarJarProvider if any of our deps have
@@ -3069,10 +3089,10 @@ func mergeJarJarPrefixes(ctx android.ModuleContext) {
 	}
 	jarJarData := collectDirectDepsProviders(ctx)
 	if jarJarData != nil {
-		providerData := BaseJarJarProviderData{
-			JarJarProviderData: *jarJarData,
+		providerData := android.BaseJarJarProviderData{
+			Rename: jarJarData.Rename,
 		}
-		android.SetProvider(ctx, BaseJarJarProvider, providerData)
+		ctx.SetBaseJarJarProviderData(&providerData)
 	}
 
 }
@@ -3155,7 +3175,7 @@ func collectDirectDepsProviders(ctx android.ModuleContext) (result *JarJarProvid
 				default:
 					return RenameUseExclude
 				}
-			} else if _, ok := android.OtherModuleProvider(ctx, m, android.SourceFilesInfoProvider); ok {
+			} else if commonInfo, ok := android.OtherModuleProvider(ctx, m, android.CommonModuleInfoProvider); ok && commonInfo.SourceFiles != nil {
 				switch tag {
 				case sdkLibTag, libTag, staticLibTag:
 					return RenameUseInclude
@@ -3188,8 +3208,8 @@ func collectDirectDepsProviders(ctx android.ModuleContext) (result *JarJarProvid
 			return
 		}
 
-		merge := func(theirs *JarJarProviderData) {
-			for orig, renamed := range theirs.Rename {
+		merge := func(theirs android.JarJarRename) {
+			for orig, renamed := range theirs {
 				if preexisting, exists := (*result).Rename[orig]; !exists || preexisting == "" {
 					result.Rename[orig] = renamed
 				} else if preexisting != "" && renamed != "" && preexisting != renamed {
@@ -3203,12 +3223,12 @@ func collectDirectDepsProviders(ctx android.ModuleContext) (result *JarJarProvid
 			}
 		}
 		if theirs, ok := android.OtherModuleProvider(ctx, m, JarJarProvider); ok {
-			merge(&theirs)
-		} else if theirs, ok := android.OtherModuleProvider(ctx, m, BaseJarJarProvider); ok {
+			merge(theirs.Rename)
+		} else if theirs := android.OtherModulePointerProviderOrDefault(ctx, m, android.CommonModuleInfoProvider).BaseJarJarProviderData; theirs != nil {
 			// TODO: if every java.Module should have a JarJarProvider, and we find only the
 			// BaseJarJarProvider, then there is a bug.  Consider seeing if m can be cast
 			// to java.Module.
-			merge(&theirs.JarJarProviderData)
+			merge(theirs.Rename)
 		}
 	})
 	return

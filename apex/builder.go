@@ -264,9 +264,9 @@ func (a *apexBundle) buildAconfigFiles(ctx android.ModuleContext) []apexFile {
 		if file.module.IsNil() {
 			continue
 		}
-		if dep, ok := android.OtherModuleProvider(ctx, file.module, android.AconfigPropagatingProviderKey); ok {
-			if len(dep.AconfigFiles) > 0 && dep.AconfigFiles[ctx.ModuleName()] != nil {
-				aconfigFiles = append(aconfigFiles, dep.AconfigFiles[ctx.ModuleName()]...)
+		if dep, ok := android.OtherModuleProvider(ctx, file.module, android.CommonModuleInfoProvider); ok && dep.AconfigPropagatingDeclarations != nil {
+			if len(dep.AconfigPropagatingDeclarations.AconfigFiles) > 0 && dep.AconfigPropagatingDeclarations.AconfigFiles[ctx.ModuleName()] != nil {
+				aconfigFiles = append(aconfigFiles, dep.AconfigPropagatingDeclarations.AconfigFiles[ctx.ModuleName()]...)
 			}
 		}
 
@@ -675,20 +675,18 @@ func (a *apexBundle) buildApex(ctx android.ModuleContext) {
 				copyCommands = append(copyCommands, "cp -f "+fi.builtFile.String()+" "+destPath)
 				implicitInputs = append(implicitInputs, fi.builtFile)
 			}
+			if fi.extraZip.Valid() {
+				copyCommands = append(copyCommands,
+					fmt.Sprintf("unzip -qDD -d %s %s", destPathDir, fi.extraZip.String()))
+				implicitInputs = append(implicitInputs, fi.extraZip.Path())
+			}
 
 			var installedPath android.InstallPath
-			if fi.class == appSet {
-				// In case of AppSet, we need to copy additional APKs as well. They
-				// are zipped. So we need to unzip them.
-				copyCommands = append(copyCommands,
-					fmt.Sprintf("unzip -qDD -d %s %s", destPathDir,
-						fi.providers.appInfo.PackedAdditionalOutputs.String()))
-				if installSymbolFiles {
+			if installSymbolFiles {
+				if fi.extraZip.Valid() {
 					installedPath = ctx.InstallFileWithExtraFilesZip(apexDir.Join(ctx, fi.installDir),
-						fi.stem(), fi.builtFile, fi.providers.appInfo.PackedAdditionalOutputs)
-				}
-			} else {
-				if installSymbolFiles {
+						fi.stem(), fi.builtFile, fi.extraZip.Path())
+				} else {
 					// store installedPath. symlinks might be created if required.
 					installedPath = ctx.InstallFile(apexDir.Join(ctx, fi.installDir), fi.stem(), fi.builtFile)
 				}
@@ -1217,8 +1215,8 @@ func (a *apexBundle) reexportJacocoInfo(ctx android.ModuleContext) {
 func (a *apexBundle) buildCannedFsConfig(ctx android.ModuleContext) android.Path {
 	var readOnlyPaths = []string{"apex_manifest.json", "apex_manifest.pb"}
 	var executablePaths []string // this also includes dirs
-	var appSetDirs []string
-	appSetFiles := make(map[string]android.Path)
+	var zipDirs []string
+	zipFiles := make(map[string]android.Path)
 	for _, f := range a.filesInfo {
 		pathInApex := f.path()
 		if f.installDir == "bin" || strings.HasPrefix(f.installDir, "bin/") {
@@ -1230,14 +1228,12 @@ func (a *apexBundle) buildCannedFsConfig(ctx android.ModuleContext) android.Path
 			for _, s := range f.symlinks {
 				executablePaths = append(executablePaths, filepath.Join(f.installDir, s))
 			}
-		} else if f.class == appSet {
-			// base APK
-			readOnlyPaths = append(readOnlyPaths, pathInApex)
-			// Additional APKs
-			appSetDirs = append(appSetDirs, f.installDir)
-			appSetFiles[f.installDir] = f.providers.appInfo.PackedAdditionalOutputs
 		} else {
 			readOnlyPaths = append(readOnlyPaths, pathInApex)
+		}
+		if f.extraZip.Valid() {
+			zipDirs = append(zipDirs, f.installDir)
+			zipFiles[f.installDir] = f.extraZip.Path()
 		}
 		dir := f.installDir
 		for !android.InList(dir, executablePaths) && dir != "" {
@@ -1251,7 +1247,7 @@ func (a *apexBundle) buildCannedFsConfig(ctx android.ModuleContext) android.Path
 	}
 	sort.Strings(readOnlyPaths)
 	sort.Strings(executablePaths)
-	sort.Strings(appSetDirs)
+	sort.Strings(zipDirs)
 
 	cannedFsConfig := android.PathForModuleOut(ctx, "canned_fs_config")
 	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
@@ -1264,9 +1260,9 @@ func (a *apexBundle) buildCannedFsConfig(ctx android.ModuleContext) android.Path
 	for _, p := range executablePaths {
 		cmd.Textf("echo '/%s 0 2000 0755';", p)
 	}
-	for _, dir := range appSetDirs {
+	for _, dir := range zipDirs {
 		cmd.Textf("echo '/%s 0 2000 0755';", dir)
-		file := appSetFiles[dir]
+		file := zipFiles[dir]
 		cmd.Text("zipinfo -1").Input(file).Textf(`| sed "s:\(.*\):/%s/\1 1000 1000 0644:";`, dir)
 	}
 	// Custom fs_config is "appended" to the last so that entries from the file are preferred

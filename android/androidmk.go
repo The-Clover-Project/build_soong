@@ -84,8 +84,6 @@ type AndroidMkDataInfo struct {
 	Class string
 }
 
-var AndroidMkDataInfoProvider = blueprint.NewProvider[AndroidMkDataInfo]()
-
 type AndroidMkExtraFunc func(w io.Writer, outputFile Path)
 
 // Interface for modules to declare their Android.mk outputs. Note that every module needs to
@@ -582,13 +580,13 @@ func (a *AndroidMkEntries) fillInEntries(ctx fillInEntriesContext, mod Module) {
 
 	if info.UncheckedModule {
 		a.SetBool("LOCAL_DONT_CHECK_MODULE", true)
-	} else if moduleBuildTargetsInfo.CheckbuildTarget != nil {
+	} else if moduleBuildTargetsInfo != nil && moduleBuildTargetsInfo.CheckbuildTarget != nil {
 		a.SetPath("LOCAL_CHECKED_MODULE", moduleBuildTargetsInfo.CheckbuildTarget)
 	} else {
 		a.SetOptionalPath("LOCAL_CHECKED_MODULE", a.OutputFile)
 	}
 
-	if moduleBuildTargetsInfo.ModulePhonyTarget != nil {
+	if moduleBuildTargetsInfo != nil && moduleBuildTargetsInfo.ModulePhonyTarget != nil {
 		a.SetPath("LOCAL_ADDITIONAL_CHECKED_MODULE", moduleBuildTargetsInfo.ModulePhonyTarget)
 	}
 
@@ -1522,13 +1520,13 @@ func (a *AndroidMkInfo) fillInEntries(ctx fillInEntriesContext, mod ModuleOrProx
 
 	if info.UncheckedModule {
 		helperInfo.SetBool("LOCAL_DONT_CHECK_MODULE", true)
-	} else if moduleBuildTargetsInfo.CheckbuildTarget != nil {
+	} else if moduleBuildTargetsInfo != nil && moduleBuildTargetsInfo.CheckbuildTarget != nil {
 		helperInfo.SetPath("LOCAL_CHECKED_MODULE", moduleBuildTargetsInfo.CheckbuildTarget)
 	} else {
 		helperInfo.SetOptionalPath("LOCAL_CHECKED_MODULE", a.OutputFile)
 	}
 
-	if moduleBuildTargetsInfo.ModulePhonyTarget != nil {
+	if moduleBuildTargetsInfo != nil && moduleBuildTargetsInfo.ModulePhonyTarget != nil {
 		helperInfo.SetPath("LOCAL_ADDITIONAL_CHECKED_MODULE", moduleBuildTargetsInfo.ModulePhonyTarget)
 	}
 

@@ -16,8 +16,6 @@ package android
 
 import (
 	"strings"
-
-	"github.com/google/blueprint"
 )
 
 //go:generate go run ../../blueprint/gobtools/codegen
@@ -30,8 +28,6 @@ func init() {
 type LogtagsInfo struct {
 	Logtags Paths
 }
-
-var LogtagsProviderKey = blueprint.NewProvider[*LogtagsInfo]()
 
 func LogtagsSingleton() Singleton {
 	return &logtagsSingleton{}
@@ -46,10 +42,11 @@ func MergedLogtagsPath(ctx PathContext) OutputPath {
 func (l *logtagsSingleton) GenerateBuildActions(ctx SingletonContext) {
 	var allLogtags Paths
 	ctx.VisitAllModuleProxies(func(module ModuleProxy) {
-		if !OtherModulePointerProviderOrDefault(ctx, module, CommonModuleInfoProvider).ExportedToMake {
+		commonInfo := OtherModulePointerProviderOrDefault(ctx, module, CommonModuleInfoProvider)
+		if !commonInfo.ExportedToMake {
 			return
 		}
-		if logtagsInfo, ok := OtherModuleProvider(ctx, module, LogtagsProviderKey); ok {
+		if logtagsInfo := commonInfo.Logtags; logtagsInfo != nil {
 			allLogtags = append(allLogtags, logtagsInfo.Logtags...)
 		}
 	})

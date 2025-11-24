@@ -420,7 +420,7 @@ func (a *AndroidTestHelperApp) GenerateAndroidBuildActions(ctx android.ModuleCon
 		a.aapt.manifestValues.applicationId = *applicationId
 	}
 	a.generateAndroidBuildActions(ctx)
-	android.SetProvider(ctx, android.TestOnlyProviderKey, android.TestModuleInformation{
+	ctx.SetTestModuleInfo(&android.TestModuleInformation{
 		TestOnly: true,
 	})
 	appInfo := &AppInfo{
@@ -767,7 +767,7 @@ func (a *AndroidApp) aaptBuildActions(ctx android.ModuleContext) {
 	)
 
 	// apps manifests are handled by aapt, don't let Module see them
-	a.properties.Manifest = nil
+	a.properties.Manifest = proptools.Configurable[string]{}
 
 	android.SetProvider(ctx, FlagsPackagesProvider, FlagsPackages{
 		AconfigTextFiles: aconfigTextFilePaths,
@@ -776,17 +776,22 @@ func (a *AndroidApp) aaptBuildActions(ctx android.ModuleContext) {
 
 func (a *AndroidApp) proguardBuildActions(ctx android.ModuleContext) {
 	var staticLibProguardFlagFiles android.Paths
+	var includedStaticLibProguardFlagFiles android.Paths
 	ctx.VisitDirectDepsProxy(func(m android.ModuleProxy) {
 		depProguardInfo, _ := android.OtherModuleProvider(ctx, m, ProguardSpecInfoProvider)
 		staticLibProguardFlagFiles = append(staticLibProguardFlagFiles, depProguardInfo.UnconditionallyExportedProguardFlags.ToList()...)
+		includedStaticLibProguardFlagFiles = append(includedStaticLibProguardFlagFiles, depProguardInfo.IncludedUnconditionallyExportedProguardFlags.ToList()...)
 		if ctx.OtherModuleDependencyTag(m) == staticLibTag {
 			staticLibProguardFlagFiles = append(staticLibProguardFlagFiles, depProguardInfo.ProguardFlagsFiles.ToList()...)
+			includedStaticLibProguardFlagFiles = append(includedStaticLibProguardFlagFiles, depProguardInfo.IncludedProguardFlagsFiles.ToList()...)
 		}
 	})
 
 	staticLibProguardFlagFiles = android.FirstUniquePaths(staticLibProguardFlagFiles)
+	includedStaticLibProguardFlagFiles = android.FirstUniquePaths(includedStaticLibProguardFlagFiles)
 
 	a.Module.extraProguardFlagsFiles = append(a.Module.extraProguardFlagsFiles, staticLibProguardFlagFiles...)
+	a.Module.extraIncludedProguardFlagsFiles = append(a.Module.extraIncludedProguardFlagsFiles, includedStaticLibProguardFlagFiles...)
 	if !(a.dexer.optimizedResourceShrinkingEnabled(ctx)) {
 		// When using the optimized shrinking the R8 enqueuer will traverse the xml files that become
 		// live for code references and (transitively) mark these as live.
@@ -1734,7 +1739,7 @@ func (a *AndroidTest) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		a.testProperties.Auto_gen_config, configs, a.testProperties.Test_options.Test_runner_options)
 	a.testConfig = a.FixTestConfig(ctx, testConfig)
 	a.extraTestConfigs = android.PathsForModuleSrc(ctx, a.testProperties.Test_options.Extra_test_configs)
-	a.data = android.PathsForModuleSrc(ctx, a.testProperties.Data)
+	a.data = android.PathsForModuleSrc(ctx, a.testProperties.Data.GetOrDefault(ctx, nil))
 	a.data = append(a.data, android.PathsForModuleSrc(ctx, a.testProperties.Device_common_data)...)
 	a.data = append(a.data, android.PathsForModuleSrc(ctx, a.testProperties.Device_first_data)...)
 	a.data = append(a.data, android.PathsForModuleSrc(ctx, a.testProperties.Device_first_prefer32_data)...)
@@ -1778,7 +1783,7 @@ func (a *AndroidTest) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		MkInclude:               "$(BUILD_SYSTEM)/soong_app_prebuilt.mk",
 		MkAppClass:              "APPS",
 	})
-	android.SetProvider(ctx, android.TestOnlyProviderKey, android.TestModuleInformation{
+	ctx.SetTestModuleInfo(&android.TestModuleInformation{
 		TestOnly:       true,
 		TopLevelTarget: true,
 	})
@@ -2036,7 +2041,7 @@ type OverrideAndroidTest struct {
 func (i *OverrideAndroidTest) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	// All the overrides happen in the base module.
 	// TODO(jungjw): Check the base module type.
-	android.SetProvider(ctx, android.TestOnlyProviderKey, android.TestModuleInformation{
+	ctx.SetTestModuleInfo(&android.TestModuleInformation{
 		TestOnly:       true,
 		TopLevelTarget: true,
 	})

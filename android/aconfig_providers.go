@@ -92,10 +92,9 @@ type aconfigPropagatingDeclarationsInfo struct {
 	ModeInfos    map[string]ModeInfo
 }
 
-var AconfigPropagatingProviderKey = blueprint.NewProvider[aconfigPropagatingDeclarationsInfo]()
-
 func VerifyAconfigBuildMode(ctx ModuleContext, container string, module ModuleOrProxy, asError bool) {
-	if dep, ok := OtherModuleProvider(ctx, module, AconfigPropagatingProviderKey); ok {
+	if info, ok := OtherModuleProvider(ctx, module, CommonModuleInfoProvider); ok && info.AconfigPropagatingDeclarations != nil {
+		dep := info.AconfigPropagatingDeclarations
 		for k, v := range dep.ModeInfos {
 			msg := fmt.Sprintf("%s/%s depends on %s/%s/%s across containers\n",
 				module.Name(), container, k, v.Container, v.Mode)
@@ -114,7 +113,7 @@ func VerifyAconfigBuildMode(ctx ModuleContext, container string, module ModuleOr
 	}
 }
 
-func aconfigUpdateAndroidBuildActions(ctx ModuleContext) {
+func aconfigUpdateAndroidBuildActions(ctx ModuleContext) *aconfigPropagatingDeclarationsInfo {
 	mergedAconfigFiles := make(map[string]Paths)
 	mergedModeInfos := make(map[string]ModeInfo)
 
@@ -129,7 +128,8 @@ func aconfigUpdateAndroidBuildActions(ctx ModuleContext) {
 		}
 		// If we were generating on-device artifacts for other release configs, we would need to add code here to propagate
 		// those artifacts as well.  See also b/298444886.
-		if dep, ok := OtherModuleProvider(ctx, module, AconfigPropagatingProviderKey); ok {
+		if info, ok := OtherModuleProvider(ctx, module, CommonModuleInfoProvider); ok && info.AconfigPropagatingDeclarations != nil {
+			dep := info.AconfigPropagatingDeclarations
 			for container, v := range dep.AconfigFiles {
 				mergedAconfigFiles[container] = append(mergedAconfigFiles[container], v...)
 			}
@@ -142,24 +142,24 @@ func aconfigUpdateAndroidBuildActions(ctx ModuleContext) {
 			aconfigFiles := mergedAconfigFiles[container]
 			mergedAconfigFiles[container] = mergeAconfigFiles(ctx, container, aconfigFiles, true)
 		}
-
-		SetProvider(ctx, AconfigPropagatingProviderKey, aconfigPropagatingDeclarationsInfo{
+		ctx.setAconfigPaths(getAconfigFilePaths(getContainer(ctx.Module()), mergedAconfigFiles))
+		return &aconfigPropagatingDeclarationsInfo{
 			AconfigFiles: mergedAconfigFiles,
 			ModeInfos:    mergedModeInfos,
-		})
-		ctx.setAconfigPaths(getAconfigFilePaths(getContainer(ctx.Module()), mergedAconfigFiles))
+		}
 	}
+	return nil
 }
 
 func aconfigUpdateAndroidMkData(ctx fillInEntriesContext, mod Module, data *AndroidMkData) {
-	info, ok := OtherModuleProvider(ctx, mod, AconfigPropagatingProviderKey)
+	info, ok := OtherModuleProvider(ctx, mod, CommonModuleInfoProvider)
 	// If there is no aconfigPropagatingProvider, or there are no AconfigFiles, then we are done.
-	if !ok || len(info.AconfigFiles) == 0 {
+	if !ok || info.AconfigPropagatingDeclarations == nil || len(info.AconfigPropagatingDeclarations.AconfigFiles) == 0 {
 		return
 	}
 	data.Extra = append(data.Extra, func(w io.Writer, outputFile Path) {
 		AndroidMkEmitAssignList(w, "LOCAL_ACONFIG_FILES", getAconfigFilePaths(
-			getContainerUsingProviders(ctx, mod), info.AconfigFiles).Strings())
+			getContainerUsingProviders(ctx, mod), info.AconfigPropagatingDeclarations.AconfigFiles).Strings())
 	})
 	// If there is a Custom writer, it needs to support this provider.
 	if data.Custom != nil {
@@ -184,8 +184,8 @@ func aconfigUpdateAndroidMkEntries(ctx fillInEntriesContext, mod Module, entries
 	if len(*entries) == 0 {
 		return
 	}
-	info, ok := OtherModuleProvider(ctx, mod, AconfigPropagatingProviderKey)
-	if !ok || len(info.AconfigFiles) == 0 {
+	info, ok := OtherModuleProvider(ctx, mod, CommonModuleInfoProvider)
+	if !ok || info.AconfigPropagatingDeclarations == nil || len(info.AconfigPropagatingDeclarations.AconfigFiles) == 0 {
 		return
 	}
 	// All of the files in the module potentially depend on the aconfig flag values.
@@ -193,7 +193,7 @@ func aconfigUpdateAndroidMkEntries(ctx fillInEntriesContext, mod Module, entries
 		(*entries)[idx].ExtraEntries = append((*entries)[idx].ExtraEntries,
 			func(_ AndroidMkExtraEntriesContext, entries *AndroidMkEntries) {
 				entries.AddPaths("LOCAL_ACONFIG_FILES", getAconfigFilePaths(
-					getContainerUsingProviders(ctx, mod), info.AconfigFiles))
+					getContainerUsingProviders(ctx, mod), info.AconfigPropagatingDeclarations.AconfigFiles))
 			},
 		)
 
@@ -203,17 +203,17 @@ func aconfigUpdateAndroidMkEntries(ctx fillInEntriesContext, mod Module, entries
 // TODO(b/397766191): Change the signature to take ModuleProxy
 // Please only access the module's internal data through providers.
 func aconfigUpdateAndroidMkInfos(ctx fillInEntriesContext, mod ModuleOrProxy, infos *AndroidMkProviderInfo) {
-	info, ok := OtherModuleProvider(ctx, mod, AconfigPropagatingProviderKey)
-	if !ok || len(info.AconfigFiles) == 0 {
+	info, ok := OtherModuleProvider(ctx, mod, CommonModuleInfoProvider)
+	if !ok || info.AconfigPropagatingDeclarations == nil || len(info.AconfigPropagatingDeclarations.AconfigFiles) == 0 {
 		return
 	}
 	// All of the files in the module potentially depend on the aconfig flag values.
 	infos.PrimaryInfo.AddPaths("LOCAL_ACONFIG_FILES", getAconfigFilePaths(
-		getContainerUsingProviders(ctx, mod), info.AconfigFiles))
+		getContainerUsingProviders(ctx, mod), info.AconfigPropagatingDeclarations.AconfigFiles))
 	if len(infos.ExtraInfo) > 0 {
 		for _, ei := range (*infos).ExtraInfo {
 			ei.AddPaths("LOCAL_ACONFIG_FILES", getAconfigFilePaths(
-				getContainerUsingProviders(ctx, mod), info.AconfigFiles))
+				getContainerUsingProviders(ctx, mod), info.AconfigPropagatingDeclarations.AconfigFiles))
 		}
 	}
 }

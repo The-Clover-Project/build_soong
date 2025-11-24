@@ -586,7 +586,8 @@ type apexFile struct {
 	installDir string
 	partition  string
 	customStem string
-	symlinks   []string // additional symlinks
+	symlinks   []string             // additional symlinks
+	extraZip   android.OptionalPath // addition zip files to be unzipped into installDir
 
 	checkbuildTarget android.Path
 
@@ -1121,12 +1122,14 @@ var (
 		"com.android.ipsec",
 		"com.android.media",
 		"com.android.mediaprovider",
+		"com.android.nfcservices",
 		"com.android.ondevicepersonalization",
 		"com.android.os.statsd",
 		"com.android.permission",
 		"com.android.profiling",
 		"com.android.rkpd",
 		"com.android.scheduling",
+		"com.android.telephonycore",
 		"com.android.tethering",
 		"com.android.uwb",
 		"com.android.wifi",
@@ -1948,6 +1951,7 @@ func (a *apexBundle) depVisitor(vctx *visitorContext, ctx android.ModuleContext,
 					appDirName := filepath.Join(appDir, commonInfo.BaseModuleName+"@"+sanitizedBuildIdForPath(ctx))
 					af := newApexFile(ctx, appInfo.OutputFile, commonInfo.BaseModuleName, appDirName, appSet, child)
 					af.certificate = java.PresignedCertificate
+					af.extraZip = android.OptionalPathForPath(appInfo.PackedAdditionalOutputs)
 					vctx.filesInfo = append(vctx.filesInfo, af)
 				} else {
 					vctx.filesInfo = append(vctx.filesInfo, apexFilesForAndroidApp(ctx, child, commonInfo, appInfo)...)
