@@ -53,7 +53,7 @@ type remapProperties struct {
 
 type sdkRepoHostProperties struct {
 	// The top level directory to use for the SDK repo.
-	Base_dir *string
+	Base_dir proptools.Configurable[string] `android:"replace_instead_of_append"`
 
 	// List of src:dst mappings to rename files from `deps`.
 	Deps_remap []remapProperties `android:"arch_variant"`
@@ -241,7 +241,7 @@ func (s *sdkRepoHost) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	builder.Command().
 		BuiltTool("soong_zip").
 		FlagWithOutput("-o ", outputZipFile).
-		FlagWithArg("-P ", proptools.StringDefault(s.properties.Base_dir, ".")).
+		FlagWithArg("-P ", s.properties.Base_dir.GetOrDefault(ctx, ".")).
 		FlagWithArg("-C ", dir.String()).
 		FlagWithArg("-D ", dir.String())
 	builder.Command().Text("rm").Flag("-rf").Text(dir.String())
