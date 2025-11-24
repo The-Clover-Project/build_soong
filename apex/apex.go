@@ -2007,7 +2007,8 @@ func (a *apexBundle) depVisitor(vctx *visitorContext, ctx android.ModuleContext,
 				for _, ps := range android.OtherModuleProviderOrDefault(ctx, child, android.InstallFilesProvider).PackagingSpecs {
 					src := ps.SrcPath()
 					dir := path.Dir(ps.RelPathInPackage())
-					vctx.filesInfo = append(vctx.filesInfo, newApexFile(ctx, src, commonInfo.BaseModuleName, dir, etc, child))
+					makeModuleName := strings.ReplaceAll(filepath.Join(dir, src.Base()), "/", "_")
+					vctx.filesInfo = append(vctx.filesInfo, newApexFile(ctx, src, makeModuleName, dir, etc, child))
 				}
 			} else {
 				ctx.PropertyErrorf("kernel_modules", "%q is not a prebuilt_kernel_modules module", depName)
