@@ -15,10 +15,11 @@
 package filesystem
 
 import (
-	"android/soong/android"
 	"fmt"
 	"path/filepath"
 	"strings"
+
+	"android/soong/android"
 
 	"github.com/google/blueprint/proptools"
 )
@@ -98,7 +99,8 @@ func checkVendorModuleInstallPaths(ctx android.ModuleContext, modulesToCheck []a
 
 	for _, mod := range modulesToCheck {
 		srcDir := ctx.OtherModuleDir(mod)
-		if info, ok := android.OtherModuleProvider(ctx, mod, android.InstallFilesProvider); ok {
+		if commonInfo, ok := android.OtherModuleProvider(ctx, mod, android.CommonModuleInfoProvider); ok && commonInfo.InstallFiles != nil {
+			info := commonInfo.InstallFiles
 			for _, installFile := range info.InstallFiles {
 				if !allowPath(installFile.String(), allowedPrefixes) {
 					ctx.ModuleErrorf(
@@ -182,7 +184,8 @@ func (a *androidDevice) vendorModuleCheck(ctx android.ModuleContext, allInstalle
 
 		for _, mod := range needToCheckModules {
 			var owner string
-			if commonInfo, ok := android.OtherModuleProvider(ctx, mod, android.CommonModuleInfoProvider); ok {
+			commonInfo, ok := android.OtherModuleProvider(ctx, mod, android.CommonModuleInfoProvider)
+			if ok {
 				owner = commonInfo.Owner
 			}
 			moduleDir := ctx.OtherModuleDir(mod)
@@ -190,7 +193,8 @@ func (a *androidDevice) vendorModuleCheck(ctx android.ModuleContext, allInstalle
 				ctx.ModuleErrorf("Error: vendor module %q in %s with unknown owner %q in product %q",
 					mod.Name(), moduleDir, owner, ctx.Config().DeviceProduct())
 			}
-			if info, ok := android.OtherModuleProvider(ctx, mod, android.InstallFilesProvider); ok {
+			if commonInfo != nil && commonInfo.InstallFiles != nil {
+				info := commonInfo.InstallFiles
 				for _, file := range info.InstallFiles {
 					hasVendorInfo = true
 					contentBuilder.WriteString(fmt.Sprintf("%s:%s\n", file, owner))
