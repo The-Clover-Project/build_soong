@@ -2106,6 +2106,14 @@ func (a *androidDevice) checkVintf(ctx android.ModuleContext) android.Paths {
 	}
 	var checkVintfLogs android.Paths
 	fsInfoMap := a.getFsInfos(ctx)
+	// https://source.corp.google.com/h/googleplex-android/platform/superproject/main/+/main:build/make/core/Makefile;l=5561-5566?q=PRODUCT_ENFORCE_VINTF_MANIFEST%20f:build%2Fmake&ct=os&sq=repo:googleplex-android%2Fplatform%2Fsuperproject%2Fmain%20b:main
+	if !proptools.Bool(ctx.Config().ProductVariables().Enforce_vintf_manifest) {
+		return nil
+	}
+	if _, systemExists := fsInfoMap["system"]; !systemExists {
+		return nil
+	} // vendorExists is skipped since vendor packages can be installed at /system/vendor
+
 	for _, partition := range android.SortedKeys(fsInfoMap) {
 		checkVintfLog := fsInfoMap[partition].checkVintfLog
 		if checkVintfLog != nil {
