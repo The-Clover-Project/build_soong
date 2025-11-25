@@ -74,7 +74,6 @@ type rustTargetMappingJson struct {
 	CheckTarget        string `json:"check_target"`
 	SourceDir          string `json:"source_dir"`
 	TargetProduct      string `json:"TARGET_PRODUCT"`
-	TargetRelease      string `json:"TARGET_RELEASE"`
 	TargetBuildVariant string `json:"TARGET_BUILD_VARIANT"`
 }
 
@@ -219,7 +218,6 @@ func (singleton *projectGeneratorSingleton) addCrate(ctx android.SingletonContex
 			CheckTarget:        rustInfo.CompilerInfo.CheckTarget.String(),
 			SourceDir:          ctx.ModuleDir(module),
 			TargetProduct:      ctx.Config().DeviceProduct(),
-			TargetRelease:      "trunk_staging",
 			TargetBuildVariant: buildVariant,
 		}
 		singleton.targetMappings = append(singleton.targetMappings, mapping)

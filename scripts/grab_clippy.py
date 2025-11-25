@@ -19,9 +19,8 @@ def source_to_targets(  ANDROID_BUILD_TOP: Path, source_file: Path):
         if str(source_file).startswith(entry["source_dir"]):
           check = entry["check_target"]
           product = entry["TARGET_PRODUCT"]
-          release= entry["TARGET_RELEASE"]
           build_variant= entry["TARGET_BUILD_VARIANT"]
-          target.append((check, product, release, build_variant))
+          target.append((check, product, build_variant))
     return target
   except FileNotFoundError:
     raise Exception(
@@ -40,11 +39,13 @@ def run_targets(targets):
       # This will skip the kati, kati ninja and ninja build steps
       "--soong-only",
   ]
-  for (check, product, release, build_variant) in targets:
+  for (check, product, build_variant) in targets:
     cmd = soong_ui_cmd + [str(check)]
     env= {
           "TARGET_PRODUCT": product,
-          "TARGET_RELEASE": release,
+          # default is used here to run subprocess
+          # unable to be delivered by Soong or IDE
+          "TARGET_RELEASE": "trunk_staging",
           "TARGET_BUILD_VARIANT": build_variant,
       }
     result = subprocess.run(
@@ -62,7 +63,7 @@ def gather_output(ANDROID_BUILD_TOP: Path, check_targets):
   # We use the error flag when it expects the message flag to be used
   #  so we need to augment the result by adding the reason field to the JSON
   diagnostics = set()
-  for (clippy_error_file,_,_,_) in check_targets:
+  for (clippy_error_file,_,_) in check_targets:
     path = str(ANDROID_BUILD_TOP) + "/" + clippy_error_file + ".error"
     try:
       with open(path, "r") as file:
