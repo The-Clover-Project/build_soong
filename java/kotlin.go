@@ -191,8 +191,8 @@ var kotlinKytheExtract = pctx.AndroidStaticRule("kotlinKythe",
 
 var kotlinIncrementalClean = pctx.AndroidStaticRule("kotlin-partialcompileclean",
 	blueprint.RuleParams{
-		Command:         `rm -rf "$cpSnapshot" "$outDir" "$buildDir" "$workDir"`,
-		SandboxDisabled: true,
+		Command:     `${android.Rm} -rf "$cpSnapshot" "$outDir" "$buildDir" "$workDir"`,
+		CommandDeps: []string{"Rm-deps"},
 	},
 	"cpSnapshot", "outDir", "buildDir", "workDir",
 )
@@ -446,8 +446,8 @@ func getAssociateJars(ctx android.ModuleContext, associates []string) android.Pa
 
 var kspIncrementalClean = pctx.AndroidStaticRule("ksp-partialcompileclean",
 	blueprint.RuleParams{
-		Command:         `rm -rf "$kspDir/out/caches"`,
-		SandboxDisabled: true,
+		Command:     `${android.Rm} -rf "$kspDir/out/caches"`,
+		CommandDeps: []string{"Rm-deps"},
 	},
 	"kspDir")
 

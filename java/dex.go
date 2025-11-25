@@ -301,8 +301,8 @@ func (d *dexer) ProguardFlagsFiles(ctx android.ModuleContext) proguardFlagsFiles
 // Removes all outputs of d8Inc rule
 var d8IncClean = pctx.AndroidStaticRule("d8Inc-partialcompileclean",
 	blueprint.RuleParams{
-		Command:         `rm -rf "${outDir}" "${builtOut}" "${d8Deps}" "${outDepfile}"`,
-		SandboxDisabled: true,
+		Command:     `${android.Rm} -rf "${outDir}" "${builtOut}" "${d8Deps}" "${outDepfile}"`,
+		CommandDeps: []string{"Rm-deps"},
 	}, "outDir", "d8Flags", "d8Deps", "zipFlags", "mergeZipsFlags", "builtOut", "outDepfile",
 )
 
@@ -351,9 +351,9 @@ var d8Inc, d8IncRE = pctx.MultiCommandRemoteStaticRules("d8Inc",
 // Include all of the args for d8IncR8, so that we can generate the partialcompileclean target's build using the same list.
 var d8IncR8Clean = pctx.AndroidStaticRule("d8Incr8-partialcompileclean",
 	blueprint.RuleParams{
-		Command: `rm -rf "${outDir}" "${outDict}" "${outConfig}" "${outUsage}" "${outUsageZip}" "${outUsageDir}" "${outDepfile}" ` +
+		Command: `${android.Rm} -rf "${outDir}" "${outDict}" "${outConfig}" "${outUsage}" "${outUsageZip}" "${outUsageDir}" "${outDepfile}" ` +
 			`"${resourcesOutput}" "${outR8ArtProfile}" ${builtOut} ${d8Deps}`,
-		SandboxDisabled: true,
+		CommandDeps: []string{"Rm-deps"},
 	}, "outDir", "outDict", "outConfig", "outUsage", "outUsageZip", "outUsageDir", "builtOut",
 	"d8Flags", "d8Deps", "r8Flags", "zipFlags", "mergeZipsFlags", "resourcesOutput",
 	"outR8ArtProfile", "implicits", "outDepfile",
