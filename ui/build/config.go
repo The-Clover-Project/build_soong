@@ -712,15 +712,7 @@ func CollectEarlyReleaseConfig(ctx Context, config Config, mapsCh chan *earlyRel
 }
 
 func (config *configImpl) setupSandboxConfig(ctx Context, makeVars map[string]string) {
-	if makeVars["RELEASE_SRC_DIR_IS_READ_ONLY"] == "true" || config.environ.IsEnvTrue("SOONG_SRC_DIR_IS_READ_ONLY") {
-		// If the release config says source is read-only, then make it read-write only if
-		// BUILD_BROKEN_SRC_DIR_IS_WRITABLE=true.
-		config.sandboxConfig.SetSrcDirIsRO(makeVars["BUILD_BROKEN_SRC_DIR_IS_WRITABLE"] != "true")
-	} else {
-		// If the release config says source is not read-only, then make it read-only only if
-		// BUILD_BROKEN_SRC_DIR_IS_WRITABLE=false.
-		config.sandboxConfig.SetSrcDirIsRO(makeVars["BUILD_BROKEN_SRC_DIR_IS_WRITABLE"] == "false")
-	}
+	config.sandboxConfig.SetSrcDirIsRO(makeVars["BUILD_BROKEN_SRC_DIR_IS_WRITABLE"] != "true")
 	config.sandboxConfig.SetSrcDirRWAllowlist(strings.Fields(makeVars["BUILD_BROKEN_SRC_DIR_RW_ALLOWLIST"]))
 }
 
