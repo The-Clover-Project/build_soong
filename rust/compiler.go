@@ -514,6 +514,9 @@ func (compiler *baseCompiler) compilerFlags(ctx ModuleContext, flags Flags) Flag
 		if strings.HasPrefix(s, "-Clink-args=") || strings.HasPrefix(s, "-C link-args=") {
 			ctx.PropertyErrorf("flags", "'-C link-args' flag cannot be manually specified")
 		}
+		if strings.HasPrefix(s, "-Clinker-plugin-lto=") {
+			ctx.PropertyErrorf("flags", "'-Clinker-plugin-lto' cannot be specified. Use 'lto' property instead")
+		}
 	}
 
 	flags.RustFlags = append(flags.RustFlags, lintFlags)
