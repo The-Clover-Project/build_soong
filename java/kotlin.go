@@ -32,8 +32,14 @@ type KotlinCompileData struct {
 	diffFile         android.OutputPath
 }
 
-const inputDeltaCmd = `${config.FindInputDeltaCmd} --target "$out" ` +
-	`--inputs_file "$out.rsp" --new_state "$newStateFile" --prior_state "$priorStateFile" --inspect $srcJars > $sourceDeltaFile`
+const inputDeltaCmd = `${config.FindInputDeltaCmd} ` +
+        `--target "$out" ` +
+	`--inputs_file "$out.rsp" ` +
+	`--new_state "$newStateFile" ` +
+	`--prior_state "$priorStateFile" ` +
+	`--inspect $srcJars ` +
+	`--version 2 `+
+	`> $sourceDeltaFile`
 
 const kotlinZipSyncCmd = `mkdir -p $srcJarDir && ` +
 	`${config.ZipSyncCmd} -d $srcJarDir -l $srcJarDir/list -f "*.java" -f "*.kt" $srcJars`
