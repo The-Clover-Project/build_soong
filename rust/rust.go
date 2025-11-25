@@ -1290,22 +1290,6 @@ func (mod *Module) GenerateAndroidBuildActions(actx android.ModuleContext) {
 	}
 	android.SetProvider(ctx, RustInfoProvider, rustInfo)
 
-	ccInfo := &cc.CcInfo{
-		IsPrebuilt: mod.IsPrebuilt(),
-	}
-
-	// Define the linker info if compiler != nil because Rust currently
-	// does compilation and linking in one step. If this changes in the future,
-	// move this as appropriate.
-	baseCompilerProps := mod.compiler.baseCompilerProps()
-	ccInfo.LinkerInfo = &cc.LinkerInfo{
-		WholeStaticLibs: baseCompilerProps.Whole_static_libs.GetOrDefault(ctx, nil),
-		StaticLibs:      baseCompilerProps.Static_libs.GetOrDefault(ctx, nil),
-		SharedLibs:      baseCompilerProps.Shared_libs.GetOrDefault(ctx, nil),
-	}
-
-	android.SetProvider(ctx, cc.CcInfoProvider, ccInfo)
-
 	// TODO: Refactor rustMakeLibName so we don't have to fake CommonModuleInfo like this
 	myCommonInfo := android.CommonModuleInfo{
 		BaseModuleName: mod.BaseModuleName(),

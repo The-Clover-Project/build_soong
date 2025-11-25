@@ -112,8 +112,14 @@ func BuildLinkerConfig(
 	// Secondly, if there's provideLibs gathered from provideModules, append them
 	var provideLibs []string
 	for _, m := range provideModules {
-		ccInfo, ok := android.OtherModuleProvider(ctx, m, cc.CcInfoProvider)
-		if ok && (cc.IsStubTarget(android.OtherModuleProviderOrDefault(ctx, m, cc.LinkableInfoProvider)) || ccInfo.HasLlndkStubs) {
+		stub := false
+		// This could be a cc or rust module
+		if cc.IsStubTarget(android.OtherModuleProviderOrDefault(ctx, m, cc.LinkableInfoProvider)) {
+			stub = true
+		} else if ccInfo, ok := android.OtherModuleProvider(ctx, m, cc.CcInfoProvider); ok && ccInfo.HasLlndkStubs {
+			stub = true
+		}
+		if stub {
 			for _, ps := range android.GetInstallFiles(
 				ctx, m).PackagingSpecs {
 				provideLibs = append(provideLibs, ps.FileName())

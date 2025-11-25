@@ -1341,12 +1341,14 @@ func AddStubDependencyProviders(ctx android.BaseModuleContext) []SharedStubLibra
 			if !ok {
 				continue
 			}
-			flagInfo, _ := android.OtherModuleProvider(ctx, stub, FlagExporterInfoProvider)
-			if _, ok = android.OtherModuleProvider(ctx, stub, CcInfoProvider); !ok {
-				panic(fmt.Errorf("stub is not a cc module %s", stub))
+			linkable, ok := android.OtherModuleProvider(ctx, stub, LinkableInfoProvider)
+			if !ok {
+				panic(fmt.Errorf("stub is not a linkable module %s", stub))
 			}
+			flagInfo, _ := android.OtherModuleProvider(ctx, stub, FlagExporterInfoProvider)
+
 			stubsInfo = append(stubsInfo, SharedStubLibrary{
-				Version:           android.OtherModuleProviderOrDefault(ctx, stub, LinkableInfoProvider).StubsVersion,
+				Version:           linkable.StubsVersion,
 				SharedLibraryInfo: stubInfo,
 				FlagExporterInfo:  flagInfo,
 			})
