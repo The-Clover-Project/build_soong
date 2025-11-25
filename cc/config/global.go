@@ -426,6 +426,11 @@ var (
 	// NOTE: This is deprecated and will be removed in a future version, use the getter function instead.
 	ClangDefaultShortVersion = "21"
 
+	RsGlobalIncludes = []string{
+		"external/clang/lib/Headers",
+		"frameworks/rs/script_api/include",
+	}
+
 	// Directories with warnings from Android.bp files.
 	WarningAllowedProjects = []string{
 		"device/",
@@ -557,12 +562,6 @@ func init() {
 	pctx.SourcePathVariable("RSReleaseVersion", "3.8")
 	pctx.StaticVariable("RSLLVMPrebuiltsPath", "${RSClangBase}/${HostPrebuiltTag}/${RSClangVersion}/bin")
 	pctx.StaticVariable("RSIncludePath", "${RSLLVMPrebuiltsPath}/../lib64/clang/${RSReleaseVersion}/include")
-
-	rsGlobalIncludes := []string{
-		"external/clang/lib/Headers",
-		"frameworks/rs/script_api/include",
-	}
-	pctx.PrefixedExistentPathsForSourcesVariable("RsGlobalIncludes", "-I", rsGlobalIncludes)
 
 	pctx.VariableFunc("CcWrapper", func(ctx android.PackageVarContext) string {
 		if override := ctx.Config().Getenv("CC_WRAPPER"); override != "" {

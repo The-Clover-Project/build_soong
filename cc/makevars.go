@@ -142,8 +142,6 @@ func makeVarsProvider(ctx android.MakeVarsContext) {
 	ctx.Strict("AIDL_CPP", "${aidlCmd}")
 	ctx.Strict("ALLOWED_MANUAL_INTERFACE_PATHS", strings.Join(allowedManualInterfacePaths, " "))
 
-	ctx.Strict("RS_GLOBAL_INCLUDES", "${config.RsGlobalIncludes}")
-
 	ctx.Strict("SOONG_STRIP_PATH", "${stripPath}")
 	ctx.Strict("XZ", "${xzCmd}")
 	ctx.Strict("CREATE_MINIDEBUGINFO", "${createMiniDebugInfo}")
