@@ -228,7 +228,7 @@ function compare_incremental_files() {
   echo "Compared $count mk files"
 
   count=0
-  for file_before in ${dir_full}/*.ninja; do
+  for file_before in ${dir_full}/*.ninja*; do
     basename=$(basename "$file_before")
     file_after="${dir_incremental}/${basename}"
     # The incremental file should be a superset of the full one.
@@ -242,6 +242,10 @@ function compare_incremental_files() {
         echo "$extra_lines"
         exit 1
       fi
+    elif [[ "${basename}" == "build.test_arm64.ninja.globs_time" ]]; then
+      : # skip timestamp file
+    elif [[ "${basename}" == "build.test_arm64.ninja.glob_results" ]]; then
+      : # skip timestamp file
     else
       assert_files_equal $file_before $file_after
     fi
@@ -255,9 +259,16 @@ function compare_files_parity() {
   local dir_after=$1; shift
   count=0
   for file_before in ${dir_before}/*.*; do
-    file_after="${dir_after}/$(basename "$file_before")"
+    basename="$(basename "${file_before}")"
+    file_after="${dir_after}/${basename}"
+    if [[ "${basename}" == "build.test_arm64.ninja.globs_time" ]]; then
+      : # skip timestamp file
+    elif [[ "${basename}" == "build.test_arm64.ninja.glob_results" ]]; then
+      : # skip timestamp file
+    else
     assert_files_equal $file_before $file_after
     ((count++)) || true
+    fi
   done
   echo "Compared $count ninja files"
 }
@@ -267,12 +278,12 @@ function compare_files_parity() {
 function compare_incremental_and_full_analysis() {
     run_soong SOONG_INCREMENTAL_ANALYSIS=true "$@"
     mkdir incremental
-    cp -pr out/soong/*.mk out/soong/build.test_arm64*.ninja incremental
+    cp -pr out/soong/*.mk out/soong/build.test_arm64*.ninja* incremental
 
     touch Android.bp
     run_soong SOONG_INCREMENTAL_ANALYSIS=false "$@"
     mkdir full
-    cp -pr out/soong/*.mk out/soong/build.test_arm64*.ninja full
+    cp -pr out/soong/*.mk out/soong/build.test_arm64*.ninja* full
 
     compare_incremental_files full incremental
 }
