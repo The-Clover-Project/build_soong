@@ -2110,7 +2110,10 @@ func (a *androidDevice) checkVintf(ctx android.ModuleContext) {
 	}
 	if _, systemExists := fsInfoMap["system"]; !systemExists {
 		return
-	} // vendorExists is skipped since vendor packages can be installed at /system/vendor
+	}
+	if _, vendorExists := fsInfoMap["vendor"]; !vendorExists {
+		return
+	}
 
 	for _, partition := range android.SortedKeys(fsInfoMap) {
 		checkVintfLog := fsInfoMap[partition].checkVintfLog
