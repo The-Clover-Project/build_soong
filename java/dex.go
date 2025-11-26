@@ -362,7 +362,7 @@ var d8IncR8Clean = pctx.AndroidStaticRule("d8Incr8-partialcompileclean",
 var d8IncR8, d8IncR8RE = pctx.MultiCommandRemoteStaticRules("d8Incr8",
 	blueprint.RuleParams{
 		Command: `mkdir -p "$outDir" "$outDir/packages" && ` +
-			`rm -f "$outDict" && rm -f "$outConfig" && rm -rf "${outUsageDir}" && ` +
+			`rm -rf "$outDict" "$outConfig" "${outUsageDir}" "${outDepfile}" && ` +
 			`mkdir -p $$(dirname ${outUsage}) && ` +
 			`. ${config.UsePartialCompileFile} && ` +
 			`if [ -n "$${SOONG_USE_PARTIAL_COMPILE}" ]; then ` +
@@ -370,7 +370,9 @@ var d8IncR8, d8IncR8RE = pctx.MultiCommandRemoteStaticRules("d8Incr8",
 			`   test -n "$${f}" && test ! -f "$${f}" && mkdir -p "$$(dirname "$${f}")" && touch "$${f}" || true; ` +
 			` done && ` +
 			` ${config.IncrementalDexInputCmd} --classesJar $in --dexTarget $out --deps $d8Deps --outputDir $outDir --packageOutputDir $outDir/packages && ` +
-			` $d8Template${config.D8Cmd} ${config.D8Flags} $d8Flags --output $outDir --no-dex-input-jar $in --packages $out.rsp --mod-packages $out.inc.rsp --package-output $outDir/packages; ` +
+			` $d8Template${config.D8Cmd} ${config.D8Flags} $d8Flags --output $outDir --no-dex-input-jar $in --packages $out.rsp --mod-packages $out.inc.rsp --package-output $outDir/packages && ` +
+			// outDepfile is expected as an output file but we don't use r8 in this branch
+			` touch ${outDepfile}; ` +
 			`else ` +
 			` rm -rf "$outDir" && mkdir -p "$outDir" && ` +
 			` $r8Template${config.R8Cmd} ${config.R8Flags} $r8Flags -injars $in --output $outDir ` +
