@@ -334,8 +334,16 @@ var (
 
 	noOverride64GlobalCflags = []string{}
 
+	// Extra cflags applied to tests code.
 	extraTestsCflags = []string{
 		"-Wno-error=unused-but-set-variable",
+	}
+
+	// This is similar to noOverrideGlobalCflags, but applies only to tests
+	// code. This section can unblock compiler upgrades when a test module
+	// that enables -Wall, -Wextra, or a particular warnings explicitly triggers
+	// newly added warnings. See note above noOverrideGlobalCflags.
+	noOverrideTestsGlobalCflags = []string{
 		"-Wno-unused-variable",
 	}
 
@@ -512,6 +520,7 @@ func init() {
 	pctx.StaticVariable("HostGlobalCflags", strings.Join(hostGlobalCflags, " "))
 	pctx.StaticVariable("NoOverrideExternalGlobalCflags", strings.Join(noOverrideExternalGlobalCflags, " "))
 	pctx.StaticVariable("CommonGlobalCppflags", strings.Join(commonGlobalCppflags, " "))
+	pctx.StaticVariable("NoOverrideTestsGlobalCflags", strings.Join(noOverrideTestsGlobalCflags, " "))
 	pctx.StaticVariable("TestsCflags", strings.Join(extraTestsCflags, " "))
 	pctx.StaticVariable("ExternalCflags", strings.Join(extraExternalCflags, " "))
 
