@@ -205,7 +205,7 @@ function test_sbom_aosp_cf_x86_64_phone {
     # grep filter normal files and symlinks
     # awk get entry names
     # sed remove partition name from entry names
-    $lz4 -c -d $f | cpio -it 2>/dev/null | grep '^[-l]' | awk -F ' ' '{print $9}' | sed "s:^:/$partition_name/:" | sort -n > "$file_list_file"
+    $lz4 -c -d $f | cpio -tv 2>/dev/null | grep '^[-l]' | awk -F ' ' '{print $9}' | sed "s:^:/$partition_name/:" | sort -n > "$file_list_file"
 
     grep "FileName: /${partition_name}/" $soong_sbom_out/sbom.spdx | sed 's/^FileName: //' | sort -n > "$files_in_soong_spdx_file"
 
