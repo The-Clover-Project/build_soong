@@ -20,7 +20,6 @@ import (
 	"strings"
 
 	"android/soong/android"
-	"android/soong/genrule"
 
 	"github.com/google/blueprint/proptools"
 )
@@ -50,7 +49,7 @@ type javaSystemFeaturesSrcs struct {
 	outputFiles android.WritablePaths
 }
 
-var _ genrule.SourceFileGenerator = (*javaSystemFeaturesSrcs)(nil)
+var _ android.SourceFileGenerator = (*javaSystemFeaturesSrcs)(nil)
 var _ android.SourceFileProducer = (*javaSystemFeaturesSrcs)(nil)
 
 func (m *javaSystemFeaturesSrcs) GenerateAndroidBuildActions(ctx android.ModuleContext) {

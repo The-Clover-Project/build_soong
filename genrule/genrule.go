@@ -91,12 +91,6 @@ type SourceFileGenerator interface {
 	android.SourceFileGenerator
 }
 
-// Alias for android.HostToolProvider
-// Deprecated: use android.HostToolProvider instead.
-type HostToolProvider interface {
-	android.HostToolProvider
-}
-
 type hostToolDependencyTag struct {
 	blueprint.BaseDependencyTag
 	android.LicenseAnnotationToolchainDependencyTag
