@@ -403,7 +403,12 @@ func runMakeProductConfig(ctx Context, config Config) {
 	// Enable incremental analysis by default on a per-product basis.
 	// Once this is stable incremental analysis will be enabled on all
 	// products by reading RELEASE_SOONG_INCREMENTAL_ANALYSIS directly.
-	if makeVars["PRODUCT_SOONG_INCREMENTAL_ANALYSIS"] == "true" {
+	// Also allow disabling it with env variable.
+	if env.IsEnvTrue("SOONG_INCREMENTAL_ANALYSIS") {
+		config.incrementalBuildActions = true
+	} else if env.IsFalse("SOONG_INCREMENTAL_ANALYSIS") {
+		config.incrementalBuildActions = false
+	} else if makeVars["PRODUCT_SOONG_INCREMENTAL_ANALYSIS"] == "true" {
 		config.incrementalBuildActions = true
 	}
 

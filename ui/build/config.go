@@ -341,10 +341,6 @@ func newConfig(ctx Context, isDumpVar bool, args ...string) Config {
 		}
 	}
 
-	if ret.environ.IsEnvTrue("SOONG_INCREMENTAL_ANALYSIS") {
-		ret.incrementalBuildActions = true
-	}
-
 	if ret.ninjaWeightListSource == HINT_FROM_SOONG {
 		ret.environ.Set("SOONG_GENERATES_NINJA_HINT", "always")
 	} else if ret.ninjaWeightListSource == DEFAULT {
