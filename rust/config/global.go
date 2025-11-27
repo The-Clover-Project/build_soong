@@ -27,7 +27,7 @@ import (
 var (
 	pctx = android.NewPackageContext("android/soong/rust/config")
 
-	RustDefaultVersion = "1.90.0"
+	RustDefaultVersion = "1.91.1"
 	RustDefaultBase    = "prebuilts/rust-toolchain/"
 	DefaultEdition     = "2021"
 	Stdlibs            = []string{
@@ -39,7 +39,7 @@ var (
 		"liballoc.rust_sysroot",
 	}
 
-	// Rust versions usually look like "1.90.0", but might also get a
+	// Rust versions usually look like "1.91.1", but might also get a
 	// letter or non-numeric suffix when testing (i.e. "1.90.0.test")
 	RustVersionRe = regexp.MustCompile(`^(\d+\.\d+\.\d+).*$`)
 
