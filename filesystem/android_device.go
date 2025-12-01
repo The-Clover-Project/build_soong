@@ -518,8 +518,6 @@ func (a *androidDevice) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		}
 	}
 
-	validations = append(validations, a.checkVintf(ctx)...)
-
 	ctx.Build(pctx, android.BuildParams{
 		Rule:        android.Touch,
 		Output:      allImagesStamp,
@@ -560,7 +558,7 @@ func (a *androidDevice) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		}
 		ctx.Phony("droid_targets", android.PathForPhony(ctx, "blueprint_tools"))
 	}
-
+	a.checkVintf(ctx)
 	a.runApexSepolicyTests(ctx, allInstalledModules)
 	a.hostInitVerifierCheck(ctx)
 	a.findSharedUIDViolation(ctx)
@@ -2096,16 +2094,24 @@ func (a *androidDevice) buildTrebleLabelingTest(ctx android.ModuleContext) andro
 	return testTimestamp
 }
 
-func (a *androidDevice) checkVintf(ctx android.ModuleContext) android.Paths {
+func (a *androidDevice) checkVintf(ctx android.ModuleContext) {
 	if !proptools.Bool(a.deviceProps.Main_device) {
-		return nil
+		return
 	}
 	if ctx.Config().KatiEnabled() {
 		// Make will generate the vintf checks.
-		return nil
+		return
 	}
 	var checkVintfLogs android.Paths
 	fsInfoMap := a.getFsInfos(ctx)
+	// https://source.corp.google.com/h/googleplex-android/platform/superproject/main/+/main:build/make/core/Makefile;l=5561-5566?q=PRODUCT_ENFORCE_VINTF_MANIFEST%20f:build%2Fmake&ct=os&sq=repo:googleplex-android%2Fplatform%2Fsuperproject%2Fmain%20b:main
+	if !proptools.Bool(ctx.Config().ProductVariables().Enforce_vintf_manifest) {
+		return
+	}
+	if _, systemExists := fsInfoMap["system"]; !systemExists {
+		return
+	} // vendorExists is skipped since vendor packages can be installed at /system/vendor
+
 	for _, partition := range android.SortedKeys(fsInfoMap) {
 		checkVintfLog := fsInfoMap[partition].checkVintfLog
 		if checkVintfLog != nil {
@@ -2122,7 +2128,7 @@ func (a *androidDevice) checkVintf(ctx android.ModuleContext) android.Paths {
 	}
 	cmd.ImplicitOutput(android.PathForPhony(ctx, "check-vintf-all"))
 	rule.Build("check-vintf-all", "check-vintf-all")
-	return checkVintfLogs
+
 }
 
 // Runs checkvintf --check-compat on the staging directories of the partitions per (odm_sku, vendor_sku)

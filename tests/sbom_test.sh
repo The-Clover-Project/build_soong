@@ -23,6 +23,31 @@ if [ ! -e "build/make/core/Makefile" ]; then
   exit 1
 fi
 
+# Check that required tools are installed before running the test.
+REQUIRED_TOOLS=(
+  grep
+  sed
+  awk
+  cut
+  sort
+  sha1sum
+)
+
+missing_tools=()
+for tool in "${REQUIRED_TOOLS[@]}"; do
+  if ! command -v "${tool}" >/dev/null 2>&1; then
+    missing_tools+=("${tool}")
+  fi
+done
+
+if [ ${#missing_tools[@]} -ne 0 ]; then
+  echo "Error: The following required commands are not found:" >&2
+  for tool in "${missing_tools[@]}"; do
+    echo "  - ${tool}" >&2
+  done
+  exit 1
+fi
+
 function setup {
   tmp_dir="$(mktemp -d tmp.XXXXXX)"
   trap 'cleanup "${tmp_dir}"' EXIT
@@ -79,9 +104,15 @@ function test_sbom_aosp_cf_x86_64_phone {
   # m sbom
   run_soong "${out_dir}" "sbom"
 
+  # m toybox
+  run_soong "${out_dir}" "toybox"
+
   # Generate installed file list from .img files in PRODUCT_OUT
   dump_erofs=$out_dir/host/linux-x86/bin/dump.erofs
   lz4=$out_dir/host/linux-x86/bin/lz4
+  function cpio() {
+    "${out_dir}/host/linux-x86/bin/toybox" cpio "$@"
+  }
 
   declare -A diff_excludes
 

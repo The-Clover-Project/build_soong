@@ -287,7 +287,7 @@ func (s *makeVarsSingleton) GenerateBuildActions(ctx SingletonContext) {
 		}
 
 		if commonInfo.ExportedToMake {
-			info := OtherModuleProviderOrDefault(ctx, m, InstallFilesProvider)
+			info := GetInstallFilesCommon(commonInfo)
 			katiInstalls = append(katiInstalls, info.KatiInstalls...)
 			katiInitRcInstalls = append(katiInitRcInstalls, info.KatiInitRcInstalls...)
 			katiVintfManifestInstalls = append(katiVintfManifestInstalls, info.KatiVintfInstalls...)

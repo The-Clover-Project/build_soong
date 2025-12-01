@@ -111,15 +111,15 @@ func MarshalFlagDefaultValue(config *rc_lib.ReleaseConfig, name string) (ret str
 	return rc_lib.MarshalValue(fa.Traces[0].Value), nil
 }
 
-func MarshalFlagValue(config *rc_lib.ReleaseConfig, name string) (ret string, err error) {
+func MarshalFlagValue(config *rc_lib.ReleaseConfig, name string) (val, typ string, err error) {
 	fa, ok := config.FlagArtifacts[name]
 	if !ok {
-		return "", fmt.Errorf("%s not found in %s", name, config.Name)
+		return "", "unspecified", fmt.Errorf("%s not found in %s", name, config.Name)
 	}
 	if fa.Redacted {
-		return "==REDACTED==", nil
+		return "==REDACTED==", "unspecified", nil
 	}
-	return rc_lib.MarshalValue(fa.Value), nil
+	return rc_lib.MarshalValue(fa.Value), rc_lib.ValueType(fa.Value), nil
 }
 
 // Returns a list of ReleaseConfig objects for which to process flags.
@@ -287,7 +287,7 @@ func GetCommand(configs *rc_lib.ReleaseConfigs, globalFlags GlobalFlags, getFlag
 	showReleaseName := len(releaseConfigList) > 1 && !getFlags.distinctValues
 	showVariableName := (len(args) > 1 && !getFlags.hideName) || getFlags.json
 	if getFlags.json {
-		variableNameFormat = `"%s": `
+		variableNameFormat = `    "%s": `
 		valueFormat = `"%s"`
 	} else if showVariableName {
 		for _, arg := range args {
@@ -340,7 +340,7 @@ func GetCommand(configs *rc_lib.ReleaseConfigs, globalFlags GlobalFlags, getFlag
 		values := map[string]bool{}
 		for _, arg := range args {
 			for _, config := range releaseConfigList {
-				val, err := MarshalFlagValue(config, arg)
+				val, _, err := MarshalFlagValue(config, arg)
 				if err == nil && val != "" {
 					values[val] = true
 				}
@@ -354,7 +354,12 @@ func GetCommand(configs *rc_lib.ReleaseConfigs, globalFlags GlobalFlags, getFlag
 		return nil
 	}
 
+	if getFlags.json {
+		fmt.Println(`"BuildFlags": {`)
+	}
+
 	numArgs := len(args)
+	flagTypes := make(map[string]string)
 	for argIdx, arg := range args {
 		for _, config := range releaseConfigList {
 			if isSet {
@@ -378,9 +383,10 @@ func GetCommand(configs *rc_lib.ReleaseConfigs, globalFlags GlobalFlags, getFlag
 					fmt.Println()
 				}
 			}
-			val, err := MarshalFlagValue(config, arg)
+			val, typ, err := MarshalFlagValue(config, arg)
 			if err == nil {
 				outputOneLine(arg, config.Name, val, valueFormat, argIdx == numArgs-1)
+				flagTypes[arg] = typ
 			} else if !getFlags.json {
 				outputOneLine(arg, config.Name, "REDACTED", "%s", argIdx == numArgs-1)
 			}
@@ -390,6 +396,16 @@ func GetCommand(configs *rc_lib.ReleaseConfigs, globalFlags GlobalFlags, getFlag
 				}
 			}
 		}
+	}
+	if getFlags.json {
+		fmt.Println("},")
+		fmt.Println(`"BuildFlagTypes": {`)
+		for argIdx, arg := range args {
+			for _, config := range releaseConfigList {
+				outputOneLine(arg, config.Name, flagTypes[arg], valueFormat, argIdx == numArgs-1)
+			}
+		}
+		fmt.Println("}")
 	}
 	return nil
 }

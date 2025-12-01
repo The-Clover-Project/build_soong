@@ -334,7 +334,6 @@ func runMakeProductConfig(ctx Context, config Config) {
 		"BUILD_BROKEN_USES_BUILD_STATIC_JAVA_LIBRARY",
 		"BUILD_BROKEN_USES_BUILD_STATIC_LIBRARY",
 		"RELEASE_BUILD_EXECUTION_METRICS",
-		"RELEASE_SRC_DIR_IS_READ_ONLY",
 		"RELEASE_USE_RKATI",
 		"RELEASE_BUILD_WITH_JDK_25",
 		"RELEASE_SOONG_INCREMENTAL_ANALYSIS",
@@ -404,7 +403,12 @@ func runMakeProductConfig(ctx Context, config Config) {
 	// Enable incremental analysis by default on a per-product basis.
 	// Once this is stable incremental analysis will be enabled on all
 	// products by reading RELEASE_SOONG_INCREMENTAL_ANALYSIS directly.
-	if makeVars["PRODUCT_SOONG_INCREMENTAL_ANALYSIS"] == "true" {
+	// Also allow disabling it with env variable.
+	if env.IsEnvTrue("SOONG_INCREMENTAL_ANALYSIS") {
+		config.incrementalBuildActions = true
+	} else if env.IsFalse("SOONG_INCREMENTAL_ANALYSIS") {
+		config.incrementalBuildActions = false
+	} else if makeVars["PRODUCT_SOONG_INCREMENTAL_ANALYSIS"] == "true" {
 		config.incrementalBuildActions = true
 	}
 

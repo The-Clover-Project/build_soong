@@ -123,7 +123,8 @@ func (*unbundledBuilder) GenerateAndroidBuildActions(ctx android.ModuleContext) 
 		if bundleInfo, ok := android.OtherModuleProvider(ctx, app, java.BundleProvider); ok {
 			ctx.DistForGoalWithFilename("apps_only", bundleInfo.Bundle, name+"-base.zip")
 		}
-		if info, ok := android.OtherModuleProvider(ctx, app, android.InstallFilesProvider); ok {
+		if commonInfo, ok := android.OtherModuleProvider(ctx, app, android.CommonModuleInfoProvider); ok && commonInfo.InstallFiles != nil {
+			info := commonInfo.InstallFiles
 			for _, file := range info.InstallFiles {
 				// The "apex" partition is a fake partition just to create files in
 				// out/target/product/<device>/apex. Including it leads to duplicate rule errors as
