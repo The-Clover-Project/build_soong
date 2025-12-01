@@ -200,12 +200,25 @@ function test_sbom_aosp_cf_x86_64_phone {
     partition_name=$(basename $f | cut -d. -f1)
     file_list_file="${sbom_test}/sbom-${partition_name}-files.txt"
     files_in_soong_spdx_file="${sbom_test}/sbom-${partition_name}-files-in-soong-spdx.txt"
-    # lz4 decompress $f to stdout
-    # cpio list all entries like ls -l
-    # grep filter normal files and symlinks
-    # awk get entry names
-    # sed remove partition name from entry names
-    $lz4 -c -d $f | cpio -tv 2>/dev/null | grep '^[-l]' | awk -F ' ' '{print $9}' | sed "s:^:/$partition_name/:" | sort -n > "$file_list_file"
+
+    # Create a temporary directory to extract the ramdisk contents
+    tmp_ramdisk_dir=$(mktemp -d "${sbom_test}/ramdisk.XXXXXX")
+
+    # Decompress the ramdisk and extract using toybox cpio.
+    # We use a subshell `(...)` to change directory only for the cpio command.
+    (cd "$tmp_ramdisk_dir" && $lz4 -c -d "$f" | cpio -idm 2>/dev/null)
+
+    # toybox cpio does not produce detail like `ls -l`, so we use `find` to list
+    # only regular files (-type f) and symlinks (-type l).
+    #   -mindepth 1: Exclude the top-level directory itself.
+    #   -printf '%P\n': Print paths relative to tmp_ramdisk_dir.
+    #   sed: remove partition name from entry names
+    find "$tmp_ramdisk_dir" -mindepth 1 \( -type f -o -type l \) -printf '%P\n' | \
+      sed "s:^:/$partition_name/:" | \
+      sort -n > "$file_list_file"
+
+    # Clean up the temporary extraction directory
+    rm -rf "$tmp_ramdisk_dir"
 
     grep "FileName: /${partition_name}/" $soong_sbom_out/sbom.spdx | sed 's/^FileName: //' | sort -n > "$files_in_soong_spdx_file"
 
