@@ -411,6 +411,9 @@ func writeGlobFile(eventHandler *metrics.EventHandler, finalOutFile string, glob
 	defer globsFile.Close()
 	globsFileEncoder := json.NewEncoder(globsFile)
 	for _, glob := range globs {
+		if len(glob.Excludes) == 0 {
+			glob.Excludes = nil
+		}
 		if err := globsFileEncoder.Encode(glob); err != nil {
 			return err
 		}

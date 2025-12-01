@@ -137,3 +137,9 @@ func (p *pluginSingleton) GenerateBuildActions(ctx SingletonContext) {
 		ctx.Errorf("New plugins are not supported; however %q were found. Please reach out to the build team or use BUILD_BROKEN_PLUGIN_VALIDATION (see Changes.md for more info).", SortedKeys(disallowedPlugins))
 	}
 }
+
+func (p *pluginSingleton) IncrementalSupported() bool {
+	// pluginSingleton depends on the contents of the vendor/google/build/soong/internal_plugins.json file
+	// that is not tracked as an incremental analysis input.
+	return false
+}
