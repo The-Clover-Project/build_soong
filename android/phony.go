@@ -15,7 +15,7 @@
 package android
 
 import (
-	"fmt"
+	"io"
 	"runtime"
 	"sort"
 	"strings"
@@ -28,8 +28,6 @@ import (
 
 type phonyMap map[string]Paths
 
-var phonyMapLock sync.Mutex
-
 // @auto-generate: gob
 type PhonyInfo struct {
 	Phonies phonyMap
@@ -40,6 +38,8 @@ var SingletonPhonyProvider = blueprint.NewSingletonProvider[PhonyInfo]()
 type phonySingleton struct {
 	phonyMap  phonyMap
 	phonyList []string
+
+	soongDist
 }
 
 var _ SingletonMakeVarsProvider = (*phonySingleton)(nil)
@@ -61,6 +61,25 @@ func (p *phonySingleton) GenerateBuildActions(ctx SingletonContext) {
 			}
 		}
 	})
+
+	if !ctx.Config().KatiEnabled() {
+		p.soongDist.collectDists(ctx)
+		// Every dist goal gets an extra dependency on an extra phony with a __dist suffix.  On builds without dist
+		// enabled the phony will have no dependencies, on builds with dist enabled the phony will depend on all
+		// the copy rules for that goal.
+		p.soongDist.addDistsToPhonyMap(ctx, p.phonyMap)
+
+		// Define well-known goals and their dependency graph that they've
+		// traditionally had in make builds.
+		addPhony := func(target string, deps ...Path) {
+			p.phonyMap[target] = append(p.phonyMap[target], deps...)
+		}
+		addPhony("droid", PathForPhony(ctx, "droid_targets"))
+		addPhony("droid_targets", PathForPhony(ctx, "droidcore"), PathForPhony(ctx, "dist_files"))
+		addPhony("droidcore", PathForPhony(ctx, "droidcore-unbundled"))
+		addPhony("dist_files")
+		addPhony("droidcore-unbundled")
+	}
 
 	// We will sort phonyList in parallel with other stuff later, but for now copy it into
 	// a slice in series so that we don't read and write to phonyMap concurrently.
@@ -110,36 +129,35 @@ func (p *phonySingleton) GenerateBuildActions(ctx SingletonContext) {
 	}
 
 	if !ctx.Config().KatiEnabled() {
-		// In soong-only builds, the phonies can conflict with dist targets that will
-		// be generated in the packaging step. Instead of emitting a blueprint/ninja phony directly,
-		// create a makefile that defines the phonies that will be included in the packaging step.
-		// Make will dedup the phonies there.
-		phonyFileSize := 0
-		for phony, deps := range p.phonyMap {
-			phonyFileSize += 2*len(phony) + 11
-			for _, dep := range deps {
-				phonyFileSize += len(dep.String()) + 1
+		// The filename suffix style used by soong (".$TARGET_PRODUCT") is not available here, fake it
+		// using katiSuffix ("-$TARGET_PRODUCT").
+		suffix := "." + strings.TrimPrefix(ctx.Config().katiSuffix, "-")
+		soongPhonyNinja := PathForOutput(ctx, "build"+suffix+".phony.ninja")
+		soongDistFile := PathForOutput(ctx, "build"+suffix+".dist.ninja")
+		soongNoDistFile := PathForOutput(ctx, "build"+suffix+".nodist.ninja")
+		ctx.AddSubninja(soongPhonyNinja.String())
+		ctx.AddSubninja(PathForOutput(ctx).String() + "/build" + suffix + ".$dist.ninja")
+
+		wg := WaitGroupWithErrorCollector{}
+
+		wg.Go(func() error {
+			f, err := openBufferedFile(absolutePath(soongPhonyNinja.String()))
+			if err != nil {
+				return err
 			}
+			defer f.Close()
+			return p.writeSoongPhonyNinja(f)
+		})
+
+		wg.GoWithMultipleErrors(func() []error {
+			return p.soongDist.writeNinjaFiles(soongDistFile, soongNoDistFile, ctx.Config().UseRemoteBuild())
+		})
+
+		wg.Wait()
+
+		for _, err := range wg.Errors() {
+			ctx.Errorf("%s", err)
 		}
-		var buildPhonyFileContents strings.Builder
-		buildPhonyFileContents.Grow(phonyFileSize)
-		for _, phony := range p.phonyList {
-			buildPhonyFileContents.WriteString(".PHONY: ")
-			buildPhonyFileContents.WriteString(phony)
-			buildPhonyFileContents.WriteString("\n")
-			buildPhonyFileContents.WriteString(phony)
-			buildPhonyFileContents.WriteString(":")
-			for _, dep := range p.phonyMap[phony] {
-				buildPhonyFileContents.WriteString(" ")
-				buildPhonyFileContents.WriteString(dep.String())
-			}
-			buildPhonyFileContents.WriteString("\n")
-		}
-		if buildPhonyFileContents.Len() != phonyFileSize {
-			panic(fmt.Sprintf("phonyFileSize calculation incorrect, expected %d, actual len: %d", phonyFileSize, buildPhonyFileContents.Len()))
-		}
-		buildPhonyFile := PathForOutput(ctx, "soong_phony_targets"+ctx.Config().katiSuffix+".mk")
-		writeValueIfChanged(ctx, absolutePath(buildPhonyFile.String()), buildPhonyFileContents.String())
 	}
 }
 
@@ -155,4 +173,28 @@ func phonySingletonFactory() Singleton {
 
 func (p *phonySingleton) IncrementalSupported() bool {
 	return true
+}
+
+// writeSoongPhonyNinja writes a ninja file containing phony rules for each phony target requested in Soong-only builds.
+func (p *phonySingleton) writeSoongPhonyNinja(w io.StringWriter) error {
+	var err error
+	write := func(s string) {
+		if err == nil {
+			_, err = w.WriteString(s)
+		}
+	}
+	for _, phony := range p.phonyList {
+		write("build ")
+		write(phony)
+		write(": phony")
+		for _, dep := range p.phonyMap[phony] {
+			write(" ")
+			write(dep.String())
+		}
+		write("\n")
+	}
+
+	write("default droid\n")
+
+	return err
 }

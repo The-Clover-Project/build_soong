@@ -155,6 +155,8 @@ type SingletonContext interface {
 
 	// OtherModuleNamespace returns the namespace of the module.
 	OtherModuleNamespace(module ModuleOrProxy) *Namespace
+
+	AddSubninja(file string)
 }
 
 type singletonAdaptor struct {
@@ -494,6 +496,10 @@ func (s *singletonContextAdaptor) GetIncrementalEnabled() bool {
 
 func (s *singletonContextAdaptor) OtherModuleNamespace(module ModuleOrProxy) *Namespace {
 	return s.SingletonContext.OtherModuleNamespace(module).(*Namespace)
+}
+
+func (s *singletonContextAdaptor) AddSubninja(file string) {
+	s.SingletonContext.AddSubninja(file)
 }
 
 func SetSingletonProvider[K any](ctx SingletonContext, provider blueprint.ProviderKey[K], value K) {
