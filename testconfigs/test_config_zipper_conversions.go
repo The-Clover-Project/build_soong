@@ -63,6 +63,10 @@ func (zipper *TestConfigZipper) convertTestExecutionPlan(name string, plan *Test
 		Name:     name,
 		Tests:    tests,
 		TestArgs: convertArgsToKeyValue(plan.Args),
+		Metadata: &protos.TestExecutionMetadata{
+			Owners:        plan.Owners,
+			CodeUnderTest: plan.Code_under_test,
+		},
 	}
 }
 

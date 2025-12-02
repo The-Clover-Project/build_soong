@@ -39,6 +39,26 @@ type TestExecutionPlanProperties struct {
 
 	// List of arguments to be utilized for this execution plan.
 	Args []string
+
+	// The metadata values associated the test execution plan.
+	TestExecutionPlanMetadataProperties
+}
+
+// @auto-generate: gob
+type TestExecutionPlanMetadataProperties struct {
+	// List of owners associated with this test execution plan.
+	Owners []string
+
+	// List of source code files that is noted for test coverage.
+	Code_under_test []string
+}
+
+func (metadata *TestExecutionPlanMetadataProperties) IsEmpty() bool {
+	if len(metadata.Owners) > 0 ||
+		len(metadata.Code_under_test) > 0 {
+		return false
+	}
+	return true
 }
 
 // @auto-generate: gob

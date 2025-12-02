@@ -55,6 +55,10 @@ type TestTriggerInlineProperties struct {
 
 	// The test modules which should be tested when this configuration is triggered.
 	Tests []ModuleProperties
+
+	// Metadata values for test execution plans.
+	// Included for inlined test trigger properties.
+	TestExecutionPlanMetadataProperties
 }
 
 func (inline *TestTriggerInlineProperties) IsEmpty() bool {
@@ -63,7 +67,7 @@ func (inline *TestTriggerInlineProperties) IsEmpty() bool {
 		!inline.Scheduling_plan.IsEmpty() {
 		return false
 	}
-	return true
+	return inline.TestExecutionPlanMetadataProperties.IsEmpty()
 }
 
 // @auto-generate: gob
