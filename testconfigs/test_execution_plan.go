@@ -21,6 +21,9 @@ import (
 	"github.com/google/blueprint"
 )
 
+// TestExecutionPlan defines the information to be used when kicking off a test.
+// This includes the test modules to be called and the arguments
+// associated with a specific testing invocation.
 type TestExecutionPlan struct {
 	android.ModuleBase
 
@@ -31,15 +34,25 @@ type TestExecutionPlan struct {
 
 // @auto-generate: gob
 type TestExecutionPlanProperties struct {
+	// List of tests that should be kicked off.
 	Tests []ModuleProperties
-	Args  []string
+
+	// List of arguments to be utilized for this execution plan.
+	Args []string
 }
 
 // @auto-generate: gob
 type ModuleProperties struct {
-	Module      string
-	Include     []string
-	Exclude     []string
+	// Name of the module under testing.
+	Module string
+
+	// List of the subsets within the module that should be tested.
+	Include []string
+
+	// List of the subsets within the module that should not be tested.
+	Exclude []string
+
+	// List of arguments specific to this module under testing.
 	Module_args []string
 }
 

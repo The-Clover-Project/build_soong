@@ -20,6 +20,8 @@ import (
 	"github.com/google/blueprint"
 )
 
+// TestSchedulingPlan defines the information necessary to schedule within the CI testing stack.
+// Currently acts as a link to ATP test configurations.
 type TestSchedulingPlan struct {
 	android.ModuleBase
 

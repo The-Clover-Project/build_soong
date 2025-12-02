@@ -20,6 +20,9 @@ import (
 	"github.com/google/blueprint"
 )
 
+// TestTrigger holds the necessary information to trigger testing for file changes.
+// Upon a change list containing a file that matches a defined file pattern, trigger
+// testing for the test workflows defined.
 type TestTrigger struct {
 	android.ModuleBase
 
@@ -30,8 +33,15 @@ type TestTrigger struct {
 
 // @auto-generate: gob
 type TestTriggerProperties struct {
-	Imports        []string
-	File_patterns  []string
+	// Paths to other test trigger locations.
+	// When triggered, all importable test triggers will export their
+	// test workflows to also be triggered.
+	Imports []string
+
+	// The list of file patterns for which this configuration is triggered.
+	File_patterns []string
+
+	// The list of test workflows that are queued for testing when this configuration is triggered.
 	Test_workflows []string
 
 	// If Test_workflows is unset, check for simple scheduling plan and included test use case.
@@ -40,8 +50,11 @@ type TestTriggerProperties struct {
 
 // @auto-generate: gob
 type TestTriggerInlineProperties struct {
+	// The scheduling plan which is defined to handle this triggered test.
 	Scheduling_plan TestSchedulingPlanInlinable
-	Tests           []ModuleProperties
+
+	// The test modules which should be tested when this configuration is triggered.
+	Tests []ModuleProperties
 }
 
 func (inline *TestTriggerInlineProperties) IsEmpty() bool {
@@ -57,6 +70,7 @@ func (inline *TestTriggerInlineProperties) IsEmpty() bool {
 type TestTriggerInfo struct {
 	TestTriggerProperties
 
+	// Path in which this module was located in the source.
 	modulePath string
 }
 
