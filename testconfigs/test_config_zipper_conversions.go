@@ -83,7 +83,8 @@ func convertArgsToKeyValue(args []string) []*protos.KeyValue {
 // converts it into its protobuf counterpart.
 func (zipper *TestConfigZipper) convertTestSchedulingPlan(name string, plan *TestSchedulingPlanProperties) *protos.TestSchedulingPlan {
 	return &protos.TestSchedulingPlan{
-		Name: name,
+		Name:         name,
+		RelatedPlans: plan.Related_plans,
 	}
 }
 

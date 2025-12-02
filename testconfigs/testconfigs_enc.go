@@ -307,17 +307,53 @@ func init() {
 
 func (r TestSchedulingPlanProperties) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	var err error
+
+	if r.Related_plans == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r.Related_plans)); err != nil {
+			return err
+		}
+		for val1 := 0; val1 < len(r.Related_plans); val1++ {
+			if err = gobtools.EncodeString(buf, r.Related_plans[val1]); err != nil {
+				return err
+			}
+		}
+	}
 	return err
 }
 
 func (r TestSchedulingPlanProperties) CustomHash(hasher *proptools.Hasher) error {
 	hasher.WriteString(":testconfigs.TestSchedulingPlanProperties")
-	hasher.WriteInt(0)
+	hasher.WriteInt(1)
+	hasher.WriteString(":.[]string")
+	hasher.WriteInt(len(r.Related_plans))
+	for val1 := 0; val1 < len(r.Related_plans); val1++ {
+		hasher.WriteString(":.string")
+		hasher.WriteString(r.Related_plans[val1])
+	}
 	return nil
 }
 
 func (r *TestSchedulingPlanProperties) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	var err error
+
+	var val2 int
+	err = gobtools.DecodeInt(buf, &val2)
+	if err != nil {
+		return err
+	}
+	if val2 != -1 {
+		r.Related_plans = make([]string, val2)
+		for val3 := 0; val3 < int(val2); val3++ {
+			err = gobtools.DecodeString(buf, &r.Related_plans[val3])
+			if err != nil {
+				return err
+			}
+		}
+	}
 
 	return err
 }
