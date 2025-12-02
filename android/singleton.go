@@ -155,6 +155,11 @@ type SingletonContext interface {
 
 	// OtherModuleNamespace returns the namespace of the module.
 	OtherModuleNamespace(module ModuleOrProxy) *Namespace
+
+	// GetModuleProxy returns a module with the given name and variations, from the root namespace.
+	// It will panic if the module doesn't exist, intentionally, to discourage use of this
+	// function to detect if modules exist or not.
+	GetModuleProxy(moduleName string, variations []blueprint.Variation) ModuleProxy
 }
 
 type singletonAdaptor struct {
@@ -494,6 +499,10 @@ func (s *singletonContextAdaptor) GetIncrementalEnabled() bool {
 
 func (s *singletonContextAdaptor) OtherModuleNamespace(module ModuleOrProxy) *Namespace {
 	return s.SingletonContext.OtherModuleNamespace(module).(*Namespace)
+}
+
+func (s *singletonContextAdaptor) GetModuleProxy(moduleName string, variations []blueprint.Variation) ModuleProxy {
+	return ModuleProxy{s.SingletonContext.GetModuleProxy(moduleName, variations)}
 }
 
 func SetSingletonProvider[K any](ctx SingletonContext, provider blueprint.ProviderKey[K], value K) {
