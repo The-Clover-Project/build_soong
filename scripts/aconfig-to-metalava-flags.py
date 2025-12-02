@@ -25,6 +25,7 @@ import xml.etree.ElementTree as ET
 from protos import aconfig_pb2
 
 _READ_ONLY = aconfig_pb2.flag_permission.READ_ONLY
+_READ_WRITE = aconfig_pb2.flag_permission.READ_WRITE
 _ENABLED = aconfig_pb2.flag_state.ENABLED
 _DISABLED = aconfig_pb2.flag_state.DISABLED
 
@@ -46,10 +47,35 @@ def bool_to_str(b: bool):
   """
   return str(b).lower()
 
+def permission_to_mutability(permission):
+  if permission == _READ_ONLY:
+    mutability = 'immutable'
+  else:
+    mutability = 'mutable'
+  return mutability
+
+def state_to_status(state):
+  if state == _ENABLED:
+    status = 'enabled'
+  else:
+    status = 'disabled'
+  return status
+
+
 def main():
   """Program entry point."""
   args_parser = argparse.ArgumentParser(
       description='Generate Metalava flags config from aconfig protobuf',
+  )
+  args_parser.add_argument(
+      '--override-flag-state',
+      choices=("ENABLED", "DISABLED"),
+      help='Pretend all flags have the given state',
+  )
+  args_parser.add_argument(
+      '--override-flag-permission',
+      choices=("READ_ONLY", "READ_WRITE"),
+      help='Pretend all flags have the given state',
   )
   args_parser.add_argument(
       'input',
@@ -64,26 +90,40 @@ def main():
   # Create the structure of the XML config file.
   config = ET.Element(config_name('config'))
   api_flags = ET.SubElement(config, config_name('api-flags'))
+
+  override_flag_state = {
+    "ENABLED": _ENABLED,
+    "DISABLED": _DISABLED,
+  }.get(args.override_flag_state)
+
+  override_flag_permission = {
+      "READ_ONLY": _READ_ONLY,
+      "READ_WRITE": _READ_WRITE,
+  }.get(args.override_flag_permission)
+
+  if override_flag_state or override_flag_permission:
+    # Make sure that unknown flags are treated the same way as all other flags.
+    ET.SubElement(api_flags, config_name('unknown-flags'), {
+        config_name('mutability'): permission_to_mutability(override_flag_permission),
+        config_name('status'): state_to_status(override_flag_state),
+    })
+
   # Create an <api-flag> element for each parsed_flag.
   for flag in parsed_flags.parsed_flag:
-    if flag.permission == _READ_ONLY:
+    state = override_flag_state or flag.state
+    permission = override_flag_permission or flag.permission
+
+    if permission == _READ_ONLY and state == _DISABLED:
       # Ignore any read only disabled flags as Metalava assumes that as the
       # default when an <api-flags/> element is provided so this reduces the
       # size of the file.
-      if flag.state == _DISABLED:
-        continue
-      mutability = 'immutable'
-    else:
-      mutability = 'mutable'
-    if flag.state == _ENABLED:
-      status = 'enabled'
-    else:
-      status = 'disabled'
+      continue
+
     attributes = {
         'package': flag.package,
         'name': flag.name,
-        'mutability': mutability,
-        'status': status,
+        'mutability': permission_to_mutability(permission),
+        'status': state_to_status(state),
         'is-exported': bool_to_str(flag.is_exported),
     }
 
