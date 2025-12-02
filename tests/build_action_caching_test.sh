@@ -30,7 +30,7 @@ EOF
   run_soong SOONG_INCREMENTAL_ANALYSIS=true "$@"
   local dir_before="${test_dir}/before"
   mkdir -p ${dir_before}
-  cp -pr out/soong/build.test_arm64*.ninja* ${test_dir}/before
+  cp -pr out/soong/*.mk out/soong/build.test_arm64*.ninja* ${test_dir}/before
   # add a comment to the bp file, this should force a new analysis but no module
   # should be really impacted, so all the incremental modules should be skipped.
   cat >> ${test_dir}/Android.bp <<'EOF'
@@ -39,7 +39,7 @@ EOF
   run_soong SOONG_INCREMENTAL_ANALYSIS=true "$@"
   local dir_after="${test_dir}/after"
   mkdir -p ${dir_after}
-  cp -pr out/soong/build.test_arm64*.ninja* ${test_dir}/after
+  cp -pr out/soong/*.mk out/soong/build.test_arm64*.ninja* ${test_dir}/after
 
   compare_files_parity $dir_before $dir_after
   rm -rf "$test_dir"
@@ -52,14 +52,14 @@ function test_incremental_build_parity() {
   run_soong SOONG_INCREMENTAL_ANALYSIS=false
   local dir_before="${test_dir}/before"
   mkdir -p ${dir_before}
-  cp -pr out/soong/build.test_arm64*.ninja* ${test_dir}/before
+  cp -pr out/soong/*.mk out/soong/build.test_arm64*.ninja* ${test_dir}/before
 
   # Now run clean build with incremental enabled
   rm -rf out
   run_soong SOONG_INCREMENTAL_ANALYSIS=true
   local dir_after="${test_dir}/after"
   mkdir -p ${dir_after}
-  cp -pr out/soong/build.test_arm64*.ninja* ${test_dir}/after
+  cp -pr out/soong/*.mk out/soong/build.test_arm64*.ninja* ${test_dir}/after
 
   compare_incremental_files $dir_before $dir_after
   rm -rf "$test_dir"

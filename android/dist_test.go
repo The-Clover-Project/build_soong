@@ -15,7 +15,6 @@
 package android
 
 import (
-	"bytes"
 	"fmt"
 	"slices"
 	"strings"
@@ -519,89 +518,4 @@ func TestGetDistContributions(t *testing.T) {
 
 func distCopyForTest(from, to string) distCopy {
 	return distCopy{PathForTesting(from), to}
-}
-
-func TestGenerateDistContributionsForSoong(t *testing.T) {
-	dc := []distContributions{{
-		copiesForGoals: []*copiesForGoals{
-			{
-				goals: []string{"my_goal"},
-				copies: []distCopy{
-					distCopyForTest("one.out", "one.out"),
-					distCopyForTest("two.out", "other.out"),
-				},
-			},
-		},
-	}}
-
-	s := soongDist{}
-	s.parseDistContributions(dc)
-	distOutput := &bytes.Buffer{}
-	err := s.generateSoongDistNinja(distOutput, true)
-	if err != nil {
-		t.Fatalf("failed to generate Soong dist ninja: %s", err)
-	}
-	noDistOutput := &bytes.Buffer{}
-	err = s.generateSoongNoDistNinja(noDistOutput)
-	if err != nil {
-		t.Fatalf("failed to generate Soong nodist ninja: %s", err)
-	}
-
-	expectedDistOutput := `rule distCp
- description = Dist $out
- command = rm -f $out && cp $in $out
- sandbox_disabled = true
- pool = local_pool
-
-build $distdir/one.out: distCp one.out
-build $distdir/other.out: distCp two.out
-build my_goal__dist: phony $distdir/one.out $distdir/other.out
-`
-
-	expectedNoDistOutput := "build my_goal__dist: phony\n"
-
-	assertStringEquals(t, expectedDistOutput, distOutput.String())
-	assertStringEquals(t, expectedNoDistOutput, noDistOutput.String())
-}
-
-func TestDistConflicts(t *testing.T) {
-	dc := []distContributions{{
-		copiesForGoals: []*copiesForGoals{
-			{
-				goals: []string{"my_goal"},
-				copies: []distCopy{
-					distCopyForTest("one.out", "one.out"),
-					distCopyForTest("two.out", "one.out"),
-				},
-			},
-		},
-	}}
-
-	s := soongDist{}
-	s.parseDistContributions(dc)
-	distOutput := &bytes.Buffer{}
-	err := s.generateSoongConflictDistNinja(distOutput, true)
-	if err != nil {
-		t.Fatalf("failed to generate Soong dist ninja: %s", err)
-	}
-	noDistOutput := &bytes.Buffer{}
-	err = s.generateSoongNoDistNinja(noDistOutput)
-	if err != nil {
-		t.Fatalf("failed to generate Soong nodist ninja: %s", err)
-	}
-
-	expectedDistOutput := `rule distError
- description = Error $out
- command = echo $distErrorMsg; false
- sandbox_disabled = true
- phony_output = true
- pool = local_pool
-distErrorMsg = 'conflicting dist sources "two.out" and "one.out" for target "one.out"'
-build my_goal__dist: distError
-`
-
-	expectedNoDistOutput := "build my_goal__dist: phony\n"
-
-	assertStringEquals(t, expectedDistOutput, distOutput.String())
-	assertStringEquals(t, expectedNoDistOutput, noDistOutput.String())
 }
