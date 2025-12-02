@@ -790,9 +790,10 @@ func runSoong(ctx Context, config Config, enforceNoSoongOutput bool) {
 		distGzipFile(ctx, config, config.SoongAndroidMk(), "soong_ui/soong")
 		distGzipFile(ctx, config, config.SoongMakeVarsMk(), "soong_ui/soong")
 	} else {
-		distGzipFile(ctx, config, config.SoongPhonyNinjaFile(), "soong_ui/soong")
-		distGzipFile(ctx, config, config.SoongDistNinjaFile(), "soong_ui/soong")
-		distGzipFile(ctx, config, config.SoongNoDistNinjaFile(), "soong_ui/soong")
+		distGzipFile(ctx, config, config.SoongPhonyTargets(), "soong_ui/soong")
+		soongDistMk := filepath.Join(config.KatiPackageMkDir(), "dist.mk")
+		distGzipFile(ctx, config, soongDistMk, "soong_ui/soong/kati_packaging")
+		distGzipFile(ctx, config, config.KatiSoongOnlyPackageNinjaFile(), "soong_ui")
 	}
 
 	if config.JsonModuleGraph() {

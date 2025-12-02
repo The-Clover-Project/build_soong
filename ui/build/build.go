@@ -51,11 +51,33 @@ func SetupOutDir(ctx Context, config Config) {
 		ctx.Fatalln("Missing BUILD_DATETIME_FILE")
 	}
 
-	writeValueIfChanged(ctx, filepath.Join(config.OutDir(), "file_name_tag.txt"), config.DistFileNameTag())
+	// BUILD_NUMBER should be set to the source control value that
+	// represents the current state of the source code.  E.g., a
+	// perforce changelist number or a git hash.  Can be an arbitrary string
+	// (to allow for source control that uses something other than numbers),
+	// but must be a single word and a valid file name.
+	//
+	// If no BUILD_NUMBER is set, create a useful "I am an engineering build"
+	// value.  Make it start with a non-digit so that anyone trying to parse
+	// it as an integer will probably get "0". This value used to contain
+	// a timestamp, but now that more dependencies are tracked in order to
+	// reduce the importance of `m installclean`, changing it every build
+	// causes unnecessary rebuilds for local development.
+	buildNumber, ok := config.environ.Get("BUILD_NUMBER")
+	if ok {
+		writeValueIfChanged(ctx, filepath.Join(config.OutDir(), "file_name_tag.txt"), buildNumber)
+	} else {
+		var username string
+		if username, ok = config.environ.Get("BUILD_USERNAME"); !ok {
+			ctx.Fatalln("Missing BUILD_USERNAME")
+		}
+		buildNumber = fmt.Sprintf("eng.%.6s", username)
+		writeValueIfChanged(ctx, filepath.Join(config.OutDir(), "file_name_tag.txt"), username)
+	}
 	// Write the build number to a file so it can be read back in
 	// without changing the command line every time.  Avoids rebuilds
 	// when using ninja.
-	writeValueIfChanged(ctx, filepath.Join(config.SoongOutDir(), "build_number.txt"), config.BuildNumber())
+	writeValueIfChanged(ctx, filepath.Join(config.SoongOutDir(), "build_number.txt"), buildNumber)
 
 	hostname, ok := config.environ.Get("BUILD_HOSTNAME")
 	if !ok {
@@ -73,7 +95,7 @@ func SetupOutDir(ctx Context, config Config) {
 		buildTargetName = targetProduct
 	}
 
-	buildUUID := buildUUID(buildTargetName, config.BuildNumber())
+	buildUUID := buildUUID(buildTargetName, buildNumber)
 	buildUUIDFile := config.BuildUUIDFile()
 	writeValueIfChanged(ctx, buildUUIDFile, buildUUID)
 	distFileToFile(ctx, config, buildUUIDFile, "BUILD_UUID")
@@ -108,9 +130,7 @@ pool highmem_pool
 subninja {{.KatiBuildNinjaFile}}
 subninja {{.KatiPackageNinjaFile}}
 {{else}}
-dist={{if .Dist}}dist{{else}}nodist{{end}}
-distdir={{.DistDir}}
-distFileNameTag={{.DistFileNameTag}}
+subninja {{.KatiSoongOnlyPackageNinjaFile}}
 {{end -}}
 subninja {{.SoongNinjaFile}}
 `))
@@ -384,7 +404,7 @@ func Build(ctx Context, config Config) {
 	if what&RunKati != 0 {
 		runKatiCleanSpec(ctx, config)
 		runKatiBuild(ctx, config)
-		runKatiPackage(ctx, config)
+		runKatiPackage(ctx, config, false)
 
 	} else if what&RunKatiNinja != 0 {
 		// Load last Kati Suffix if it exists
@@ -392,6 +412,8 @@ func Build(ctx Context, config Config) {
 			ctx.Verboseln("Loaded previous kati config:", string(katiSuffix))
 			config.SetKatiSuffix(string(katiSuffix))
 		}
+	} else if what&RunSoong != 0 {
+		runKatiPackage(ctx, config, true)
 	}
 
 	os.WriteFile(config.LastKatiSuffixFile(), []byte(config.KatiSuffix()), 0666) // a+rw
