@@ -697,14 +697,16 @@ func runSoong(ctx Context, config Config, enforceNoSoongOutput bool) {
 				}
 				ninjaEnv.Set("SISO_EXPERIMENTS", strings.Join(sisoExperiments, ","))
 
-				// Output `siso version`.
-				vcmd := Command(ctx, config, nil, "siso version",
-					config.SisoBin(), "version")
-				versionOutput, err := vcmd.CombinedOutput()
-				if err != nil {
-					ctx.Fatalf("Failed to run siso version: %s\n", err)
+				if config.IsVerbose() {
+					// Output `siso version`.
+					vcmd := Command(ctx, config, nil, "siso version",
+						config.SisoBin(), "version")
+					versionOutput, err := vcmd.CombinedOutput()
+					if err != nil {
+						ctx.Fatalf("Failed to run siso version: %s\n", err)
+					}
+					ctx.Verbosef("%s", versionOutput)
 				}
-				ctx.Verbosef("%s", versionOutput)
 			default:
 				// NINJA_NINJA is the default.
 				ninjaCmd = config.NinjaBin()
