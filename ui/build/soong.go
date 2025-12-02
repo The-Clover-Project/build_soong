@@ -15,19 +15,16 @@
 package build
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io/fs"
 	"os"
 	"path/filepath"
 	"runtime"
-	"slices"
 	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
-	"syscall"
 	"time"
 
 	"android/soong/ui/tracer"
@@ -40,7 +37,6 @@ import (
 
 	"github.com/google/blueprint"
 	"github.com/google/blueprint/bootstrap"
-	"github.com/google/blueprint/microfactory"
 	"github.com/google/blueprint/pathtools"
 
 	"google.golang.org/protobuf/proto"
@@ -189,22 +185,6 @@ type PrimaryBuilderFactory struct {
 	output       string
 	specificArgs []string
 	debugPort    string
-}
-
-func getGlobPathName(config Config) string {
-	globPathName, ok := config.TargetProductOrErr()
-	if ok != nil {
-		globPathName = soongBuildTag
-	}
-	return globPathName
-}
-
-func getGlobPathNameFromPrimaryBuilderFactory(config Config, pb PrimaryBuilderFactory) string {
-	if pb.name == soongBuildTag {
-		// Glob path for soong build would be separated per product target
-		return getGlobPathName(config)
-	}
-	return pb.name
 }
 
 func (pb PrimaryBuilderFactory) primaryBuilderInvocation(config Config) bootstrap.PrimaryBuilderInvocation {
@@ -831,142 +811,52 @@ func checkGlobs(ctx Context, finalOutFile string) error {
 	defer st.Finish()
 
 	globsFile, err := os.Open(finalOutFile + ".globs")
-	if errors.Is(err, fs.ErrNotExist) {
+	if errors.Is(err, os.ErrNotExist) {
 		// if the glob file doesn't exist, make sure the glob_results file exists and is empty.
 		if err := os.MkdirAll(filepath.Dir(finalOutFile), 0777); err != nil {
 			return err
 		}
-		f, err := os.Create(finalOutFile + ".glob_results")
-		if err != nil {
-			return err
-		}
-		return f.Close()
+		return os.WriteFile(finalOutFile+".glob_results", nil, 0666)
 	} else if err != nil {
 		return err
 	}
 	defer globsFile.Close()
-	globsFileDecoder := json.NewDecoder(globsFile)
 
 	globsTimeBytes, err := os.ReadFile(finalOutFile + ".globs_time")
-	if err != nil {
+	if errors.Is(err, os.ErrNotExist) {
+		globsTimeBytes = []byte("0")
+	} else if err != nil {
 		return err
 	}
+
 	globsTimeMicros, err := strconv.ParseInt(strings.TrimSpace(string(globsTimeBytes)), 10, 64)
 	if err != nil {
 		return err
 	}
 	globCheckStartTime := time.Now().UnixMicro()
 
-	globsChan := make(chan pathtools.GlobResult)
-	errorsChan := make(chan error)
-	wg := sync.WaitGroup{}
-
-	hasChangedGlobs := false
-	var changedGlobNameMutex sync.Mutex
-	var changedGlobName string
-
-	for i := 0; i < runtime.NumCPU()*2; i++ {
-		wg.Add(1)
-		go func() {
-			for cachedGlob := range globsChan {
-				// If we've already determined we have changed globs, just finish consuming
-				// the channel without doing any more checks.
-				if hasChangedGlobs {
-					continue
-				}
-				// First, check if any of the deps are newer than the last time globs were checked.
-				// If not, we don't need to rerun the glob.
-				hasNewDep := false
-				for _, dep := range cachedGlob.Deps {
-					info, err := os.Stat(dep)
-					if errors.Is(err, fs.ErrNotExist) || errors.Is(err, syscall.ENOTDIR) {
-						hasNewDep = true
-						break
-					} else if err != nil {
-						errorsChan <- err
-						continue
-					}
-					if info.ModTime().UnixMicro() > globsTimeMicros {
-						hasNewDep = true
-						break
-					}
-				}
-				if !hasNewDep {
-					continue
-				}
-
-				// Then rerun the glob and check if we got the same result as before.
-				result, err := pathtools.Glob(cachedGlob.Pattern, cachedGlob.Excludes, pathtools.FollowSymlinks)
-				if err != nil {
-					errorsChan <- err
-				} else {
-					if !slices.Equal(result.Matches, cachedGlob.Matches) {
-						hasChangedGlobs = true
-
-						changedGlobNameMutex.Lock()
-						defer changedGlobNameMutex.Unlock()
-						changedGlobName = result.Pattern
-						if len(result.Excludes) > 2 {
-							changedGlobName += fmt.Sprintf(" (excluding %d other patterns)", len(result.Excludes))
-						} else if len(result.Excludes) > 0 {
-							changedGlobName += " (excluding " + strings.Join(result.Excludes, " and ") + ")"
-						}
-					}
-				}
-			}
-			wg.Done()
-		}()
-	}
-	go func() {
-		wg.Wait()
-		close(errorsChan)
-	}()
-
-	errorsWg := sync.WaitGroup{}
-	errorsWg.Add(1)
-	var errFromGoRoutines error
-	go func() {
-		for result := range errorsChan {
-			if errFromGoRoutines == nil {
-				errFromGoRoutines = result
-			}
-		}
-		errorsWg.Done()
-	}()
-
-	var cachedGlob pathtools.GlobResult
-	for globsFileDecoder.More() {
-		if err := globsFileDecoder.Decode(&cachedGlob); err != nil {
-			return err
-		}
-		// Need to clone the GlobResult because the json decoder will
-		// reuse the same slice allocations.
-		globsChan <- cachedGlob.Clone()
-	}
-	close(globsChan)
-	errorsWg.Wait()
-	if errFromGoRoutines != nil {
-		return errFromGoRoutines
-	}
-
-	// Update the globs_time file whether or not we found changed globs,
-	// so that we don't rerun globs in the future that we just saw didn't change.
-	err = os.WriteFile(
-		finalOutFile+".globs_time",
-		[]byte(fmt.Sprintf("%d\n", globCheckStartTime)),
-		0666,
-	)
+	hasChangedGlobs, err := pathtools.CheckForChangedGlobs(pathtools.OsFs, globsFile, globsTimeMicros)
 	if err != nil {
-		return err
+		fmt.Fprintf(os.Stdout, "\nGlobs changed, rerunning soong...\n")
+		fmt.Fprintf(os.Stdout, "%s\n", err.Error())
 	}
 
 	if hasChangedGlobs {
-		fmt.Fprintf(os.Stdout, "Globs changed, rerunning soong...\n")
-		fmt.Fprintf(os.Stdout, "One culprit glob (may be more): %s\n", changedGlobName)
 		// Write the current time to the glob_results file. We just need
 		// some unique value to trigger a rerun, it doesn't matter what it is.
 		err = os.WriteFile(
 			finalOutFile+".glob_results",
+			[]byte(fmt.Sprintf("%d\n", globCheckStartTime)),
+			0666,
+		)
+		if err != nil {
+			return err
+		}
+	} else {
+		// Update the globs_time file if there were no changed globs so that we don't
+		// rerun globs in the future that we just saw didn't change.
+		err = os.WriteFile(
+			finalOutFile+".globs_time",
 			[]byte(fmt.Sprintf("%d\n", globCheckStartTime)),
 			0666,
 		)
@@ -1023,23 +913,5 @@ func loadSoongBuildMetrics(ctx Context, config Config, oldTimestamp time.Time) {
 			}
 			ctx.Tracer.CountersAtTime(group.GetName(), ctx.Thread, timestamp, counters)
 		}
-	}
-}
-
-func runMicrofactory(ctx Context, config Config, name string, pkg string, mapping map[string]string) {
-	e := ctx.BeginTrace(metrics.RunSoong, name)
-	defer e.End()
-	cfg := microfactory.Config{TrimPath: absPath(ctx, ".")}
-	for pkgPrefix, pathPrefix := range mapping {
-		cfg.Map(pkgPrefix, pathPrefix)
-	}
-
-	exePath := filepath.Join(config.SoongOutDir(), name)
-	dir := filepath.Dir(exePath)
-	if err := os.MkdirAll(dir, 0777); err != nil {
-		ctx.Fatalf("cannot create %s: %s", dir, err)
-	}
-	if _, err := microfactory.Build(&cfg, exePath, pkg); err != nil {
-		ctx.Fatalf("failed to build %s: %s", name, err)
 	}
 }
