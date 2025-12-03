@@ -187,18 +187,15 @@ func (b *OverridableModuleBase) GetOverriddenBy() string {
 func (b *OverridableModuleBase) OverridablePropertiesDepsMutator(ctx BottomUpMutatorContext) {
 }
 
-// Mutators for override/overridable modules. All the fun happens in these functions. It is critical
-// to keep them in this order and not put any order mutators between them.
-func RegisterOverridePostDepsMutators(ctx RegisterMutatorsContext) {
+func RegisterOverrideDepsPostDepsMutators(ctx RegisterMutatorsContext) {
 	ctx.BottomUp("override_deps", overrideModuleDepsMutator)
 	ctx.InfoBasedTransition("override", NewGenericTransitionMutatorAdapter(&overrideTransitionMutator{}))
 	// overridableModuleDepsMutator calls OverridablePropertiesDepsMutator so that overridable modules can
 	// add deps from overridable properties.
 	ctx.BottomUp("overridable_deps", overridableModuleDepsMutator)
-	// Because overridableModuleDepsMutator is run after PrebuiltPostDepsMutator,
-	// prebuilt's ReplaceDependencies doesn't affect to those deps added by overridable properties.
-	// By running PrebuiltPostDepsMutator again after overridableModuleDepsMutator, deps via overridable properties
-	// can be replaced with prebuilts.
+}
+
+func RegisterReplaceDepsPostDepsMutators(ctx RegisterMutatorsContext) {
 	ctx.BottomUp("replace_deps_on_prebuilts_for_overridable_deps_again", PrebuiltPostDepsMutator).UsesReplaceDependencies()
 	ctx.BottomUp("replace_deps_on_override", replaceDepsOnOverridingModuleMutator).UsesReplaceDependencies()
 }
@@ -217,6 +214,9 @@ var overrideBaseDepTag overrideBaseDependencyTag
 func (tag overrideBaseDependencyTag) ReplaceSourceWithPrebuilt() bool {
 	return false
 }
+
+// TODO(b/465840743): Enable the visibility enforcement for overrideBaseDependencyTag dependency.
+func (tag overrideBaseDependencyTag) ExcludeFromVisibilityEnforcement() {}
 
 // Adds dependency on the base module to the overriding module so that they can be visited in the
 // next phase.

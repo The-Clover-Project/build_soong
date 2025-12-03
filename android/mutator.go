@@ -163,9 +163,29 @@ var preDeps = []RegisterMutatorFunc{
 var postDeps = []RegisterMutatorFunc{
 	registerPathDepsMutator,
 	RegisterPrebuiltsPostDepsMutators,
-	RegisterVisibilityRuleEnforcer,
 	registerNeverallowMutator,
-	RegisterOverridePostDepsMutators,
+
+	// Mutators for override/overridable modules. All the fun happens in these functions.
+	// It is critical to keep them in this order and not put any order mutators between them.
+	// We group Override and Visibility logic in this anonymous function to enforce that atomicity
+	// and prevent accidental reordering or injections during registration.
+	func(ctx RegisterMutatorsContext) {
+		RegisterOverrideDepsPostDepsMutators(ctx)
+
+		// The VisibilityRuleEnforcer must run before PrebuiltPostDepsMutator and
+		// replaceDepsOnOverridingModuleMutator.
+		// Visibility checks are strictly enforced on direct dependencies only.
+		// If run later, the mutators might mistakenly check visibility on
+		// transitive dependencies that have been promoted.
+		RegisterVisibilityRuleEnforcer(ctx)
+
+		// Because overridableModuleDepsMutator is run after PrebuiltPostDepsMutator,
+		// prebuilt's ReplaceDependencies doesn't affect to those deps added by
+		// overridable properties. By running PrebuiltPostDepsMutator again after
+		// overridableModuleDepsMutator, deps via overridable properties
+		// can be replaced with prebuilts.
+		RegisterReplaceDepsPostDepsMutators(ctx)
+	},
 }
 
 var postApex = []RegisterMutatorFunc{}

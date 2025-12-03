@@ -770,6 +770,12 @@ type dependencyTag struct {
 	installable bool
 }
 
+type excludeFromVisibilityEnforcementDependencyTag struct {
+	dependencyTag
+}
+
+func (e excludeFromVisibilityEnforcementDependencyTag) ExcludeFromVisibilityEnforcement() {}
+
 func (d *dependencyTag) SdkMemberType(_ android.ModuleContext, _ android.ModuleProxy) android.SdkMemberType {
 	return d.memberType
 }
@@ -801,11 +807,12 @@ var (
 	fsTag          = &dependencyTag{name: "filesystem", payload: true}
 	bcpfTag        = &dependencyTag{name: "bootclasspathFragment", payload: true, sourceOnly: true, memberType: java.BootclasspathFragmentSdkMemberType}
 	// The dexpreopt artifacts of apex system server jars are installed onto system image.
-	sscpfTag         = &dependencyTag{name: "systemserverclasspathFragment", payload: true, sourceOnly: true, memberType: java.SystemServerClasspathFragmentSdkMemberType, installable: true}
-	compatConfigTag  = &dependencyTag{name: "compatConfig", payload: true, sourceOnly: true, memberType: java.CompatConfigSdkMemberType}
-	javaLibTag       = &dependencyTag{name: "javaLib", payload: true}
-	jniLibTag        = &dependencyTag{name: "jniLib", payload: true}
-	keyTag           = &dependencyTag{name: "key"}
+	sscpfTag        = &dependencyTag{name: "systemserverclasspathFragment", payload: true, sourceOnly: true, memberType: java.SystemServerClasspathFragmentSdkMemberType, installable: true}
+	compatConfigTag = &dependencyTag{name: "compatConfig", payload: true, sourceOnly: true, memberType: java.CompatConfigSdkMemberType}
+	javaLibTag      = &dependencyTag{name: "javaLib", payload: true}
+	jniLibTag       = &dependencyTag{name: "jniLib", payload: true}
+	//TODO(b/465840743): Enable the visibility enforcement for keyTag dependency.
+	keyTag           = &excludeFromVisibilityEnforcementDependencyTag{dependencyTag{name: "key"}}
 	prebuiltTag      = &dependencyTag{name: "prebuilt", payload: true}
 	rroTag           = &dependencyTag{name: "rro", payload: true}
 	sharedLibTag     = &dependencyTag{name: "sharedLib", payload: true}
