@@ -28,6 +28,7 @@ func TestCoverageFlags(t *testing.T) {
 			name: "libfoo_cov",
 			srcs: ["foo.rs"],
 			crate_name: "foo",
+			split_all_variants: true,
 		}
 		rust_binary {
 			name: "fizz_cov",
@@ -43,6 +44,7 @@ func TestCoverageFlags(t *testing.T) {
 			srcs: ["foo.rs"],
 			crate_name: "bar",
 			native_coverage: false,
+			split_all_variants: true,
 		}`)
 
 	// Make sure native_coverage: false isn't creating a coverage variant.

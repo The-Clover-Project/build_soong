@@ -286,7 +286,10 @@ func (v variationTransitionMutatorAdapter) Split(ctx BaseModuleContext) []bluepr
 	for _, variation := range variations {
 		transitionInfos = append(transitionInfos, variationTransitionInfo{variation})
 	}
-	return transitionInfos
+	if ctx.Module().SplitAllVariants() {
+		transitionInfos = append(transitionInfos, v.SplitOnDemand(ctx)...)
+	}
+	return FirstUnique(transitionInfos)
 }
 
 func (v variationTransitionMutatorAdapter) SplitOnDemand(ctx BaseModuleContext) []blueprint.TransitionInfo {
@@ -358,7 +361,10 @@ func (g *genericTransitionMutatorAdapter[T]) Split(ctx BaseModuleContext) []blue
 	for _, transitionInfo := range transitionInfos {
 		bpTransitionInfos = append(bpTransitionInfos, transitionInfo)
 	}
-	return bpTransitionInfos
+	if ctx.Module().SplitAllVariants() {
+		bpTransitionInfos = append(bpTransitionInfos, g.SplitOnDemand(ctx)...)
+	}
+	return FirstUnique(bpTransitionInfos)
 }
 
 func (g *genericTransitionMutatorAdapter[T]) SplitOnDemand(ctx BaseModuleContext) []blueprint.TransitionInfo {

@@ -526,37 +526,40 @@ type ccLibraryProperties struct {
 	Min_sdk_version          *string
 	Cflags                   []string
 	Ldflags                  []string
+	Split_all_variants       *bool
 }
 
 type javaLibraryProperties struct {
-	Name              *string
-	Srcs              []string
-	Soc_specific      *bool
-	Device_specific   *bool
-	Product_specific  *bool
-	Required          []string
-	Sdk_version       *string
-	Installable       *bool
-	Libs              []string
-	Stem              *string
-	SyspropPublicStub string
-	Apex_available    []string
-	Min_sdk_version   *string
+	Name               *string
+	Srcs               []string
+	Soc_specific       *bool
+	Device_specific    *bool
+	Product_specific   *bool
+	Required           []string
+	Sdk_version        *string
+	Installable        *bool
+	Libs               []string
+	Stem               *string
+	SyspropPublicStub  string
+	Apex_available     []string
+	Min_sdk_version    *string
+	Split_all_variants *bool
 }
 
 type rustLibraryProperties struct {
-	Name              *string
-	Sysprop_srcs      []string `android:"path"`
-	Scope             string
-	Check_api         *string
-	Srcs              proptools.Configurable[[]string]
-	Installable       *bool
-	Crate_name        string
-	Rustlibs          proptools.Configurable[[]string]
-	Vendor_available  *bool
-	Product_available *bool
-	Apex_available    []string
-	Min_sdk_version   *string
+	Name               *string
+	Sysprop_srcs       []string `android:"path"`
+	Scope              string
+	Check_api          *string
+	Srcs               proptools.Configurable[[]string]
+	Installable        *bool
+	Crate_name         string
+	Rustlibs           proptools.Configurable[[]string]
+	Vendor_available   *bool
+	Product_available  *bool
+	Apex_available     []string
+	Min_sdk_version    *string
+	Split_all_variants *bool
 }
 
 func syspropLibraryHook(ctx android.LoadHookContext, m *syspropLibrary) {
@@ -624,6 +627,7 @@ func syspropLibraryHook(ctx android.LoadHookContext, m *syspropLibrary) {
 	ccProps.Min_sdk_version = m.properties.Cpp.Min_sdk_version
 	ccProps.Cflags = m.properties.Cpp.Cflags
 	ccProps.Ldflags = m.properties.Cpp.Ldflags
+	ccProps.Split_all_variants = proptools.BoolPtr(m.SplitAllVariants())
 	ctx.CreateModule(cc.LibraryFactory, &ccProps)
 
 	scope := "internal"
@@ -657,17 +661,18 @@ func syspropLibraryHook(ctx android.LoadHookContext, m *syspropLibrary) {
 	}
 
 	ctx.CreateModule(java.LibraryFactory, &javaLibraryProperties{
-		Name:              proptools.StringPtr(m.BaseModuleName()),
-		Srcs:              []string{":" + m.javaGenModuleName()},
-		Soc_specific:      proptools.BoolPtr(ctx.SocSpecific()),
-		Device_specific:   proptools.BoolPtr(ctx.DeviceSpecific()),
-		Product_specific:  proptools.BoolPtr(ctx.ProductSpecific()),
-		Installable:       m.properties.Installable,
-		Sdk_version:       proptools.StringPtr("core_current"),
-		Libs:              []string{javaSyspropStub},
-		SyspropPublicStub: publicStub,
-		Apex_available:    m.ApexProperties.Apex_available,
-		Min_sdk_version:   m.properties.Java.Min_sdk_version,
+		Name:               proptools.StringPtr(m.BaseModuleName()),
+		Srcs:               []string{":" + m.javaGenModuleName()},
+		Soc_specific:       proptools.BoolPtr(ctx.SocSpecific()),
+		Device_specific:    proptools.BoolPtr(ctx.DeviceSpecific()),
+		Product_specific:   proptools.BoolPtr(ctx.ProductSpecific()),
+		Installable:        m.properties.Installable,
+		Sdk_version:        proptools.StringPtr("core_current"),
+		Libs:               []string{javaSyspropStub},
+		SyspropPublicStub:  publicStub,
+		Apex_available:     m.ApexProperties.Apex_available,
+		Min_sdk_version:    m.properties.Java.Min_sdk_version,
+		Split_all_variants: proptools.BoolPtr(m.SplitAllVariants()),
 	})
 
 	if publicStub != "" {
@@ -679,12 +684,13 @@ func syspropLibraryHook(ctx android.LoadHookContext, m *syspropLibrary) {
 		})
 
 		ctx.CreateModule(java.LibraryFactory, &javaLibraryProperties{
-			Name:        proptools.StringPtr(publicStub),
-			Srcs:        []string{":" + m.javaGenPublicStubName()},
-			Installable: proptools.BoolPtr(false),
-			Sdk_version: proptools.StringPtr("core_current"),
-			Libs:        []string{javaSyspropStub},
-			Stem:        proptools.StringPtr(m.BaseModuleName()),
+			Name:               proptools.StringPtr(publicStub),
+			Srcs:               []string{":" + m.javaGenPublicStubName()},
+			Installable:        proptools.BoolPtr(false),
+			Sdk_version:        proptools.StringPtr("core_current"),
+			Libs:               []string{javaSyspropStub},
+			Stem:               proptools.StringPtr(m.BaseModuleName()),
+			Split_all_variants: proptools.BoolPtr(m.SplitAllVariants()),
 		})
 	}
 
@@ -700,10 +706,11 @@ func syspropLibraryHook(ctx android.LoadHookContext, m *syspropLibrary) {
 			"liblog_rust",
 			"librustutils",
 		}),
-		Vendor_available:  m.properties.Vendor_available,
-		Product_available: m.properties.Product_available,
-		Apex_available:    m.ApexProperties.Apex_available,
-		Min_sdk_version:   proptools.StringPtr("29"),
+		Vendor_available:   m.properties.Vendor_available,
+		Product_available:  m.properties.Product_available,
+		Apex_available:     m.ApexProperties.Apex_available,
+		Min_sdk_version:    proptools.StringPtr("29"),
+		Split_all_variants: proptools.BoolPtr(m.SplitAllVariants()),
 	}
 	ctx.CreateModule(syspropRustGenFactory, &rustProps)
 

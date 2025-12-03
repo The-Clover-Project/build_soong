@@ -54,6 +54,7 @@ func TestRustAconfigLibrary(t *testing.T) {
 				name: "libmy_rust_aconfig_library",
 				crate_name: "my_rust_aconfig_library",
 				aconfig_declarations: "my_aconfig_declarations",
+				split_all_variants: true,
 			}
 		`))
 

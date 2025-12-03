@@ -139,6 +139,8 @@ type Module interface {
 	UseGenericConfig() bool
 
 	NoFullInstall() bool
+
+	SplitAllVariants() bool
 }
 
 // Qualified id for a module
@@ -540,6 +542,10 @@ type commonProperties struct {
 
 	// If this property is set to true, this module will not be built on checkbuilds.
 	Unchecked_module *bool
+
+	// If this property is set to true, all supported variants of the module will be created.
+	// Primarily intended for use in unit tests.
+	Split_all_variants *bool
 }
 
 // Properties common to all modules inheriting from ModuleBase. Unlike commonProperties, these
@@ -1333,6 +1339,10 @@ func (m *ModuleBase) IsCommonOSVariant() bool {
 
 func (m *ModuleBase) NoFullInstall() bool {
 	return proptools.Bool(m.commonProperties.No_full_install)
+}
+
+func (m *ModuleBase) SplitAllVariants() bool {
+	return proptools.Bool(m.commonProperties.Split_all_variants)
 }
 
 // supportsTarget returns true if the given Target is supported by the current module.

@@ -981,7 +981,7 @@ func validateLibraryStem(ctx BaseModuleContext, filename string, crate_name stri
 
 type libraryTransitionMutator struct{}
 
-func (libraryTransitionMutator) Split(ctx android.BaseModuleContext) []string {
+func (libraryTransitionMutator) split(ctx android.BaseModuleContext) []string {
 	m, ok := ctx.Module().(*Module)
 	if !ok || m.compiler == nil {
 		return []string{""}
@@ -1018,8 +1018,21 @@ func (libraryTransitionMutator) Split(ctx android.BaseModuleContext) []string {
 	return variants
 }
 
-func (libraryTransitionMutator) SplitOnDemand(ctx android.BaseModuleContext) []string {
-	return nil
+func (l libraryTransitionMutator) Split(ctx android.BaseModuleContext) []string {
+	allSplits := l.split(ctx)
+	if ctx.Config().GetBuildFlagBool("RELEASE_SOONG_RUST_VARIANT_ON_DEMAND") {
+		return allSplits[0:1]
+	} else {
+		return allSplits
+	}
+}
+func (l libraryTransitionMutator) SplitOnDemand(ctx android.BaseModuleContext) []string {
+	allSplits := l.split(ctx)
+	if len(allSplits) <= 1 || !ctx.Config().GetBuildFlagBool("RELEASE_SOONG_RUST_VARIANT_ON_DEMAND") {
+		return nil
+	} else {
+		return allSplits[1:]
+	}
 }
 
 func (libraryTransitionMutator) OutgoingTransition(ctx android.OutgoingTransitionContext, sourceVariation string) string {
@@ -1103,7 +1116,7 @@ func (libraryTransitionMutator) Mutate(ctx android.BottomUpMutatorContext, varia
 
 type libstdTransitionMutator struct{}
 
-func (libstdTransitionMutator) Split(ctx android.BaseModuleContext) []string {
+func (libstdTransitionMutator) split(ctx android.BaseModuleContext) []string {
 	if m, ok := ctx.Module().(*Module); ok && m.compiler != nil && !m.compiler.Disabled() {
 		// Only create a variant if a library is actually being built.
 		if library, ok := m.compiler.(libraryInterface); ok {
@@ -1135,8 +1148,22 @@ func (libstdTransitionMutator) Split(ctx android.BaseModuleContext) []string {
 	return []string{""}
 }
 
-func (libstdTransitionMutator) SplitOnDemand(ctx android.BaseModuleContext) []string {
-	return nil
+func (l libstdTransitionMutator) Split(ctx android.BaseModuleContext) []string {
+	allSplits := l.split(ctx)
+	if ctx.Config().GetBuildFlagBool("RELEASE_SOONG_RUST_VARIANT_ON_DEMAND") {
+		return allSplits[0:1]
+	} else {
+		return allSplits
+	}
+}
+
+func (l libstdTransitionMutator) SplitOnDemand(ctx android.BaseModuleContext) []string {
+	allSplits := l.split(ctx)
+	if len(allSplits) <= 1 || !ctx.Config().GetBuildFlagBool("RELEASE_SOONG_RUST_VARIANT_ON_DEMAND") {
+		return nil
+	} else {
+		return allSplits[1:]
+	}
 }
 
 func (libstdTransitionMutator) OutgoingTransition(ctx android.OutgoingTransitionContext, sourceVariation string) string {
