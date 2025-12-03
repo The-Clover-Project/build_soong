@@ -39,6 +39,7 @@ all_aconfig_declarations {
     visibility: [
         "//vendor:__subpackages__", // for vendor extensions
         "//frameworks/base/ravenwood",
+        "//frameworks/base/tools/aapt2/tools",
     ],
     api_signature_files: [
         ":frameworks-base-api-checked-in-current.txt",
