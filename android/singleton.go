@@ -157,9 +157,8 @@ type SingletonContext interface {
 	OtherModuleNamespace(module ModuleOrProxy) *Namespace
 
 	// GetModuleProxy returns a module with the given name and variations, from the root namespace.
-	// It will panic if the module doesn't exist, intentionally, to discourage use of this
-	// function to detect if modules exist or not.
-	GetModuleProxy(moduleName string, variations []blueprint.Variation) ModuleProxy
+	// It may return a nil ModuleProxy if the module doesn't exist.
+	GetModuleProxy(moduleName string, variant []blueprint.Variation) ModuleProxy
 
 	// addSubninja adds a ninja file to include with subninja. This should
 	// only ever be used inside bootstrap or the android package to handle
@@ -506,8 +505,8 @@ func (s *singletonContextAdaptor) OtherModuleNamespace(module ModuleOrProxy) *Na
 	return s.SingletonContext.OtherModuleNamespace(module).(*Namespace)
 }
 
-func (s *singletonContextAdaptor) GetModuleProxy(moduleName string, variations []blueprint.Variation) ModuleProxy {
-	return ModuleProxy{s.SingletonContext.GetModuleProxy(moduleName, variations)}
+func (s *singletonContextAdaptor) GetModuleProxy(moduleName string, variant []blueprint.Variation) ModuleProxy {
+	return ModuleProxy{s.SingletonContext.GetModuleProxy(moduleName, variant)}
 }
 
 func (s *singletonContextAdaptor) addSubninja(file string) {
