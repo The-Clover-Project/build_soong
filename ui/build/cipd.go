@@ -186,7 +186,7 @@ func startCIPDProxyServer(ctx Context, config Config) *cipdProxy {
 				log.Fatalf("unexpected unix socket returned by cipd proxy: %s, expected unix://%s", proxyUrl, unixsock)
 			}
 			config.environ.Set(cipdProxyUrlKey, proxyUrl)
-			ctx.Verbosef("Started CIPD proxy listening on", proxyUrl)
+			ctx.Verbosef("Started CIPD proxy listening on %s", proxyUrl)
 			break
 		}
 	}
