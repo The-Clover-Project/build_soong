@@ -87,6 +87,10 @@ message TestWorkflowInline {
 message TestSchedulingPlan {
   // Name of the test_scheduling_plan module. Unique across scheduling plans.
   string name = 1;
+  // Test Scheduling Plans that relate to this plan and form a grouping.
+	// Restricted to "presubmit" and "postsubmit" test_scheduling_plan modules
+	// and not generally available for regular usage.
+  repeated string related_plans = 2;
 }
 
 // TestExecutionPlan details the tests and arguments to be ran

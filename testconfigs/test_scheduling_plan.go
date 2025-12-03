@@ -29,9 +29,30 @@ type TestSchedulingPlan struct {
 //go:generate go run ../../blueprint/gobtools/codegen
 
 // @auto-generate: gob
-type TestSchedulingPlanProperties struct{}
+type TestSchedulingPlanProperties struct {
+	// Test Scheduling Plans that relate to this plan and form a grouping.
+	// Restricted to "presubmit" and "postsubmit" test_scheduling_plan modules
+	// and not generally available for regular usage.
+	Related_plans []string
+}
 
-func (plan *TestSchedulingPlanProperties) Validate(ctx android.ModuleContext) {}
+func (plan *TestSchedulingPlanProperties) Validate(ctx android.ModuleContext) {
+	if len(plan.Related_plans) > 0 {
+		switch ctx.ModuleName() {
+		case "presubmit", "postsubmit":
+			// Valid
+		default:
+			ctx.ModuleErrorf("field `Related_plans` is restricted to the presubmit and postsubmit test scheduling plans")
+			return
+		}
+	}
+
+	for _, relatedPlan := range plan.Related_plans {
+		if !ctx.OtherModuleExists(relatedPlan) {
+			ctx.ModuleErrorf("failed to find related test_scheduling_plan %s", relatedPlan)
+		}
+	}
+}
 
 func (plan *TestSchedulingPlanProperties) IsEmpty() bool {
 	return true
