@@ -52,6 +52,7 @@ func TestSdkMutator(t *testing.T) {
 			shared_libs: ["libsdk"],
 			sdk_version: "current",
 			stl: "libc++",
+			split_all_variants: true,
 		}
 	`
 
