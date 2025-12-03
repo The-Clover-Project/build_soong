@@ -558,6 +558,9 @@ type Module struct {
 	// list of unique .java and .kt source files
 	uniqueSrcFiles android.Paths
 
+	// list of .aidl source files
+	aidlSrcs android.Paths
+
 	// list of srcjars that was passed to javac
 	compiledSrcJars android.Paths
 
@@ -1297,6 +1300,7 @@ func (j *Module) compile(ctx android.ModuleContext) *JavaInfo {
 	}
 
 	aidlSrcs := srcFiles.FilterByExt(".aidl")
+	j.aidlSrcs = aidlSrcs
 	flags.aidlFlags, flags.aidlDeps = j.aidlFlags(ctx, deps.aidlPreprocess, deps.aidlIncludeDirs, aidlSrcs)
 
 	nonGeneratedSrcJars := srcFiles.FilterByExt(".srcjar")
@@ -2583,6 +2587,7 @@ func (j *Module) IDEInfo(ctx android.BaseModuleContext, dpInfo *android.IdeInfo)
 		dpInfo.Jars = append(dpInfo.Jars, j.headerJarFile.String())
 	}
 	dpInfo.Srcs = append(dpInfo.Srcs, j.expandIDEInfoCompiledSrcs...)
+	dpInfo.Aidl_srcs = append(dpInfo.Aidl_srcs, j.aidlSrcs.Strings()...)
 	dpInfo.SrcJars = append(dpInfo.SrcJars, j.compiledSrcJars.Strings()...)
 	dpInfo.SrcJars = append(dpInfo.SrcJars, j.annoSrcJars.Strings()...)
 	dpInfo.Deps = append(dpInfo.Deps, j.CompilerDeps()...)
