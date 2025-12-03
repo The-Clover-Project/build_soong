@@ -3383,7 +3383,7 @@ func outputFilesForModule(ctx PathContext, module ModuleOrProxy, tag string) (Pa
 		}
 	}
 
-	return nil, fmt.Errorf("module %q is not a SourceFileProducer or having valid output file for tag %q", pathContextName(ctx, module), tag)
+	return nil, fmt.Errorf("module %q is not a SourceFileProducer or have a valid output file for tag %q", pathContextName(ctx, module), tag)
 }
 
 func GetOutputFiles(ctx OtherModuleProviderContext, module ModuleOrProxy) *OutputFilesInfo {
