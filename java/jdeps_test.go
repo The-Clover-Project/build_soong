@@ -124,6 +124,29 @@ func TestCollectJavaLibraryPropertiesAddAidlSrcs(t *testing.T) {
 	}
 }
 
+func TestCollectJavaLibraryPropertiesAddProtoSrcs(t *testing.T) {
+	t.Parallel()
+	ctx, _ := testJava(t,
+		`
+		filegroup {
+			name: "my_proto_files",
+			srcs: ["Foo.proto", "Bar.proto"],
+		}
+
+		java_library {
+			name: "javalib",
+			srcs: [":my_proto_files", "Baz.java"],
+		}
+	`)
+	module := ctx.ModuleForTests(t, "javalib", "android_common").Module().(*Library)
+	dpInfo := getIdeInfo(ctx, module)
+
+	expected := []string{"Foo.proto", "Bar.proto"}
+	if !reflect.DeepEqual(dpInfo.Proto_srcs, expected) {
+		t.Errorf("Library.IDEInfo() Proto_srcs = %v, want %v", dpInfo.Proto_srcs, expected)
+	}
+}
+
 func TestCollectJavaLibraryWithJarJarRules(t *testing.T) {
 	t.Parallel()
 	ctx, _ := testJava(t,

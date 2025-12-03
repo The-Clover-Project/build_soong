@@ -561,6 +561,9 @@ type Module struct {
 	// list of .aidl source files
 	aidlSrcs android.Paths
 
+	// list of .proto source files
+	protoSrcs android.Paths
+
 	// list of srcjars that was passed to javac
 	compiledSrcJars android.Paths
 
@@ -1292,6 +1295,7 @@ func (j *Module) compile(ctx android.ModuleContext) *JavaInfo {
 	}
 	if hasSrcExt(srcFiles.Strings(), ".proto") {
 		flags = protoFlags(ctx, &j.properties, &j.protoProperties, flags)
+		j.protoSrcs = srcFiles.FilterByExt(".proto")
 	}
 
 	kotlinCommonSrcFiles := android.PathsForModuleSrcExcludes(ctx, j.properties.Common_srcs, j.properties.Exclude_common_srcs)
@@ -2588,6 +2592,7 @@ func (j *Module) IDEInfo(ctx android.BaseModuleContext, dpInfo *android.IdeInfo)
 	}
 	dpInfo.Srcs = append(dpInfo.Srcs, j.expandIDEInfoCompiledSrcs...)
 	dpInfo.Aidl_srcs = append(dpInfo.Aidl_srcs, j.aidlSrcs.Strings()...)
+	dpInfo.Proto_srcs = append(dpInfo.Proto_srcs, j.protoSrcs.Strings()...)
 	dpInfo.SrcJars = append(dpInfo.SrcJars, j.compiledSrcJars.Strings()...)
 	dpInfo.SrcJars = append(dpInfo.SrcJars, j.annoSrcJars.Strings()...)
 	dpInfo.Deps = append(dpInfo.Deps, j.CompilerDeps()...)

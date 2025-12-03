@@ -3657,6 +3657,7 @@ type IdeInfo struct {
 	Deps              []string `json:"dependencies,omitempty"`
 	Srcs              []string `json:"srcs,omitempty"`
 	Aidl_srcs         []string `json:"aidl_srcs,omitempty"`
+	Proto_srcs        []string `json:"proto_srcs,omitempty"`
 	Aidl_include_dirs []string `json:"aidl_include_dirs,omitempty"`
 	Jarjar_rules      []string `json:"jarjar_rules,omitempty"`
 	Jars              []string `json:"jars,omitempty"`
@@ -3679,6 +3680,7 @@ func (i IdeInfo) Merge(other *IdeInfo) IdeInfo {
 		Deps:              mergeStringLists(i.Deps, other.Deps),
 		Srcs:              mergeStringLists(i.Srcs, other.Srcs),
 		Aidl_srcs:         mergeStringLists(i.Aidl_srcs, other.Aidl_srcs),
+		Proto_srcs:        mergeStringLists(i.Proto_srcs, other.Proto_srcs),
 		Aidl_include_dirs: mergeStringLists(i.Aidl_include_dirs, other.Aidl_include_dirs),
 		Jarjar_rules:      mergeStringLists(i.Jarjar_rules, other.Jarjar_rules),
 		Jars:              mergeStringLists(i.Jars, other.Jars),
