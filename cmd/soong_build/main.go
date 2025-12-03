@@ -352,6 +352,15 @@ func main() {
 	ctx.SetIncrementalAnalysis(incremental)
 	ctx.SetIncrementalDebugFile(cmdlineArgs.IncrementalDebugFile)
 
+	if configuration.Getenv("SOONG_SPLIT_ALL_VARIANTS") == "true" ||
+		configuration.Getenv("RUN_BUILD_TESTS") == "true" ||
+		// Soong does not have sufficient information to determine if an androidmk module
+		// has a dependency on a non primary soong module variant.
+		// Analyze all variants in soong+make builds.
+		cmdlineArgs.KatiEnabled {
+		ctx.SetSplitAllVariants(true)
+	}
+
 	ctx.Register()
 	finalOutputFile, ninjaDeps := runSoongOnlyBuild(ctx)
 
