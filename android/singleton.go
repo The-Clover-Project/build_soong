@@ -160,6 +160,11 @@ type SingletonContext interface {
 	// It will panic if the module doesn't exist, intentionally, to discourage use of this
 	// function to detect if modules exist or not.
 	GetModuleProxy(moduleName string, variations []blueprint.Variation) ModuleProxy
+
+	// addSubninja adds a ninja file to include with subninja. This should
+	// only ever be used inside bootstrap or the android package to handle
+	// phony, dist or glob rules.
+	addSubninja(file string)
 }
 
 type singletonAdaptor struct {
@@ -503,6 +508,10 @@ func (s *singletonContextAdaptor) OtherModuleNamespace(module ModuleOrProxy) *Na
 
 func (s *singletonContextAdaptor) GetModuleProxy(moduleName string, variations []blueprint.Variation) ModuleProxy {
 	return ModuleProxy{s.SingletonContext.GetModuleProxy(moduleName, variations)}
+}
+
+func (s *singletonContextAdaptor) addSubninja(file string) {
+	s.SingletonContext.AddSubninja(file)
 }
 
 func SetSingletonProvider[K any](ctx SingletonContext, provider blueprint.ProviderKey[K], value K) {

@@ -220,14 +220,6 @@ function compare_incremental_files() {
   local dir_full=$1; shift
   local dir_incremental=$1; shift
   count=0
-  for file_before in ${dir_full}/*.mk; do
-    file_after="${dir_incremental}/$(basename "$file_before")"
-    assert_files_equal $file_before $file_after
-    ((count++)) || true
-  done
-  echo "Compared $count mk files"
-
-  count=0
   for file_before in ${dir_full}/*.ninja*; do
     basename=$(basename "$file_before")
     file_after="${dir_incremental}/${basename}"
@@ -278,12 +270,12 @@ function compare_files_parity() {
 function compare_incremental_and_full_analysis() {
     run_soong SOONG_INCREMENTAL_ANALYSIS=true "$@"
     mkdir incremental
-    cp -pr out/soong/*.mk out/soong/build.test_arm64*.ninja* incremental
+    cp -pr out/soong/build.test_arm64*.ninja* incremental
 
     touch Android.bp
     run_soong SOONG_INCREMENTAL_ANALYSIS=false "$@"
     mkdir full
-    cp -pr out/soong/*.mk out/soong/build.test_arm64*.ninja* full
+    cp -pr out/soong/build.test_arm64*.ninja* full
 
     compare_incremental_files full incremental
 }

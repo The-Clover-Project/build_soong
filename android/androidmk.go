@@ -622,17 +622,7 @@ func (p *soongOnlyAndroidMkSingleton) IncrementalSupported() bool {
 // TODO(b/397766191): Change the signature to take ModuleProxy
 // Please only access the module's internal data through providers.
 func (so *soongOnlyAndroidMkSingleton) soongOnlyBuildActions(ctx SingletonContext, mods []ModuleOrProxy) {
-	allDistContributions, moduleInfoJSONs := getSoongOnlyDataFromMods(ctx, mods)
-
-	var singletonDists []dist
-	ctx.VisitAllSingletons(func(s blueprint.SingletonProxy) {
-		if info, ok := OtherSingletonProvider(ctx, s, SingletonDistInfoProvider); ok {
-			singletonDists = append(singletonDists, info.Dists...)
-		}
-	})
-	if contribution := distsToDistContributions(singletonDists); contribution != nil {
-		allDistContributions = append(allDistContributions, *contribution)
-	}
+	moduleInfoJSONs := getSoongOnlyDataFromMods(ctx, mods)
 
 	// Build module-info.json. Only in builds with HasDeviceProduct(), as we need a named
 	// device to have a TARGET_OUT folder.
@@ -650,97 +640,15 @@ func (so *soongOnlyAndroidMkSingleton) soongOnlyBuildActions(ctx SingletonContex
 		builder.Build("merge_module_info_json", "merge module info json")
 		ctx.Phony("module-info", moduleInfoJSONPath)
 		ctx.Phony("droidcore-unbundled", moduleInfoJSONPath)
-		allDistContributions = append(allDistContributions, distContributions{
-			copiesForGoals: []*copiesForGoals{{
-				goals: []string{"general-tests", "droidcore-unbundled", "haiku", "module-info"},
-				copies: []distCopy{{
-					from: moduleInfoJSONPath,
-					dest: "module-info.json",
-				}},
-			}},
-		})
-	}
-
-	// Build dist.mk for the packaging step to read and generate dist targets
-	distMkFile := absolutePath(filepath.Join(ctx.Config().katiPackageMkDir(), "dist.mk"))
-
-	var goalOutputPairs []string
-	var srcDstPairs []string
-	for _, contributions := range allDistContributions {
-		for _, copiesForGoal := range contributions.copiesForGoals {
-			for _, copy := range copiesForGoal.copies {
-				for _, goal := range copiesForGoal.goals {
-					goalOutputPairs = append(goalOutputPairs, fmt.Sprintf(" %s:%s", goal, copy.dest))
-				}
-				srcDstPairs = append(srcDstPairs, fmt.Sprintf(" %s:%s", copy.from.String(), copy.dest))
-			}
-		}
-	}
-	// There are duplicates in the lists that we need to remove
-	goalOutputPairs = SortedUniqueStrings(goalOutputPairs)
-	srcDstPairs = SortedUniqueStrings(srcDstPairs)
-	var buf strings.Builder
-	buf.WriteString("DIST_SRC_DST_PAIRS :=")
-	for _, srcDstPair := range srcDstPairs {
-		buf.WriteString(srcDstPair)
-	}
-	buf.WriteString("\nDIST_GOAL_OUTPUT_PAIRS :=")
-	for _, goalOutputPair := range goalOutputPairs {
-		buf.WriteString(goalOutputPair)
-	}
-	buf.WriteString("\n")
-
-	writeValueIfChanged(ctx, distMkFile, buf.String())
-}
-
-func writeValueIfChanged(ctx SingletonContext, path string, value string) {
-	if err := os.MkdirAll(filepath.Dir(path), 0777); err != nil {
-		ctx.Errorf("%s\n", err)
-		return
-	}
-	previousValue := ""
-	rawPreviousValue, err := os.ReadFile(path)
-	if err == nil {
-		previousValue = string(rawPreviousValue)
-	}
-
-	if previousValue != value {
-		if err = os.WriteFile(path, []byte(value), 0666); err != nil {
-			ctx.Errorf("Failed to write: %v", err)
-		}
-	}
-}
-
-func distsToDistContributions(dists []dist) *distContributions {
-	if len(dists) == 0 {
-		return nil
-	}
-
-	copyGoals := []*copiesForGoals{}
-	for _, dist := range dists {
-		copyGoals = append(copyGoals, &copiesForGoals{
-			goals:  dist.goals,
-			copies: dist.paths,
-		})
-	}
-
-	return &distContributions{
-		copiesForGoals: copyGoals,
+		ctx.DistForGoals([]string{"general-tests", "droidcore-unbundled", "haiku", "module-info"}, moduleInfoJSONPath)
 	}
 }
 
 // getSoongOnlyDataFromMods gathers data from the given modules needed in soong-only builds.
-// Currently, this is the dist contributions, and the module-info.json contents.
-func getSoongOnlyDataFromMods(ctx fillInEntriesContext, mods []ModuleOrProxy) ([]distContributions, []*ModuleInfoJSON) {
-	var allDistContributions []distContributions
+// Currently, this is the module-info.json contents.
+func getSoongOnlyDataFromMods(ctx fillInEntriesContext, mods []ModuleOrProxy) []*ModuleInfoJSON {
 	var moduleInfoJSONs []*ModuleInfoJSON
 	for _, mod := range mods {
-		if distInfo, ok := OtherModuleProvider(ctx, mod, DistProvider); ok {
-			if contribution := distsToDistContributions(distInfo.Dists); contribution != nil {
-				allDistContributions = append(allDistContributions, *contribution)
-			}
-		}
-
 		commonInfo := OtherModulePointerProviderOrDefault(ctx, mod, CommonModuleInfoProvider)
 		if commonInfo.SkipAndroidMkProcessing {
 			continue
@@ -748,11 +656,8 @@ func getSoongOnlyDataFromMods(ctx fillInEntriesContext, mods []ModuleOrProxy) ([
 		if moduleInfoJSON := commonInfo.ModuleInfoJSON; moduleInfoJSON != nil {
 			moduleInfoJSONs = append(moduleInfoJSONs, moduleInfoJSON.Data...)
 		}
-		if contribution := getDistContributions(ctx, mod); contribution != nil {
-			allDistContributions = append(allDistContributions, *contribution)
-		}
 	}
-	return allDistContributions, moduleInfoJSONs
+	return moduleInfoJSONs
 }
 
 func translateAndroidMk(ctx SingletonContext, absMkFile string, moduleInfoJSONPath WritablePath, mods []ModuleOrProxy) error {
