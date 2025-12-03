@@ -33,6 +33,7 @@ func TestCoverageFlags(t *testing.T) {
 		rust_binary {
 			name: "fizz_cov",
 			srcs: ["foo.rs"],
+			split_all_variants: true,
 		}
         rust_binary {
 			name: "buzzNoCov",
@@ -103,6 +104,7 @@ func TestCoverageDeps(t *testing.T) {
 		rust_binary {
 			name: "fizz",
 			srcs: ["foo.rs"],
+			split_all_variants: true,
 		}`)
 
 	fizz := ctx.ModuleForTests(t, "fizz", "android_arm64_armv8-a_cov").Rule("rustc")
