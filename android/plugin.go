@@ -103,11 +103,9 @@ func (p *pluginSingleton) GenerateBuildActions(ctx SingletonContext) {
 	maybeAddInternalPluginsToAllowlist(ctx)
 
 	disallowedPlugins := map[string]bool{}
-	ctx.VisitAllModuleProxies(func(module ModuleProxy) {
-		if ctx.ModuleName(module) != "soong_build" {
-			return
-		}
-
+	soongBuildModule := ctx.GetModuleProxy("soong_build", ctx.Config().BuildOSTarget.Variations())
+	// Still visit all the variants because we also have a windows variant on the linux build.
+	ctx.VisitAllModuleVariantProxies(soongBuildModule, func(module ModuleProxy) {
 		ctx.VisitDirectDepsProxies(module, func(module ModuleProxy) {
 			if ctx.OtherModuleDependencyTag(module) != bootstrap.PluginDepTag {
 				return
