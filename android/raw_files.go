@@ -22,7 +22,6 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
-	"strings"
 	"testing"
 
 	"github.com/google/blueprint"
@@ -49,86 +48,16 @@ func WriteExecutableFileRuleVerbatim(ctx BuilderContext, outputFile WritablePath
 	writeFileRule(ctx, outputFile, content, false, true, validations)
 }
 
-// tempFile provides a testable wrapper around a file in out/soong/.temp.  It writes to a temporary file when
-// not in tests, but writes to a buffer in memory when used in tests.
-type tempFile struct {
-	// tempFile contains wraps an io.Writer, which will be file if testMode is false, or testBuf if it is true.
-	io.Writer
-
-	file    *os.File
-	testBuf *strings.Builder
-}
-
-func newTempFile(ctx BuilderContext, pattern string, testMode bool) *tempFile {
-	if testMode {
-		testBuf := &strings.Builder{}
-		return &tempFile{
-			Writer:  testBuf,
-			testBuf: testBuf,
-		}
-	} else {
-		f, err := os.CreateTemp(absolutePath(ctx.Config().tempDir()), pattern)
-		if err != nil {
-			panic(fmt.Errorf("failed to open temporary raw file: %w", err))
-		}
-		return &tempFile{
-			Writer: f,
-			file:   f,
-		}
-	}
-}
-
-func (t *tempFile) close() error {
-	if t.file != nil {
-		return t.file.Close()
-	}
-	return nil
-}
-
-func (t *tempFile) name() string {
-	if t.file != nil {
-		return t.file.Name()
-	}
-	return "temp_file_in_test"
-}
-
-func (t *tempFile) rename(to string) {
-	if t.file != nil {
-		os.MkdirAll(filepath.Dir(to), 0777)
-		err := os.Rename(t.file.Name(), to)
-		if err != nil {
-			panic(fmt.Errorf("failed to rename %s to %s: %w", t.file.Name(), to, err))
-		}
-	}
-}
-
-func (t *tempFile) remove() error {
-	if t.file != nil {
-		return os.Remove(t.file.Name())
-	}
-	return nil
-}
-
-func writeContentToTempFileAndHash(ctx BuilderContext, content string, newline bool) (*tempFile, string) {
-	tempFile := newTempFile(ctx, "raw", ctx.Config().captureBuild)
-	defer tempFile.close()
-
-	hash := sha1.New()
-	w := io.MultiWriter(tempFile, hash)
-
-	_, err := io.WriteString(w, content)
+func writeFileRule(ctx BuilderContext, outputFile WritablePath, content string, newline bool, executable bool, validations Paths) {
+	h := sha1.New()
+	_, err := io.WriteString(h, content)
 	if err == nil && newline {
-		_, err = io.WriteString(w, "\n")
+		_, err = io.WriteString(h, "\n")
 	}
 	if err != nil {
-		panic(fmt.Errorf("failed to write to temporary raw file %s: %w", tempFile.name(), err))
+		panic(fmt.Errorf("failed to calculate the hash of the file rule content: %w", err))
 	}
-	return tempFile, hex.EncodeToString(hash.Sum(nil))
-}
-
-func writeFileRule(ctx BuilderContext, outputFile WritablePath, content string, newline bool, executable bool, validations Paths) {
-	// Write the contents to a temporary file while computing its hash.
-	tempFile, hash := writeContentToTempFileAndHash(ctx, content, newline)
+	hash := hex.EncodeToString(h.Sum(nil))
 
 	// Shard the final location of the raw file into a subdirectory based on the first two characters of the
 	// hash to avoid making the raw directory too large and slowing down accesses.
@@ -152,27 +81,42 @@ func writeFileRule(ctx BuilderContext, outputFile WritablePath, content string, 
 	}
 
 	if ctx.Config().captureBuild {
-		// When running tests tempFile won't write to disk, instead store the contents for later retrieval by
-		// ContentFromFileRuleForTests.
-		rawFileInfo.contentForTests = tempFile.testBuf.String()
+		// When running tests the content won't be written to disk, instead store the
+		// contents for later retrieval by ContentFromFileRuleForTests.
+		extraLine := ""
+		if newline {
+			extraLine = "\n"
+		}
+
+		rawFileInfo.contentForTests = content + extraLine
 	}
 
 	rawFileSet := getRawFileSet(ctx.Config())
-	if _, exists := rawFileSet.LoadOrStore(hash, rawFileInfo); exists {
-		// If a raw file with this hash has already been created delete the temporary file.
-		tempFile.remove()
-	} else {
+	if _, exists := rawFileSet.LoadOrStore(hash, rawFileInfo); !exists && !ctx.Config().captureBuild {
 		// If this is the first time this hash has been seen then move it from the temporary directory
 		// to the raw directory.  If the file already exists in the raw directory assume it has the correct
 		// contents.
 		absRawPath := absolutePath(rawPath.String())
 		_, err := os.Stat(absRawPath)
 		if os.IsNotExist(err) {
-			tempFile.rename(absRawPath)
+			dir := filepath.Dir(absRawPath)
+			if err := os.MkdirAll(dir, 0755); err != nil {
+				panic(fmt.Errorf("failed to create directory: %w", err))
+			}
+			rawFile, err := os.Create(absRawPath)
+			if err != nil {
+				panic(fmt.Errorf("failed to open file to write the file rule content: %w", err))
+			}
+			defer rawFile.Close()
+			_, err = io.WriteString(rawFile, content)
+			if err == nil && newline {
+				_, err = io.WriteString(rawFile, "\n")
+			}
+			if err != nil {
+				panic(fmt.Errorf("failed to write the file rule content: %w", err))
+			}
 		} else if err != nil {
 			panic(fmt.Errorf("failed to stat %q: %w", absRawPath, err))
-		} else {
-			tempFile.remove()
 		}
 	}
 
