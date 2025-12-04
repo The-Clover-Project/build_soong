@@ -122,6 +122,7 @@ type aapt struct {
 	transitiveAaptResourcePackagesFile android.Path
 	exportPackage                      android.Path
 	manifestPath                       android.Path
+	originalManifestPath               android.Path
 	proguardOptionsFile                android.Path
 	rTxt                               android.Path
 	rJar                               android.Path
@@ -505,6 +506,7 @@ func (a *aapt) buildActions(ctx android.ModuleContext, opts aaptBuildActionOptio
 		manifestFile := a.aaptProperties.Manifest.GetOrDefault(ctx, "AndroidManifest.xml")
 		manifestFilePath = android.PathForModuleSrc(ctx, manifestFile)
 	}
+	a.originalManifestPath = manifestFilePath
 
 	manifestPath := ManifestFixer(ctx, manifestFilePath, ManifestFixerParams{
 		SdkContext:                     opts.sdkContext,
@@ -1189,6 +1191,9 @@ func (a *aapt) IDEInfo(ctx android.BaseModuleContext, dpInfo *android.IdeInfo) {
 	}
 	dpInfo.Asset_dirs = append(dpInfo.Asset_dirs, a.assetDirs.Strings()...)
 	dpInfo.Resource_dirs = append(dpInfo.Resource_dirs, a.resourceDirs.Strings()...)
+	if a.originalManifestPath != nil {
+		dpInfo.Manifest = a.originalManifestPath.String()
+	}
 }
 
 // android_library builds and links sources into a `.jar` file for the device along with Android resources.

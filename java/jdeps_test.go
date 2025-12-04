@@ -188,6 +188,21 @@ func TestCollectJavaLibraryPropertiesAddModuleType(t *testing.T) {
 	android.AssertStringEquals(t, "IdeInfo.ModuleType should be equal to", "java_library", dpInfo.ModuleType)
 }
 
+func TestCollectJavaLibraryPropertiesAddManifest(t *testing.T) {
+	t.Parallel()
+	ctx, _ := testJava(t, `
+		android_library { name: "androidlib", manifest: "lib/AndroidManifest.xml" }
+		android_app { name: "androidapp", manifest: "app/AndroidManifest.xml", sdk_version: "current" }
+	`)
+	module := ctx.ModuleForTests(t, "androidlib", "android_common").Module().(*AndroidLibrary)
+	dpInfo := getIdeInfo(ctx, module)
+	android.AssertStringEquals(t, "IdeInfo.Manifest should be equal to", "lib/AndroidManifest.xml", dpInfo.Manifest)
+
+	appModule := ctx.ModuleForTests(t, "androidapp", "android_common").Module().(*AndroidApp)
+	appDpInfo := getIdeInfo(ctx, appModule)
+	android.AssertStringEquals(t, "IdeInfo.Manifest should be equal to", "app/AndroidManifest.xml", appDpInfo.Manifest)
+}
+
 func getIdeInfo(ctx android.OtherModuleProviderContext, module android.ModuleOrProxy) android.IdeInfo {
 	if info, ok := android.OtherModuleProvider(ctx, module, android.CommonModuleInfoProvider); ok && info.IdeInfo != nil {
 		return *info.IdeInfo
