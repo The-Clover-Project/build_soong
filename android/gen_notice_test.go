@@ -118,6 +118,7 @@ func TestGenNotice(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			GroupFixturePreparers(
 				PrepareForTestWithGenNotice,
+				PrepareForTestWithHostTools("textnotice", "htmlnotice", "xmlnotice"),
 				FixtureRegisterWithContext(func(ctx RegistrationContext) {
 					ctx.RegisterModuleType("mock_genrule", newMockGenruleModule)
 				}),

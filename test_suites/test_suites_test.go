@@ -23,6 +23,7 @@ func TestBuildTestList(t *testing.T) {
 	t.Parallel()
 	ctx := android.GroupFixturePreparers(
 		prepareForFakeTestSuite,
+		android.PrepareForTestWithHostTools("soong_zip"),
 		android.FixtureRegisterWithContext(func(ctx android.RegistrationContext) {
 			ctx.RegisterParallelSingletonType("testsuites", testSuiteFilesFactory)
 		}),
