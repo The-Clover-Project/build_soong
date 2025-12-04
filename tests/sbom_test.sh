@@ -93,7 +93,7 @@ function test_sbom_aosp_cf_x86_64_phone {
 
   # Test
   # m droid, build sbom later in case additional dependencies might be built and included in partition images.
-  run_soong "${out_dir}" "droid dump.erofs lz4"
+  run_soong "${out_dir}" "droid dump.erofs lz4 cpio"
 
   soong_sbom_out=$out_dir/soong/sbom/$target_product
   product_out=$out_dir/target/product/vsoc_x86_64
@@ -104,15 +104,8 @@ function test_sbom_aosp_cf_x86_64_phone {
   # m sbom
   run_soong "${out_dir}" "sbom"
 
-  # m toybox
-  run_soong "${out_dir}" "toybox"
-
   # Generate installed file list from .img files in PRODUCT_OUT
   dump_erofs=$out_dir/host/linux-x86/bin/dump.erofs
-  lz4=$out_dir/host/linux-x86/bin/lz4
-  function cpio() {
-    "${out_dir}/host/linux-x86/bin/toybox" cpio "$@"
-  }
 
   declare -A diff_excludes
 
@@ -201,24 +194,20 @@ function test_sbom_aosp_cf_x86_64_phone {
     file_list_file="${sbom_test}/sbom-${partition_name}-files.txt"
     files_in_soong_spdx_file="${sbom_test}/sbom-${partition_name}-files-in-soong-spdx.txt"
 
-    # Create a temporary directory to extract the ramdisk contents
-    tmp_ramdisk_dir=$(mktemp -d "${sbom_test}/ramdisk.XXXXXX")
-
-    # Decompress the ramdisk and extract using toybox cpio.
-    # We use a subshell `(...)` to change directory only for the cpio command.
-    (cd "$tmp_ramdisk_dir" && $lz4 -c -d "$f" | cpio -idm 2>/dev/null)
-
-    # toybox cpio does not produce detail like `ls -l`, so we use `find` to list
-    # only regular files (-type f) and symlinks (-type l).
+    # toybox cpio does not produce detail like `ls -l`, so we extract files from the image file
+    # and use `find` to list only regular files (-type f) and symlinks (-type l).
     #   -mindepth 1: Exclude the top-level directory itself.
-    #   -printf '%P\n': Print paths relative to tmp_ramdisk_dir.
+    #   -printf '%P\n': Print paths relative to extracted_files_dir.
     #   sed: remove partition name from entry names
-    find "$tmp_ramdisk_dir" -mindepth 1 \( -type f -o -type l \) -printf '%P\n' | \
+    extracted_files_dir="${sbom_test}/${partition_name}-extracted"
+    mkdir ${extracted_files_dir}
+    img_filename=$(basename $f)
+    #out/target/product/vsoc_x86_64/sbom_test/ramdisk_extracted
+    (cd "${extracted_files_dir}" && ../../../../../host/linux-x86/bin/lz4 -c -d ../${img_filename} | ../../../../../host/linux-x86/bin/cpio -id 2>/dev/null)
+
+    find "$extracted_files_dir" -mindepth 1 \( -type f -o -type l \) -printf '%P\n' | \
       sed "s:^:/$partition_name/:" | \
       sort -n > "$file_list_file"
-
-    # Clean up the temporary extraction directory
-    rm -rf "$tmp_ramdisk_dir"
 
     grep "FileName: /${partition_name}/" $soong_sbom_out/sbom.spdx | sed 's/^FileName: //' | sort -n > "$files_in_soong_spdx_file"
 
