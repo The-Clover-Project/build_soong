@@ -180,6 +180,14 @@ func TestDoNotAddNoneSystemModulesToDeps(t *testing.T) {
 	android.AssertStringListDoesNotContain(t, "IdeInfo.Deps should contain not contain `none`", dpInfo.Deps, "none")
 }
 
+func TestCollectJavaLibraryPropertiesAddModuleType(t *testing.T) {
+	t.Parallel()
+	ctx, _ := testJava(t, `java_library { name: "javalib" }`)
+	module := ctx.ModuleForTests(t, "javalib", "android_common").Module().(*Library)
+	dpInfo := getIdeInfo(ctx, module)
+	android.AssertStringEquals(t, "IdeInfo.ModuleType should be equal to", "java_library", dpInfo.ModuleType)
+}
+
 func getIdeInfo(ctx android.OtherModuleProviderContext, module android.ModuleOrProxy) android.IdeInfo {
 	if info, ok := android.OtherModuleProvider(ctx, module, android.CommonModuleInfoProvider); ok && info.IdeInfo != nil {
 		return *info.IdeInfo
