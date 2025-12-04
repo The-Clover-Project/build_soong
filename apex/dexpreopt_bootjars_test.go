@@ -53,6 +53,14 @@ func testDexpreoptBoot(t *testing.T, ruleFile string, expectedInputs, expectedOu
 					apex: "com.android.art",
 					module: "art-bootclasspath-fragment",
 				},
+				{
+					apex: "com.android.os.statsd",
+					module: "com.android.os.statsd-bootclasspath-fragment",
+				},
+				{
+					apex: "com.android.connectivity",
+					module: "com.android.connectivity-bootclasspath-fragment",
+				},
 			],
 		}
 
@@ -74,6 +82,9 @@ func testDexpreoptBoot(t *testing.T, ruleFile string, expectedInputs, expectedOu
 			apex_available: [
 				"com.android.art",
 			],
+			dex_preopt: {
+				profile: "art/build/boot/boot-image-profile.txt",
+			},
 			hidden_api: {
 				split_packages: ["*"],
 			},
@@ -133,6 +144,191 @@ func testDexpreoptBoot(t *testing.T, ruleFile string, expectedInputs, expectedOu
 			contents: ["prebuilt_com.android.art"],
 			api_domain: "com.android.art",
 		}
+
+		// Source BCP Mainline APEXs
+		// Statsd.
+		java_library {
+			name: "framework-statsd",
+			srcs: ["framework-statsd.java"],
+			installable: true,
+			apex_available: [
+				"com.android.os.statsd",
+			],
+		}
+
+		bootclasspath_fragment {
+			name: "com.android.os.statsd-bootclasspath-fragment",
+			contents: ["framework-statsd"],
+			apex_available: [
+				"com.android.os.statsd",
+			],
+			dex_preopt: {
+				profile: "packages/modules/StatsD/framework/boot-image-profile.txt",
+			},
+			fragments: [
+				{
+					apex: "com.android.art",
+					module: "art-bootclasspath-fragment",
+				},
+			],
+			hidden_api: {
+				split_packages: ["*"],
+			},
+		}
+
+		apex_key {
+			name: "com.android.os.statsd.key",
+			public_key: "com.android.os.statsd.avbpubkey",
+			private_key: "com.android.os.statsd.pem",
+		}
+
+		apex {
+			name: "com.android.os.statsd",
+			key: "com.android.os.statsd.key",
+			bootclasspath_fragments: ["com.android.os.statsd-bootclasspath-fragment"],
+			updatable: false,
+		}
+
+		// Prebuilt Statsd APEX.
+		java_import {
+			name: "framework-statsd",
+			prefer: %[1]t,
+			jars: ["framework-statsd.jar"],
+			apex_available: [
+				"com.android.os.statsd",
+			],
+		}
+
+		prebuilt_bootclasspath_fragment {
+			name: "com.android.os.statsd-bootclasspath-fragment",
+			prefer: %[1]t,
+			contents: ["framework-statsd"],
+			dex_preopt: {
+				profile_guided: true,
+			},
+			fragments: [
+				{
+					apex: "com.android.art",
+					module: "art-bootclasspath-fragment",
+				},
+			],
+			hidden_api: {
+				annotation_flags: "my-bootclasspath-fragment/annotation-flags.csv",
+				metadata: "my-bootclasspath-fragment/metadata.csv",
+				index: "my-bootclasspath-fragment/index.csv",
+				stub_flags: "my-bootclasspath-fragment/stub-flags.csv",
+				all_flags: "my-bootclasspath-fragment/all-flags.csv",
+			},
+			apex_available: [
+				"com.android.os.statsd",
+			],
+		}
+
+		prebuilt_apex {
+			name: "com.android.os.statsd",
+			prefer: %[1]t,
+			apex_name: "com.android.os.statsd",
+			src: "com.android.os.statsd-arm.apex",
+			exported_bootclasspath_fragments: ["com.android.os.statsd-bootclasspath-fragment"],
+		}
+
+		apex_contributions {
+			name: "prebuilt_statsd_contributions",
+			contents: ["prebuilt_com.android.os.statsd"],
+			api_domain: "com.android.os.statsd",
+		}
+
+		// Connectivity.
+		java_library {
+			name: "framework-connectivity",
+			srcs: ["framework-connectivity.java"],
+			installable: true,
+			apex_available: [
+				"com.android.connectivity",
+			],
+		}
+
+		bootclasspath_fragment {
+			name: "com.android.connectivity-bootclasspath-fragment",
+			contents: ["framework-connectivity"],
+			apex_available: [
+				"com.android.connectivity",
+			],
+			dex_preopt: {
+				profile: "packages/modules/Connectivity/framework/boot-image-profile.txt",
+			},
+			fragments: [
+				{
+					apex: "com.android.art",
+					module: "art-bootclasspath-fragment",
+				},
+			],
+			hidden_api: {
+				split_packages: ["*"],
+			},
+		}
+
+		apex_key {
+			name: "com.android.connectivity.key",
+			public_key: "com.android.connectivity.avbpubkey",
+			private_key: "com.android.connectivity.pem",
+		}
+
+		apex {
+			name: "com.android.connectivity",
+			key: "com.android.connectivity.key",
+			bootclasspath_fragments: ["com.android.connectivity-bootclasspath-fragment"],
+			updatable: false,
+		}
+
+		// Prebuilt Connectivity APEX.
+		java_import {
+			name: "framework-connectivity",
+			prefer: %[1]t,
+			jars: ["framework-connectivity.jar"],
+			apex_available: [
+				"com.android.connectivity",
+			],
+		}
+
+		prebuilt_bootclasspath_fragment {
+			name: "com.android.connectivity-bootclasspath-fragment",
+			prefer: %[1]t,
+			contents: ["framework-connectivity"],
+			dex_preopt: {
+				profile_guided: true,
+			},
+			fragments: [
+				{
+					apex: "com.android.art",
+					module: "art-bootclasspath-fragment",
+				},
+			],
+			hidden_api: {
+				annotation_flags: "my-bootclasspath-fragment/annotation-flags.csv",
+				metadata: "my-bootclasspath-fragment/metadata.csv",
+				index: "my-bootclasspath-fragment/index.csv",
+				stub_flags: "my-bootclasspath-fragment/stub-flags.csv",
+				all_flags: "my-bootclasspath-fragment/all-flags.csv",
+			},
+			apex_available: [
+				"com.android.connectivity",
+			],
+		}
+
+		prebuilt_apex {
+			name: "com.android.connectivity",
+			prefer: %[1]t,
+			apex_name: "com.android.connectivity",
+			src: "com.android.connectivity-arm.apex",
+			exported_bootclasspath_fragments: ["com.android.connectivity-bootclasspath-fragment"],
+		}
+
+		apex_contributions {
+			name: "prebuilt_connectivity_contributions",
+			contents: ["prebuilt_com.android.connectivity"],
+			api_domain: "com.android.connectivity",
+		}
 	`
 
 	fixture := android.GroupFixturePreparers(
@@ -140,13 +336,17 @@ func testDexpreoptBoot(t *testing.T, ruleFile string, expectedInputs, expectedOu
 		java.PrepareForTestWithJavaSdkLibraryFiles,
 		java.FixtureWithLastReleaseApis("foo"),
 		java.FixtureConfigureBootJars("com.android.art:core-oj", "platform:foo", "system_ext:bar", "platform:baz"),
+		java.FixtureConfigureApexBootJars("com.android.connectivity:framework-connectivity", "com.android.os.statsd:framework-statsd"),
 		PrepareForTestWithApexBuildComponents,
 		prepareForTestWithArtApex,
+		prepareForTestWithMainlineApex,
 	)
 	if preferPrebuilt {
 		fixture = android.GroupFixturePreparers(
 			fixture,
 			android.PrepareForTestWithBuildFlag("RELEASE_APEX_CONTRIBUTIONS_ART", "prebuilt_art_contributions"),
+			android.PrepareForTestWithBuildFlag("RELEASE_APEX_CONTRIBUTIONS_STATSD", "prebuilt_statsd_contributions"),
+			android.PrepareForTestWithBuildFlag("RELEASE_APEX_CONTRIBUTIONS_CONNECTIVITY", "prebuilt_connectivity_contributions"),
 		)
 	}
 	result := fixture.RunTestWithBp(t, fmt.Sprintf(bp, preferPrebuilt))
@@ -177,6 +377,9 @@ func TestDexpreoptBootJarsWithSourceArtApex(t *testing.T) {
 		"out/soong/dexpreopt_arm64/dex_bootjars_input/bar.jar",
 		"out/soong/dexpreopt_arm64/dex_bootjars_input/baz.jar",
 		"out/soong/.intermediates/art-bootclasspath-fragment/android_common_com.android.art/art-bootclasspath-fragment/boot.prof",
+		// Connectivity and Statsd profiles are here since we include all profiles from the bootclasspath fragments, but dex2oat will select only the one corresponding to the apex that is being built.
+		"out/soong/.intermediates/com.android.os.statsd-bootclasspath-fragment/android_common_com.android.os.statsd/com.android.os.statsd-bootclasspath-fragment/boot.prof",
+		"out/soong/.intermediates/com.android.connectivity-bootclasspath-fragment/android_common_com.android.connectivity/com.android.connectivity-bootclasspath-fragment/boot.prof",
 		"out/soong/.intermediates/default/java/dex_bootjars/android_common/boot/boot.prof",
 		"out/soong/dexpreopt/uffd_gc_flag.txt",
 		"out/soong/dexpreopt/assume_value_flags.txt",
@@ -206,6 +409,51 @@ func TestDexpreoptBootJarsWithSourceArtApex(t *testing.T) {
 	testDexpreoptBoot(t, ruleFile, expectedInputs, expectedOutputs, false)
 }
 
+func TestDexpreoptBootJarsWithSourceMainlineApex(t *testing.T) {
+	t.Parallel()
+	ruleFile := "out/soong/dexpreopt_arm64/dex_mainlinejars/android/system/framework/arm64/boot-framework-connectivity.art"
+
+	expectedInputs := []string{
+		"out/soong/dexpreopt/allow_profile_code_flag.txt",
+		"out/soong/dexpreopt/assume_value_flags.txt",
+		"out/soong/dexpreopt/uffd_gc_flag.txt",
+		"out/soong/dexpreopt_arm64/dex_mainlinejars_input/framework-statsd.jar",
+		"out/soong/dexpreopt_arm64/dex_mainlinejars_input/framework-connectivity.jar",
+		// TODO(b/342163020) - Enable the following input profiles for mainline APEXs once speed-profile is enabled for mainline APEXs.
+		// ART profile is here since we include all profiles from the bootclasspath fragments, but dex2oat will select only the one corresponding to the apex that is being built.
+		// "out/soong/.intermediates/com.android.connectivity-bootclasspath-fragment/android_common_com.android.connectivity/com.android.connectivity-bootclasspath-fragment/boot.prof",
+		// "out/soong/.intermediates/com.android.os.statsd-bootclasspath-fragment/android_common_com.android.os.statsd/com.android.os.statsd-bootclasspath-fragment/boot.prof",
+		// "out/soong/.intermediates/art-bootclasspath-fragment/android_common_com.android.art/art-bootclasspath-fragment/boot.prof",
+		// ART related inputs
+		"out/soong/dexpreopt_arm64/dex_bootjars/android/system/framework/arm64/boot-bar.art",
+		"out/soong/dexpreopt_arm64/dex_bootjars/android/system/framework/arm64/boot-bar.oat",
+		"out/soong/dexpreopt_arm64/dex_bootjars/android/system/framework/arm64/boot-bar.vdex",
+		"out/soong/dexpreopt_arm64/dex_bootjars/android/system/framework/arm64/boot-baz.art",
+		"out/soong/dexpreopt_arm64/dex_bootjars/android/system/framework/arm64/boot-baz.oat",
+		"out/soong/dexpreopt_arm64/dex_bootjars/android/system/framework/arm64/boot-baz.vdex",
+		"out/soong/dexpreopt_arm64/dex_bootjars/android/system/framework/arm64/boot-foo.art",
+		"out/soong/dexpreopt_arm64/dex_bootjars/android/system/framework/arm64/boot-foo.oat",
+		"out/soong/dexpreopt_arm64/dex_bootjars/android/system/framework/arm64/boot-foo.vdex",
+		"out/soong/dexpreopt_arm64/dex_bootjars/android/system/framework/arm64/boot.art",
+		"out/soong/dexpreopt_arm64/dex_bootjars/android/system/framework/arm64/boot.oat",
+		"out/soong/dexpreopt_arm64/dex_bootjars/android/system/framework/arm64/boot.vdex",
+		"out/soong/dexpreopt_arm64/dex_bootjars_input/bar.jar",
+		"out/soong/dexpreopt_arm64/dex_bootjars_input/baz.jar",
+		"out/soong/dexpreopt_arm64/dex_bootjars_input/core-oj.jar",
+		"out/soong/dexpreopt_arm64/dex_bootjars_input/foo.jar",
+	}
+
+	expectedOutputs := []string{
+		"out/soong/dexpreopt_arm64/dex_mainlinejars/android/system/framework/arm64/boot.invocation",
+		"out/soong/dexpreopt_arm64/dex_mainlinejars/android/system/framework/arm64/boot-framework-connectivity.art",
+		"out/soong/dexpreopt_arm64/dex_mainlinejars/android/system/framework/arm64/boot-framework-connectivity.oat",
+		"out/soong/dexpreopt_arm64/dex_mainlinejars/android/system/framework/arm64/boot-framework-connectivity.vdex",
+		"out/soong/dexpreopt_arm64/dex_mainlinejars_unstripped/android/system/framework/arm64/boot-framework-connectivity.oat",
+	}
+
+	testDexpreoptBoot(t, ruleFile, expectedInputs, expectedOutputs, false)
+}
+
 // The only difference is that the ART profile should be deapexed from the prebuilt APEX. Other
 // inputs and outputs should be the same as above.
 func TestDexpreoptBootJarsWithPrebuiltArtApex(t *testing.T) {
@@ -217,6 +465,9 @@ func TestDexpreoptBootJarsWithPrebuiltArtApex(t *testing.T) {
 		"out/soong/dexpreopt_arm64/dex_bootjars_input/foo.jar",
 		"out/soong/dexpreopt_arm64/dex_bootjars_input/bar.jar",
 		"out/soong/dexpreopt_arm64/dex_bootjars_input/baz.jar",
+		// Connectivity and Statsd profiles are here since we include all profiles from the bootclasspath fragments, but dex2oat will select only the one corresponding to the apex that is being built.
+		"out/soong/.intermediates/prebuilt_com.android.os.statsd/android_common_prebuilt_com.android.os.statsd/deapexer/etc/boot-image.prof",
+		"out/soong/.intermediates/prebuilt_com.android.connectivity/android_common_prebuilt_com.android.connectivity/deapexer/etc/boot-image.prof",
 		"out/soong/.intermediates/prebuilt_com.android.art/android_common_prebuilt_com.android.art/deapexer/etc/boot-image.prof",
 		"out/soong/.intermediates/default/java/dex_bootjars/android_common/boot/boot.prof",
 		"out/soong/dexpreopt/uffd_gc_flag.txt",
@@ -242,6 +493,53 @@ func TestDexpreoptBootJarsWithPrebuiltArtApex(t *testing.T) {
 		"out/soong/dexpreopt_arm64/dex_bootjars_unstripped/android/system/framework/arm64/boot-foo.oat",
 		"out/soong/dexpreopt_arm64/dex_bootjars_unstripped/android/system/framework/arm64/boot-bar.oat",
 		"out/soong/dexpreopt_arm64/dex_bootjars_unstripped/android/system/framework/arm64/boot-baz.oat",
+	}
+
+	testDexpreoptBoot(t, ruleFile, expectedInputs, expectedOutputs, true)
+}
+
+// The only difference is that the Mainline profile should be deapexed from the
+// prebuilt Mainline APEXs.
+func TestDexpreoptBootJarsWithPrebuiltMainlineApex(t *testing.T) {
+	t.Parallel()
+	ruleFile := "out/soong/dexpreopt_arm64/dex_mainlinejars/android/system/framework/arm64/boot-framework-connectivity.art"
+
+	expectedInputs := []string{
+		"out/soong/dexpreopt/allow_profile_code_flag.txt",
+		"out/soong/dexpreopt/assume_value_flags.txt",
+		"out/soong/dexpreopt/uffd_gc_flag.txt",
+		"out/soong/dexpreopt_arm64/dex_mainlinejars_input/framework-statsd.jar",
+		"out/soong/dexpreopt_arm64/dex_mainlinejars_input/framework-connectivity.jar",
+		// TODO(b/342163020) - Enable the following input deapexed profiles for mainline APEXs once speed-profile is enabled for mainline APEXs.
+		// ART profile is here since we include all profiles from the bootclasspath fragments, but dex2oat will select only the one corresponding to the apex that is being built.
+		// "out/soong/.intermediates/prebuilt_com.android.connectivity/android_common_prebuilt_com.android.connectivity/deapexer/etc/boot-image.prof",
+		// "out/soong/.intermediates/prebuilt_com.android.os.statsd/android_common_prebuilt_com.android.os.statsd/deapexer/etc/boot-image.prof",
+		// "out/soong/.intermediates/prebuilt_com.android.art/android_common_prebuilt_com.android.art/deapexer/etc/boot-image.prof",
+		// ART related inputs
+		"out/soong/dexpreopt_arm64/dex_bootjars/android/system/framework/arm64/boot-bar.art",
+		"out/soong/dexpreopt_arm64/dex_bootjars/android/system/framework/arm64/boot-bar.oat",
+		"out/soong/dexpreopt_arm64/dex_bootjars/android/system/framework/arm64/boot-bar.vdex",
+		"out/soong/dexpreopt_arm64/dex_bootjars/android/system/framework/arm64/boot-baz.art",
+		"out/soong/dexpreopt_arm64/dex_bootjars/android/system/framework/arm64/boot-baz.oat",
+		"out/soong/dexpreopt_arm64/dex_bootjars/android/system/framework/arm64/boot-baz.vdex",
+		"out/soong/dexpreopt_arm64/dex_bootjars/android/system/framework/arm64/boot-foo.art",
+		"out/soong/dexpreopt_arm64/dex_bootjars/android/system/framework/arm64/boot-foo.oat",
+		"out/soong/dexpreopt_arm64/dex_bootjars/android/system/framework/arm64/boot-foo.vdex",
+		"out/soong/dexpreopt_arm64/dex_bootjars/android/system/framework/arm64/boot.art",
+		"out/soong/dexpreopt_arm64/dex_bootjars/android/system/framework/arm64/boot.oat",
+		"out/soong/dexpreopt_arm64/dex_bootjars/android/system/framework/arm64/boot.vdex",
+		"out/soong/dexpreopt_arm64/dex_bootjars_input/bar.jar",
+		"out/soong/dexpreopt_arm64/dex_bootjars_input/baz.jar",
+		"out/soong/dexpreopt_arm64/dex_bootjars_input/core-oj.jar",
+		"out/soong/dexpreopt_arm64/dex_bootjars_input/foo.jar",
+	}
+
+	expectedOutputs := []string{
+		"out/soong/dexpreopt_arm64/dex_mainlinejars/android/system/framework/arm64/boot.invocation",
+		"out/soong/dexpreopt_arm64/dex_mainlinejars/android/system/framework/arm64/boot-framework-connectivity.art",
+		"out/soong/dexpreopt_arm64/dex_mainlinejars/android/system/framework/arm64/boot-framework-connectivity.oat",
+		"out/soong/dexpreopt_arm64/dex_mainlinejars/android/system/framework/arm64/boot-framework-connectivity.vdex",
+		"out/soong/dexpreopt_arm64/dex_mainlinejars_unstripped/android/system/framework/arm64/boot-framework-connectivity.oat",
 	}
 
 	testDexpreoptBoot(t, ruleFile, expectedInputs, expectedOutputs, true)
@@ -311,6 +609,9 @@ func TestDexpreoptProfileWithMultiplePrebuiltArtApexes(t *testing.T) {
 			apex_available: [
 				"com.android.art",
 			],
+			dex_preopt: {
+				profile: "art/build/boot/boot-image-profile.txt",
+			},
 			hidden_api: {
 				split_packages: ["*"],
 			},
@@ -343,6 +644,9 @@ func TestDexpreoptProfileWithMultiplePrebuiltArtApexes(t *testing.T) {
 			name: "art-bootclasspath-fragment",
 			image_name: "art",
 			contents: ["core-oj"],
+			dex_preopt: {
+				profile_guided: true,
+			},
 			hidden_api: {
 				annotation_flags: "my-bootclasspath-fragment/annotation-flags.csv",
 				metadata: "my-bootclasspath-fragment/metadata.csv",
@@ -464,6 +768,9 @@ func TestDexpreoptWithMainlinePrebuiltNoSource(t *testing.T) {
 			apex_available: [
 				"com.android.art",
 			],
+			dex_preopt: {
+				profile: "art/build/boot/boot-image-profile.txt",
+			},
 			hidden_api: {
 				split_packages: ["*"],
 			},
@@ -497,6 +804,9 @@ func TestDexpreoptWithMainlinePrebuiltNoSource(t *testing.T) {
 			name: "art-bootclasspath-fragment",
 			image_name: "art",
 			contents: ["core-oj"],
+			dex_preopt: {
+				profile_guided: true,
+			},
 			hidden_api: {
 				annotation_flags: "my-bootclasspath-fragment/annotation-flags.csv",
 				metadata: "my-bootclasspath-fragment/metadata.csv",

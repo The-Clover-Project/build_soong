@@ -281,13 +281,6 @@ type bootImageConfig struct {
 
 	// The "--single-image" argument.
 	singleImage bool
-
-	// Profiles imported from APEXes, in addition to the profile at the default path. Each entry must
-	// be the name of an APEX module.
-	profileImports []string
-
-	// The name of the module that provides boot image profiles, if any.
-	profileProviderModule string
 }
 
 // Target-dependent description of a boot image.
@@ -876,7 +869,7 @@ func generateBootImage(ctx android.ModuleContext, imageConfig *bootImageConfig) 
 
 	// Build a profile for the image config from the profile at the default path. The profile will
 	// then be used along with profiles imported from APEXes to build the boot image.
-	profile, profileInstalls := bootImageProfileRule(ctx, imageConfig)
+	profile, profileInstalls := bootImageProfileRuleForFramework(ctx, imageConfig)
 
 	// If dexpreopt of boot image jars should be skipped, stop after generating a profile.
 	global := dexpreopt.GetGlobalConfig(ctx)
@@ -1137,7 +1130,7 @@ type bootImageVariantOutputs struct {
 	config *bootImageVariant
 }
 
-// Returns the profile file for an apex
+// Returns the profile file for an apex or nil if no profile is available.
 // This information can come from two mechanisms
 // 1. New: Direct deps to _selected_ apexes. The apexes return a BootclasspathFragmentApexContentInfo
 // 2. Legacy: An edge to bootclasspath_fragment module. For prebuilt apexes, this serves as a hook and is populated by deapexers of prebuilt apxes
@@ -1258,8 +1251,6 @@ func buildBootImageVariant(ctx android.ModuleContext, image *bootImageVariant, p
 
 	invocationPath := outputPath.ReplaceExtension(ctx, "invocation")
 
-	apexNameToApexExportsInfoMap := getApexNameToApexExportsInfoMap(ctx)
-
 	cmd.Tool(globalSoong.Dex2oat).
 		Flag("--avoid-storing-invocation").
 		FlagWithOutput("--write-invocation-to=", invocationPath).ImplicitOutput(invocationPath).
@@ -1271,16 +1262,16 @@ func buildBootImageVariant(ctx android.ModuleContext, image *bootImageVariant, p
 			cmd.FlagWithInput("--profile-file=", profile)
 		}
 
-		for _, apex := range image.profileImports {
-			importedProfile := getProfilePathForApex(ctx, apex, apexNameToApexExportsInfoMap)
-			if importedProfile == nil {
-				ctx.ModuleErrorf("Boot image config '%[1]s' imports profile from '%[2]s', but '%[2]s' "+
-					"doesn't provide a profile",
-					image.name,
-					apex)
-				return bootImageVariantOutputs{}
+		// Gather the profile paths for relevant apexes of this image.
+		apexNameToApexExportsInfoMap := getApexNameToApexExportsInfoMap(ctx)
+		// TODO: b/458374506 - Remove the legacy mechanism and loop over the
+		// apexNameToApexExportsInfoMap directly.
+		bootclasspathFragments := gatherBootclasspathFragments(ctx)
+		for apex := range bootclasspathFragments {
+			profilePath := getProfilePathForApex(ctx, apex, apexNameToApexExportsInfoMap)
+			if profilePath != nil {
+				cmd.FlagWithInput("--profile-file=", profilePath)
 			}
-			cmd.FlagWithInput("--profile-file=", importedProfile)
 		}
 	}
 
@@ -1430,10 +1421,10 @@ It is likely that the boot classpath is inconsistent.
 Rebuild with ART_BOOT_IMAGE_EXTRA_ARGS="--runtime-arg -verbose:verifier" to see verification errors.`
 
 // bootImageProfileRuleCommon contains the common logic for generating boot image profiles for both
-// the platform and the ART module when building from source.
+// the platform and the Mainline modules when building from source.
 // Building from prebuilts is not handled here. Instead, the profile is extracted from the prebuilt
-// ART module.
-func bootImageProfileRuleCommon(ctx android.ModuleContext, name string, dexFiles android.Paths, dexLocations []string) android.WritablePath {
+// Mainline modules.
+func bootImageProfileRuleCommon(ctx android.ModuleContext, name string, dexFiles android.Paths, dexLocations []string, bootProfilePathsInHRF android.Paths) android.WritablePath {
 	globalSoong := dexpreopt.GetGlobalSoongConfig(ctx)
 	global := dexpreopt.GetGlobalConfig(ctx)
 
@@ -1443,35 +1434,15 @@ func bootImageProfileRuleCommon(ctx android.ModuleContext, name string, dexFiles
 
 	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 
-	var profiles android.Paths
-	if len(global.BootImageProfiles) > 0 {
-		// The most common case. The profiles are specified by
-		// `PRODUCT_DEX_PREOPT_BOOT_IMAGE_PROFILE_LOCATION`.
-		// - On a bundled build, this list contains both the ART profile and the frameworks profile.
-		// - On an unbundled build with ART source code being present, this list only contains the ART
-		//   profile.
-		profiles = append(profiles, global.BootImageProfiles...)
-	} else {
-		// No profile specified. This means we are building an unbundled build with ART source code
-		// being absent, meaning we are not building the platform or the ART module, so we don't need
-		// a profile.
-		// Return nil and continue without profile.
-		return nil
-	}
-	extraProfile := "frameworks/base/boot/boot-image-profile-extra.txt"
-	if path := android.ExistentPathForSource(ctx, extraProfile); path.Valid() {
-		profiles = append(profiles, path.Path())
-	}
-
 	// Remove duplicates while preserving order to ensure deterministic builds.
-	profiles = android.FirstUniquePaths(profiles)
+	bootProfilePathsInHRF = android.FirstUniquePaths(bootProfilePathsInHRF)
 
 	// We concatenate the profiles into a single file. Later, `profman` filters the entries based on
 	// `dexFiles` to only keep the relevant ones. For example, when this function is called for
 	// generating the profile for the ART module, `profman` only keeps the entries for the ART module
 	// and not the platform.
 	bootImageProfile := android.PathForModuleOut(ctx, name, "boot-image-profile.txt")
-	rule.Command().Text("cat").Inputs(profiles).Text(">").Output(bootImageProfile)
+	rule.Command().Text("cat").Inputs(bootProfilePathsInHRF).Text(">").Output(bootImageProfile)
 
 	profile := android.PathForModuleOut(ctx, name, "boot.prof")
 
@@ -1500,19 +1471,29 @@ type profileInstallInfo struct {
 
 var profileInstallInfoProvider = blueprint.NewProvider[profileInstallInfo]()
 
-func bootImageProfileRule(ctx android.ModuleContext, image *bootImageConfig) (android.WritablePath, android.RuleBuilderInstalls) {
-	if !image.isProfileGuided() {
+func bootImageProfileRuleForFramework(ctx android.ModuleContext, image *bootImageConfig) (android.WritablePath, android.RuleBuilderInstalls) {
+	if !image.isProfileGuided() || image != defaultBootImageConfig(ctx) {
 		return nil, nil
 	}
 
-	profile := bootImageProfileRuleCommon(ctx, image.name, image.dexPathsDeps.Paths(), image.getAnyAndroidVariant().dexLocationsDeps)
+	var profiles android.Paths
+	global := dexpreopt.GetGlobalConfig(ctx)
+	if len(global.BootImageProfiles) > 0 {
+		// The profiles are specified by `PRODUCT_DEX_PREOPT_BOOT_IMAGE_PROFILE_LOCATION`.
+		profiles = append(profiles, global.BootImageProfiles...)
+	}
+	extraProfile := "frameworks/base/boot/boot-image-profile-extra.txt"
+	if path := android.ExistentPathForSource(ctx, extraProfile); path.Valid() {
+		profiles = append(profiles, path.Path())
+	}
+	profile := bootImageProfileRuleCommon(ctx, image.name, image.dexPathsDeps.Paths(), image.getAnyAndroidVariant().dexLocationsDeps, profiles)
 
-	if image == defaultBootImageConfig(ctx) && profile != nil {
+	if profile != nil {
 		rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 		rule.Install(profile, "/system/etc/boot-image.prof")
 		return profile, rule.Installs()
 	}
-	return profile, nil
+	return nil, nil
 }
 
 // bootFrameworkProfileRule generates the rule to create the boot framework profile and

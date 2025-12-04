@@ -21,7 +21,6 @@ import (
 	"testing"
 
 	"android/soong/android"
-	"android/soong/dexpreopt"
 	"android/soong/java"
 )
 
@@ -92,8 +91,6 @@ func TestSnapshotWithBootclasspathFragment_ImageName(t *testing.T) {
 		fixtureAddPlatformBootclasspathForBootclasspathFragmentWithExtra(
 			"com.android.art", "art-bootclasspath-fragment", java.ApexBootJarFragmentsForPlatformBootclasspath),
 
-		dexpreopt.FixtureSetBootImageProfiles("art/build/boot/boot-image-profile.txt"),
-
 		java.PrepareForBootImageConfigTest,
 		java.PrepareApexBootJarConfigsAndModules,
 		android.FixtureWithRootAndroidBp(`
@@ -114,6 +111,9 @@ func TestSnapshotWithBootclasspathFragment_ImageName(t *testing.T) {
 			bootclasspath_fragment {
 				name: "art-bootclasspath-fragment",
 				image_name: "art",
+				dex_preopt: {
+					profile: "art/build/boot/boot-image-profile.txt",
+				},
 				contents: ["core1", "core2"],
 				apex_available: ["com.android.art"],
 				hidden_api: {
@@ -173,6 +173,9 @@ prebuilt_bootclasspath_fragment {
         "core1",
         "core2",
     ],
+    dex_preopt: {
+        profile_guided: true,
+    },
     hidden_api: {
         annotation_flags: "hiddenapi/annotation-flags.csv",
         metadata: "hiddenapi/metadata.csv",

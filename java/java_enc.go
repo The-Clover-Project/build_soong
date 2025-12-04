@@ -1968,12 +1968,16 @@ func (r BootclasspathFragmentInfo) Encode(ctx gobtools.EncContext, buf *bytes.Bu
 	if err = gobtools.EncodeInterface(ctx, buf, r.ProfilePathOnHost); err != nil {
 		return err
 	}
+
+	if err = gobtools.EncodeBool(buf, r.DexPreoptProfileGuided); err != nil {
+		return err
+	}
 	return err
 }
 
 func (r BootclasspathFragmentInfo) CustomHash(hasher *proptools.Hasher) error {
 	hasher.WriteString(":java.BootclasspathFragmentInfo")
-	hasher.WriteInt(6)
+	hasher.WriteInt(7)
 	hasher.WriteString(":.*string")
 	val1 := r.ImageName == nil
 	if val1 {
@@ -2037,6 +2041,12 @@ func (r BootclasspathFragmentInfo) CustomHash(hasher *proptools.Hasher) error {
 		} else {
 			r.ProfilePathOnHost.(proptools.CustomHash).CustomHash(hasher)
 		}
+	}
+	hasher.WriteString(":.bool")
+	if r.DexPreoptProfileGuided {
+		hasher.WriteByte(1)
+	} else {
+		hasher.WriteByte(0)
 	}
 	return nil
 }
@@ -2122,6 +2132,11 @@ func (r *BootclasspathFragmentInfo) Decode(ctx gobtools.EncContext, buf *bytes.R
 		r.ProfilePathOnHost = nil
 	} else {
 		r.ProfilePathOnHost = val21.(android.Path)
+	}
+
+	err = gobtools.DecodeBool(buf, &r.DexPreoptProfileGuided)
+	if err != nil {
+		return err
 	}
 
 	return err
