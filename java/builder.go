@@ -433,7 +433,7 @@ var (
 				` ${android.Echo} "# including $$f" && ` +
 				` ${android.Cat} $$f; ` +
 				`done > $out`,
-			CommandDeps: []string{"Rm-deps", "Echo-deps", "Cat_deps"},
+			CommandDeps: []string{"Rm-deps", "Echo-deps", "Cat-deps"},
 		})
 
 	gatherReleasedFlaggedApisRule = pctx.AndroidStaticRule("gatherReleasedFlaggedApisRule",
