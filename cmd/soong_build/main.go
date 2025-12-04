@@ -377,7 +377,9 @@ func main() {
 
 	writeUsedEnvironmentFile(configuration)
 
-	err = writeGlobFile(ctx.EventHandler, finalOutputFile, ctx.Globs(), soongStartTime)
+	ctx.EventHandler.Begin("writeGlobFile")
+	err = ctx.WriteGlobFile(shared.JoinPath(topDir, finalOutputFile), soongStartTime)
+	ctx.EventHandler.End("writeGlobFile")
 	maybeQuit(err, "")
 
 	// Touch the output file so that it's the newest file created by soong_build.
@@ -398,32 +400,6 @@ func writeUsedEnvironmentFile(configuration android.Config) {
 
 	err = pathtools.WriteFileIfChanged(path, data, 0666)
 	maybeQuit(err, "error writing used environment file '%s'", usedEnvFile)
-}
-
-func writeGlobFile(eventHandler *metrics.EventHandler, finalOutFile string, globs pathtools.MultipleGlobResults, soongStartTime time.Time) error {
-	eventHandler.Begin("writeGlobFile")
-	defer eventHandler.End("writeGlobFile")
-
-	globsFile, err := os.Create(shared.JoinPath(topDir, finalOutFile+".globs"))
-	if err != nil {
-		return err
-	}
-	defer globsFile.Close()
-	globsFileEncoder := json.NewEncoder(globsFile)
-	for _, glob := range globs {
-		if len(glob.Excludes) == 0 {
-			glob.Excludes = nil
-		}
-		if err := globsFileEncoder.Encode(glob); err != nil {
-			return err
-		}
-	}
-
-	return os.WriteFile(
-		shared.JoinPath(topDir, finalOutFile+".globs_time"),
-		[]byte(fmt.Sprintf("%d\n", soongStartTime.UnixMicro())),
-		0666,
-	)
 }
 
 func touch(path string) {
