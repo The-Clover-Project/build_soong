@@ -36,6 +36,11 @@ bootstrap_go_package {
 
 all_aconfig_declarations {
     name: "all_aconfig_declarations",
+    // This is a singleton module, thus its visibility should be restricted as
+    // much as possible. When expanding visibility, ensure that it makes sense
+    // for the new dependency to depend on all aconfig flags declared in the
+    // entire tree. It is **INCORRECT** to generate any on-device or otherwise
+    // published artifacts based on this module.
     visibility: [
         "//vendor:__subpackages__", // for vendor extensions
         "//frameworks/base/ravenwood",
