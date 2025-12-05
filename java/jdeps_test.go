@@ -265,3 +265,21 @@ func getIdeInfo(ctx android.OtherModuleProviderContext, module android.ModuleOrP
 	}
 	return android.IdeInfo{}
 }
+
+func TestCollectJavaImportPropertiesAddImportedJars(t *testing.T) {
+	t.Parallel()
+	ctx, _ := testJava(t,
+		`
+		java_import {
+			name: "javalib",
+			jars: ["foo.jar", "bar.jar"],
+		}
+	`)
+	module := ctx.ModuleForTests(t, "javalib", "android_common").Module().(*Import)
+	dpInfo := getIdeInfo(ctx, module)
+
+	expected := []string{"foo.jar", "bar.jar"}
+	if !reflect.DeepEqual(dpInfo.Imported_jars, expected) {
+		t.Errorf("Import.IDEInfo() Imported_jars = %v, want %v", dpInfo.Imported_jars, expected)
+	}
+}

@@ -9252,6 +9252,21 @@ func (r IdeInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		}
 	}
 
+	if r.Imported_jars == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r.Imported_jars)); err != nil {
+			return err
+		}
+		for val8 := 0; val8 < len(r.Imported_jars); val8++ {
+			if err = gobtools.EncodeString(buf, r.Imported_jars[val8]); err != nil {
+				return err
+			}
+		}
+	}
+
 	if r.Classes == nil {
 		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
@@ -9260,8 +9275,8 @@ func (r IdeInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		if err = gobtools.EncodeInt(buf, len(r.Classes)); err != nil {
 			return err
 		}
-		for val8 := 0; val8 < len(r.Classes); val8++ {
-			if err = gobtools.EncodeString(buf, r.Classes[val8]); err != nil {
+		for val9 := 0; val9 < len(r.Classes); val9++ {
+			if err = gobtools.EncodeString(buf, r.Classes[val9]); err != nil {
 				return err
 			}
 		}
@@ -9275,8 +9290,8 @@ func (r IdeInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		if err = gobtools.EncodeInt(buf, len(r.Installed_paths)); err != nil {
 			return err
 		}
-		for val9 := 0; val9 < len(r.Installed_paths); val9++ {
-			if err = gobtools.EncodeString(buf, r.Installed_paths[val9]); err != nil {
+		for val10 := 0; val10 < len(r.Installed_paths); val10++ {
+			if err = gobtools.EncodeString(buf, r.Installed_paths[val10]); err != nil {
 				return err
 			}
 		}
@@ -9290,8 +9305,8 @@ func (r IdeInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		if err = gobtools.EncodeInt(buf, len(r.SrcJars)); err != nil {
 			return err
 		}
-		for val10 := 0; val10 < len(r.SrcJars); val10++ {
-			if err = gobtools.EncodeString(buf, r.SrcJars[val10]); err != nil {
+		for val11 := 0; val11 < len(r.SrcJars); val11++ {
+			if err = gobtools.EncodeString(buf, r.SrcJars[val11]); err != nil {
 				return err
 			}
 		}
@@ -9305,8 +9320,8 @@ func (r IdeInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		if err = gobtools.EncodeInt(buf, len(r.Paths)); err != nil {
 			return err
 		}
-		for val11 := 0; val11 < len(r.Paths); val11++ {
-			if err = gobtools.EncodeString(buf, r.Paths[val11]); err != nil {
+		for val12 := 0; val12 < len(r.Paths); val12++ {
+			if err = gobtools.EncodeString(buf, r.Paths[val12]); err != nil {
 				return err
 			}
 		}
@@ -9320,8 +9335,8 @@ func (r IdeInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		if err = gobtools.EncodeInt(buf, len(r.Static_libs)); err != nil {
 			return err
 		}
-		for val12 := 0; val12 < len(r.Static_libs); val12++ {
-			if err = gobtools.EncodeString(buf, r.Static_libs[val12]); err != nil {
+		for val13 := 0; val13 < len(r.Static_libs); val13++ {
+			if err = gobtools.EncodeString(buf, r.Static_libs[val13]); err != nil {
 				return err
 			}
 		}
@@ -9335,8 +9350,8 @@ func (r IdeInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		if err = gobtools.EncodeInt(buf, len(r.Libs)); err != nil {
 			return err
 		}
-		for val13 := 0; val13 < len(r.Libs); val13++ {
-			if err = gobtools.EncodeString(buf, r.Libs[val13]); err != nil {
+		for val14 := 0; val14 < len(r.Libs); val14++ {
+			if err = gobtools.EncodeString(buf, r.Libs[val14]); err != nil {
 				return err
 			}
 		}
@@ -9350,8 +9365,8 @@ func (r IdeInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		if err = gobtools.EncodeInt(buf, len(r.Asset_dirs)); err != nil {
 			return err
 		}
-		for val14 := 0; val14 < len(r.Asset_dirs); val14++ {
-			if err = gobtools.EncodeString(buf, r.Asset_dirs[val14]); err != nil {
+		for val15 := 0; val15 < len(r.Asset_dirs); val15++ {
+			if err = gobtools.EncodeString(buf, r.Asset_dirs[val15]); err != nil {
 				return err
 			}
 		}
@@ -9365,8 +9380,8 @@ func (r IdeInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		if err = gobtools.EncodeInt(buf, len(r.Resource_dirs)); err != nil {
 			return err
 		}
-		for val15 := 0; val15 < len(r.Resource_dirs); val15++ {
-			if err = gobtools.EncodeString(buf, r.Resource_dirs[val15]); err != nil {
+		for val16 := 0; val16 < len(r.Resource_dirs); val16++ {
+			if err = gobtools.EncodeString(buf, r.Resource_dirs[val16]); err != nil {
 				return err
 			}
 		}
@@ -9376,7 +9391,7 @@ func (r IdeInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 
 func (r IdeInfo) CustomHash(hasher *proptools.Hasher) error {
 	hasher.WriteString(":android.IdeInfo")
-	hasher.WriteInt(19)
+	hasher.WriteInt(20)
 	hasher.WriteString(":.string")
 	hasher.WriteString(r.BaseModuleName)
 	hasher.WriteString(":.string")
@@ -9428,52 +9443,58 @@ func (r IdeInfo) CustomHash(hasher *proptools.Hasher) error {
 		hasher.WriteString(r.Jars[val7])
 	}
 	hasher.WriteString(":.[]string")
-	hasher.WriteInt(len(r.Classes))
-	for val8 := 0; val8 < len(r.Classes); val8++ {
+	hasher.WriteInt(len(r.Imported_jars))
+	for val8 := 0; val8 < len(r.Imported_jars); val8++ {
 		hasher.WriteString(":.string")
-		hasher.WriteString(r.Classes[val8])
+		hasher.WriteString(r.Imported_jars[val8])
+	}
+	hasher.WriteString(":.[]string")
+	hasher.WriteInt(len(r.Classes))
+	for val9 := 0; val9 < len(r.Classes); val9++ {
+		hasher.WriteString(":.string")
+		hasher.WriteString(r.Classes[val9])
 	}
 	hasher.WriteString(":.[]string")
 	hasher.WriteInt(len(r.Installed_paths))
-	for val9 := 0; val9 < len(r.Installed_paths); val9++ {
+	for val10 := 0; val10 < len(r.Installed_paths); val10++ {
 		hasher.WriteString(":.string")
-		hasher.WriteString(r.Installed_paths[val9])
+		hasher.WriteString(r.Installed_paths[val10])
 	}
 	hasher.WriteString(":.[]string")
 	hasher.WriteInt(len(r.SrcJars))
-	for val10 := 0; val10 < len(r.SrcJars); val10++ {
+	for val11 := 0; val11 < len(r.SrcJars); val11++ {
 		hasher.WriteString(":.string")
-		hasher.WriteString(r.SrcJars[val10])
+		hasher.WriteString(r.SrcJars[val11])
 	}
 	hasher.WriteString(":.[]string")
 	hasher.WriteInt(len(r.Paths))
-	for val11 := 0; val11 < len(r.Paths); val11++ {
+	for val12 := 0; val12 < len(r.Paths); val12++ {
 		hasher.WriteString(":.string")
-		hasher.WriteString(r.Paths[val11])
+		hasher.WriteString(r.Paths[val12])
 	}
 	hasher.WriteString(":.[]string")
 	hasher.WriteInt(len(r.Static_libs))
-	for val12 := 0; val12 < len(r.Static_libs); val12++ {
+	for val13 := 0; val13 < len(r.Static_libs); val13++ {
 		hasher.WriteString(":.string")
-		hasher.WriteString(r.Static_libs[val12])
+		hasher.WriteString(r.Static_libs[val13])
 	}
 	hasher.WriteString(":.[]string")
 	hasher.WriteInt(len(r.Libs))
-	for val13 := 0; val13 < len(r.Libs); val13++ {
+	for val14 := 0; val14 < len(r.Libs); val14++ {
 		hasher.WriteString(":.string")
-		hasher.WriteString(r.Libs[val13])
+		hasher.WriteString(r.Libs[val14])
 	}
 	hasher.WriteString(":.[]string")
 	hasher.WriteInt(len(r.Asset_dirs))
-	for val14 := 0; val14 < len(r.Asset_dirs); val14++ {
+	for val15 := 0; val15 < len(r.Asset_dirs); val15++ {
 		hasher.WriteString(":.string")
-		hasher.WriteString(r.Asset_dirs[val14])
+		hasher.WriteString(r.Asset_dirs[val15])
 	}
 	hasher.WriteString(":.[]string")
 	hasher.WriteInt(len(r.Resource_dirs))
-	for val15 := 0; val15 < len(r.Resource_dirs); val15++ {
+	for val16 := 0; val16 < len(r.Resource_dirs); val16++ {
 		hasher.WriteString(":.string")
-		hasher.WriteString(r.Resource_dirs[val15])
+		hasher.WriteString(r.Resource_dirs[val16])
 	}
 	return nil
 }
@@ -9612,9 +9633,9 @@ func (r *IdeInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 		return err
 	}
 	if val34 != -1 {
-		r.Classes = make([]string, val34)
+		r.Imported_jars = make([]string, val34)
 		for val35 := 0; val35 < int(val34); val35++ {
-			err = gobtools.DecodeString(buf, &r.Classes[val35])
+			err = gobtools.DecodeString(buf, &r.Imported_jars[val35])
 			if err != nil {
 				return err
 			}
@@ -9627,9 +9648,9 @@ func (r *IdeInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 		return err
 	}
 	if val38 != -1 {
-		r.Installed_paths = make([]string, val38)
+		r.Classes = make([]string, val38)
 		for val39 := 0; val39 < int(val38); val39++ {
-			err = gobtools.DecodeString(buf, &r.Installed_paths[val39])
+			err = gobtools.DecodeString(buf, &r.Classes[val39])
 			if err != nil {
 				return err
 			}
@@ -9642,9 +9663,9 @@ func (r *IdeInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 		return err
 	}
 	if val42 != -1 {
-		r.SrcJars = make([]string, val42)
+		r.Installed_paths = make([]string, val42)
 		for val43 := 0; val43 < int(val42); val43++ {
-			err = gobtools.DecodeString(buf, &r.SrcJars[val43])
+			err = gobtools.DecodeString(buf, &r.Installed_paths[val43])
 			if err != nil {
 				return err
 			}
@@ -9657,9 +9678,9 @@ func (r *IdeInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 		return err
 	}
 	if val46 != -1 {
-		r.Paths = make([]string, val46)
+		r.SrcJars = make([]string, val46)
 		for val47 := 0; val47 < int(val46); val47++ {
-			err = gobtools.DecodeString(buf, &r.Paths[val47])
+			err = gobtools.DecodeString(buf, &r.SrcJars[val47])
 			if err != nil {
 				return err
 			}
@@ -9672,9 +9693,9 @@ func (r *IdeInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 		return err
 	}
 	if val50 != -1 {
-		r.Static_libs = make([]string, val50)
+		r.Paths = make([]string, val50)
 		for val51 := 0; val51 < int(val50); val51++ {
-			err = gobtools.DecodeString(buf, &r.Static_libs[val51])
+			err = gobtools.DecodeString(buf, &r.Paths[val51])
 			if err != nil {
 				return err
 			}
@@ -9687,9 +9708,9 @@ func (r *IdeInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 		return err
 	}
 	if val54 != -1 {
-		r.Libs = make([]string, val54)
+		r.Static_libs = make([]string, val54)
 		for val55 := 0; val55 < int(val54); val55++ {
-			err = gobtools.DecodeString(buf, &r.Libs[val55])
+			err = gobtools.DecodeString(buf, &r.Static_libs[val55])
 			if err != nil {
 				return err
 			}
@@ -9702,9 +9723,9 @@ func (r *IdeInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 		return err
 	}
 	if val58 != -1 {
-		r.Asset_dirs = make([]string, val58)
+		r.Libs = make([]string, val58)
 		for val59 := 0; val59 < int(val58); val59++ {
-			err = gobtools.DecodeString(buf, &r.Asset_dirs[val59])
+			err = gobtools.DecodeString(buf, &r.Libs[val59])
 			if err != nil {
 				return err
 			}
@@ -9717,9 +9738,24 @@ func (r *IdeInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 		return err
 	}
 	if val62 != -1 {
-		r.Resource_dirs = make([]string, val62)
+		r.Asset_dirs = make([]string, val62)
 		for val63 := 0; val63 < int(val62); val63++ {
-			err = gobtools.DecodeString(buf, &r.Resource_dirs[val63])
+			err = gobtools.DecodeString(buf, &r.Asset_dirs[val63])
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	var val66 int
+	err = gobtools.DecodeInt(buf, &val66)
+	if err != nil {
+		return err
+	}
+	if val66 != -1 {
+		r.Resource_dirs = make([]string, val66)
+		for val67 := 0; val67 < int(val66); val67++ {
+			err = gobtools.DecodeString(buf, &r.Resource_dirs[val67])
 			if err != nil {
 				return err
 			}
