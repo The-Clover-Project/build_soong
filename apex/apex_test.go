@@ -120,6 +120,7 @@ var prepareForApexTest = android.GroupFixturePreparers(
 	// General preparers in alphabetical order as test infrastructure will enforce correct
 	// registration order.
 	android.PrepareForTestWithAndroidBuildComponents,
+	android.PrepareForTestWithHostTools("soong_zip", "zipsync"),
 	bpf.PrepareForTestWithBpf,
 	cc.PrepareForTestWithCcBuildComponents,
 	java.PrepareForTestWithDexpreopt,
@@ -3414,12 +3415,11 @@ func TestApex_withPrebuiltKernelModules(t *testing.T) {
 			"mod2.ko": nil,
 		}))
 	ensureExactContents(t, ctx, "myapex", "android_common_myapex", []string{
-		"lib/modules/mod1.ko",
-		"lib/modules/mod2.ko",
 		"lib/modules/modules.alias",
 		"lib/modules/modules.dep",
 		"lib/modules/modules.load",
 		"lib/modules/modules.softdep",
+		"stripped.zip unzips to lib/modules",
 	})
 }
 

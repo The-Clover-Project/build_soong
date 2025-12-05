@@ -27,10 +27,13 @@ import (
 )
 
 var (
-	outputDir  = flag.String("d", "", "output dir")
-	outputFile = flag.String("l", "", "output list file")
-	zipPrefix  = flag.String("zip-prefix", "", "optional prefix within the zip file to extract, stripping the prefix")
-	filter     multiFlag
+	outputDir         = flag.String("d", "", "output dir")
+	outputFile        = flag.String("l", "", "output list file")
+	zipPrefix         = flag.String("zip-prefix", "", "optional prefix within the zip file to extract, stripping the prefix")
+	keepExistingFiles = flag.Bool("keep-existing-files", false, "Keep existing files in the output directory. "+
+		"This makes the tool act more like the regular unzip command, and not really act like "+
+		"a 'sync' anymore.")
+	filter multiFlag
 )
 
 func init() {
@@ -69,7 +72,7 @@ func writeSymlink(filename string, in io.Reader) error {
 
 func main() {
 	flag.Usage = func() {
-		fmt.Fprintln(os.Stderr, "usage: zipsync -d <output dir> [-l <output file>] [-f <pattern>] [zip]...")
+		fmt.Fprintln(os.Stderr, "usage: zipsync -d <output dir> [--keep-existing-files] [-l <output file>] [-f <pattern>] [zip]...")
 		flag.PrintDefaults()
 	}
 
@@ -82,10 +85,12 @@ func main() {
 
 	inputs := flag.Args()
 
-	// For now, just wipe the output directory and replace its contents with the zip files
-	// Eventually this could only modify the directory contents as necessary to bring it up
-	// to date with the zip files.
-	must(os.RemoveAll(*outputDir))
+	if keepExistingFiles == nil || !*keepExistingFiles {
+		// For now, just wipe the output directory and replace its contents with the zip files
+		// Eventually this could only modify the directory contents as necessary to bring it up
+		// to date with the zip files.
+		must(os.RemoveAll(*outputDir))
+	}
 
 	must(os.MkdirAll(*outputDir, 0777))
 
@@ -154,7 +159,7 @@ func main() {
 		if len(files) > 0 {
 			data += "\n"
 		}
-		must(ioutil.WriteFile(*outputFile, []byte(data), 0666))
+		must(os.WriteFile(*outputFile, []byte(data), 0666))
 	}
 }
 
