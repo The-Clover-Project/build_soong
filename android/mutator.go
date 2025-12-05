@@ -326,7 +326,7 @@ func (x *registerMutatorsContext) BottomUp(name string, m BottomUpMutator) Mutat
 		if a, ok := ctx.Module().(Module); ok {
 			mctx := bottomUpMutatorContextFactory(ctx, a, finalPhase)
 			defer bottomUpMutatorContextPool.Put(mctx)
-			if mctx.config.captureBuild {
+			if mctx.config.captureBuild && ctx.CaptureModuleForTests() {
 				mctx.config.modulesForTests.Insert(mctx.ModuleName(), mctx.Module())
 			}
 			m(mctx)

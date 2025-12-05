@@ -260,7 +260,7 @@ func (a *androidTransitionMutatorAdapter) Mutate(ctx blueprint.BottomUpMutatorCo
 		base.commonProperties.DebugMutators = append(base.commonProperties.DebugMutators, a.name)
 		base.commonProperties.DebugVariations = append(base.commonProperties.DebugVariations, variation)
 	}
-	if config := ctx.Config().(Config); config.captureBuild {
+	if config := ctx.Config().(Config); config.captureBuild && ctx.CaptureModuleForTests() {
 		config.modulesForTests.Insert(ctx.ModuleName(), am)
 	}
 
