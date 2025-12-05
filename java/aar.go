@@ -1809,6 +1809,7 @@ func AARImportFactory() android.Module {
 func (a *AARImport) IDEInfo(ctx android.BaseModuleContext, dpInfo *android.IdeInfo) {
 	dpInfo.Jars = append(dpInfo.Jars, a.implementationJarFile.String(), a.rJar.String(), a.aarPath.String())
 	dpInfo.Static_libs = append(dpInfo.Static_libs, a.properties.Static_libs.GetOrDefault(ctx, nil)...)
+	dpInfo.Imported_aars = append(dpInfo.Imported_aars, android.PathsForModuleSrc(ctx, a.properties.Aars).Strings()...)
 }
 
 // @auto-generate: gob
