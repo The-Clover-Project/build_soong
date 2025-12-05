@@ -203,6 +203,16 @@ func TestCollectJavaLibraryPropertiesAddManifest(t *testing.T) {
 	android.AssertStringEquals(t, "IdeInfo.Manifest should be equal to", "app/AndroidManifest.xml", appDpInfo.Manifest)
 }
 
+func TestCollectJavaLibraryPropertiesAddPackageName(t *testing.T) {
+	t.Parallel()
+	ctx, _ := testJava(t, `
+		android_library { name: "androidlib", package_name: "com.foo.bar" }
+	`)
+	module := ctx.ModuleForTests(t, "androidlib", "android_common").Module().(*AndroidLibrary)
+	dpInfo := getIdeInfo(ctx, module)
+	android.AssertStringEquals(t, "IdeInfo.PackageName should be equal to", "com.foo.bar", dpInfo.PackageName)
+}
+
 func getIdeInfo(ctx android.OtherModuleProviderContext, module android.ModuleOrProxy) android.IdeInfo {
 	if info, ok := android.OtherModuleProvider(ctx, module, android.CommonModuleInfoProvider); ok && info.IdeInfo != nil {
 		return *info.IdeInfo

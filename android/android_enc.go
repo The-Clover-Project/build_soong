@@ -9143,6 +9143,10 @@ func (r IdeInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		return err
 	}
 
+	if err = gobtools.EncodeString(buf, r.PackageName); err != nil {
+		return err
+	}
+
 	if r.Deps == nil {
 		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
@@ -9342,13 +9346,15 @@ func (r IdeInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 
 func (r IdeInfo) CustomHash(hasher *proptools.Hasher) error {
 	hasher.WriteString(":android.IdeInfo")
-	hasher.WriteInt(16)
+	hasher.WriteInt(17)
 	hasher.WriteString(":.string")
 	hasher.WriteString(r.BaseModuleName)
 	hasher.WriteString(":.string")
 	hasher.WriteString(r.ModuleType)
 	hasher.WriteString(":.string")
 	hasher.WriteString(r.Manifest)
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.PackageName)
 	hasher.WriteString(":.[]string")
 	hasher.WriteInt(len(r.Deps))
 	for val1 := 0; val1 < len(r.Deps); val1++ {
@@ -9448,195 +9454,200 @@ func (r *IdeInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 		return err
 	}
 
-	var val5 int
-	err = gobtools.DecodeInt(buf, &val5)
+	err = gobtools.DecodeString(buf, &r.PackageName)
 	if err != nil {
 		return err
 	}
-	if val5 != -1 {
-		r.Deps = make([]string, val5)
-		for val6 := 0; val6 < int(val5); val6++ {
-			err = gobtools.DecodeString(buf, &r.Deps[val6])
+
+	var val6 int
+	err = gobtools.DecodeInt(buf, &val6)
+	if err != nil {
+		return err
+	}
+	if val6 != -1 {
+		r.Deps = make([]string, val6)
+		for val7 := 0; val7 < int(val6); val7++ {
+			err = gobtools.DecodeString(buf, &r.Deps[val7])
 			if err != nil {
 				return err
 			}
 		}
 	}
 
-	var val9 int
-	err = gobtools.DecodeInt(buf, &val9)
+	var val10 int
+	err = gobtools.DecodeInt(buf, &val10)
 	if err != nil {
 		return err
 	}
-	if val9 != -1 {
-		r.Srcs = make([]string, val9)
-		for val10 := 0; val10 < int(val9); val10++ {
-			err = gobtools.DecodeString(buf, &r.Srcs[val10])
+	if val10 != -1 {
+		r.Srcs = make([]string, val10)
+		for val11 := 0; val11 < int(val10); val11++ {
+			err = gobtools.DecodeString(buf, &r.Srcs[val11])
 			if err != nil {
 				return err
 			}
 		}
 	}
 
-	var val13 int
-	err = gobtools.DecodeInt(buf, &val13)
+	var val14 int
+	err = gobtools.DecodeInt(buf, &val14)
 	if err != nil {
 		return err
 	}
-	if val13 != -1 {
-		r.Aidl_include_dirs = make([]string, val13)
-		for val14 := 0; val14 < int(val13); val14++ {
-			err = gobtools.DecodeString(buf, &r.Aidl_include_dirs[val14])
+	if val14 != -1 {
+		r.Aidl_include_dirs = make([]string, val14)
+		for val15 := 0; val15 < int(val14); val15++ {
+			err = gobtools.DecodeString(buf, &r.Aidl_include_dirs[val15])
 			if err != nil {
 				return err
 			}
 		}
 	}
 
-	var val17 int
-	err = gobtools.DecodeInt(buf, &val17)
+	var val18 int
+	err = gobtools.DecodeInt(buf, &val18)
 	if err != nil {
 		return err
 	}
-	if val17 != -1 {
-		r.Jarjar_rules = make([]string, val17)
-		for val18 := 0; val18 < int(val17); val18++ {
-			err = gobtools.DecodeString(buf, &r.Jarjar_rules[val18])
+	if val18 != -1 {
+		r.Jarjar_rules = make([]string, val18)
+		for val19 := 0; val19 < int(val18); val19++ {
+			err = gobtools.DecodeString(buf, &r.Jarjar_rules[val19])
 			if err != nil {
 				return err
 			}
 		}
 	}
 
-	var val21 int
-	err = gobtools.DecodeInt(buf, &val21)
+	var val22 int
+	err = gobtools.DecodeInt(buf, &val22)
 	if err != nil {
 		return err
 	}
-	if val21 != -1 {
-		r.Jars = make([]string, val21)
-		for val22 := 0; val22 < int(val21); val22++ {
-			err = gobtools.DecodeString(buf, &r.Jars[val22])
+	if val22 != -1 {
+		r.Jars = make([]string, val22)
+		for val23 := 0; val23 < int(val22); val23++ {
+			err = gobtools.DecodeString(buf, &r.Jars[val23])
 			if err != nil {
 				return err
 			}
 		}
 	}
 
-	var val25 int
-	err = gobtools.DecodeInt(buf, &val25)
+	var val26 int
+	err = gobtools.DecodeInt(buf, &val26)
 	if err != nil {
 		return err
 	}
-	if val25 != -1 {
-		r.Classes = make([]string, val25)
-		for val26 := 0; val26 < int(val25); val26++ {
-			err = gobtools.DecodeString(buf, &r.Classes[val26])
+	if val26 != -1 {
+		r.Classes = make([]string, val26)
+		for val27 := 0; val27 < int(val26); val27++ {
+			err = gobtools.DecodeString(buf, &r.Classes[val27])
 			if err != nil {
 				return err
 			}
 		}
 	}
 
-	var val29 int
-	err = gobtools.DecodeInt(buf, &val29)
+	var val30 int
+	err = gobtools.DecodeInt(buf, &val30)
 	if err != nil {
 		return err
 	}
-	if val29 != -1 {
-		r.Installed_paths = make([]string, val29)
-		for val30 := 0; val30 < int(val29); val30++ {
-			err = gobtools.DecodeString(buf, &r.Installed_paths[val30])
+	if val30 != -1 {
+		r.Installed_paths = make([]string, val30)
+		for val31 := 0; val31 < int(val30); val31++ {
+			err = gobtools.DecodeString(buf, &r.Installed_paths[val31])
 			if err != nil {
 				return err
 			}
 		}
 	}
 
-	var val33 int
-	err = gobtools.DecodeInt(buf, &val33)
+	var val34 int
+	err = gobtools.DecodeInt(buf, &val34)
 	if err != nil {
 		return err
 	}
-	if val33 != -1 {
-		r.SrcJars = make([]string, val33)
-		for val34 := 0; val34 < int(val33); val34++ {
-			err = gobtools.DecodeString(buf, &r.SrcJars[val34])
+	if val34 != -1 {
+		r.SrcJars = make([]string, val34)
+		for val35 := 0; val35 < int(val34); val35++ {
+			err = gobtools.DecodeString(buf, &r.SrcJars[val35])
 			if err != nil {
 				return err
 			}
 		}
 	}
 
-	var val37 int
-	err = gobtools.DecodeInt(buf, &val37)
+	var val38 int
+	err = gobtools.DecodeInt(buf, &val38)
 	if err != nil {
 		return err
 	}
-	if val37 != -1 {
-		r.Paths = make([]string, val37)
-		for val38 := 0; val38 < int(val37); val38++ {
-			err = gobtools.DecodeString(buf, &r.Paths[val38])
+	if val38 != -1 {
+		r.Paths = make([]string, val38)
+		for val39 := 0; val39 < int(val38); val39++ {
+			err = gobtools.DecodeString(buf, &r.Paths[val39])
 			if err != nil {
 				return err
 			}
 		}
 	}
 
-	var val41 int
-	err = gobtools.DecodeInt(buf, &val41)
+	var val42 int
+	err = gobtools.DecodeInt(buf, &val42)
 	if err != nil {
 		return err
 	}
-	if val41 != -1 {
-		r.Static_libs = make([]string, val41)
-		for val42 := 0; val42 < int(val41); val42++ {
-			err = gobtools.DecodeString(buf, &r.Static_libs[val42])
+	if val42 != -1 {
+		r.Static_libs = make([]string, val42)
+		for val43 := 0; val43 < int(val42); val43++ {
+			err = gobtools.DecodeString(buf, &r.Static_libs[val43])
 			if err != nil {
 				return err
 			}
 		}
 	}
 
-	var val45 int
-	err = gobtools.DecodeInt(buf, &val45)
+	var val46 int
+	err = gobtools.DecodeInt(buf, &val46)
 	if err != nil {
 		return err
 	}
-	if val45 != -1 {
-		r.Libs = make([]string, val45)
-		for val46 := 0; val46 < int(val45); val46++ {
-			err = gobtools.DecodeString(buf, &r.Libs[val46])
+	if val46 != -1 {
+		r.Libs = make([]string, val46)
+		for val47 := 0; val47 < int(val46); val47++ {
+			err = gobtools.DecodeString(buf, &r.Libs[val47])
 			if err != nil {
 				return err
 			}
 		}
 	}
 
-	var val49 int
-	err = gobtools.DecodeInt(buf, &val49)
+	var val50 int
+	err = gobtools.DecodeInt(buf, &val50)
 	if err != nil {
 		return err
 	}
-	if val49 != -1 {
-		r.Asset_dirs = make([]string, val49)
-		for val50 := 0; val50 < int(val49); val50++ {
-			err = gobtools.DecodeString(buf, &r.Asset_dirs[val50])
+	if val50 != -1 {
+		r.Asset_dirs = make([]string, val50)
+		for val51 := 0; val51 < int(val50); val51++ {
+			err = gobtools.DecodeString(buf, &r.Asset_dirs[val51])
 			if err != nil {
 				return err
 			}
 		}
 	}
 
-	var val53 int
-	err = gobtools.DecodeInt(buf, &val53)
+	var val54 int
+	err = gobtools.DecodeInt(buf, &val54)
 	if err != nil {
 		return err
 	}
-	if val53 != -1 {
-		r.Resource_dirs = make([]string, val53)
-		for val54 := 0; val54 < int(val53); val54++ {
-			err = gobtools.DecodeString(buf, &r.Resource_dirs[val54])
+	if val54 != -1 {
+		r.Resource_dirs = make([]string, val54)
+		for val55 := 0; val55 < int(val54); val55++ {
+			err = gobtools.DecodeString(buf, &r.Resource_dirs[val55])
 			if err != nil {
 				return err
 			}

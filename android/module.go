@@ -3653,6 +3653,7 @@ type IdeInfo struct {
 	BaseModuleName    string   `json:"-"`
 	ModuleType        string   `json:"module_type,omitempty"`
 	Manifest          string   `json:"manifest,omitempty"`
+	PackageName       string   `json:"package_name,omitempty"`
 	Deps              []string `json:"dependencies,omitempty"`
 	Srcs              []string `json:"srcs,omitempty"`
 	Aidl_include_dirs []string `json:"aidl_include_dirs,omitempty"`
@@ -3673,6 +3674,7 @@ func (i IdeInfo) Merge(other *IdeInfo) IdeInfo {
 	return IdeInfo{
 		ModuleType:        mergeString(i.ModuleType, other.ModuleType),
 		Manifest:          mergeString(i.Manifest, other.Manifest),
+		PackageName:       mergeString(i.PackageName, other.PackageName),
 		Deps:              mergeStringLists(i.Deps, other.Deps),
 		Srcs:              mergeStringLists(i.Srcs, other.Srcs),
 		Aidl_include_dirs: mergeStringLists(i.Aidl_include_dirs, other.Aidl_include_dirs),

@@ -1194,6 +1194,9 @@ func (a *aapt) IDEInfo(ctx android.BaseModuleContext, dpInfo *android.IdeInfo) {
 	if a.originalManifestPath != nil {
 		dpInfo.Manifest = a.originalManifestPath.String()
 	}
+	if packageNameProp := a.aaptProperties.Package_name.Get(ctx); packageNameProp.IsPresent() {
+		dpInfo.PackageName = packageNameProp.Get()
+	}
 }
 
 // android_library builds and links sources into a `.jar` file for the device along with Android resources.
