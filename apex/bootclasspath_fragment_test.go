@@ -42,8 +42,22 @@ var prepareForTestWithArtApex = android.GroupFixturePreparers(
 		"com.android.art.avbpubkey":                          nil,
 		"com.android.art.pem":                                nil,
 		"system/sepolicy/apex/com.android.art-file_contexts": nil,
+		"art/build/boot/boot-image-profile.txt":              nil,
 	}),
-	dexpreopt.FixtureSetBootImageProfiles("art/build/boot/boot-image-profile.txt"),
+)
+
+// Some additional files needed for the mainline apexes.
+var prepareForTestWithMainlineApex = android.GroupFixturePreparers(
+	android.FixtureMergeMockFs(android.MockFS{
+		"com.android.os.statsd.avbpubkey":                                nil,
+		"com.android.os.statsd.pem":                                      nil,
+		"system/sepolicy/apex/com.android.os.statsd-file_contexts":       nil,
+		"packages/modules/StatsD/framework/boot-image-profile.txt":       nil,
+		"com.android.connectivity.avbpubkey":                             nil,
+		"com.android.connectivity.pem":                                   nil,
+		"system/sepolicy/apex/com.android.connectivity-file_contexts":    nil,
+		"packages/modules/Connectivity/framework/boot-image-profile.txt": nil,
+	}),
 )
 
 func TestBootclasspathFragments_FragmentDependency(t *testing.T) {
@@ -120,6 +134,9 @@ func TestBootclasspathFragments_FragmentDependency(t *testing.T) {
 		bootclasspath_fragment {
 			name: "art-bootclasspath-fragment",
 			image_name: "art",
+			dex_preopt: {
+				profile: "art/build/boot/boot-image-profile.txt",
+			},
 			// Must match the "com.android.art:" entries passed to FixtureConfigureBootJars above.
 			contents: ["baz", "quuz"],
 			apex_available: [
@@ -223,6 +240,9 @@ func TestBootclasspathFragmentInArtApex(t *testing.T) {
 			bootclasspath_fragment {
 				name: "art-bootclasspath-fragment",
 				image_name: "art",
+				dex_preopt: {
+					profile: "art/build/boot/boot-image-profile.txt",
+				},
 				%s
 				apex_available: [
 					"com.android.art",
@@ -562,6 +582,9 @@ func TestBootclasspathFragmentInPrebuiltArtApex(t *testing.T) {
 			apex_available: [
 				"com.android.art",
 			],
+			dex_preopt: {
+				profile_guided: true,
+			},
 			hidden_api: {
 				annotation_flags: "hiddenapi/annotation-flags.csv",
 				metadata: "hiddenapi/metadata.csv",
@@ -579,7 +602,7 @@ func TestBootclasspathFragmentInPrebuiltArtApex(t *testing.T) {
 			src: "com.mycompany.android.art.apex",
 			exported_bootclasspath_fragments: ["art-bootclasspath-fragment"],
 		}
-	
+
 		apex_contributions {
 			name: "prebuilt_art_contributions",
 			contents: ["prebuilt_com.android.art"],
@@ -613,7 +636,7 @@ func TestBootclasspathFragmentInPrebuiltArtApex(t *testing.T) {
 // predefined locations of boot dex jars used as inputs for the ART boot image.
 func checkCopiesToPredefinedLocationForArt(t *testing.T, config android.Config, module android.TestingModule, modules ...string) {
 	t.Helper()
-	bootJarLocations := []string{}
+	var bootJarLocations []string
 	for _, output := range module.AllOutputs() {
 		output = android.StringRelativeToTop(config, output)
 		if strings.HasPrefix(output, "out/soong/dexpreopt_arm64/dex_artjars_input/") {
@@ -622,13 +645,258 @@ func checkCopiesToPredefinedLocationForArt(t *testing.T, config android.Config, 
 	}
 
 	sort.Strings(bootJarLocations)
-	expected := []string{}
+	var expected []string
 	for _, m := range modules {
 		expected = append(expected, fmt.Sprintf("out/soong/dexpreopt_arm64/dex_artjars_input/%s.jar", m))
 	}
 	sort.Strings(expected)
 
 	android.AssertArrayString(t, "copies to predefined locations for art", expected, bootJarLocations)
+}
+
+func TestBootclasspathFragmentInStatsdApex(t *testing.T) {
+	t.Parallel()
+	commonPreparer := android.GroupFixturePreparers(
+		prepareForTestWithBootclasspathFragment,
+		android.FixtureMergeMockFs(android.MockFS{
+			"com.android.os.statsd.avbpubkey":                          nil,
+			"com.android.os.statsd.pem":                                nil,
+			"system/sepolicy/apex/com.android.os.statsd-file_contexts": nil,
+			"packages/modules/StatsD/framework/boot-image-profile.txt": nil,
+		}),
+
+		android.FixtureWithRootAndroidBp(`
+			apex {
+				name: "com.android.os.statsd",
+				key: "com.android.os.statsd.key",
+				bootclasspath_fragments: [
+					"statsd-bootclasspath-fragment",
+				],
+				updatable: false,
+			}
+
+			override_apex {
+				name: "com.mycompany.android.os.statsd",
+				base: "com.android.os.statsd",
+				min_sdk_version: "33", // mycompany overrides the min_sdk_version
+			}
+
+			apex_key {
+				name: "com.android.os.statsd.key",
+				public_key: "testkey.avbpubkey",
+				private_key: "testkey.pem",
+			}
+		`),
+	)
+
+	contentsInsert := func(contents []string) string {
+		insert := ""
+		if contents != nil {
+			insert = fmt.Sprintf(`contents: ["%s"],`, strings.Join(contents, `", "`))
+		}
+		return insert
+	}
+
+	addSource := func(contents ...string) android.FixturePreparer {
+		text := fmt.Sprintf(`
+			bootclasspath_fragment {
+				name: "statsd-bootclasspath-fragment",
+				%s
+				dex_preopt: {
+					profile: "packages/modules/StatsD/framework/boot-image-profile.txt",
+				},
+				apex_available: [
+					"com.android.os.statsd",
+				],
+				hidden_api: {
+					split_packages: ["*"],
+				},
+			}
+		`, contentsInsert(contents))
+
+		for _, content := range contents {
+			text += fmt.Sprintf(`
+				java_library {
+					name: "%[1]s",
+					srcs: ["%[1]s.java"],
+					installable: true,
+					apex_available: [
+						"com.android.os.statsd",
+					],
+					min_sdk_version: "33",
+				}
+			`, content)
+		}
+
+		return android.FixtureAddTextFile("packages/modules/StatsD/apex/Android.bp", text)
+	}
+
+	addPrebuilt := func(prefer bool, contents ...string) android.FixturePreparer {
+		text := fmt.Sprintf(`
+			prebuilt_apex {
+				name: "com.android.os.statsd",
+				arch: {
+					arm64: {
+						src: "com.android.os.statsd-arm64.apex",
+					},
+					arm: {
+						src: "com.android.os.statsd-arm.apex",
+					},
+				},
+				exported_bootclasspath_fragments: ["statsd-bootclasspath-fragment"],
+			}
+
+			prebuilt_bootclasspath_fragment {
+				name: "statsd-bootclasspath-fragment",
+				%s
+				prefer: %t,
+				apex_available: [
+					"com.android.os.statsd",
+				],
+				dex_preopt: {
+					profile_guided: true,
+				},
+				hidden_api: {
+					annotation_flags: "hiddenapi/annotation-flags.csv",
+					metadata: "hiddenapi/metadata.csv",
+					index: "hiddenapi/index.csv",
+					stub_flags: "hiddenapi/stub-flags.csv",
+					all_flags: "hiddenapi/all-flags.csv",
+				},
+			}
+		`, contentsInsert(contents), prefer)
+
+		for _, content := range contents {
+			text += fmt.Sprintf(`
+				java_import {
+					name: "%[1]s",
+					prefer: %[2]t,
+					jars: ["%[1]s.jar"],
+					apex_available: [
+						"com.android.os.statsd",
+					],
+					min_sdk_version: "33",
+					compile_dex: true,
+				}
+			`, content, prefer)
+		}
+
+		return android.FixtureAddTextFile("prebuilts/module_sdk/StatsD/current/Android.bp", text)
+	}
+
+	t.Run("boot image files from source", func(t *testing.T) {
+		t.Parallel()
+		result := android.GroupFixturePreparers(
+			commonPreparer,
+
+			// Configure some libraries in the StatsD bootclasspath_fragment that match the source
+			// bootclasspath_fragment's contents property.
+			java.FixtureConfigureBootJars("com.android.os.statsd:foo", "com.android.os.statsd:bar"),
+			dexpreopt.FixtureSetTestOnlyArtBootImageJars("com.android.os.statsd:foo", "com.android.os.statsd:bar"),
+			addSource("foo", "bar"),
+			java.FixtureSetBootImageInstallDirOnDevice("mainline", "apex/com.android.os.statsd/javalib"),
+		).RunTest(t)
+
+		ensureExactContents(t, result.TestContext, "com.android.os.statsd", "android_common_com.android.os.statsd", []string{
+			"etc/boot-image.prof",
+			"etc/classpaths/bootclasspath.pb",
+			"javalib/bar.jar",
+			"javalib/foo.jar",
+		})
+	})
+
+	t.Run("boot image files from source of override apex", func(t *testing.T) {
+		t.Parallel()
+		result := android.GroupFixturePreparers(
+			commonPreparer,
+			// Configure some libraries in the StatsD bootclasspath_fragment that match the source
+			// bootclasspath_fragment's contents property.
+			java.FixtureConfigureBootJars("com.android.os.statsd:foo", "com.android.os.statsd:bar"),
+			dexpreopt.FixtureSetTestOnlyArtBootImageJars("com.android.os.statsd:foo", "com.android.os.statsd:bar"),
+			addSource("foo", "bar"),
+			java.FixtureSetBootImageInstallDirOnDevice("art", "apex/com.android.os.statsd/javalib"),
+		).RunTest(t)
+
+		ensureExactContents(t, result.TestContext, "com.android.os.statsd", "android_common_com.mycompany.android.os.statsd_com.mycompany.android.os.statsd", []string{
+			"etc/boot-image.prof",
+			"etc/classpaths/bootclasspath.pb",
+			"javalib/bar.jar",
+			"javalib/foo.jar",
+		})
+	})
+
+	t.Run("generate boot image profile even if dexpreopt is disabled", func(t *testing.T) {
+		t.Parallel()
+		result := android.GroupFixturePreparers(
+			commonPreparer,
+			// Configure some libraries in the StatsD bootclasspath_fragment that match the source
+			// bootclasspath_fragment's contents property.
+			java.FixtureConfigureBootJars("com.android.os.statsd:foo", "com.android.os.statsd:bar"),
+			dexpreopt.FixtureSetTestOnlyArtBootImageJars("com.android.os.statsd:foo", "com.android.os.statsd:bar"),
+			addSource("foo", "bar"),
+			java.FixtureSetBootImageInstallDirOnDevice("art", "system/framework"),
+			dexpreopt.FixtureDisableDexpreoptBootImages(true),
+		).RunTest(t)
+
+		ensureExactContents(t, result.TestContext, "com.android.os.statsd", "android_common_com.android.os.statsd", []string{
+			"etc/boot-image.prof",
+			"etc/classpaths/bootclasspath.pb",
+			"javalib/bar.jar",
+			"javalib/foo.jar",
+		})
+	})
+
+	t.Run("boot image disable generate profile", func(t *testing.T) {
+		t.Parallel()
+		result := android.GroupFixturePreparers(
+			commonPreparer,
+			// Configure some libraries in the StatsD bootclasspath_fragment that match the source
+			// bootclasspath_fragment's contents property.
+			java.FixtureConfigureBootJars("com.android.os.statsd:foo", "com.android.os.statsd:bar"),
+			dexpreopt.FixtureSetTestOnlyArtBootImageJars("com.android.os.statsd:foo", "com.android.os.statsd:bar"),
+			addSource("foo", "bar"),
+			dexpreopt.FixtureDisableGenerateProfile(true),
+		).RunTest(t)
+
+		files := getFiles(t, result.TestContext, "com.android.os.statsd", "android_common_com.android.os.statsd")
+		for _, file := range files {
+			matched, _ := path.Match("etc/boot-image.prof", file.path)
+			android.AssertBoolEquals(t, "\"etc/boot-image.prof\" should not be in the APEX", matched, false)
+		}
+	})
+
+	t.Run("boot image files with preferred prebuilt", func(t *testing.T) {
+		t.Parallel()
+		result := android.GroupFixturePreparers(
+			commonPreparer,
+
+			// Configure some libraries in the art bootclasspath_fragment that match the source
+			// bootclasspath_fragment's contents property.
+			java.FixtureConfigureBootJars("com.android.os.statsd:foo", "com.android.os.statsd:bar"),
+			dexpreopt.FixtureSetTestOnlyArtBootImageJars("com.android.os.statsd:foo", "com.android.os.statsd:bar"),
+			addSource("foo", "bar"),
+
+			// Make sure that a preferred prebuilt with consistent contents doesn't affect the apex.
+			addPrebuilt(true, "foo", "bar"),
+			android.FixtureMergeMockFs(android.MockFS{
+				"apex_contributions/Android.bp": []byte(`
+				apex_contributions {
+					name: "prebuilt_statsd_contributions",
+					contents: ["prebuilt_com.android.os.statsd"],
+					api_domain: "com.android.os.statsd",
+				}
+			`)}),
+			android.PrepareForTestWithBuildFlag("RELEASE_APEX_CONTRIBUTIONS_STATSD", "prebuilt_statsd_contributions"),
+
+			java.FixtureSetBootImageInstallDirOnDevice("art", "apex/com.android.os.statsd/javalib"),
+		).RunTest(t)
+
+		ensureExactDeapexedContents(t, result.TestContext, "prebuilt_com.android.os.statsd", "android_common_prebuilt_com.android.os.statsd", []string{
+			"etc/boot-image.prof",
+			"javalib/bar.jar",
+			"javalib/foo.jar",
+		})
+	})
 }
 
 func TestBootclasspathFragmentContentsNoName(t *testing.T) {
@@ -797,6 +1065,9 @@ func TestBootclasspathFragment_HiddenAPIList(t *testing.T) {
 		bootclasspath_fragment {
 			name: "art-bootclasspath-fragment",
 			image_name: "art",
+			dex_preopt: {
+				profile: "art/build/boot/boot-image-profile.txt",
+			},
 			// Must match the "com.android.art:" entries passed to FixtureConfigureBootJars above.
 			contents: ["baz", "quuz"],
 			apex_available: [
@@ -969,6 +1240,9 @@ func TestBootclasspathFragment_AndroidNonUpdatable_FromSource(t *testing.T) {
 		bootclasspath_fragment {
 			name: "art-bootclasspath-fragment",
 			image_name: "art",
+			dex_preopt: {
+				profile: "art/build/boot/boot-image-profile.txt",
+			},
 			// Must match the "com.android.art:" entries passed to FixtureConfigureBootJars above.
 			contents: ["baz", "quuz"],
 			apex_available: [
@@ -1143,6 +1417,9 @@ func TestBootclasspathFragment_AndroidNonUpdatable_FromText(t *testing.T) {
 		bootclasspath_fragment {
 			name: "art-bootclasspath-fragment",
 			image_name: "art",
+			dex_preopt: {
+				profile: "art/build/boot/boot-image-profile.txt",
+			},
 			// Must match the "com.android.art:" entries passed to FixtureConfigureBootJars above.
 			contents: ["baz", "quuz"],
 			apex_available: [
@@ -1298,6 +1575,9 @@ func TestBootclasspathFragment_AndroidNonUpdatable_AlwaysUsePrebuiltSdks(t *test
 		bootclasspath_fragment {
 			name: "art-bootclasspath-fragment",
 			image_name: "art",
+			dex_preopt: {
+				profile: "art/build/boot/boot-image-profile.txt",
+			},
 			// Must match the "com.android.art:" entries passed to FixtureConfigureBootJars above.
 			contents: ["baz", "quuz"],
 			apex_available: [

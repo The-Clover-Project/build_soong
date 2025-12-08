@@ -276,6 +276,9 @@ func TestPlatformBootclasspathDependencies(t *testing.T) {
 		bootclasspath_fragment {
 			name: "art-bootclasspath-fragment",
 			image_name: "art",
+			dex_preopt: {
+				profile: "art/build/boot/boot-image-profile.txt",
+			},
 			apex_available: [
 				"com.android.art",
 			],
