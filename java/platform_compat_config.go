@@ -57,7 +57,10 @@ type PlatformCompatConfigInfo struct {
 
 var PlatformCompatConfigInfoProvider = blueprint.NewProvider[PlatformCompatConfigInfo]()
 
-var PrepareForTestWithPlatformCompatConfig = android.FixtureRegisterWithContext(registerPlatformCompatConfigBuildComponents)
+var PrepareForTestWithPlatformCompatConfig = android.GroupFixturePreparers(
+	android.FixtureRegisterWithContext(registerPlatformCompatConfigBuildComponents),
+	android.PrepareForTestWithHostTools("process-compat-config"),
+)
 
 func platformCompatConfigPath(ctx android.PathContext) android.OutputPath {
 	return android.PathForOutput(ctx, "compat_config", "merged_compat_config.xml")

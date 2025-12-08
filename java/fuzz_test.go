@@ -27,6 +27,7 @@ var prepForJavaFuzzTest = android.GroupFixturePreparers(
 	PrepareForTestWithJavaDefaultModules,
 	cc.PrepareForTestWithCcDefaultModules,
 	android.FixtureRegisterWithContext(RegisterJavaFuzzBuildComponents),
+	android.PrepareForTestWithHostTools("soong_zip"),
 )
 
 func TestJavaFuzz(t *testing.T) {

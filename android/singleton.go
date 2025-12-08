@@ -155,6 +155,15 @@ type SingletonContext interface {
 
 	// OtherModuleNamespace returns the namespace of the module.
 	OtherModuleNamespace(module ModuleOrProxy) *Namespace
+
+	// GetModuleProxy returns a module with the given name and variations, from the root namespace.
+	// It may return a nil ModuleProxy if the module doesn't exist.
+	GetModuleProxy(moduleName string, variant []blueprint.Variation) ModuleProxy
+
+	// addSubninja adds a ninja file to include with subninja. This should
+	// only ever be used inside bootstrap or the android package to handle
+	// phony, dist or glob rules.
+	addSubninja(file string)
 }
 
 type singletonAdaptor struct {
@@ -494,6 +503,14 @@ func (s *singletonContextAdaptor) GetIncrementalEnabled() bool {
 
 func (s *singletonContextAdaptor) OtherModuleNamespace(module ModuleOrProxy) *Namespace {
 	return s.SingletonContext.OtherModuleNamespace(module).(*Namespace)
+}
+
+func (s *singletonContextAdaptor) GetModuleProxy(moduleName string, variant []blueprint.Variation) ModuleProxy {
+	return ModuleProxy{s.SingletonContext.GetModuleProxy(moduleName, variant)}
+}
+
+func (s *singletonContextAdaptor) addSubninja(file string) {
+	s.SingletonContext.AddSubninja(file)
 }
 
 func SetSingletonProvider[K any](ctx SingletonContext, provider blueprint.ProviderKey[K], value K) {

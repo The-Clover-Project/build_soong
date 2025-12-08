@@ -35,6 +35,14 @@ func createBootImageCommon(ctx android.LoadHookContext, kernelPath string, prebu
 	}
 
 	if prebuiltBootImagePath != "" {
+		file := android.ExistentPathForSource(ctx, prebuiltBootImagePath)
+		// If the prebuilt doesn't exist yet, something else in the build is expected to populate it
+		// (along with the corresponding prebuilt vbmeta if necessary).
+		// TODO(b/465530439): this works for the current use case, but may not be the right long-term solution.
+		if !file.Valid() && ctx.Config().KatiEnabled() {
+			return false
+		}
+
 		// prebuilt bootimg
 		ctx.CreateModuleInDirectory(
 			filesystem.PrebuiltBootimgFactory,
@@ -454,8 +462,7 @@ func createInitBootImage(ctx android.LoadHookContext) bool {
 	return true
 }
 
-// Returns the equivalent of the BUILDING_BOOT_IMAGE variable in make. Derived from this logic:
-// https://cs.android.com/android/platform/superproject/main/+/main:build/make/core/board_config.mk;l=458;drc=5b55f926830963c02ab1d2d91e46442f04ba3af0
+// Returns true if the product contains a boot image (built from source or prebuilt)
 func buildingBootImage(partitionVars android.PartitionVariables) bool {
 	if partitionVars.BoardUsesRecoveryAsBoot {
 		return false
@@ -463,10 +470,6 @@ func buildingBootImage(partitionVars android.PartitionVariables) bool {
 
 	if partitionVars.ProductBuildBootImage {
 		return true
-	}
-
-	if len(partitionVars.BoardPrebuiltBootimage) > 0 {
-		return false
 	}
 
 	if len(partitionVars.BoardBootimagePartitionSize) > 0 {

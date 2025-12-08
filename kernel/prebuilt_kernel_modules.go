@@ -27,6 +27,7 @@ import (
 )
 
 func init() {
+	pctx.Import("android/soong/android")
 	pctx.Import("android/soong/cc/config")
 	registerKernelBuildComponents(android.InitRegistrationContext)
 }
@@ -269,8 +270,8 @@ var (
 	// /system/lib/modules/foo.ko: /system/lib/modules/bar.ko
 	addLeadingSlashToPaths = pctx.AndroidStaticRule("add_leading_slash",
 		blueprint.RuleParams{
-			Command:         `sed -e 's|\([^: ]*lib/modules/[^: ]*\)|/\1|g' $in > $out`,
-			SandboxDisabled: true,
+			Command:     `${android.Sed} -e 's|\([^: ]*lib/modules/[^: ]*\)|/\1|g' $in > $out`,
+			CommandDeps: []string{"Sed-deps"},
 		},
 	)
 	// Remove empty lines. Raise an exception if line is _not_ formatted as `blocklist $name.ko`

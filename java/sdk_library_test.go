@@ -182,11 +182,11 @@ func TestJavaSdkLibrary(t *testing.T) {
 
 	fooImplDexJar := result.ModuleForTests(t, "foo.impl", "android_common").Rule("d8")
 	// tests if kotlinc generated files are NOT excluded from output of foo.impl.
-	android.AssertStringDoesNotContain(t, "foo.impl dex", fooImplDexJar.BuildParams.Args["mergeZipsFlags"], "-stripFile META-INF/**/*.kotlin_module")
+	android.AssertStringDoesNotContain(t, "foo.impl dex", fooImplDexJar.BuildParams.Args["mergeZipsFlags"], `-stripFile "META-INF/**/*.kotlin_module"`)
 
 	barImplDexJar := result.ModuleForTests(t, "bar.impl", "android_common").Rule("d8")
 	// tests if kotlinc generated files are excluded from output of bar.impl.
-	android.AssertStringDoesContain(t, "bar.impl dex", barImplDexJar.BuildParams.Args["mergeZipsFlags"], "-stripFile META-INF/**/*.kotlin_module")
+	android.AssertStringDoesContain(t, "bar.impl dex", barImplDexJar.BuildParams.Args["mergeZipsFlags"], `-stripFile "META-INF/**/*.kotlin_module"`)
 }
 
 func TestJavaSdkLibrary_UpdatableLibrary(t *testing.T) {
@@ -611,7 +611,7 @@ func TestJavaSdkLibraryImport_AccessOutputFiles_Invalid(t *testing.T) {
 	t.Run("stubs.source", func(t *testing.T) {
 		t.Parallel()
 		prepareForJavaTest.
-			ExtendWithErrorHandler(android.FixtureExpectsAtLeastOneErrorMatchingPattern(`module "foo" is not a SourceFileProducer or having valid output file for tag ".public.stubs.source"`)).
+			ExtendWithErrorHandler(android.FixtureExpectsAtLeastOneErrorMatchingPattern(`module "foo" is not a SourceFileProducer or have a valid output file for tag ".public.stubs.source"`)).
 			RunTestWithBp(t, bp+`
 				java_library {
 					name: "bar",
@@ -627,7 +627,7 @@ func TestJavaSdkLibraryImport_AccessOutputFiles_Invalid(t *testing.T) {
 	t.Run("api.txt", func(t *testing.T) {
 		t.Parallel()
 		prepareForJavaTest.
-			ExtendWithErrorHandler(android.FixtureExpectsAtLeastOneErrorMatchingPattern(`module "foo" is not a SourceFileProducer or having valid output file for tag ".public.api.txt"`)).
+			ExtendWithErrorHandler(android.FixtureExpectsAtLeastOneErrorMatchingPattern(`module "foo" is not a SourceFileProducer or have a valid output file for tag ".public.api.txt"`)).
 			RunTestWithBp(t, bp+`
 				java_library {
 					name: "bar",
@@ -642,7 +642,7 @@ func TestJavaSdkLibraryImport_AccessOutputFiles_Invalid(t *testing.T) {
 	t.Run("removed-api.txt", func(t *testing.T) {
 		t.Parallel()
 		prepareForJavaTest.
-			ExtendWithErrorHandler(android.FixtureExpectsAtLeastOneErrorMatchingPattern(`module "foo" is not a SourceFileProducer or having valid output file for tag ".public.removed-api.txt"`)).
+			ExtendWithErrorHandler(android.FixtureExpectsAtLeastOneErrorMatchingPattern(`module "foo" is not a SourceFileProducer or have a valid output file for tag ".public.removed-api.txt"`)).
 			RunTestWithBp(t, bp+`
 				java_library {
 					name: "bar",

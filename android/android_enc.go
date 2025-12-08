@@ -837,7 +837,6 @@ func (r AndroidInfo) GetTypeId() int16 {
 // begin of androidmk.go
 func init() {
 	AndroidMkDataInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(AndroidMkDataInfo) })
-	distCopyGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(distCopy) })
 	AndroidMkProviderInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(AndroidMkProviderInfo) })
 	AndroidMkInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(AndroidMkInfo) })
 }
@@ -874,75 +873,6 @@ var AndroidMkDataInfoGobRegId int16
 
 func (r AndroidMkDataInfo) GetTypeId() int16 {
 	return AndroidMkDataInfoGobRegId
-}
-
-func (r distCopy) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
-	var err error
-
-	if err = gobtools.EncodeInterface(ctx, buf, r.from); err != nil {
-		return err
-	}
-
-	if err = gobtools.EncodeString(buf, r.dest); err != nil {
-		return err
-	}
-	return err
-}
-
-func (r distCopy) CustomHash(hasher *proptools.Hasher) error {
-	hasher.WriteString(":android.distCopy")
-	hasher.WriteInt(2)
-	hasher.WriteString(":android.Path")
-	val1 := r.from == nil
-	if val1 {
-		hasher.WriteByte(0)
-	} else {
-		if v := reflect.ValueOf(r.from); v.Kind() == reflect.Ptr {
-			if v.IsNil() {
-				panic(fmt.Errorf("nil pointer is not supported in interface"))
-			} else {
-				val2 := r.from == nil
-				if val2 {
-					hasher.WriteByte(0)
-				} else {
-					val3 := func(hasher *proptools.Hasher) error { return r.from.(proptools.CustomHash).CustomHash(hasher) }
-					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val3); err != nil {
-						return err
-					}
-				}
-			}
-		} else {
-			r.from.(proptools.CustomHash).CustomHash(hasher)
-		}
-	}
-	hasher.WriteString(":.string")
-	hasher.WriteString(r.dest)
-	return nil
-}
-
-func (r *distCopy) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
-	var err error
-
-	if val2, err := gobtools.DecodeInterface(ctx, buf); err != nil {
-		return err
-	} else if val2 == nil {
-		r.from = nil
-	} else {
-		r.from = val2.(Path)
-	}
-
-	err = gobtools.DecodeString(buf, &r.dest)
-	if err != nil {
-		return err
-	}
-
-	return err
-}
-
-var distCopyGobRegId int16
-
-func (r distCopy) GetTypeId() int16 {
-	return distCopyGobRegId
 }
 
 func (r AndroidMkProviderInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
@@ -3938,6 +3868,82 @@ func (r DirInfo) GetTypeId() int16 {
 }
 
 // end of dirgroup.go
+
+// begin of dist.go
+func init() {
+	distCopyGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(distCopy) })
+}
+
+func (r distCopy) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = gobtools.EncodeInterface(ctx, buf, r.from); err != nil {
+		return err
+	}
+
+	if err = gobtools.EncodeString(buf, r.dest); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r distCopy) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":android.distCopy")
+	hasher.WriteInt(2)
+	hasher.WriteString(":android.Path")
+	val1 := r.from == nil
+	if val1 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.from); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val2 := r.from == nil
+				if val2 {
+					hasher.WriteByte(0)
+				} else {
+					val3 := func(hasher *proptools.Hasher) error { return r.from.(proptools.CustomHash).CustomHash(hasher) }
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val3); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.from.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.dest)
+	return nil
+}
+
+func (r *distCopy) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	if val2, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+		return err
+	} else if val2 == nil {
+		r.from = nil
+	} else {
+		r.from = val2.(Path)
+	}
+
+	err = gobtools.DecodeString(buf, &r.dest)
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
+var distCopyGobRegId int16
+
+func (r distCopy) GetTypeId() int16 {
+	return distCopyGobRegId
+}
+
+// end of dist.go
 
 // begin of gen_notice.go
 func init() {

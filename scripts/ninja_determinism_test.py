@@ -94,17 +94,25 @@ def find_subninjas_and_includes(contents) -> List[str]:
       path_bytes = contents[i:j]
     path_bytes = path_bytes.removesuffix(b'\r')
     path = path_bytes.decode()
+    if '$dist' in path:
+      # Soong uses the $dist variable to control which ninja file to include
+      # for dist targets.  Expand the variable to both possible values.
+      dist = path.replace('$dist', 'dist')
+      nodist = path.replace('$dist', 'nodist')
+      if '$' in dist:
+        sys.exit('includes/subninjas with variables are unsupported: '+path)
+      return [dist, nodist]
     if '$' in path:
       sys.exit('includes/subninjas with variables are unsupported: '+path)
-    return path
+    return [path]
 
   if contents.startswith(b"include "):
-    results.append(get_path_from_directive(len(b"include ")))
+    results.extend(get_path_from_directive(len(b"include ")))
   elif contents.startswith(b"subninja "):
-    results.append(get_path_from_directive(len(b"subninja ")))
+    results.extend(get_path_from_directive(len(b"subninja ")))
 
   for match in SUBNINJA_OR_INCLUDE_REGEX.finditer(contents):
-    results.append(get_path_from_directive(match.end()))
+    results.extend(get_path_from_directive(match.end()))
 
   return results
 

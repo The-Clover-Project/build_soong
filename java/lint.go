@@ -434,6 +434,7 @@ func (l *linter) lint(ctx android.ModuleContext) {
 	depSets := depSetsBuilder.Build()
 
 	rule := android.NewRuleBuilder(pctx, ctx).
+		SandboxDisabled().
 		Sbox(android.PathForModuleOut(ctx, "lint"),
 			android.PathForModuleOut(ctx, "lint.sbox.textproto")).
 		SandboxInputs()

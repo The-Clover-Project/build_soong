@@ -736,6 +736,10 @@ func (compiler *baseCompiler) compilerFlags(ctx ModuleContext, flags Flags, deps
 		flags.NoOverrideFlags = append(flags.NoOverrideFlags, "${config.NoOverride64GlobalCflags}")
 	}
 
+	if ctx.testBinary() || ctx.testLibrary() {
+		flags.NoOverrideFlags = append(flags.NoOverrideFlags, "${config.NoOverrideTestsGlobalCflags}")
+	}
+
 	if android.IsThirdPartyPath(ctx.ModuleDir()) {
 		flags.NoOverrideFlags = append(flags.NoOverrideFlags, "${config.NoOverrideExternalGlobalCflags}")
 	}

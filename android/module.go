@@ -2151,6 +2151,24 @@ type SourceFileGenerator interface {
 	GeneratedDeps() Paths
 }
 
+type HostToolDepTagType interface {
+	isHostToolDepTag() bool
+}
+
+type BaseHostToolDepTag struct {
+	blueprint.BaseDependencyTag
+}
+
+var _ HostToolDepTagType = (*BaseHostToolDepTag)(nil)
+
+func (BaseHostToolDepTag) isHostToolDepTag() bool { return true }
+
+var _ ExcludeFromVisibilityEnforcementTag = (*BaseHostToolDepTag)(nil)
+
+func (BaseHostToolDepTag) ExcludeFromVisibilityEnforcement() {}
+
+var HostToolDepTag = BaseHostToolDepTag{}
+
 // @auto-generate: gob
 type GeneratedSourceInfo struct {
 	GeneratedSourceFiles Paths
@@ -3383,7 +3401,7 @@ func outputFilesForModule(ctx PathContext, module ModuleOrProxy, tag string) (Pa
 		}
 	}
 
-	return nil, fmt.Errorf("module %q is not a SourceFileProducer or having valid output file for tag %q", pathContextName(ctx, module), tag)
+	return nil, fmt.Errorf("module %q is not a SourceFileProducer or have a valid output file for tag %q", pathContextName(ctx, module), tag)
 }
 
 func GetOutputFiles(ctx OtherModuleProviderContext, module ModuleOrProxy) *OutputFilesInfo {

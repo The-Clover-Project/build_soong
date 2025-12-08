@@ -18,6 +18,8 @@ import (
 	"android/soong/android"
 )
 
+// TestConfigZipper compiles the test configuration related modules from
+// the build graph and exports them into a zipped file.
 type TestConfigZipper struct {
 	testModulesTestSuiteInfo map[string]*android.TestSuiteInfo
 	testExecutionPlans       map[string]*TestExecutionPlanProperties

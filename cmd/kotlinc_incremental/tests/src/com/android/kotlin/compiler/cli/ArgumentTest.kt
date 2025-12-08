@@ -247,6 +247,87 @@ class ArgumentTest {
         assertThat(opts.directory).isEqualTo(targetDir.canonicalFile)
     }
 
+    @Test
+    fun testMapArgument_EscapedSeparatorInKey() {
+        // Validates that keys can contain colons if escaped.
+        // Input string: key\:part=true
+        val ma = createMapArgument(":")
+        val arg = "-test=key\\:part=true"
+
+        assertThat(ma.matches(arg)).isTrue()
+        ma.parse(arg, emptyList<String>().iterator(), opts)
+
+        assertThat(opts.mapArgs).hasSize(1)
+        assertThat(opts.mapArgs).containsEntry("key:part", "true")
+    }
+
+    @Test
+    fun testMapArgument_EscapedSeparatorInValue() {
+        // Validates that paths containing colons work if escaped
+        // Input string: path=foo\:bar
+        val ma = createMapArgument(":")
+        val arg = "-test=path=foo\\:bar"
+
+        ma.parse(arg, emptyList<String>().iterator(), opts)
+
+        assertThat(opts.mapArgs).hasSize(1)
+        assertThat(opts.mapArgs).containsEntry("path", "foo:bar")
+    }
+
+    @Test
+    fun testMapArgument_EscapedEqualsSign() {
+        // Validates that keys can contain equals signs if escaped
+        // Input string: key\=name=value
+        val ma = createMapArgument(":")
+        val arg = "-test=key\\=name=value"
+
+        ma.parse(arg, emptyList<String>().iterator(), opts)
+
+        assertThat(opts.mapArgs).hasSize(1)
+        assertThat(opts.mapArgs).containsEntry("key=name", "value")
+    }
+
+    @Test
+    fun testMapArgument_LiteralBackslash() {
+        // Validates that a double backslash is parsed as a single literal backslash
+        // Input string: path=C:\\Windows
+        val ma = createMapArgument(":")
+        // Runtime String: "-test=path=C\:\\Windows"
+        val argBackslash = "-test=path=C\\:\\\\Windows"
+
+        ma.parse(argBackslash, emptyList<String>().iterator(), opts)
+
+        assertThat(opts.mapArgs).hasSize(1)
+        assertThat(opts.mapArgs).containsEntry("path", "C:\\Windows")
+    }
+
+    @Test
+    fun testMapArgument_MixedList() {
+        // Validates that standard lists still work alongside the new logic
+        val ma = createMapArgument(":")
+        val arg = "-test=a=b:c=d"
+
+        ma.parse(arg, emptyList<String>().iterator(), opts)
+
+        assertThat(opts.mapArgs).hasSize(2)
+        assertThat(opts.mapArgs).containsEntry("a", "b")
+        assertThat(opts.mapArgs).containsEntry("c", "d")
+    }
+
+    // Helper method to create the MapArgument instance for testing
+    private fun createMapArgument(separator: String) =
+        object : MapArgument<String, String, TestOpts>(separator) {
+            override fun kToType(arg: String) = arg
+            override fun vToType(arg: String) = arg
+            override val argumentName = "test"
+            override val helpText = "help"
+            override val default = null
+
+            override fun setOption(option: Map<String, String>, opts: TestOpts) {
+                opts.mapArgs.putAll(option)
+            }
+        }
+
     private fun createInputFileListArgument() =
         object : InputFileListArgument<TestOpts>() {
             override fun setFiles(files: List<File>, opts: TestOpts) {

@@ -48,6 +48,7 @@ var (
 
 type builderContext struct {
 	config android.Config
+	android.OtherModuleProviderContext
 }
 
 func (x *builderContext) Config() android.Config                            { return x.config }
@@ -94,7 +95,9 @@ func main() {
 
 	// NOTE: duplicating --out_dir here is incorrect (one should be the another
 	// plus "/soong" but doing so apparently breaks dexpreopt
-	ctx := &builderContext{android.NullConfig(*outDir, *outDir)}
+	ctx := &builderContext{android.NullConfig(*outDir, *outDir), android.NewOtherModuleProviderAdaptor(func(module android.ModuleOrProxy, provider blueprint.AnyProviderKey) (any, bool) {
+		return nil, false
+	})}
 
 	globalSoongConfigData, err := ioutil.ReadFile(*globalSoongConfigPath)
 	if err != nil {

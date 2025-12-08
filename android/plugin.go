@@ -103,11 +103,9 @@ func (p *pluginSingleton) GenerateBuildActions(ctx SingletonContext) {
 	maybeAddInternalPluginsToAllowlist(ctx)
 
 	disallowedPlugins := map[string]bool{}
-	ctx.VisitAllModuleProxies(func(module ModuleProxy) {
-		if ctx.ModuleName(module) != "soong_build" {
-			return
-		}
-
+	soongBuildModule := ctx.GetModuleProxy("soong_build", ctx.Config().BuildOSTarget.Variations())
+	// Still visit all the variants because we also have a windows variant on the linux build.
+	ctx.VisitAllModuleVariantProxies(soongBuildModule, func(module ModuleProxy) {
 		ctx.VisitDirectDepsProxies(module, func(module ModuleProxy) {
 			if ctx.OtherModuleDependencyTag(module) != bootstrap.PluginDepTag {
 				return
@@ -136,4 +134,10 @@ func (p *pluginSingleton) GenerateBuildActions(ctx SingletonContext) {
 	if len(disallowedPlugins) > 0 {
 		ctx.Errorf("New plugins are not supported; however %q were found. Please reach out to the build team or use BUILD_BROKEN_PLUGIN_VALIDATION (see Changes.md for more info).", SortedKeys(disallowedPlugins))
 	}
+}
+
+func (p *pluginSingleton) IncrementalSupported() bool {
+	// pluginSingleton depends on the contents of the vendor/google/build/soong/internal_plugins.json file
+	// that is not tracked as an incremental analysis input.
+	return false
 }

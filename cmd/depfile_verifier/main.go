@@ -35,11 +35,21 @@ func main() {
 		fmt.Fprintf(os.Stderr, "Usage: %s <depfile.d> <input_files_list_file>", os.Args[0])
 		flag.PrintDefaults()
 	}
+	skip := flag.Bool("skip", false, "Causes this check to be skipped, always returning success. "+
+		"Adding this flag is easier than doing a bash/ninja conditional in some cases.")
+	checkSuffixOnly := flag.Bool("check-suffix-only", false, "If set, only checks that files in "+
+		"depfile have a suffix that matches a file from the input files list. Rustc outputs some "+
+		"dependencies (such as those from include! macros) with absolute paths, but the input "+
+		"files are always relative paths.")
 	flag.Parse()
 
 	if flag.NArg() != 2 {
 		flag.Usage()
 		os.Exit(1)
+	}
+
+	if skip != nil && *skip {
+		return
 	}
 
 	depfileFilePath := flag.Args()[0]
@@ -58,8 +68,9 @@ func main() {
 	if err != nil {
 		log.Fatalf("Error opening %q: %v", fileListFilePath, err)
 	}
+	fileListLines := strings.Split(strings.TrimSpace(string(fileListFile)), "\n")
 	expectedFiles := make(map[string]struct{})
-	for _, x := range strings.Split(strings.TrimSpace(string(fileListFile)), "\n") {
+	for _, x := range fileListLines {
 		expectedFiles[x] = struct{}{}
 	}
 
@@ -77,9 +88,23 @@ func main() {
 
 	hasFailures := false
 	for _, input := range inputs {
-		if _, ok := expectedFiles[input]; !ok {
-			fmt.Fprintf(os.Stderr, "Command depended on %q, which was not listed as an input\n", input)
-			hasFailures = true
+		if checkSuffixOnly != nil && *checkSuffixOnly {
+			found := false
+			for _, expectedFile := range fileListLines {
+				if strings.HasSuffix(input, expectedFile) {
+					found = true
+					break
+				}
+			}
+			if !found {
+				fmt.Fprintf(os.Stderr, "Command depended on %q, which was not listed as an input\n", input)
+				hasFailures = true
+			}
+		} else {
+			if _, ok := expectedFiles[input]; !ok {
+				fmt.Fprintf(os.Stderr, "Command depended on %q, which was not listed as an input\n", input)
+				hasFailures = true
+			}
 		}
 	}
 

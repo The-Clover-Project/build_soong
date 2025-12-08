@@ -44,15 +44,15 @@ var allAconfigModuleTag = dependencyTag{name: "all_aconfig"}
 
 var genManifestProperties = pctx.AndroidStaticRule("genManifestProperties",
 	blueprint.RuleParams{
-		Command: "echo targetSdkVersionInt=$targetSdkVersionInt > $out && " +
-			"echo targetSdkVersionRaw=$targetSdkVersionRaw >> $out && " +
-			"echo packageName=$packageName >> $out && " +
-			"echo targetPackageName=$targetPackageName >> $out && " +
-			"echo instrumentationClass=$instrumentationClass >> $out && " +
-			"echo moduleName=$moduleName >> $out && " +
-			"echo resourceApk=$resourceApk >> $out && " +
-			"echo targetResourceApk=$targetResourceApk >> $out",
-		SandboxDisabled: true,
+		Command: "${android.Echo} targetSdkVersionInt=$targetSdkVersionInt > $out && " +
+			"${android.Echo} targetSdkVersionRaw=$targetSdkVersionRaw >> $out && " +
+			"${android.Echo} packageName=$packageName >> $out && " +
+			"${android.Echo} targetPackageName=$targetPackageName >> $out && " +
+			"${android.Echo} instrumentationClass=$instrumentationClass >> $out && " +
+			"${android.Echo} moduleName=$moduleName >> $out && " +
+			"${android.Echo} resourceApk=$resourceApk >> $out && " +
+			"${android.Echo} targetResourceApk=$targetResourceApk >> $out",
+		CommandDeps: []string{"Echo-deps"},
 	},
 	"targetSdkVersionInt", "targetSdkVersionRaw", "packageName", "targetPackageName",
 	"instrumentationClass", "moduleName", "resourceApk", "targetResourceApk",

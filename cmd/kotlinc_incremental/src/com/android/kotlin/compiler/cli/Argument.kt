@@ -179,18 +179,50 @@ abstract class StringArgument<O : Options>(allowEmpty: Boolean = false) :
 }
 
 abstract class MapArgument<K, V, O : Options>(val separator: String) :
-    SingleArgument<Map<K, V>, O>() {
+    SingleArgument<Map<K, V>, O>(
+        // This allows empty arguments for cases like processorOptions
+        allowEmpty = true
+    ) {
+
     override fun stringToType(arg: String): Map<K, V> {
-        // TODO: this class handles no form of escaping
-        val kvs = arg.split(separator)
-        return kvs.associate {
-            val (k, v) = it.split("=")
-            kToType(k) to vToType(v)
+        val result = LinkedHashMap<K, V>()
+        val keyBuilder = StringBuilder()
+        val valueBuilder = StringBuilder()
+
+        var parsingKey = true
+        var escaped = false
+        val sepChar = separator.first() // Assumes single char separator like ':'
+
+        fun commitEntry() {
+            val keyStr = keyBuilder.toString()
+            if (keyStr.isNotEmpty() || valueBuilder.isNotEmpty()) {
+                result[kToType(keyStr)] = vToType(valueBuilder.toString())
+            }
+            keyBuilder.clear()
+            valueBuilder.clear()
+            parsingKey = true
         }
+
+        for (c in arg) {
+            if (escaped) {
+                // Append the escaped character literally (swallows the backslash)
+                if (parsingKey) keyBuilder.append(c) else valueBuilder.append(c)
+                escaped = false
+            } else if (c == '\\') {
+                escaped = true
+            } else if (c == sepChar) {
+                commitEntry()
+            } else if (c == '=' && parsingKey) {
+                parsingKey = false
+            } else {
+                if (parsingKey) keyBuilder.append(c) else valueBuilder.append(c)
+            }
+        }
+        commitEntry()
+        return result
     }
 
     abstract fun kToType(arg: String): K
-
     abstract fun vToType(arg: String): V
 }
 

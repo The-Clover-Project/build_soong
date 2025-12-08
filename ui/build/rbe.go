@@ -158,16 +158,20 @@ func ensureSymlink(ctx Context, dir, name, target string) {
 var sisoConfigTemplate = template.Must(template.New("siso-config").Parse(`
 load("@builtin//struct.star", "module")
 load("main/main.star", "main")
+{{ if .UseExtension -}}
 load("extension/main.star", "extension")
 
 imports = [main, extension]
+{{ else -}}
+imports = [main]
+{{ end -}}
 
 def init(ctx):
     vars = module(
         "config",
-        {{- range $key, $value := .SisoStringVars }}
+        {{- range $key, $value := .Config.SisoStringVars }}
         {{ $key }} = "{{ $value }}",{{ end }}
-        {{- range $key, $value := .SisoBoolVars }}
+        {{- range $key, $value := .Config.SisoBoolVars }}
         {{ $key }} = {{ if $value }}True{{ else }}False{{ end }},{{ end }}
     )
 
@@ -184,11 +188,18 @@ func createSisoConfigDir(ctx Context, config Config, value string) string {
 		}
 		return value
 	}
+	templateConfig := struct {
+		Config       *Config
+		UseExtension bool
+	}{Config: &config}
 	ensureSymlink(ctx, confDir, "main", DEFAULT_SISO_CONFIG_DIR)
-	ensureSymlink(ctx, confDir, "extension", value)
+	if value != DEFAULT_SISO_CONFIG_DIR && value != "" {
+		ensureSymlink(ctx, confDir, "extension", value)
+		templateConfig.UseExtension = true
+	}
 
 	var sb bytes.Buffer
-	if err := sisoConfigTemplate.Execute(&sb, config); err != nil {
+	if err := sisoConfigTemplate.Execute(&sb, templateConfig); err != nil {
 		ctx.Fatalf("Failed to generate siso config:", err)
 	}
 	confFile := filepath.Join(confDir, "main.star")

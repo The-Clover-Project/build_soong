@@ -82,7 +82,8 @@ type GoBinary struct {
 	android.ModuleBase
 	wrapGoBinary
 
-	outputFile android.Path
+	outputFile  android.Path
+	installPath android.InstallPath
 }
 
 func goBinaryModuleFactory() android.Module {
@@ -111,7 +112,7 @@ func (g *GoBinary) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	outputFile := android.PathForArbitraryOutput(ctx, android.Rel(ctx, ctx.Config().OutDir(), g.IntermediateFile())).WithoutRel()
 	g.outputFile = outputFile
 
-	installPath := ctx.InstallFile(android.PathForModuleInstall(ctx, "bin"), ctx.ModuleName(), outputFile)
+	g.installPath = ctx.InstallFile(android.PathForModuleInstall(ctx, "bin"), ctx.ModuleName(), outputFile)
 
 	// Modules in an unexported namespace have no install rule, only add modules in the exported namespaces
 	// to the blueprint_tools phony rules.
@@ -120,7 +121,7 @@ func (g *GoBinary) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		// The install command line will differ from what was used during bootstrap,
 		// which will cause ninja to rebuild the module on the next run,
 		// triggering reanalysis.
-		ctx.Phony("blueprint_tools", installPath)
+		ctx.Phony("blueprint_tools", g.installPath)
 	}
 
 	ctx.SetOutputFiles(android.Paths{outputFile}, "")
@@ -136,7 +137,7 @@ func usedByBootstrap(name string) bool {
 }
 
 func (g *GoBinary) HostToolPath() android.OptionalPath {
-	return android.OptionalPathForPath(g.outputFile)
+	return android.OptionalPathForPath(g.installPath)
 }
 
 func (g *GoBinary) AndroidMkEntries() []android.AndroidMkEntries {

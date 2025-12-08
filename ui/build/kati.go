@@ -348,18 +348,13 @@ func cleanOldInstalledFiles(ctx Context, config Config) {
 
 // Generate the Ninja file containing the packaging command lines for the dist
 // dir.
-func runKatiPackage(ctx Context, config Config, soongOnly bool) {
+func runKatiPackage(ctx Context, config Config) {
 	e := ctx.BeginTrace(metrics.RunKati, "kati package")
 	defer e.End()
 
 	entryPoint := "build/make/packaging/main.mk"
 	suffix := katiPackageSuffix
 	ninjaFile := config.KatiPackageNinjaFile()
-	if soongOnly {
-		entryPoint = "build/make/packaging/main_soong_only.mk"
-		suffix = katiSoongOnlyPackageSuffix
-		ninjaFile = config.KatiSoongOnlyPackageNinjaFile()
-	}
 
 	args := []string{
 		// Mark the dist dir as writable.

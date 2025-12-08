@@ -20,6 +20,7 @@ import (
 	"strings"
 
 	"android/soong/android"
+	"android/soong/cc/config"
 
 	"github.com/google/blueprint"
 )
@@ -122,7 +123,9 @@ func rsFlags(ctx ModuleContext, flags Flags, properties *BaseCompilerProperties)
 	} else {
 		flags.rsFlags = append(flags.rsFlags, "-m32")
 	}
-	flags.rsFlags = append(flags.rsFlags, "${config.RsGlobalIncludes}")
+
+	globalIncludePaths := android.ExistentPathsForSources(ctx, config.RsGlobalIncludes)
+	flags.rsFlags = append(flags.rsFlags, android.JoinWithPrefix(globalIncludePaths.Strings(), " -I"))
 
 	rootRsIncludeDirs := android.PathsForSource(ctx, properties.Renderscript.Include_dirs)
 	flags.rsFlags = append(flags.rsFlags, includeDirsToFlags(rootRsIncludeDirs))

@@ -186,6 +186,7 @@ func (this *allAconfigDeclarationsModule) GenerateAndroidBuildActions(ctx androi
 	}
 
 	ctx.Phony("all_aconfig_declarations", depsFiles...)
+	ctx.SetOutputFiles(android.Paths{parsedFlagsFile}, "")
 
 	android.SetProvider(ctx, AllAconfigDeclarationsInfoProvider, AllAconfigDeclarationsInfo{
 		ParsedFlagsFile:    parsedFlagsFile,

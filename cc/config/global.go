@@ -334,8 +334,16 @@ var (
 
 	noOverride64GlobalCflags = []string{}
 
+	// Extra cflags applied to tests code.
 	extraTestsCflags = []string{
 		"-Wno-error=unused-but-set-variable",
+	}
+
+	// This is similar to noOverrideGlobalCflags, but applies only to tests
+	// code. This section can unblock compiler upgrades when a test module
+	// that enables -Wall, -Wextra, or a particular warnings explicitly triggers
+	// newly added warnings. See note above noOverrideGlobalCflags.
+	noOverrideTestsGlobalCflags = []string{
 		"-Wno-unused-variable",
 	}
 
@@ -426,6 +434,11 @@ var (
 	// NOTE: This is deprecated and will be removed in a future version, use the getter function instead.
 	ClangDefaultShortVersion = "21"
 
+	RsGlobalIncludes = []string{
+		"external/clang/lib/Headers",
+		"frameworks/rs/script_api/include",
+	}
+
 	// Directories with warnings from Android.bp files.
 	WarningAllowedProjects = []string{
 		"device/",
@@ -512,6 +525,7 @@ func init() {
 	pctx.StaticVariable("HostGlobalCflags", strings.Join(hostGlobalCflags, " "))
 	pctx.StaticVariable("NoOverrideExternalGlobalCflags", strings.Join(noOverrideExternalGlobalCflags, " "))
 	pctx.StaticVariable("CommonGlobalCppflags", strings.Join(commonGlobalCppflags, " "))
+	pctx.StaticVariable("NoOverrideTestsGlobalCflags", strings.Join(noOverrideTestsGlobalCflags, " "))
 	pctx.StaticVariable("TestsCflags", strings.Join(extraTestsCflags, " "))
 	pctx.StaticVariable("ExternalCflags", strings.Join(extraExternalCflags, " "))
 
@@ -557,12 +571,6 @@ func init() {
 	pctx.SourcePathVariable("RSReleaseVersion", "3.8")
 	pctx.StaticVariable("RSLLVMPrebuiltsPath", "${RSClangBase}/${HostPrebuiltTag}/${RSClangVersion}/bin")
 	pctx.StaticVariable("RSIncludePath", "${RSLLVMPrebuiltsPath}/../lib64/clang/${RSReleaseVersion}/include")
-
-	rsGlobalIncludes := []string{
-		"external/clang/lib/Headers",
-		"frameworks/rs/script_api/include",
-	}
-	pctx.PrefixedExistentPathsForSourcesVariable("RsGlobalIncludes", "-I", rsGlobalIncludes)
 
 	pctx.VariableFunc("CcWrapper", func(ctx android.PackageVarContext) string {
 		if override := ctx.Config().Getenv("CC_WRAPPER"); override != "" {

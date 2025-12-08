@@ -1572,3 +1572,40 @@ func AssertHasDirectDep(t *testing.T, ctx visitDirectDepsInterface, m Module, wa
 		t.Errorf("Could not find a dependency from %v to %v\n", m, wantDep)
 	}
 }
+
+func newHostMockModule() Module {
+	m := &hostMockModule{}
+	InitAndroidArchModule(m, HostSupported, MultilibFirst)
+	return m
+}
+
+type hostMockModule struct {
+	ModuleBase
+}
+
+func (m *hostMockModule) GenerateAndroidBuildActions(ctx ModuleContext) {
+}
+
+var PrepareForTestWithHostMockModule = FixtureRegisterWithContext(func(ctx RegistrationContext) {
+	ctx.RegisterModuleType("host_mock_module", newHostMockModule)
+})
+
+// PrepareForTestWithHostTools adds Android.bp files with placeholder host modules with
+// the given names. The modules don't do anything. This is intended to resolve issues with
+// module types that depend on host tools for their ninja rule generation.
+func PrepareForTestWithHostTools(hostTools ...string) FixturePreparer {
+	fs := make(MockFS)
+
+	for _, hostTool := range hostTools {
+		fs[fmt.Sprintf("host_tools/%s/Android.bp", hostTool)] = fmt.Appendf(nil, `
+		host_mock_module {
+			name: "%s"
+		}
+		`, hostTool)
+	}
+
+	return GroupFixturePreparers(
+		PrepareForTestWithHostMockModule,
+		fs.AddToFixture(),
+	)
+}

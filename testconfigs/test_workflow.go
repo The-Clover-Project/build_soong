@@ -20,6 +20,8 @@ import (
 	"github.com/google/blueprint"
 )
 
+// TestWorkflow describes a one to one relationship between
+// and execution and scheduling plan.
 type TestWorkflow struct {
 	android.ModuleBase
 
@@ -30,7 +32,10 @@ type TestWorkflow struct {
 
 // @auto-generate: gob
 type TestWorkflowProperties struct {
-	Execution_plan  TestExecutionPlanInlinable
+	// The execution plan utilized for the test workflow.
+	Execution_plan TestExecutionPlanInlinable
+
+	// The scheduling plan utilized for the test workflow.
 	Scheduling_plan TestSchedulingPlanInlinable
 }
 

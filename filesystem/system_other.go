@@ -30,8 +30,8 @@ import (
 
 var (
 	systemOtherPropFileTweaks = pctx.AndroidStaticRule("system_other_prop_file_tweaks", blueprint.RuleParams{
-		Command:         `rm -rf $out && sed -e 's@^mount_point=/$$@mount_point=system_other@g' -e 's@^partition_name=system$$@partition_name=system_other@g' $in > $out`,
-		SandboxDisabled: true,
+		Command:     `${android.Rm} -rf $out && ${android.Sed} -e 's@^mount_point=/$$@mount_point=system_other@g' -e 's@^partition_name=system$$@partition_name=system_other@g' $in > $out`,
+		CommandDeps: []string{"Rm-deps", "Sed-deps"},
 	})
 )
 

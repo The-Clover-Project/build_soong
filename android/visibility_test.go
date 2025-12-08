@@ -2037,6 +2037,7 @@ func TestVisibility(t *testing.T) {
 				PrepareForTestWithPackageModule,
 				PrepareForTestWithPrebuilts,
 				PrepareForTestWithVisibility,
+				PrepareForTestWithHostTools("textnotice"),
 
 				// Additional test specific preparers.
 				FixtureRegisterWithContext(func(ctx RegistrationContext) {
