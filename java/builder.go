@@ -449,7 +449,7 @@ var (
 			SandboxDisabled: true,
 		}, "flags_path", "filter_args")
 
-	generateMetalavaRevertAnnotationsRule = pctx.AndroidStaticRule("generateMetalavaRevertAnnotationsRule",
+	generateMetalavaFlagConfigRule = pctx.AndroidStaticRule("generateMetalavaFlagConfigRule",
 		blueprint.RuleParams{
 			Command:         `${aconfig-to-metalava-flags} ${in} > ${out}`,
 			CommandDeps:     []string{"${aconfig-to-metalava-flags}"},
