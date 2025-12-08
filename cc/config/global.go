@@ -77,8 +77,6 @@ var (
 		// Making deprecated usages an error causes extreme pain when trying to
 		// deprecate anything.
 		"-Wno-error=deprecated-declarations",
-		// http://b/315246135 temporarily disabled
-		"-Wno-error=unused-variable",
 
 		// Warnings disabled by default.
 
