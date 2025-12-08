@@ -119,12 +119,20 @@ func (p *vndkPrebuiltLibraryDecorator) linkerFlags(ctx ModuleContext, flags Flag
 
 func (p *vndkPrebuiltLibraryDecorator) singleSourcePath(ctx ModuleContext) android.Path {
 	if len(p.properties.Srcs) == 0 {
-		ctx.PropertyErrorf("srcs", "missing prebuilt source file")
+		if ctx.Config().AllowMissingDependencies() {
+			ctx.AddMissingDependencies([]string{"missing_prebuilt_source_file"})
+		} else {
+			ctx.PropertyErrorf("srcs", "missing prebuilt source file")
+		}
 		return nil
 	}
 
 	if len(p.properties.Srcs) > 1 {
-		ctx.PropertyErrorf("srcs", "multiple prebuilt source files")
+		if ctx.Config().AllowMissingDependencies() {
+			ctx.AddMissingDependencies([]string{"multiple_prebuilt_source_files"})
+		} else {
+			ctx.PropertyErrorf("srcs", "multiple prebuilt source files")
+		}
 		return nil
 	}
 
