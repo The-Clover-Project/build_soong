@@ -2219,6 +2219,21 @@ func (c *config) DefaultApexPayloadType() string {
 	return StringDefault(c.productVariables.DefaultApexPayloadType, "ext4")
 }
 
+func (c *config) DefaultApexPayloadErofsCompressor() string {
+	return String(c.productVariables.DefaultApexPayloadErofsCompressor)
+}
+
+func (c *config) DefaultApexPayloadErofsCompressHints(ctx PathContext) Path {
+	if String(c.productVariables.DefaultApexPayloadErofsCompressHints) == "" {
+		return nil
+	}
+	return PathForSource(ctx, *c.productVariables.DefaultApexPayloadErofsCompressHints)
+}
+
+func (c *config) DefaultApexPayloadErofsPclusterSize() int64 {
+	return c.productVariables.DefaultApexPayloadErofsPclusterSize
+}
+
 func (c *config) UseSoongSystemImage() bool {
 	return Bool(c.productVariables.UseSoongSystemImage)
 }

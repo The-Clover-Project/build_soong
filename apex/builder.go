@@ -872,6 +872,12 @@ func (a *apexBundle) buildApex(ctx android.ModuleContext) {
 
 	optFlags = append(optFlags, "--payload_fs_type "+a.payloadFsType.string())
 
+	if a.payloadFsType == erofs {
+		args, inputs := a.buildApexerArgsForErofs(ctx)
+		optFlags = append(optFlags, args...)
+		implicitInputs = append(implicitInputs, inputs...)
+	}
+
 	if a.dynamic_common_lib_apex() {
 		ctx.Build(pctx, android.BuildParams{
 			Rule:        DCLAApexRule,
@@ -1288,6 +1294,39 @@ func runApexLinkerconfigValidation(ctx android.ModuleContext, apexFile android.P
 		},
 	})
 	return timestamp
+}
+
+// buildApexerArgsForErofs returns the erofs specific arguments for apexer
+func (a *apexBundle) buildApexerArgsForErofs(ctx android.ModuleContext) ([]string, android.Paths) {
+	var args []string
+	var inputs android.Paths
+
+	compressor := ctx.Config().DefaultApexPayloadErofsCompressor()
+	if a.properties.Erofs.Compressor != nil {
+		compressor = *a.properties.Erofs.Compressor
+	}
+	if compressor != "" {
+		args = append(args, "--erofs_compressor", compressor)
+	}
+
+	var hints android.Path
+	hints = ctx.Config().DefaultApexPayloadErofsCompressHints(ctx)
+	if a.properties.Erofs.Compress_hints != nil {
+		hints = android.PathForModuleSrc(ctx, *a.properties.Erofs.Compress_hints)
+	}
+	if hints != nil {
+		args = append(args, "--erofs_compress_hints", hints.String())
+		inputs = append(inputs, hints)
+	}
+
+	pcluster_size := ctx.Config().DefaultApexPayloadErofsPclusterSize()
+	if a.properties.Erofs.Pcluster_size != nil {
+		pcluster_size = *a.properties.Erofs.Pcluster_size
+	}
+	if pcluster_size != 0 {
+		args = append(args, "--erofs_pcluster_size", strconv.FormatInt(pcluster_size, 10))
+	}
+	return args, inputs
 }
 
 // Can't use PartitionTag() because PartitionTag() returns the partition this module is actually
