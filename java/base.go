@@ -761,7 +761,7 @@ func (j *Module) provideHiddenAPIPropertyInfo(ctx android.ModuleContext) {
 	hiddenAPIInfo.extractFlagFilesFromProperties(ctx, &j.deviceProperties.HiddenAPIFlagFileProperties)
 
 	// Populate with package rules from the properties.
-	hiddenAPIInfo.extractPackageRulesFromProperties(&j.deviceProperties.HiddenAPIPackageProperties)
+	hiddenAPIInfo.extractPackageRulesFromProperties(ctx, &j.deviceProperties.HiddenAPIPackageProperties)
 
 	android.SetProvider(ctx, hiddenAPIPropertyInfoProvider, hiddenAPIInfo)
 }
