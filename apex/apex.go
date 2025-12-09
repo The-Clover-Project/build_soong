@@ -143,6 +143,22 @@ type apexBundleProperties struct {
 	// The type of filesystem to use. Either 'ext4', 'f2fs' or 'erofs'. Default 'ext4'.
 	Payload_fs_type *string
 
+	// Override default settings (PRODUCT_DEFAULT_APEX_PAYLOAD_EROFS_*) for EROFS APEX
+	Erofs struct {
+		// Compressor and Compression level passed to mkfs.erofs. e.g. (lz4hc,9)
+		// Please see external/erofs-utils/README for complete documentation.
+		// Use "none" for uncompressed EROFS image.
+		// Default: (defined in apexer)
+		Compressor *string
+
+		// Used as --compress-hints for mkfs.erofs
+		Compress_hints *string `android:"path"`
+
+		// Specify the size of compress physical cluster in bytes
+		// Default: (defined in apexer)
+		Pcluster_size *int64
+	}
+
 	// For telling the APEX to ignore special handling for system libraries such as bionic.
 	// Default is false.
 	Ignore_system_library_special_case *bool
