@@ -8581,7 +8581,6 @@ func testDexpreoptWithApexes(t *testing.T, bp, errmsg string, preparer android.F
 		// Dexpreopt for boot jars requires the ART boot image profile.
 		java.PrepareApexBootJarModule("com.android.art", "core-oj"),
 		dexpreopt.FixtureSetArtBootJars("com.android.art:core-oj"),
-		dexpreopt.FixtureSetBootImageProfiles("art/build/boot/boot-image-profile.txt"),
 	).
 		ExtendWithErrorHandler(errorHandler).
 		RunTestWithBp(t, bp)
