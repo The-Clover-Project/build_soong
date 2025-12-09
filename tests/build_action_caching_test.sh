@@ -102,6 +102,50 @@ EOF
   compare_incremental_and_full_analysis
 }
 
+function test_recreate_module() {
+  # Regression test for b/466891621
+  setup
+
+  # Create two new modules that share a dependency.  This should cause them
+  # each to have a meta_lic rule that has the same set of order-only dependencies,
+  # resulting in a deduped order-only phony dependency.
+  mkdir -p a
+  cat >> a/Android.bp <<EOF
+python_binary_host {
+  name: "my_little_binary_host",
+  srcs: ["my_little_binary_host.py"],
+  libs: ["my_little_library_host"],
+}
+
+python_binary_host {
+  name: "my_little_binary_host2",
+  srcs: ["my_little_binary_host2.py"],
+  libs: ["my_little_library_host"],
+}
+
+python_library_host {
+  name: "my_little_library_host",
+  srcs: ["my_little_library_host.py"],
+}
+EOF
+  touch a/my_little_binary_host.py
+  touch a/my_little_binary_host2.py
+
+  run_soong SOONG_INCREMENTAL_ANALYSIS=true
+
+  # Remove the modules.
+  mv a/Android.bp a/Android.bp.bak
+
+  run_soong SOONG_INCREMENTAL_ANALYSIS=true
+
+  # Recreate the modules and make sure Soong doesn't panic.
+  mv a/Android.bp.bak a/Android.bp
+
+  run_soong SOONG_INCREMENTAL_ANALYSIS=true
+
+  compare_incremental_and_full_analysis
+}
+
 function test_add_dependency() {
   setup
 
