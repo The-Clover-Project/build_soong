@@ -39,6 +39,12 @@ def config_name(tag: str):
   """
   return f'{{{CONFIG_NS}}}{tag}'
 
+def bool_to_str(b: bool):
+  """Convert a bool to a lower-case only string
+
+  :param:b the bool to convert
+  """
+  return str(b).lower()
 
 def main():
   """Program entry point."""
@@ -78,7 +84,9 @@ def main():
         'name': flag.name,
         'mutability': mutability,
         'status': status,
+        'is-exported': bool_to_str(flag.is_exported),
     }
+
     # Convert the attribute names into qualified names in, what will become, the
     # default namespace for the XML file. This is needed to ensure that the
     # attribute will be written in the XML file without a prefix, e.g.
