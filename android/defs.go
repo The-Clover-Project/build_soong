@@ -182,7 +182,8 @@ var (
 
 	depfileVerifierRule = pctx.AndroidStaticRule("DepfileVerifierRule",
 		blueprint.RuleParams{
-			Command:     "${Rm} -f $out && ${DepfileVerifier} $in && ${Touch} $out",
+			Command2: blueprint.NewCommand(
+				RmTool, " -f $out && ", depfileVerifier, " $in && ", TouchTool, " $out"),
 			CommandDeps: []string{"Rm-deps", "Touch-deps", "${DepfileVerifier}"},
 			Description: "verify depfile",
 		})
@@ -195,6 +196,88 @@ var (
 
 	// Used for processes that need significant RAM to ensure there are not too many running in parallel.
 	highmemPool = blueprint.NewBuiltinPool("highmem_pool")
+)
+
+var (
+	initToyboxTool = func(name string) func(PathContext) blueprint.HostToolParams {
+		return func(pc PathContext) blueprint.HostToolParams {
+			varName := string(unicode.ToUpper(rune(name[0]))) + name[1:]
+			depsName := varName + "-deps"
+			return blueprint.HostToolParams{
+				Value: "${" + varName + "}",
+				Deps:  []string{depsName},
+			}
+		}
+	}
+
+	BasenameTool  = pctx.HostToolFunc(initToyboxTool("basename"))
+	CatTool       = pctx.HostToolFunc(initToyboxTool("cat"))
+	ChmodTool     = pctx.HostToolFunc(initToyboxTool("chmod"))
+	CmpTool       = pctx.HostToolFunc(initToyboxTool("cmp"))
+	CommTool      = pctx.HostToolFunc(initToyboxTool("comm"))
+	CpTool        = pctx.HostToolFunc(initToyboxTool("cp"))
+	CutTool       = pctx.HostToolFunc(initToyboxTool("cut"))
+	DateTool      = pctx.HostToolFunc(initToyboxTool("date"))
+	DdTool        = pctx.HostToolFunc(initToyboxTool("dd"))
+	DirnameTool   = pctx.HostToolFunc(initToyboxTool("dirname"))
+	Dos2unixTool  = pctx.HostToolFunc(initToyboxTool("dos2unix"))
+	DuTool        = pctx.HostToolFunc(initToyboxTool("du"))
+	EchoTool      = pctx.HostToolFunc(initToyboxTool("echo"))
+	EgrepTool     = pctx.HostToolFunc(initToyboxTool("egrep"))
+	EnvTool       = pctx.HostToolFunc(initToyboxTool("env"))
+	FileTool      = pctx.HostToolFunc(initToyboxTool("file"))
+	FindTool      = pctx.HostToolFunc(initToyboxTool("find"))
+	GetconfTool   = pctx.HostToolFunc(initToyboxTool("getconf"))
+	GetoptTool    = pctx.HostToolFunc(initToyboxTool("getopt"))
+	GrepTool      = pctx.HostToolFunc(initToyboxTool("grep"))
+	GzipTool      = pctx.HostToolFunc(initToyboxTool("gzip"))
+	HeadTool      = pctx.HostToolFunc(initToyboxTool("head"))
+	IdTool        = pctx.HostToolFunc(initToyboxTool("id"))
+	InstallTool   = pctx.HostToolFunc(initToyboxTool("install"))
+	LnTool        = pctx.HostToolFunc(initToyboxTool("ln"))
+	LsTool        = pctx.HostToolFunc(initToyboxTool("ls"))
+	Md5sumTool    = pctx.HostToolFunc(initToyboxTool("md5sum"))
+	MkdirTool     = pctx.HostToolFunc(initToyboxTool("mkdir"))
+	MktempTool    = pctx.HostToolFunc(initToyboxTool("mktemp"))
+	MvTool        = pctx.HostToolFunc(initToyboxTool("mv"))
+	NlTool        = pctx.HostToolFunc(initToyboxTool("nl"))
+	OdTool        = pctx.HostToolFunc(initToyboxTool("od"))
+	PasteTool     = pctx.HostToolFunc(initToyboxTool("paste"))
+	PatchTool     = pctx.HostToolFunc(initToyboxTool("patch"))
+	PrintfTool    = pctx.HostToolFunc(initToyboxTool("printf"))
+	PwdTool       = pctx.HostToolFunc(initToyboxTool("pwd"))
+	ReadlinkTool  = pctx.HostToolFunc(initToyboxTool("readlink"))
+	RealpathTool  = pctx.HostToolFunc(initToyboxTool("realpath"))
+	RmTool        = pctx.HostToolFunc(initToyboxTool("rm"))
+	RmdirTool     = pctx.HostToolFunc(initToyboxTool("rmdir"))
+	SedTool       = pctx.HostToolFunc(initToyboxTool("sed"))
+	SeqTool       = pctx.HostToolFunc(initToyboxTool("seq"))
+	SetsidTool    = pctx.HostToolFunc(initToyboxTool("setsid"))
+	Sha1sumTool   = pctx.HostToolFunc(initToyboxTool("sha1sum"))
+	Sha256sumTool = pctx.HostToolFunc(initToyboxTool("sha256sum"))
+	Sha512sumTool = pctx.HostToolFunc(initToyboxTool("sha512sum"))
+	SleepTool     = pctx.HostToolFunc(initToyboxTool("sleep"))
+	SortTool      = pctx.HostToolFunc(initToyboxTool("sort"))
+	StatTool      = pctx.HostToolFunc(initToyboxTool("stat"))
+	TailTool      = pctx.HostToolFunc(initToyboxTool("tail"))
+	TarTool       = pctx.HostToolFunc(initToyboxTool("tar"))
+	TeeTool       = pctx.HostToolFunc(initToyboxTool("tee"))
+	TestTool      = pctx.HostToolFunc(initToyboxTool("test"))
+	TimeoutTool   = pctx.HostToolFunc(initToyboxTool("timeout"))
+	TouchTool     = pctx.HostToolFunc(initToyboxTool("touch"))
+	TrTool        = pctx.HostToolFunc(initToyboxTool("tr"))
+	TrueTool      = pctx.HostToolFunc(initToyboxTool("true"))
+	TruncateTool  = pctx.HostToolFunc(initToyboxTool("truncate"))
+	UnameTool     = pctx.HostToolFunc(initToyboxTool("uname"))
+	UniqTool      = pctx.HostToolFunc(initToyboxTool("uniq"))
+	Unix2dosTool  = pctx.HostToolFunc(initToyboxTool("unix2dos"))
+	WcTool        = pctx.HostToolFunc(initToyboxTool("wc"))
+	WhichTool     = pctx.HostToolFunc(initToyboxTool("which"))
+	WhoamiTool    = pctx.HostToolFunc(initToyboxTool("whoami"))
+	XargsTool     = pctx.HostToolFunc(initToyboxTool("xargs"))
+	XxdTool       = pctx.HostToolFunc(initToyboxTool("xxd"))
+
+	depfileVerifier = pctx.HostTool("depfile_verifier")
 )
 
 var commonToyboxSymlinks = []string{
@@ -220,7 +303,6 @@ var commonToyboxSymlinks = []string{
 	"grep",
 	"gzip",
 	"head",
-	"hostname",
 	"id",
 	"install",
 	"ln",

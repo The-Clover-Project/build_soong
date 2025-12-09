@@ -305,3 +305,23 @@ func (p PackageContext) StaticVariableWithEnvOverride(name, envVar, defaultVal s
 		return ctx.Config().GetenvWithDefault(envVar, defaultVal)
 	})
 }
+
+func (p PackageContext) HostToolFunc(f func(PathContext) blueprint.HostToolParams) blueprint.HostTool {
+	return p.PackageContext.HostToolFunc(func(config interface{}) (blueprint.HostToolParams, error) {
+		ctx := &configErrorWrapper{p, config.(Config), nil}
+		params := f(ctx)
+		if len(ctx.errors) > 0 {
+			return params, ctx.errors[0]
+		}
+		return params, nil
+	})
+}
+
+func (p PackageContext) HostTool(name string) blueprint.HostTool {
+	return p.HostToolFunc(func(ctx PathContext) blueprint.HostToolParams {
+		return blueprint.HostToolParams{
+			Value: ctx.Config().HostToolPath(ctx, name).String(),
+			Deps:  []string{PathForPhony(ctx, "hostTool-"+name+"-deps").String()},
+		}
+	})
+}
