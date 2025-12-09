@@ -1064,6 +1064,8 @@ func (d *Droidstubs) everythingStubCmd(ctx android.ModuleContext, params stubsCo
 
 	cmd := d.commonMetalavaStubCmd(ctx, rule, commonCmdParams)
 
+	generateMetalavaFlagConfigArgs(ctx, cmd, params.stubsType, params.deps.aconfigProtoFiles)
+
 	d.everythingOptionalCmd(ctx, cmd, params.doApiLint, params.doCheckReleased)
 
 	var everythingStubsCmd *android.RuleBuilderCommand
