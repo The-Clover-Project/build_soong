@@ -407,6 +407,12 @@ message IncrementalInfo {
 
   // Size of the .db/ files used for caching module providers.
   optional int64 incremental_db_size = 5;
+
+  // Number of cached globs.
+  optional uint64 cached_globs = 6;
+
+  // Number of restored g lob.
+  optional uint64 restored_globs = 7;
 }
 
 message IncrementalMetrics {

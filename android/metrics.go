@@ -121,7 +121,7 @@ func (soongMetricsSingleton) GenerateBuildActions(ctx SingletonContext) {
 	metrics.incrementalEnabled = ctx.GetIncrementalEnabled()
 }
 
-func collectMetrics(config Config, eventHandler *metrics.EventHandler) *soong_metrics_proto.SoongBuildMetrics {
+func collectMetrics(ctx *Context, config Config, eventHandler *metrics.EventHandler) *soong_metrics_proto.SoongBuildMetrics {
 	metrics := &soong_metrics_proto.SoongBuildMetrics{
 		IncrementalInfo: &soong_metrics_proto.IncrementalInfo{
 			ModuleMetrics: &soong_metrics_proto.IncrementalMetrics{
@@ -153,6 +153,10 @@ func collectMetrics(config Config, eventHandler *metrics.EventHandler) *soong_me
 
 	metrics.IncrementalInfo.SingletonMetrics.Supported = proto.Uint32(uint32(soongMetrics.incrementalSingletons.supported))
 	metrics.IncrementalInfo.SingletonMetrics.CacheHit = proto.Uint32(uint32(soongMetrics.incrementalSingletons.cacheHit))
+
+	restoredGlobMetrics := ctx.RestoredGlobMetrics()
+	metrics.IncrementalInfo.CachedGlobs = proto.Uint64(restoredGlobMetrics.CachedGlobs)
+	metrics.IncrementalInfo.RestoredGlobs = proto.Uint64(restoredGlobMetrics.RestoredGlobs)
 
 	if config.IsActionSandboxedBuild() && config.ActionSandboxMetrics() != nil {
 		sandboxMetrics := config.ActionSandboxMetrics()
@@ -323,8 +327,8 @@ func readCpuTime() time.Duration {
 	return time.Duration(userCpuTicks+kernelCpuTicks) * MS_PER_HZ
 }
 
-func WriteMetrics(config Config, eventHandler *metrics.EventHandler, metricsFile string) error {
-	metrics := collectMetrics(config, eventHandler)
+func WriteMetrics(ctx *Context, config Config, eventHandler *metrics.EventHandler, metricsFile string) error {
+	metrics := collectMetrics(ctx, config, eventHandler)
 
 	buf, err := proto.Marshal(metrics)
 	if err != nil {
