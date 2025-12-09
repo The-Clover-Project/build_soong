@@ -1688,6 +1688,10 @@ type testProperties struct {
 
 	// Install the test into a folder named for the module in all test suites.
 	Per_testcase_directory *bool
+
+	// Whether to include a static aconfig pb as a test resource. If the pb is included and a
+	// flag is read-only, tests read the flag value from the static pb.
+	Enable_static_aconfig_pb *bool
 }
 
 type hostTestProperties struct {
@@ -1980,6 +1984,12 @@ func (j *Test) generateAndroidBuildActionsWithConfig(ctx android.ModuleContext, 
 	j.data = append(j.data, android.PathsForModuleSrc(ctx, j.testProperties.Device_first_prefer32_data)...)
 	j.data = append(j.data, android.PathsForModuleSrc(ctx, j.testProperties.Host_common_data)...)
 	j.data = append(j.data, android.PathsForModuleSrc(ctx, j.testProperties.Host_first_data)...)
+
+	if Bool(j.testProperties.Enable_static_aconfig_pb) {
+		if pb := getCombinedAconfigProtoFile(ctx); pb != nil {
+			j.extraResources = append(j.extraResources, pb)
+		}
+	}
 
 	j.extraTestConfigs = android.PathsForModuleSrc(ctx, j.testProperties.Test_options.Extra_test_configs)
 
@@ -4107,4 +4117,36 @@ func setExtraJavaInfo(ctx android.ModuleContext, module android.Module, javaInfo
 		}
 		maps.Copy(javaInfo.KSnapshotFiles, ksc.JarToSnapshotMap())
 	}
+}
+
+func getCombinedAconfigProtoFile(ctx android.ModuleContext) android.Path {
+	var aconfigProtoFiles android.Paths
+	ctx.VisitDirectDepsProxyWithTag(staticLibTag, func(dep android.ModuleProxy) {
+		if provider, ok := android.OtherModuleProvider(ctx, dep, JavaInfoProvider); ok {
+			aconfigProtoFiles = append(aconfigProtoFiles, provider.AconfigIntermediateCacheOutputPaths...)
+		}
+	})
+	ctx.VisitDirectDepsProxyWithTag(libTag, func(dep android.ModuleProxy) {
+		if provider, ok := android.OtherModuleProvider(ctx, dep, JavaInfoProvider); ok {
+			aconfigProtoFiles = append(aconfigProtoFiles, provider.AconfigIntermediateCacheOutputPaths...)
+		}
+	})
+
+	if len(aconfigProtoFiles) > 0 {
+		combinedAconfigProtoFile := android.PathForModuleOut(ctx, "aconfig.pb")
+		rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
+		rule.Command().
+			BuiltTool("aconfig").
+			Text("dump-cache").
+			Flag("--dedup").
+			Flag("--format").
+			Text("protobuf").
+			FlagForEachInput("--cache ", aconfigProtoFiles).
+			FlagWithOutput("--out ", combinedAconfigProtoFile)
+
+		rule.Build("combine-aconfig-protos", "combine aconfig protos")
+
+		return combinedAconfigProtoFile
+	}
+	return nil
 }
