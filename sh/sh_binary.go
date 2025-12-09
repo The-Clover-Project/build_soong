@@ -306,7 +306,11 @@ func (s *ShBinary) generateAndroidBuildActions(ctx android.ModuleContext) {
 	src := s.properties.Src.Get(ctx)
 
 	if src.IsEmpty() {
-		ctx.PropertyErrorf("src", "missing prebuilt source file")
+		if ctx.Config().AllowMissingDependencies() {
+			ctx.AddMissingDependencies([]string{"missing_prebuilt_source_file"})
+		} else {
+			ctx.PropertyErrorf("src", "missing prebuilt source file")
+		}
 	}
 
 	s.sourceFilePath = android.PathForModuleSrc(ctx, src.Get())

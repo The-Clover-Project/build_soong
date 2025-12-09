@@ -166,13 +166,21 @@ func SingleSourcePathFromSupplier(ctx ModuleContext, srcsSupplier PrebuiltSrcsSu
 		srcs := srcsSupplier(ctx, ctx.Module())
 
 		if len(srcs) == 0 {
-			ctx.PropertyErrorf(srcsPropertyName, "missing prebuilt source file")
-			return nil
+			if ctx.Config().AllowMissingDependencies() {
+				ctx.AddMissingDependencies([]string{"missing_prebuilt_source_file"})
+			} else {
+				ctx.PropertyErrorf(srcsPropertyName, "missing prebuilt source file")
+			}
+			return PathForModuleSrc(ctx, "missing_prebuilt_source_file")
 		}
 
 		if len(srcs) > 1 {
-			ctx.PropertyErrorf(srcsPropertyName, "multiple prebuilt source files")
-			return nil
+			if ctx.Config().AllowMissingDependencies() {
+				ctx.AddMissingDependencies([]string{"multiple_prebuilt_source_files"})
+			} else {
+				ctx.PropertyErrorf(srcsPropertyName, "multiple prebuilt source files")
+			}
+			return PathForModuleSrc(ctx, "multiple_prebuilt_source_files")
 		}
 
 		// Return the singleton source after expanding any filegroup in the
@@ -180,8 +188,12 @@ func SingleSourcePathFromSupplier(ctx ModuleContext, srcsSupplier PrebuiltSrcsSu
 		src := srcs[0]
 		return PathForModuleSrc(ctx, src)
 	} else {
-		ctx.ModuleErrorf("prebuilt source was not set")
-		return nil
+		if ctx.Config().AllowMissingDependencies() {
+			ctx.AddMissingDependencies([]string{"prebuilt_source_was_not_set"})
+		} else {
+			ctx.ModuleErrorf("prebuilt source was not set")
+		}
+		return PathForModuleSrc(ctx, "prebuilt_source_was_not_set")
 	}
 }
 

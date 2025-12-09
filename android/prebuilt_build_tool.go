@@ -58,7 +58,11 @@ func (t *prebuiltBuildTool) Prebuilt() *Prebuilt {
 
 func (t *prebuiltBuildTool) DepsMutator(ctx BottomUpMutatorContext) {
 	if t.properties.Src == nil {
-		ctx.PropertyErrorf("src", "missing prebuilt source file")
+		if ctx.Config().AllowMissingDependencies() {
+			ctx.AddMissingDependencies([]string{"missing_prebuilt_source_file"})
+		} else {
+			ctx.PropertyErrorf("src", "missing prebuilt source file")
+		}
 	}
 }
 

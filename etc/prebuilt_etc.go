@@ -538,7 +538,11 @@ func (p *PrebuiltEtc) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		installs = append(installs, ip)
 		p.installDirPaths = append(p.installDirPaths, baseInstallDirPath)
 	} else {
-		ctx.PropertyErrorf("src", "missing prebuilt source file")
+		if ctx.Config().AllowMissingDependencies() {
+			ctx.AddMissingDependencies([]string{"missing_prebuilt_source_file"})
+		} else {
+			ctx.PropertyErrorf("src", "missing prebuilt source file")
+		}
 		return
 	}
 
