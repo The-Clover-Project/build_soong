@@ -125,6 +125,7 @@ type configImpl struct {
 	buildStartedTime                    int64 // For metrics-upload-only - manually specify a build-started time
 	buildFromSourceStub                 bool
 	incrementalBuildActions             bool
+	incrementalBuildActionsSetInEnv     bool
 	incrementalProviderTest             bool
 	ensureAllowlistIntegrity            bool // For CI builds - make sure modules are mixed-built
 	runCIPDProxyServer                  bool
@@ -342,6 +343,14 @@ func newConfig(ctx Context, isDumpVar bool, args ...string) Config {
 			ret.skipKati = false
 			ret.skipKatiNinja = false
 		}
+	}
+
+	if ret.environ.IsEnvTrue("SOONG_INCREMENTAL_ANALYSIS") {
+		ret.incrementalBuildActions = true
+		ret.incrementalBuildActionsSetInEnv = true
+	} else if ret.environ.IsFalse("SOONG_INCREMENTAL_ANALYSIS") {
+		ret.incrementalBuildActions = false
+		ret.incrementalBuildActionsSetInEnv = true
 	}
 
 	if ret.ninjaWeightListSource == HINT_FROM_SOONG {
