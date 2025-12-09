@@ -220,9 +220,7 @@ func Banner(config Config, make_vars map[string]string) string {
 		fmt.Fprintf(b, "SOONG_ONLY=%t\n", make_vars["PRODUCT_SOONG_ONLY"] == "true")
 	}
 
-	if config.incrementalBuildActions {
-		fmt.Fprintf(b, "SOONG_INCREMENTAL_ANALYSIS=%v\n", config.incrementalBuildActions)
-	}
+	fmt.Fprintf(b, "SOONG_INCREMENTAL_ANALYSIS=%t\n", config.incrementalBuildActions)
 
 	fmt.Fprint(b, "============================================")
 
