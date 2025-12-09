@@ -2891,7 +2891,7 @@ func (al *ApiLibrary) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		al.addValidation(ctx, cmd, al.validationPaths)
 	}
 
-	generateRevertAnnotationArgs(ctx, cmd, al.stubsType, al.aconfigProtoFiles)
+	generateMetalavaFlagConfigArgs(ctx, cmd, al.stubsType, al.aconfigProtoFiles)
 
 	al.stubsSrcJar = android.PathForModuleOut(ctx, "metalava", ctx.ModuleName()+"-"+"stubs.srcjar")
 	al.stubsJarWithoutStaticLibs = android.PathForModuleOut(ctx, "metalava", "stubs.jar")
