@@ -45,4 +45,8 @@ enum Workflow {
   // Manually managed flags for BUILD_VARIANT release configs.  These flags may
   // only be assigned values if release_config_type == BUILD_VARIANT
   MANUAL_BUILD_VARIANT = 5;
+
+  // Manually managed flags which can be assigned in both RELEASE_CONFIG and
+  // BUILD_VARIANT release config types.  Such flags should be extremely rare.
+  MANUAL_BUILD_VARIANT_PLUS = 6;
 }

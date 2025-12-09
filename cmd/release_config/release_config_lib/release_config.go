@@ -331,6 +331,12 @@ func (config *ReleaseConfig) GenerateReleaseConfig(configs *ReleaseConfigs) erro
 				return fmt.Errorf("Setting value for non-MANUAL flag %s is not allowed in %s", name, value.path)
 			}
 			switch *fa.FlagDeclaration.Workflow {
+			case rc_proto.Workflow_MANUAL_BUILD_VARIANT_PLUS:
+				// These can be set in either RELEASE_CONFIG or BUILD_VARIANT release configs.
+				if config.ReleaseConfigType != rc_proto.ReleaseConfigType_BUILD_VARIANT &&
+					config.ReleaseConfigType != rc_proto.ReleaseConfigType_RELEASE_CONFIG {
+					return fmt.Errorf("Setting value for BUILD_VARIANT flag %s is not allowed in %s", name, value.path)
+				}
 			case rc_proto.Workflow_MANUAL_BUILD_VARIANT:
 				// Non-BUILD_VARIANT release configs cannot set MANUAL_BUILD_VARIANT flags.
 				if config.ReleaseConfigType != rc_proto.ReleaseConfigType_BUILD_VARIANT {
