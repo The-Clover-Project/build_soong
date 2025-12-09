@@ -17,11 +17,10 @@ package rust
 import (
 	"encoding/json"
 	"fmt"
-	"strings"
+        "strings"
+        "github.com/google/blueprint/proptools"
 
-	"github.com/google/blueprint/proptools"
-
-	"android/soong/android"
+        "android/soong/android"
 	"android/soong/rust/config"
 )
 
@@ -31,14 +30,13 @@ import (
 // called.  This singleton is enabled only if SOONG_GEN_RUST_PROJECT is set.
 // For example,
 //
-//   $ SOONG_GEN_RUST_PROJECT=1 SOONG_LINK_RUST_PROJECT_TO=${ANDROID_BUILD_TOP} m nothing
+//   $ SOONG_GEN_RUST_PROJECT=1 m nothing
 
 const (
 	// Environment variables used to control the behavior of this singleton.
 	envVariableCollectRustDeps = "SOONG_GEN_RUST_PROJECT"
 	envVariableUseKythe        = "XREF_CORPUS"
 	rustProjectJsonFileName    = "rust-project.json"
-	rustTargetMappingFileName  = "rust-target-mapping.json"
 )
 
 // The format of rust-project.json is not yet finalized. A current description is available at:
@@ -66,17 +64,6 @@ type rustProjectJson struct {
 	Crates  []rustProjectCrate `json:"crates"`
 }
 
-type rustTargetMappingsJson []rustTargetMappingJson
-
-type rustTargetMappingJson struct {
-	Name               string `json:"name"`
-	BuildTarget        string `json:"build_target"`
-	CheckTarget        string `json:"check_target"`
-	SourceDir          string `json:"source_dir"`
-	TargetProduct      string `json:"TARGET_PRODUCT"`
-	TargetBuildVariant string `json:"TARGET_BUILD_VARIANT"`
-}
-
 type rustProjectIncludeDirs struct {
 	Include_dirs []string `json:"include_dirs"`
 	Exclude_dirs []string `json:"exclude_dirs"`
@@ -90,9 +77,8 @@ type crateInfo struct {
 }
 
 type projectGeneratorSingleton struct {
-	project        rustProjectJson
-	targetMappings rustTargetMappingsJson
-	knownCrates    map[string]crateInfo // Keys are module names.
+	project     rustProjectJson
+	knownCrates map[string]crateInfo // Keys are module names.
 }
 
 func rustProjectGeneratorSingleton() android.Singleton {
@@ -205,23 +191,6 @@ func (singleton *projectGeneratorSingleton) addCrate(ctx android.SingletonContex
 		singleton.project.Crates = append(singleton.project.Crates, crate)
 	}
 	singleton.knownCrates[module.Name()] = crateInfo{Idx: idx, Deps: deps, Device: commonInfo.Target.Os.Class == android.Device}
-	if rustInfo.CompilerInfo.BuildTarget != nil {
-		buildVariant := "user"
-		if ctx.Config().Eng() {
-			buildVariant = "eng"
-		} else if ctx.Config().Debuggable() {
-			buildVariant = "userdebug"
-		}
-		mapping := rustTargetMappingJson{
-			Name:               module.Name(),
-			BuildTarget:        rustInfo.CompilerInfo.BuildTarget.String(),
-			CheckTarget:        rustInfo.CompilerInfo.CheckTarget.String(),
-			SourceDir:          ctx.ModuleDir(module),
-			TargetProduct:      ctx.Config().DeviceProduct(),
-			TargetBuildVariant: buildVariant,
-		}
-		singleton.targetMappings = append(singleton.targetMappings, mapping)
-	}
 	return idx, true
 }
 
@@ -264,7 +233,6 @@ func (singleton *projectGeneratorSingleton) GenerateBuildActions(ctx android.Sin
 	err := createJsonFile(singleton.project, path)
 	if err != nil {
 		ctx.Errorf(err.Error())
-
 	}
 	if ctx.Config().XrefCorpusName() != "" {
 		rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
@@ -281,21 +249,15 @@ func (singleton *projectGeneratorSingleton) GenerateBuildActions(ctx android.Sin
 		rule.Build(ruleName, "Turning Rust project into kzips")
 		ctx.Phony("xref_rust", kzipPath)
 	}
-
-	rustTargetMappingPath := android.PathForOutput(ctx, rustTargetMappingFileName)
-	if err := createJsonFile(singleton.targetMappings, rustTargetMappingPath); err != nil {
-		ctx.Errorf(err.Error())
-	}
-
 }
 
-func createJsonFile(project any, rustProjectPath android.WritablePath) error {
+func createJsonFile(project rustProjectJson, rustProjectPath android.WritablePath) error {
 	buf, err := json.MarshalIndent(project, "", "  ")
 	if err != nil {
-		return fmt.Errorf("JSON marshal failed: %s", err)
+		return fmt.Errorf("JSON marshal of rustProjectJson failed: %s", err)
 	}
-
-	if err := android.WriteFileToOutputDir(rustProjectPath, buf, 0666); err != nil {
+	err = android.WriteFileToOutputDir(rustProjectPath, buf, 0666)
+	if err != nil {
 		return fmt.Errorf("Writing rust-project to %s failed: %s", rustProjectPath.String(), err)
 	}
 	return nil
