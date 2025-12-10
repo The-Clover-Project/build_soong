@@ -575,7 +575,7 @@ func (stub *stubDecorator) install(ctx ModuleContext, path android.Path) {
 	installDir := getVersionedLibraryInstallPath(ctx, stub.apiLevel)
 	out := installDir.Join(ctx, path.Base())
 	ctx.Build(pctx, android.BuildParams{
-		Rule:   android.Cp,
+		Rule:   android.CpRule,
 		Input:  path,
 		Output: out,
 	})

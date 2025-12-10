@@ -674,7 +674,7 @@ func (p *Prebuilt) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	}
 	p.outputApex = android.PathForModuleOut(ctx, p.installFilename)
 	ctx.Build(pctx, android.BuildParams{
-		Rule:   android.Cp,
+		Rule:   android.CpRule,
 		Input:  p.inputApex,
 		Output: p.outputApex,
 	})
@@ -940,7 +940,7 @@ func (a *ApexSet) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	a.outputApex = android.PathForModuleOut(ctx, a.installFilename)
 
 	// Build the output APEX. If compression is not enabled, make sure the output is not compressed even if the input is compressed
-	buildRule := android.Cp
+	buildRule := android.CpRule
 	if !ctx.Config().ApexCompressionEnabled() {
 		buildRule = decompressApex
 	}

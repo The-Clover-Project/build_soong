@@ -109,7 +109,7 @@ func (c *ccdepsGeneratorSingleton) GenerateBuildActions(ctx android.SingletonCon
 
 	// This is necessary to satisfy the dangling rules check as this file is written by Soong rather than a rule.
 	ctx.Build(pctx, android.BuildParams{
-		Rule:   android.Touch,
+		Rule:   android.TouchRule,
 		Output: ccfpath,
 	})
 	ctx.DistForGoals([]string{"general-tests", "module-info"}, c.outputPath)

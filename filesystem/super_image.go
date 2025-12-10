@@ -318,7 +318,7 @@ func (s *superImage) buildMiscInfo(ctx android.ModuleContext, superEmpty bool) (
 		android.ErrorRule(ctx, missingPartitionErrorMessageFile, missingPartitionErrorMessage)
 	} else {
 		ctx.Build(pctx, android.BuildParams{
-			Rule:   android.Touch,
+			Rule:   android.TouchRule,
 			Output: missingPartitionErrorMessageFile,
 		})
 	}

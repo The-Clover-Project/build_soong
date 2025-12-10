@@ -231,7 +231,7 @@ type productVariablesDefaultsTestModule struct {
 
 func (d *productVariablesDefaultsTestModule) GenerateAndroidBuildActions(ctx ModuleContext) {
 	ctx.Build(pctx, BuildParams{
-		Rule:   Touch,
+		Rule:   TouchRule,
 		Output: PathForModuleOut(ctx, "out"),
 	})
 }

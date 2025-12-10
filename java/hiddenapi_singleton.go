@@ -188,7 +188,7 @@ func prebuiltFlagsRule(ctx android.SingletonContext) {
 	inputPath := android.PathForSource(ctx, ctx.Config().PrebuiltHiddenApiDir(ctx), "hiddenapi-flags.csv")
 
 	ctx.Build(pctx, android.BuildParams{
-		Rule:   android.Cp,
+		Rule:   android.CpRule,
 		Output: outputPath,
 		Input:  inputPath,
 	})
@@ -199,7 +199,7 @@ func prebuiltIndexRule(ctx android.SingletonContext) {
 	inputPath := android.PathForSource(ctx, ctx.Config().PrebuiltHiddenApiDir(ctx), "hiddenapi-index.csv")
 
 	ctx.Build(pctx, android.BuildParams{
-		Rule:   android.Cp,
+		Rule:   android.CpRule,
 		Output: outputPath,
 		Input:  inputPath,
 	})

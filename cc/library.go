@@ -1929,7 +1929,7 @@ func (library *libraryDecorator) install(ctx ModuleContext, file android.Path) {
 		installPath := getUnversionedLibraryInstallPath(ctx).Join(ctx, file.Base())
 
 		ctx.Build(pctx, android.BuildParams{
-			Rule:        android.Cp,
+			Rule:        android.CpRule,
 			Description: "install " + installPath.Base(),
 			Output:      installPath,
 			Input:       file,

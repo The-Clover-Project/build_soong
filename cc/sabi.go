@@ -23,6 +23,7 @@ import (
 
 	"android/soong/android"
 	"android/soong/cc/config"
+
 	"github.com/google/blueprint"
 )
 
@@ -429,7 +430,7 @@ func checkAbiDumpList(ctx android.SingletonContext, stubLibraries []string) {
 		android.ErrorRule(ctx, checkAbiDumpListTimestamp, errorMsg)
 	} else {
 		ctx.Build(pctx, android.BuildParams{
-			Rule:   android.Touch,
+			Rule:   android.TouchRule,
 			Output: checkAbiDumpListTimestamp,
 		})
 	}

@@ -98,7 +98,7 @@ func (j *jdepsGeneratorSingleton) GenerateBuildActions(ctx android.SingletonCont
 
 	// This is necessary to satisfy the dangling rules check as this file is written by Soong rather than a rule.
 	ctx.Build(pctx, android.BuildParams{
-		Rule:   android.Touch,
+		Rule:   android.TouchRule,
 		Output: jfpath,
 	})
 	ctx.DistForGoals([]string{"general-tests", "dist_files", "module-info"}, j.outputPath)

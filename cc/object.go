@@ -176,7 +176,7 @@ func (object *objectLinker) link(ctx ModuleContext,
 				builderFlags, output)
 		} else {
 			ctx.Build(pctx, android.BuildParams{
-				Rule:   android.Cp,
+				Rule:   android.CpRule,
 				Input:  objs.objFiles[0],
 				Output: output,
 			})
