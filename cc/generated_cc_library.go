@@ -32,3 +32,23 @@ func GeneratedCcLibraryModuleFactory(callbacks Generator) android.Module {
 
 	return module.Init()
 }
+
+func GeneratedCcLibraryStaticModuleFactory(callbacks Generator) android.Module {
+	module, library := NewLibrary(android.HostAndDeviceSupported)
+	library.BuildOnlyStatic()
+	module.sdkMemberTypes = []android.SdkMemberType{staticLibrarySdkMemberType}
+
+	module.generators = append(module.generators, callbacks)
+
+	return module.Init()
+}
+
+func GeneratedCcLibrarySharedModuleFactory(callbacks Generator) android.Module {
+	module, library := NewLibrary(android.HostAndDeviceSupported)
+	library.BuildOnlyShared()
+	module.sdkMemberTypes = []android.SdkMemberType{sharedLibrarySdkMemberType}
+
+	module.generators = append(module.generators, callbacks)
+
+	return module.Init()
+}
