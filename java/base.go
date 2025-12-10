@@ -1896,7 +1896,7 @@ func (j *Module) compile(ctx android.ModuleContext) *JavaInfo {
 		if stub, _ := moduleStubLinkType(j); stub {
 			copiedJar := android.PathForModuleOut(ctx, "combined", jarName)
 			ctx.Build(pctx, android.BuildParams{
-				Rule:   android.Cp,
+				Rule:   android.CpRule,
 				Input:  jars[0],
 				Output: copiedJar,
 			})
@@ -1987,7 +1987,7 @@ func (j *Module) compile(ctx android.ModuleContext) *JavaInfo {
 		inputFile := outputFile
 		packageCheckOutputFile := android.PathForModuleOut(ctx, "package-check", jarName)
 		ctx.Build(pctx, android.BuildParams{
-			Rule:   android.Cp,
+			Rule:   android.CpRule,
 			Input:  inputFile,
 			Output: packageCheckOutputFile,
 			// Make sure that any dependency on the output file will cause ninja to run the package check

@@ -49,7 +49,7 @@ func (m *AdbKeysModule) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	outputPath := android.PathForModuleOut(ctx, "adb_keys")
 	input := android.ExistentPathForSource(ctx, android.String(productVariables.AdbKeys))
 	ctx.Build(pctx, android.BuildParams{
-		Rule:   android.Cp,
+		Rule:   android.CpRule,
 		Output: outputPath,
 		Input:  input.Path(),
 	})

@@ -338,7 +338,7 @@ func (c *globalCompatConfig) GenerateAndroidBuildActions(ctx android.ModuleConte
 	// This ensures that outputFilePath has the correct name for others to
 	// use, as the source file may have a different name.
 	ctx.Build(pctx, android.BuildParams{
-		Rule:   android.Cp,
+		Rule:   android.CpRule,
 		Output: outputFilePath,
 		Input:  inputPath,
 	})

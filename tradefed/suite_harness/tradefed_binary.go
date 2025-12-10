@@ -156,7 +156,7 @@ func (tfg *tradefedBinaryGen) GenerateAndroidBuildActions(ctx android.ModuleCont
 	if dynamicConfig.Valid() {
 		outputFile := android.PathForModuleOut(ctx, strings.TrimSuffix(ctx.ModuleName(), genSuffix)+".dynamic")
 		ctx.Build(pctx, android.BuildParams{
-			Rule:   android.Cp,
+			Rule:   android.CpRule,
 			Input:  dynamicConfig.Path(),
 			Output: outputFile,
 		})

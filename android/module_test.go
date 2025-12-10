@@ -204,7 +204,7 @@ type depsModule struct {
 func (m *depsModule) GenerateAndroidBuildActions(ctx ModuleContext) {
 	outputFile := PathForModuleOut(ctx, ctx.ModuleName())
 	ctx.Build(pctx, BuildParams{
-		Rule:   Touch,
+		Rule:   TouchRule,
 		Output: outputFile,
 	})
 	installFile := ctx.InstallFile(PathForModuleInstall(ctx), ctx.ModuleName(), outputFile)

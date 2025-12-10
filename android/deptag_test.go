@@ -31,7 +31,7 @@ type testInstallDependencyTagModule struct {
 func (t *testInstallDependencyTagModule) GenerateAndroidBuildActions(ctx ModuleContext) {
 	outputFile := PathForModuleOut(ctx, "out")
 	ctx.Build(pctx, BuildParams{
-		Rule:   Touch,
+		Rule:   TouchRule,
 		Output: outputFile,
 	})
 	ctx.InstallFile(PathForModuleInstall(ctx), ctx.ModuleName(), outputFile)

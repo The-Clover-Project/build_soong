@@ -2413,7 +2413,7 @@ func apexBootclasspathFragmentFiles(ctx android.ModuleContext, module android.Mo
 			// We need to copy the profile to a temporary path with the right filename because the apexer
 			// will take the filename as is.
 			ctx.Build(pctx, android.BuildParams{
-				Rule:   android.Cp,
+				Rule:   android.CpRule,
 				Input:  pathOnHost,
 				Output: tempPath,
 			})

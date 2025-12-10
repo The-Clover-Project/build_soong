@@ -84,7 +84,7 @@ func (p *androidInfoModule) GenerateAndroidBuildActions(ctx ModuleContext) {
 
 	if boardInfoFiles := PathsForModuleSrc(ctx, p.properties.Board_info_files); len(boardInfoFiles) > 0 {
 		ctx.Build(pctx, BuildParams{
-			Rule:   Cat,
+			Rule:   CatRule,
 			Inputs: boardInfoFiles,
 			Output: mergedBoardInfoTxt,
 		})

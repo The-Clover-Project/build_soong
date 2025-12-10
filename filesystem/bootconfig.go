@@ -71,7 +71,7 @@ func (m *BootconfigModule) GenerateAndroidBuildActions(ctx android.ModuleContext
 		bcFiles = append(bcFiles, bootConfigFile)
 	}
 	ctx.Build(pctx, android.BuildParams{
-		Rule:        android.Cat,
+		Rule:        android.CatRule,
 		Description: "concatenate bootconfig parameters",
 		Inputs:      bcFiles,
 		Output:      outputPath,

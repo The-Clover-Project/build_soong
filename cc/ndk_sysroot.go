@@ -277,7 +277,7 @@ func (n *ndkSingleton) GenerateBuildActions(ctx android.SingletonContext) {
 
 	combinedLicense := getNdkInstallBase(ctx).Join(ctx, "NOTICE")
 	ctx.Build(pctx, android.BuildParams{
-		Rule:        android.Cat,
+		Rule:        android.CatRule,
 		Description: "combine licenses",
 		Output:      combinedLicense,
 		Inputs:      licensePaths,
@@ -286,14 +286,14 @@ func (n *ndkSingleton) GenerateBuildActions(ctx android.SingletonContext) {
 	baseDepPaths := append(installPaths, combinedLicense)
 
 	ctx.Build(pctx, android.BuildParams{
-		Rule:       android.Touch,
+		Rule:       android.TouchRule,
 		Output:     getNdkBaseTimestampFile(ctx),
 		Implicits:  baseDepPaths,
 		Validation: getNdkAbiDiffTimestampFile(ctx),
 	})
 
 	ctx.Build(pctx, android.BuildParams{
-		Rule:      android.Touch,
+		Rule:      android.TouchRule,
 		Output:    getNdkHeadersTimestampFile(ctx),
 		Implicits: headerInstallPaths,
 	})
@@ -314,7 +314,7 @@ func (n *ndkSingleton) GenerateBuildActions(ctx android.SingletonContext) {
 	// sysroots for all the NDK architectures and package them so they can be
 	// imported into the NDK's build.
 	ctx.Build(pctx, android.BuildParams{
-		Rule:      android.Touch,
+		Rule:      android.TouchRule,
 		Output:    getNdkFullTimestampFile(ctx),
 		Implicits: append(fullDepPaths, headerCCompatVerificationTimestampPaths...),
 	})
