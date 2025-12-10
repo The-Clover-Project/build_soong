@@ -907,11 +907,20 @@ func addOptionalApiSurfaceToCmd(cmd *android.RuleBuilderCommand, apiSurface *str
 	}
 }
 
-// Pass flagged apis related flags to metalava. When aconfig_declarations property is not
-// defined for a module, simply revert all flagged apis annotations. If aconfig_declarations
-// property is defined, apply transformations and only revert the flagged apis that are not
-// enabled via release configurations and are not specified in aconfig_declarations
-func generateRevertAnnotationArgs(ctx android.ModuleContext, cmd *android.RuleBuilderCommand, stubsType StubsType, aconfigFlagsPaths android.Paths) {
+// Pass aconfig flags to Metalava. Filters the flags in aconfigFlagsPaths for
+// the stubsType and then transforms them into a Metalava config file.
+//
+// If no flags are passed to Metalava then it will assume all flags are kept.
+// This is needed for StubsType.Everything which is used to generate the checked
+// in signature files and the stub libraries against which the platform is
+// built.
+//
+// Any `*/READ_WRITE` flags that are passed to Metalava will keep the API as the
+// API may be available (depending on the state of the flag) at runtime. In that
+// case it is the caller's responsibility to check that the flag is enabled. The
+// associated `@FlaggedApi` annotations are kept as Android Lint will use them
+// to enforce that the caller checks the state of the flag before calling.
+func generateMetalavaFlagConfigArgs(ctx android.ModuleContext, cmd *android.RuleBuilderCommand, stubsType StubsType, aconfigFlagsPaths android.Paths) {
 	var filterArgs string
 	switch stubsType {
 	// No flagged apis specific flags need to be passed to metalava when generating
@@ -952,7 +961,7 @@ func generateRevertAnnotationArgs(ctx android.ModuleContext, cmd *android.RuleBu
 	})
 
 	ctx.Build(pctx, android.BuildParams{
-		Rule:        generateMetalavaRevertAnnotationsRule,
+		Rule:        generateMetalavaFlagConfigRule,
 		Input:       releasedFlagsFile,
 		Output:      metalavaFlagsConfigFile,
 		Description: fmt.Sprintf("%s metalava flags config", stubsType),
@@ -1054,6 +1063,8 @@ func (d *Droidstubs) everythingStubCmd(ctx android.ModuleContext, params stubsCo
 	}
 
 	cmd := d.commonMetalavaStubCmd(ctx, rule, commonCmdParams)
+
+	generateMetalavaFlagConfigArgs(ctx, cmd, params.stubsType, params.deps.aconfigProtoFiles)
 
 	d.everythingOptionalCmd(ctx, cmd, params.doApiLint, params.doCheckReleased)
 
@@ -1279,7 +1290,7 @@ func (d *Droidstubs) optionalStubCmd(ctx android.ModuleContext, params stubsComm
 
 	cmd := d.commonMetalavaStubCmd(ctx, rule, params)
 
-	generateRevertAnnotationArgs(ctx, cmd, params.stubConfig.stubsType, params.stubConfig.deps.aconfigProtoFiles)
+	generateMetalavaFlagConfigArgs(ctx, cmd, params.stubConfig.stubsType, params.stubConfig.deps.aconfigProtoFiles)
 
 	if params.stubConfig.doApiLint {
 		// Pass the lint baseline file as an input to resolve the lint errors.

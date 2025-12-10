@@ -257,6 +257,9 @@ func RustTestFactory() android.Module {
 	// host target.
 	android.AddLoadHook(module, rustTestHostMultilib)
 
+	// Keep symbols for test binaries, so that they can have proper backtraces.
+	android.AddLoadHook(module, rustTestKeepSymbols)
+
 	// Windows tests are currently unsupported, so disable them.
 	// To support Windows test modules, we likely need to switch
 	// to panic=unwind.
@@ -344,5 +347,16 @@ func rustTestDisableWindows(ctx android.LoadHookContext) {
 	}
 	p := &props{}
 	p.Target.Windows.Enabled = false
+	ctx.AppendProperties(p)
+}
+
+func rustTestKeepSymbols(ctx android.LoadHookContext) {
+	type props struct {
+		Strip struct {
+			Keep_symbols *bool
+		}
+	}
+	p := &props{}
+	p.Strip.Keep_symbols = proptools.BoolPtr(true)
 	ctx.AppendProperties(p)
 }

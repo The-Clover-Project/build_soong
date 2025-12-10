@@ -42,9 +42,9 @@ all_aconfig_declarations {
     // entire tree. It is **INCORRECT** to generate any on-device or otherwise
     // published artifacts based on this module.
     visibility: [
-        "//vendor:__subpackages__", // for vendor extensions
+        "//build/make/tools/finalization",
         "//frameworks/base/ravenwood",
-        "//frameworks/base/tools/aapt2/tools",
+        "//vendor:__subpackages__", // for vendor extensions
     ],
     api_signature_files: [
         ":frameworks-base-api-checked-in-current.txt",
