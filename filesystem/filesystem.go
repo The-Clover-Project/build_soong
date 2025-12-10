@@ -323,6 +323,8 @@ type ErofsProperties struct {
 	Pcluster_size *int64
 
 	Block_size *int64
+
+	Enable_dedupe *bool
 }
 
 // Additional properties required to generate f2fs FS partitions.
@@ -1448,6 +1450,10 @@ func (f *filesystem) buildPropFile(ctx android.ModuleContext) (android.Path, and
 
 		if f.properties.Erofs.Block_size != nil {
 			addStr("erofs_blocksize", fmt.Sprintf("%d", *f.properties.Erofs.Block_size))
+		}
+
+		if proptools.Bool(f.properties.Erofs.Enable_dedupe) {
+			addStr("erofs_enable_dedupe", "true")
 		}
 
 	case f2fsType:
