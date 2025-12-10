@@ -25,6 +25,12 @@ var (
 	pctx = android.NewPackageContext("android/soong/atomsapigen")
 )
 
+const (
+	includeDefaultLibsFull   = "full"
+	includeDefaultLibsHeader = "headers_only"
+	includeDefaultLibsNone   = "none"
+)
+
 func init() {
 	RegisterBuildComponents(android.InitRegistrationContext)
 }
@@ -45,8 +51,12 @@ type CcAtomslogLibraryProperties struct {
 	// Basename of the header and cpp files generated.
 	Basename string
 
-	// Whether to include libstatssocket and libstatspull as shared libs. True by default.
-	Include_default_shared_libs *bool
+	// Options for including libstatssocket and libstatspull dependencies. There are 3 choices:
+	// "full": include libstatssocket and libstatspull as shared_libs,
+	// "headers_only": include libstatssocket_headers and libstatspull_headers as header_libs,
+	// "none": Nothing is included by default.
+	// The default option is "full".
+	Include_default_libs *string
 }
 
 type CcAtomslogLibraryCallbacks struct {
@@ -88,10 +98,19 @@ func (this *CcAtomslogLibraryCallbacks) GeneratorDeps(ctx cc.DepsContext, deps c
 	// Add the library containing the extra C++ sources like StatsHistogram.
 	deps.WholeStaticLibs = append(deps.WholeStaticLibs, "stats-log-api-gen-cc-lib")
 
-	// Add libstatssocket and libstatspull as shared_libs unless include_default_shared_libs
-	// is explicitly false.
-	if proptools.BoolDefault(this.properties.Include_default_shared_libs, true) {
+	includeDefaultLibs := proptools.StringDefault(this.properties.Include_default_libs, includeDefaultLibsFull)
+	switch includeDefaultLibs {
+	case includeDefaultLibsFull:
 		deps.SharedLibs = android.Concat(deps.SharedLibs, []string{"libstatssocket", "libstatspull"})
+	case includeDefaultLibsHeader:
+		deps.HeaderLibs = android.Concat(deps.HeaderLibs, []string{"libstatssocket_headers", "libstatspull_headers"})
+	case includeDefaultLibsNone:
+	default:
+		ctx.PropertyErrorf(
+			"include_default_libs", "must be one of \"%s\", \"%s\", or \"%s\"",
+			includeDefaultLibsFull,
+			includeDefaultLibsHeader,
+			includeDefaultLibsNone)
 	}
 
 	return deps
