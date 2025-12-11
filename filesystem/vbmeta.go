@@ -447,6 +447,11 @@ func (v *vbmeta) buildPropFileForMiscInfo(ctx android.ModuleContext) android.Pat
 	ctx.VisitDirectDepsProxyWithTag(vbmetaPartitionDep, func(child android.ModuleProxy) {
 		if info, ok := android.OtherModuleProvider(ctx, child, vbmetaPartitionProvider); ok {
 			partitionDepNames = append(partitionDepNames, info.Name)
+			if info.Name == "tzsw" {
+				// The tzsw partition is a bootloader partition that is signed with avb and its
+				// hashtree descriptors are included in vbmeta.img
+				bootloaderPartitions = append(bootloaderPartitions, info.Output)
+			}
 		} else if info, ok := android.OtherModuleProvider(ctx, child, vbmetaPartitionsProvider); ok {
 			for _, vbmetaPartition := range info {
 				if vbmetaPartition.AbOtaBootloaderPartition {
