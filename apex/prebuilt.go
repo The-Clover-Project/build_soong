@@ -666,8 +666,7 @@ func (p *Prebuilt) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 
 	p.apexKeysPath = writeApexKeys(ctx, p)
 	// TODO(jungjw): Check the key validity.
-	prebuiltApex := p.properties.prebuiltApexSelector(ctx, ctx.Module())
-	p.inputApex = android.PathForModuleSrc(ctx, prebuiltApex)
+	p.inputApex = android.PathForModuleSrc(ctx, p.properties.prebuiltApexSelector(ctx, ctx.Module()))
 	p.installDir = android.PathForModuleInstall(ctx, "apex")
 	p.installFilename = p.InstallFilename()
 	if !strings.HasSuffix(p.installFilename, imageApexSuffix) {
@@ -717,12 +716,6 @@ func (p *Prebuilt) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	ctx.SetOutputFiles(android.Paths{p.outputApex}, "")
 
 	android.SetProvider(ctx, filesystem.ApexKeyPathInfoProvider, filesystem.ApexKeyPathInfo{p.apexKeysPath})
-
-	if module := android.SrcIsModule(prebuiltApex); module != "" {
-		if ctx.OtherModuleType(android.GetModuleProxyFromPathDep(ctx, module, "")) == "cipd_package" {
-			ctx.ComplianceMetadataInfo().SetStringValue(android.ComplianceMetadataProp.CIPD_SRC, module)
-		}
-	}
 }
 
 // Creates a timestamp file that will be used to validate that there is no mismtach
