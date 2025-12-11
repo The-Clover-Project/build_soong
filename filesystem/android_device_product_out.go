@@ -31,7 +31,7 @@ func (a *androidDevice) copyFilesToProductOutForSoongOnly(ctx android.ModuleCont
 		info := filesystemInfos[partition]
 		imgInstallPath := android.PathForModuleInPartitionInstall(ctx, "", partition+".img")
 		ctx.Build(pctx, android.BuildParams{
-			Rule:   android.Cp,
+			Rule:   android.CpRule,
 			Input:  info.Output,
 			Output: imgInstallPath,
 		})
@@ -100,7 +100,7 @@ func (a *androidDevice) copyFilesToProductOutForSoongOnly(ctx android.ModuleCont
 			if _, exists := installedFilesMap[installedFiles.Json]; !exists && installedFiles.Json != nil {
 				installPath := android.PathForModuleInPartitionInstall(ctx, "", installedFiles.Json.Base())
 				ctx.Build(pctx, android.BuildParams{
-					Rule:   android.Cp,
+					Rule:   android.CpRule,
 					Input:  installedFiles.Json,
 					Output: installPath,
 				})
@@ -110,7 +110,7 @@ func (a *androidDevice) copyFilesToProductOutForSoongOnly(ctx android.ModuleCont
 			if _, exists := installedFilesMap[installedFiles.Txt]; !exists && installedFiles.Txt != nil {
 				installPath := android.PathForModuleInPartitionInstall(ctx, "", installedFiles.Txt.Base())
 				ctx.Build(pctx, android.BuildParams{
-					Rule:   android.Cp,
+					Rule:   android.CpRule,
 					Input:  installedFiles.Txt,
 					Output: installPath,
 				})
@@ -133,7 +133,7 @@ func (a *androidDevice) copyFilesToProductOutForSoongOnly(ctx android.ModuleCont
 		for _, file := range files {
 			installPath := android.PathForModuleInPartitionInstall(ctx, "", file.Base())
 			ctx.Build(pctx, android.BuildParams{
-				Rule:   android.Cp,
+				Rule:   android.CpRule,
 				Input:  file,
 				Output: installPath,
 			})
@@ -145,7 +145,7 @@ func (a *androidDevice) copyFilesToProductOutForSoongOnly(ctx android.ModuleCont
 		for _, file := range bootloaderPartitionFiles {
 			installPath := android.PathForModuleInPartitionInstall(ctx, "obj", "PACKAGING", "unpacked", file.Base())
 			ctx.Build(pctx, android.BuildParams{
-				Rule:   android.Cp,
+				Rule:   android.CpRule,
 				Input:  file,
 				Output: installPath,
 			})
@@ -159,7 +159,7 @@ func (a *androidDevice) copyFilesToProductOutForSoongOnly(ctx android.ModuleCont
 			if info, ok := android.OtherModuleProvider(ctx, partition, BootimgInfoProvider); ok {
 				installPath := android.PathForModuleInPartitionInstall(ctx, "", type_+".img")
 				ctx.Build(pctx, android.BuildParams{
-					Rule:   android.Cp,
+					Rule:   android.CpRule,
 					Input:  info.Output,
 					Output: installPath,
 				})
@@ -182,7 +182,7 @@ func (a *androidDevice) copyFilesToProductOutForSoongOnly(ctx android.ModuleCont
 		if info, ok := android.OtherModuleProvider(ctx, partition, BootimgInfoProvider); ok && info.Bootconfig != nil {
 			installPath := android.PathForModuleInPartitionInstall(ctx, "", "vendor-bootconfig.img")
 			ctx.Build(pctx, android.BuildParams{
-				Rule:   android.Cp,
+				Rule:   android.CpRule,
 				Input:  info.Bootconfig,
 				Output: installPath,
 			})
@@ -195,7 +195,7 @@ func (a *androidDevice) copyFilesToProductOutForSoongOnly(ctx android.ModuleCont
 		pvmfwImg := android.PathForModuleSrc(ctx, proptools.String(a.deviceProps.Pvmfw.Image))
 		installPath := android.PathForModuleInPartitionInstall(ctx, "", "pvmfw.img")
 		ctx.Build(pctx, android.BuildParams{
-			Rule:   android.Cp,
+			Rule:   android.CpRule,
 			Input:  pvmfwImg,
 			Output: installPath,
 		})
@@ -209,7 +209,7 @@ func (a *androidDevice) copyFilesToProductOutForSoongOnly(ctx android.ModuleCont
 		for _, file := range files {
 			installPath := android.PathForModuleInPartitionInstall(ctx, "", file.Base())
 			ctx.Build(pctx, android.BuildParams{
-				Rule:   android.Cp,
+				Rule:   android.CpRule,
 				Input:  file,
 				Output: installPath,
 			})
@@ -224,7 +224,7 @@ func (a *androidDevice) copyFilesToProductOutForSoongOnly(ctx android.ModuleCont
 			img := android.OutputFilesForModule(ctx, dtboModule, "")[0]
 			installPath := android.PathForModuleInPartitionInstall(ctx, "", img.Base())
 			ctx.Build(pctx, android.BuildParams{
-				Rule:   android.Cp,
+				Rule:   android.CpRule,
 				Input:  img,
 				Output: installPath,
 			})
@@ -235,7 +235,7 @@ func (a *androidDevice) copyFilesToProductOutForSoongOnly(ctx android.ModuleCont
 	// Fastboot-info.txt
 	fastbootInstallpath := android.PathForModuleInPartitionInstall(ctx, "", "fastboot-info.txt")
 	ctx.Build(pctx, android.BuildParams{
-		Rule:   android.Cp,
+		Rule:   android.CpRule,
 		Input:  a.fastbootInfoFile,
 		Output: fastbootInstallpath,
 	})
@@ -246,7 +246,7 @@ func (a *androidDevice) copyFilesToProductOutForSoongOnly(ctx android.ModuleCont
 		if info, ok := android.OtherModuleProvider(ctx, partition, vbmetaPartitionProvider); ok {
 			installPath := android.PathForModuleInPartitionInstall(ctx, "", info.Name+".img")
 			ctx.Build(pctx, android.BuildParams{
-				Rule:   android.Cp,
+				Rule:   android.CpRule,
 				Input:  info.Output,
 				Output: installPath,
 			})
@@ -261,7 +261,7 @@ func (a *androidDevice) copyFilesToProductOutForSoongOnly(ctx android.ModuleCont
 		if info, ok := android.OtherModuleProvider(ctx, partition, SuperImageProvider); ok {
 			installPath := android.PathForModuleInPartitionInstall(ctx, "", "super.img")
 			ctx.Build(pctx, android.BuildParams{
-				Rule:   android.Cp,
+				Rule:   android.CpRule,
 				Input:  info.SuperImage,
 				Output: installPath,
 			})
@@ -269,7 +269,7 @@ func (a *androidDevice) copyFilesToProductOutForSoongOnly(ctx android.ModuleCont
 			if info.SuperEmptyImage != nil {
 				installPath := android.PathForModuleInPartitionInstall(ctx, "", "super_empty.img")
 				ctx.Build(pctx, android.BuildParams{
-					Rule:   android.Cp,
+					Rule:   android.CpRule,
 					Input:  info.SuperEmptyImage,
 					Output: installPath,
 				})
@@ -288,7 +288,7 @@ func (a *androidDevice) copyFilesToProductOutForSoongOnly(ctx android.ModuleCont
 			validations = append(validations, a.checkRadioVersion(ctx))
 		}
 		ctx.Build(pctx, android.BuildParams{
-			Rule:        android.Cp,
+			Rule:        android.CpRule,
 			Input:       a.androidInfoTxt,
 			Output:      installPath,
 			Validations: validations,
@@ -299,7 +299,7 @@ func (a *androidDevice) copyFilesToProductOutForSoongOnly(ctx android.ModuleCont
 	for _, pair := range a.stageDeviceFiles {
 		installPath := android.PathForModuleInPartitionInstall(ctx, "", pair.dst)
 		ctx.Build(pctx, android.BuildParams{
-			Rule:   android.Cp,
+			Rule:   android.CpRule,
 			Input:  pair.src,
 			Output: installPath,
 		})
@@ -308,7 +308,7 @@ func (a *androidDevice) copyFilesToProductOutForSoongOnly(ctx android.ModuleCont
 
 	copyToProductOutTimestamp := android.PathForModuleOut(ctx, "product_out_copy_timestamp")
 	ctx.Build(pctx, android.BuildParams{
-		Rule:      android.Touch,
+		Rule:      android.TouchRule,
 		Output:    copyToProductOutTimestamp,
 		Implicits: deps,
 	})
@@ -321,7 +321,7 @@ func (a *androidDevice) copyFilesToProductOutForSoongOnly(ctx android.ModuleCont
 // Any changes to installed files of the main `android_device` will retrigger SBOM generation
 func (a *androidDevice) createComplianceMetadataTimestamp(ctx android.ModuleContext, installedFiles android.Paths) {
 	ctx.Build(pctx, android.BuildParams{
-		Rule:      android.Touch,
+		Rule:      android.TouchRule,
 		Implicits: installedFiles,
 		Output:    android.PathForOutput(ctx, "compliance-metadata", ctx.Config().DeviceProduct(), "installed_files.stamp"),
 	})

@@ -179,7 +179,7 @@ type HiddenAPIPackageProperties struct {
 		//
 		// This affects the signature patterns file that is used to select the subset of monolithic
 		// hidden API flags. See split_packages property for more details.
-		Package_prefixes []string
+		Package_prefixes proptools.Configurable[[]string]
 
 		// A list of individual packages that are provided solely by this
 		// bootclasspath_fragment but which cannot be listed in package_prefixes
@@ -244,7 +244,7 @@ type HiddenAPIPackageProperties struct {
 		// exported to the sdk snapshot in the signature patterns file. That is something that should be
 		// avoided where possible. Specifying package_prefixes and split_packages allows those
 		// implementation details to be excluded from the snapshot.
-		Split_packages []string
+		Split_packages proptools.Configurable[[]string]
 	}
 }
 
@@ -794,7 +794,7 @@ func (b *BootclasspathFragmentModule) createHiddenAPIFlagInput(ctx android.Modul
 	input.extractFlagFilesFromProperties(ctx, &b.properties.HiddenAPIFlagFileProperties)
 
 	// Populate with package rules from the properties.
-	input.extractPackageRulesFromProperties(&b.sourceOnlyProperties.HiddenAPIPackageProperties)
+	input.extractPackageRulesFromProperties(ctx, &b.sourceOnlyProperties.HiddenAPIPackageProperties)
 
 	input.gatherPropertyInfo(ctx, contents)
 

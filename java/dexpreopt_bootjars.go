@@ -664,7 +664,7 @@ func (d *dexpreoptBootJars) GenerateAndroidBuildActions(ctx android.ModuleContex
 					dst = symbolsInstallDir.Join(ctx, strings.TrimPrefix(install.To, "/"))
 				}
 				ctx.Build(pctx, android.BuildParams{
-					Rule:   android.Cp,
+					Rule:   android.CpRule,
 					Input:  install.From,
 					Output: dst,
 				})
@@ -799,7 +799,7 @@ func (d *dexpreoptBootJars) buildBootZip(ctx android.ModuleContext) {
 	sb.WriteString("\nextra-args = ")
 	android.WriteFileRuleVerbatim(ctx, bootZipMetadataTmp, sb.String())
 	ctx.Build(pctx, android.BuildParams{
-		Rule: android.Cat,
+		Rule: android.CatRule,
 		Inputs: []android.Path{
 			bootZipMetadataTmp,
 			globalSoong.UffdGcFlag,
@@ -1033,7 +1033,7 @@ func copyBootJarsToPredefinedLocations(ctx android.ModuleContext, srcBootDexJars
 			ctx.ModuleErrorf("module %s is not part of the boot configuration", name)
 		} else {
 			ctx.Build(pctx, android.BuildParams{
-				Rule:   android.Cp,
+				Rule:   android.CpRule,
 				Input:  src,
 				Output: dst,
 			})
@@ -1549,8 +1549,8 @@ func dumpOatRules(ctx android.ModuleContext, image *bootImageConfig) {
 			FlagWithArg("--image=", strings.Join(imageLocationsOnHost, ":")).Implicits(image.imagesDeps.Paths()).
 			FlagWithOutput("--output=", output).
 			FlagWithArg("--instruction-set=", arch.String())
-		cmd.Text("$(cat").Input(globalSoong.ProfileCodeFlag).Text(")")
 		if image.target.Os == android.Android {
+			cmd.Text("$(cat").Input(globalSoong.ProfileCodeFlag).Text(")")
 			cmd.Text("$(cat").Input(globalSoong.UffdGcFlag).Text(")")
 		}
 		rule.Build("dump-oat-"+name+"-"+suffix, "dump oat "+name+" "+arch.String())

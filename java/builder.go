@@ -451,10 +451,10 @@ var (
 
 	generateMetalavaFlagConfigRule = pctx.AndroidStaticRule("generateMetalavaFlagConfigRule",
 		blueprint.RuleParams{
-			Command:         `${aconfig-to-metalava-flags} ${in} > ${out}`,
+			Command:         `${aconfig-to-metalava-flags} ${args} ${in} > ${out}`,
 			CommandDeps:     []string{"${aconfig-to-metalava-flags}"},
 			SandboxDisabled: true,
-		})
+		}, "args")
 
 	generateApiXMLRule = pctx.AndroidStaticRule("generateApiXMLRule",
 		blueprint.RuleParams{

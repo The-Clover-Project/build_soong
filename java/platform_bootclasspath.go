@@ -310,7 +310,7 @@ func (b *platformBootclasspathModule) generateHiddenAPIBuildActions(ctx android.
 		paths := android.OutputPaths{b.hiddenAPIFlagsCSV, b.hiddenAPIIndexCSV, b.hiddenAPIMetadataCSV}
 		for _, path := range paths {
 			ctx.Build(pctx, android.BuildParams{
-				Rule:   android.Touch,
+				Rule:   android.TouchRule,
 				Output: path,
 			})
 		}

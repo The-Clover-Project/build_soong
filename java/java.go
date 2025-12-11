@@ -2016,7 +2016,7 @@ func (j *Test) generateAndroidBuildActionsWithConfig(ctx android.ModuleContext, 
 			}
 			relocatedLib := android.PathForModuleOut(ctx, "relocated").Join(ctx, relPath)
 			ctx.Build(pctx, android.BuildParams{
-				Rule:   android.Cp,
+				Rule:   android.CpRule,
 				Input:  sharedLibInfo.SharedLibrary,
 				Output: relocatedLib,
 			})
@@ -3748,7 +3748,7 @@ func (j *DexImport) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		rule.Build("uncompress_dex", "uncompress dex")
 	} else {
 		ctx.Build(pctx, android.BuildParams{
-			Rule:   android.Cp,
+			Rule:   android.CpRule,
 			Input:  inputJar,
 			Output: dexOutputFile,
 		})

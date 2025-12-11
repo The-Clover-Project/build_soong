@@ -73,7 +73,7 @@ func (p *prebuiltSystemImage) GenerateAndroidBuildActions(ctx android.ModuleCont
 	builder.Build("unpack_system_image", "unpacking prebuilt system image")
 
 	ctx.Build(pctx, android.BuildParams{
-		Rule:        android.Cp,
+		Rule:        android.CpRule,
 		Description: "install prebuilt system image",
 		Output:      output,
 		Input:       input,

@@ -57,7 +57,7 @@ func (n *ndkAbiDumpSingleton) GenerateBuildActions(ctx android.SingletonContext)
 	// `development/tools/ndk/update_ndk_abi.sh` will dump the NDK ABI and
 	// update the golden copies in prebuilts/abi-dumps/ndk.
 	ctx.Build(pctx, android.BuildParams{
-		Rule:      android.Touch,
+		Rule:      android.TouchRule,
 		Output:    getNdkAbiDumpTimestampFile(ctx),
 		Implicits: depPaths,
 	})
@@ -93,7 +93,7 @@ func (n *ndkAbiDiffSingleton) GenerateBuildActions(ctx android.SingletonContext)
 
 	// `m diff-ndk-abi` will diff the NDK ABI.
 	ctx.Build(pctx, android.BuildParams{
-		Rule:      android.Touch,
+		Rule:      android.TouchRule,
 		Output:    getNdkAbiDiffTimestampFile(ctx),
 		Implicits: depPaths,
 	})

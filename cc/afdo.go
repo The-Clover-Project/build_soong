@@ -24,7 +24,9 @@ import (
 )
 
 // This flag needs to be in both CFlags and LdFlags to ensure correct symbol ordering
-const afdoFlagsFormat = "-fprofile-sample-use=%s -fprofile-sample-accurate"
+// TODO(yikong): -fsample-profile-use-profi is going to be the default in clang-r584948. Turn on the
+// flag in advance to isolate the performance difference. Remove the flag once updated past r584948.
+const afdoFlagsFormat = "-fprofile-sample-use=%s -fprofile-sample-accurate -fsample-profile-use-profi"
 
 type AfdoProperties struct {
 	// Afdo allows developers self-service enroll for

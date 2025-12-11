@@ -43,7 +43,7 @@ func mutatorTestModuleFactory() Module {
 
 func (m *mutatorTestModule) GenerateAndroidBuildActions(ctx ModuleContext) {
 	ctx.Build(pctx, BuildParams{
-		Rule:   Touch,
+		Rule:   TouchRule,
 		Output: PathForModuleOut(ctx, "output"),
 	})
 

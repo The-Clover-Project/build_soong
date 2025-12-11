@@ -1052,7 +1052,7 @@ func (s *snapshotBuilder) CopyToSnapshot(src android.Path, dest string) {
 	} else {
 		path := s.snapshotDir.Join(s.ctx, dest)
 		s.ctx.Build(pctx, android.BuildParams{
-			Rule:   android.Cp,
+			Rule:   android.CpRule,
 			Input:  src,
 			Output: path,
 		})
@@ -1088,7 +1088,7 @@ func (s *snapshotBuilder) EmptyFile() android.Path {
 		ctx := s.ctx
 		s.emptyFile = android.PathForModuleOut(ctx, "empty")
 		s.ctx.Build(pctx, android.BuildParams{
-			Rule:   android.Touch,
+			Rule:   android.TouchRule,
 			Output: s.emptyFile,
 		})
 	}

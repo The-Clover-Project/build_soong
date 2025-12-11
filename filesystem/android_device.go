@@ -521,7 +521,7 @@ func (a *androidDevice) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	validations = append(validations, a.checkVintf(ctx)...)
 
 	ctx.Build(pctx, android.BuildParams{
-		Rule:        android.Touch,
+		Rule:        android.TouchRule,
 		Output:      allImagesStamp,
 		Implicits:   deps,
 		Validations: validations,

@@ -534,7 +534,7 @@ func (s *ShTest) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 				}
 				relocatedLib := android.PathForModuleOut(ctx, "relocated").Join(ctx, relPath)
 				ctx.Build(pctx, android.BuildParams{
-					Rule:   android.Cp,
+					Rule:   android.CpRule,
 					Input:  linkableInfo.OutputFile.Path(),
 					Output: relocatedLib,
 				})

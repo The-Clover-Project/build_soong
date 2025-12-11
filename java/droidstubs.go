@@ -922,11 +922,12 @@ func addOptionalApiSurfaceToCmd(cmd *android.RuleBuilderCommand, apiSurface *str
 // to enforce that the caller checks the state of the flag before calling.
 func generateMetalavaFlagConfigArgs(ctx android.ModuleContext, cmd *android.RuleBuilderCommand, stubsType StubsType, aconfigFlagsPaths android.Paths) {
 	var filterArgs string
+	var overrideArgs string
 	switch stubsType {
 	// No flagged apis specific flags need to be passed to metalava when generating
 	// everything stubs
 	case Everything:
-		return
+		overrideArgs = "--override-flag-state=ENABLED --override-flag-permission=READ_WRITE"
 
 	case Runtime:
 		filterArgs = "--filter='state:ENABLED+permission:READ_ONLY' --filter='permission:READ_WRITE'"
@@ -965,6 +966,9 @@ func generateMetalavaFlagConfigArgs(ctx android.ModuleContext, cmd *android.Rule
 		Input:       releasedFlagsFile,
 		Output:      metalavaFlagsConfigFile,
 		Description: fmt.Sprintf("%s metalava flags config", stubsType),
+		Args: map[string]string{
+			"args": overrideArgs,
+		},
 	})
 
 	cmd.FlagWithInput("--config-file ", metalavaFlagsConfigFile)

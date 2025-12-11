@@ -203,7 +203,7 @@ func (t *testSuiteFiles) GenerateBuildActions(ctx android.SingletonContext) {
 			out := android.JoinWriteablePath(ctx, myTestCases, dir, filepath.Base(f.String()))
 			if _, ok := testInstalledSharedLibsDeduper[out.String()]; !ok {
 				ctx.Build(pctx, android.BuildParams{
-					Rule:   android.Cp,
+					Rule:   android.CpRule,
 					Input:  f,
 					Output: out,
 				})
@@ -237,14 +237,14 @@ func (t *testSuiteFiles) GenerateBuildActions(ctx android.SingletonContext) {
 
 	for _, install := range toInstall {
 		ctx.Build(pctx, android.BuildParams{
-			Rule:   android.Cp,
+			Rule:   android.CpRule,
 			Input:  install.Src,
 			Output: install.Dst,
 		})
 	}
 	for _, install := range oneVariantInstalls {
 		ctx.Build(pctx, android.BuildParams{
-			Rule:   android.Cp,
+			Rule:   android.CpRule,
 			Input:  install.Src,
 			Output: install.Dst,
 		})
@@ -399,7 +399,7 @@ func generateApiMapReport(ctx android.SingletonContext, pctx android.PackageCont
 	rule.Build(fmt.Sprintf("generate_%s_report_%s", reportType.String(), suite), reportDesc)
 	ctx.Phony(moduleName, hostOutApiMap.Join(ctx, outputFileName))
 	ctx.Build(pctx, android.BuildParams{
-		Rule:   android.Cp,
+		Rule:   android.CpRule,
 		Input:  sboxOut.Join(ctx, outputFileName),
 		Output: hostOutApiMap.Join(ctx, outputFileName),
 	})

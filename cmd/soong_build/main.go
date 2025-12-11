@@ -170,13 +170,13 @@ func writeNinjaHint(ctx *android.Context) error {
 	return nil
 }
 
-func writeMetrics(configuration android.Config, eventHandler *metrics.EventHandler, metricsDir string) {
+func writeMetrics(ctx *android.Context, configuration android.Config, eventHandler *metrics.EventHandler, metricsDir string) {
 	if len(metricsDir) < 1 {
 		fmt.Fprintf(os.Stderr, "\nMissing required env var for generating soong metrics: LOG_DIR\n")
 		os.Exit(1)
 	}
 	metricsFile := filepath.Join(metricsDir, "soong_build_metrics.pb")
-	err := android.WriteMetrics(configuration, eventHandler, metricsFile)
+	err := android.WriteMetrics(ctx, configuration, eventHandler, metricsFile)
 	maybeQuit(err, "error writing soong_build metrics %s", metricsFile)
 }
 
@@ -373,7 +373,7 @@ func main() {
 		writeConfigCache(configCache, configFile)
 	}
 
-	writeMetrics(configuration, ctx.EventHandler, metricsDir)
+	writeMetrics(ctx, configuration, ctx.EventHandler, metricsDir)
 
 	writeUsedEnvironmentFile(configuration)
 

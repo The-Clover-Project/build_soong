@@ -52,7 +52,7 @@ var (
 		})
 
 	// A copy rule.
-	Cp = pctx.AndroidStaticRule("CpRule",
+	CpRule = pctx.AndroidStaticRule("CpRule",
 		blueprint.RuleParams{
 			Command:     "${Rm} -f $out && ${Cp} $cpPreserveSymlinks $cpFlags $in $out$extraCmds",
 			CommandDeps: []string{"Rm-deps", "Cp-deps"},
@@ -105,7 +105,7 @@ var (
 		"cpFlags", "extraCmds")
 
 	// A timestamp touch rule.
-	Touch = pctx.AndroidStaticRule("TouchRule",
+	TouchRule = pctx.AndroidStaticRule("TouchRule",
 		blueprint.RuleParams{
 			Command:     "${Touch} $out",
 			CommandDeps: []string{"Touch-deps"},
@@ -143,7 +143,7 @@ var (
 		},
 		"error")
 
-	Cat = pctx.AndroidStaticRule("CatRule",
+	CatRule = pctx.AndroidStaticRule("CatRule",
 		blueprint.RuleParams{
 			Command:     "${Rm} -f $out && ${Cat} $in > $out",
 			CommandDeps: []string{"Rm-deps", "Cat-deps"},
@@ -182,7 +182,8 @@ var (
 
 	depfileVerifierRule = pctx.AndroidStaticRule("DepfileVerifierRule",
 		blueprint.RuleParams{
-			Command:     "${Rm} -f $out && ${DepfileVerifier} $in && ${Touch} $out",
+			Command2: blueprint.NewCommand(
+				Rm, " -f $out && ", depfileVerifier, " $in && ", Touch, " $out"),
 			CommandDeps: []string{"Rm-deps", "Touch-deps", "${DepfileVerifier}"},
 			Description: "verify depfile",
 		})
@@ -195,6 +196,88 @@ var (
 
 	// Used for processes that need significant RAM to ensure there are not too many running in parallel.
 	highmemPool = blueprint.NewBuiltinPool("highmem_pool")
+)
+
+var (
+	initToyboxTool = func(name string) func(PathContext) blueprint.HostToolParams {
+		return func(pc PathContext) blueprint.HostToolParams {
+			varName := string(unicode.ToUpper(rune(name[0]))) + name[1:]
+			depsName := varName + "-deps"
+			return blueprint.HostToolParams{
+				Value: "${" + varName + "}",
+				Deps:  []string{depsName},
+			}
+		}
+	}
+
+	Basename  = pctx.HostToolFunc(initToyboxTool("basename"))
+	Cat       = pctx.HostToolFunc(initToyboxTool("cat"))
+	Chmod     = pctx.HostToolFunc(initToyboxTool("chmod"))
+	Cmp       = pctx.HostToolFunc(initToyboxTool("cmp"))
+	Comm      = pctx.HostToolFunc(initToyboxTool("comm"))
+	Cp        = pctx.HostToolFunc(initToyboxTool("cp"))
+	Cut       = pctx.HostToolFunc(initToyboxTool("cut"))
+	Date      = pctx.HostToolFunc(initToyboxTool("date"))
+	Dd        = pctx.HostToolFunc(initToyboxTool("dd"))
+	Dirname   = pctx.HostToolFunc(initToyboxTool("dirname"))
+	Dos2unix  = pctx.HostToolFunc(initToyboxTool("dos2unix"))
+	Du        = pctx.HostToolFunc(initToyboxTool("du"))
+	Echo      = pctx.HostToolFunc(initToyboxTool("echo"))
+	Egrep     = pctx.HostToolFunc(initToyboxTool("egrep"))
+	Env       = pctx.HostToolFunc(initToyboxTool("env"))
+	File      = pctx.HostToolFunc(initToyboxTool("file"))
+	Find      = pctx.HostToolFunc(initToyboxTool("find"))
+	Getconf   = pctx.HostToolFunc(initToyboxTool("getconf"))
+	Getopt    = pctx.HostToolFunc(initToyboxTool("getopt"))
+	Grep      = pctx.HostToolFunc(initToyboxTool("grep"))
+	Gzip      = pctx.HostToolFunc(initToyboxTool("gzip"))
+	Head      = pctx.HostToolFunc(initToyboxTool("head"))
+	Id        = pctx.HostToolFunc(initToyboxTool("id"))
+	Install   = pctx.HostToolFunc(initToyboxTool("install"))
+	Ln        = pctx.HostToolFunc(initToyboxTool("ln"))
+	Ls        = pctx.HostToolFunc(initToyboxTool("ls"))
+	Md5sum    = pctx.HostToolFunc(initToyboxTool("md5sum"))
+	Mkdir     = pctx.HostToolFunc(initToyboxTool("mkdir"))
+	Mktemp    = pctx.HostToolFunc(initToyboxTool("mktemp"))
+	Mv        = pctx.HostToolFunc(initToyboxTool("mv"))
+	Nl        = pctx.HostToolFunc(initToyboxTool("nl"))
+	Od        = pctx.HostToolFunc(initToyboxTool("od"))
+	Paste     = pctx.HostToolFunc(initToyboxTool("paste"))
+	Patch     = pctx.HostToolFunc(initToyboxTool("patch"))
+	Printf    = pctx.HostToolFunc(initToyboxTool("printf"))
+	Pwd       = pctx.HostToolFunc(initToyboxTool("pwd"))
+	Readlink  = pctx.HostToolFunc(initToyboxTool("readlink"))
+	Realpath  = pctx.HostToolFunc(initToyboxTool("realpath"))
+	Rm        = pctx.HostToolFunc(initToyboxTool("rm"))
+	Rmdir     = pctx.HostToolFunc(initToyboxTool("rmdir"))
+	Sed       = pctx.HostToolFunc(initToyboxTool("sed"))
+	Seq       = pctx.HostToolFunc(initToyboxTool("seq"))
+	Setsid    = pctx.HostToolFunc(initToyboxTool("setsid"))
+	Sha1sum   = pctx.HostToolFunc(initToyboxTool("sha1sum"))
+	Sha256sum = pctx.HostToolFunc(initToyboxTool("sha256sum"))
+	Sha512sum = pctx.HostToolFunc(initToyboxTool("sha512sum"))
+	Sleep     = pctx.HostToolFunc(initToyboxTool("sleep"))
+	Sort      = pctx.HostToolFunc(initToyboxTool("sort"))
+	Stat      = pctx.HostToolFunc(initToyboxTool("stat"))
+	Tail      = pctx.HostToolFunc(initToyboxTool("tail"))
+	Tar       = pctx.HostToolFunc(initToyboxTool("tar"))
+	Tee       = pctx.HostToolFunc(initToyboxTool("tee"))
+	Test      = pctx.HostToolFunc(initToyboxTool("test"))
+	Timeout   = pctx.HostToolFunc(initToyboxTool("timeout"))
+	Touch     = pctx.HostToolFunc(initToyboxTool("touch"))
+	Tr        = pctx.HostToolFunc(initToyboxTool("tr"))
+	True      = pctx.HostToolFunc(initToyboxTool("true"))
+	Truncate  = pctx.HostToolFunc(initToyboxTool("truncate"))
+	Uname     = pctx.HostToolFunc(initToyboxTool("uname"))
+	Uniq      = pctx.HostToolFunc(initToyboxTool("uniq"))
+	Unix2dos  = pctx.HostToolFunc(initToyboxTool("unix2dos"))
+	Wc        = pctx.HostToolFunc(initToyboxTool("wc"))
+	Which     = pctx.HostToolFunc(initToyboxTool("which"))
+	Whoami    = pctx.HostToolFunc(initToyboxTool("whoami"))
+	Xargs     = pctx.HostToolFunc(initToyboxTool("xargs"))
+	Xxd       = pctx.HostToolFunc(initToyboxTool("xxd"))
+
+	depfileVerifier = pctx.HostTool("depfile_verifier")
 )
 
 var commonToyboxSymlinks = []string{
@@ -220,7 +303,6 @@ var commonToyboxSymlinks = []string{
 	"grep",
 	"gzip",
 	"head",
-	"hostname",
 	"id",
 	"install",
 	"ln",
@@ -293,7 +375,7 @@ func init() {
 // CopyFileRule creates a ninja rule to copy path to outPath.
 func CopyFileRule(ctx ModuleContext, path Path, outPath WritablePath, validations ...Path) {
 	ctx.Build(pctx, BuildParams{
-		Rule:        Cp,
+		Rule:        CpRule,
 		Input:       path,
 		Output:      outPath,
 		Description: "copy " + outPath.Base(),

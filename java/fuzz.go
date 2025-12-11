@@ -121,7 +121,7 @@ func (j *JavaFuzzTest) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	for _, jni := range jniPairs {
 		libPath := android.PathForModuleOut(ctx, jni.Dst)
 		ctx.Build(pctx, android.BuildParams{
-			Rule:   android.Cp,
+			Rule:   android.CpRule,
 			Input:  jni.Src,
 			Output: libPath,
 		})

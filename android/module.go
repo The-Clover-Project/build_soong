@@ -2639,6 +2639,29 @@ func (m *ModuleBase) GenerateBuildActions(blueprintCtx blueprint.ModuleContext) 
 		})
 	}
 
+	// I don't know of a better way to check if this is the BuildOs variation than by comparing
+	// strings like this.
+	if htp, ok := m.module.(HostToolProvider); ok &&
+		m.Enabled(ctx) &&
+		ctx.requiresFullInstall() &&
+		(ctx.ModuleSubDir() == ctx.Config().BuildOSTarget.String() ||
+			ctx.ModuleSubDir() == ctx.Config().BuildOSCommonTarget.String()) {
+
+		// This is kindof a hack, but in order to only process host tools, check if this module
+		// produces a binary with the same name as its module in out/host/linux-x86/bin
+		expectedPath := ctx.Config().HostToolPath(ctx, ctx.ModuleName())
+		hostToolPath := htp.HostToolPath()
+		if hostToolPath.Valid() && hostToolPath.String() == expectedPath.String() {
+			// Create the hostTool-<name>-deps phony target that depends on all the installed files.
+			// This will be depended on by static rules that use host tools.
+			ctx.Build(pctx, BuildParams{
+				Rule:   blueprint.Phony,
+				Output: PathForPhony(ctx, "hostTool-"+ctx.ModuleName()+"-deps"),
+				Inputs: installFiles.InstallFiles.Paths(),
+			})
+		}
+	}
+
 	if !ctx.Config().KatiEnabled() || hasAndroidMkProvider {
 		// If building in Soong-only mode or the Android.mk generation has been converted to a provider
 		// then there are no references directly to the Module and it can be freed.

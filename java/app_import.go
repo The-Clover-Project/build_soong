@@ -302,7 +302,7 @@ func (a *AndroidAppImport) uncompressEmbeddedJniLibs(
 	// with them may invalidate pre-existing signature data.
 	if ctx.InstallInTestcases() && (a.properties.Presigned.GetOrDefault(ctx, false) || a.properties.Preprocessed.GetOrDefault(ctx, false)) {
 		ctx.Build(pctx, android.BuildParams{
-			Rule:   android.Cp,
+			Rule:   android.CpRule,
 			Output: outputPath,
 			Input:  inputPath,
 		})
@@ -504,7 +504,7 @@ func (a *AndroidAppImport) generateAndroidBuildActions(ctx android.ModuleContext
 		validationStamp := a.validatePresignedApk(ctx, srcApk)
 		output := android.PathForModuleOut(ctx, apkFilename)
 		ctx.Build(pctx, android.BuildParams{
-			Rule:       android.Cp,
+			Rule:       android.CpRule,
 			Input:      srcApk,
 			Output:     output,
 			Validation: validationStamp,

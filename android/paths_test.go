@@ -1172,7 +1172,7 @@ func (p *pathForModuleSrcTestModule) GenerateAndroidBuildActions(ctx ModuleConte
 	}
 
 	ctx.Build(pctx, BuildParams{
-		Rule:   Touch,
+		Rule:   TouchRule,
 		Output: PathForModuleOut(ctx, "output"),
 	})
 }

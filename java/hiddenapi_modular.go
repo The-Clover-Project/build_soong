@@ -788,10 +788,10 @@ func (i *HiddenAPIPropertyInfo) extractFlagFilesFromProperties(ctx android.Modul
 
 // extractPackageRulesFromProperties extracts the package rules that are specified in the supplied
 // properties and stores them in this struct.
-func (i *HiddenAPIPropertyInfo) extractPackageRulesFromProperties(p *HiddenAPIPackageProperties) {
-	i.PackagePrefixes = p.Hidden_api.Package_prefixes
+func (i *HiddenAPIPropertyInfo) extractPackageRulesFromProperties(ctx android.ModuleContext, p *HiddenAPIPackageProperties) {
+	i.PackagePrefixes = p.Hidden_api.Package_prefixes.GetOrDefault(ctx, nil)
 	i.SinglePackages = p.Hidden_api.Single_packages
-	i.SplitPackages = p.Hidden_api.Split_packages
+	i.SplitPackages = p.Hidden_api.Split_packages.GetOrDefault(ctx, nil)
 }
 
 func (i *HiddenAPIPropertyInfo) gatherPropertyInfo(ctx android.ModuleContext, contents []android.ModuleProxy) {
