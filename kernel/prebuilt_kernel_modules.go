@@ -16,11 +16,10 @@ package kernel
 
 import (
 	"fmt"
-	"path/filepath"
 	"strings"
 
 	"android/soong/android"
-	_ "android/soong/cc/config"
+	"android/soong/cc/config"
 
 	"github.com/google/blueprint"
 	"github.com/google/blueprint/proptools"
@@ -107,7 +106,7 @@ func (pkm *prebuiltKernelModules) KernelVersion() string {
 }
 
 func (pkm *prebuiltKernelModules) DepsMutator(ctx android.BottomUpMutatorContext) {
-	// do nothing
+	android.AddHostToolDependencies(ctx, "zipsync", "soong_zip")
 }
 
 func (pkm *prebuiltKernelModules) GenerateAndroidBuildActions(ctx android.ModuleContext) {
@@ -118,9 +117,8 @@ func (pkm *prebuiltKernelModules) GenerateAndroidBuildActions(ctx android.Module
 	modules := android.PathsForModuleSrc(ctx, pkm.properties.Srcs.GetOrDefault(ctx, nil))
 	systemModulesZip := android.OptionalPathForModuleSrc(ctx, pkm.properties.System_dep)
 
-	modulesZip := android.PathForModuleOut(ctx, "modules.zip")
-	modulesZipList := android.PathForModuleOut(ctx, "modules.zip.list")
 	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
+	modulesZipList := android.PathForModuleOut(ctx, "modules.zip.list")
 	var moduleNames []string
 	for _, m := range modules {
 		moduleNames = append(moduleNames, m.Base())
@@ -129,15 +127,35 @@ func (pkm *prebuiltKernelModules) GenerateAndroidBuildActions(ctx android.Module
 		Flag("\"" + strings.Join(moduleNames, " ") + "\"").
 		Text("|").Text("tr").Flag("\" \"").Flag("\"\\n\"").
 		Text(">").Output(modulesZipList)
+
+	modulesZip := android.PathForModuleOut(ctx, "modules.zip")
 	builder.Command().BuiltTool("soong_zip").
 		FlagWithOutput("-o ", modulesZip).
 		Flag("-j").
 		FlagForEachInput("-f ", modules)
+
+	allModulesZip := modulesZip
+	if len(pkm.properties.Srcs_16k) > 0 {
+		zip := android.PathForModuleOut(ctx, "modules_16k.zip")
+		builder.Temporary(zip)
+		builder.Command().BuiltTool("soong_zip").
+			FlagWithOutput("-o ", zip).
+			Flag("-j").
+			Flag("-P 16k-mode").
+			FlagForEachInput("-f ", android.PathsForModuleSrc(ctx, pkm.properties.Srcs_16k))
+
+		allModulesZip = android.PathForModuleOut(ctx, "all_modules.zip")
+		builder.Command().BuiltTool("merge_zips").
+			Output(allModulesZip).
+			Input(modulesZip).
+			Input(zip)
+	}
+
 	builder.Build("zip_modules", "zip kernel modules")
 
 	depmodOut := pkm.runDepmod(ctx, modulesZip, modulesZipList, systemModulesZip)
 	if proptools.BoolDefault(pkm.properties.Strip_debug_symbols, true) {
-		modules = stripDebugSymbols(ctx, modules)
+		allModulesZip = stripDebugSymbols(ctx, allModulesZip)
 	}
 
 	installDir := android.PathForModuleInstall(ctx, "lib", "modules")
@@ -154,24 +172,14 @@ func (pkm *prebuiltKernelModules) GenerateAndroidBuildActions(ctx android.Module
 		installDir = installDir.Join(ctx, pkm.KernelVersion())
 	}
 
-	dests := []string{}
-	for _, m := range modules {
-		installPath := ctx.InstallFile(installDir, filepath.Base(m.String()), m)
-		dests = append(dests, installPath.String())
-	}
-	installDir16k := installDir.Join(ctx, "16k-mode")
-	for _, m := range android.PathsForModuleSrc(ctx, pkm.properties.Srcs_16k) {
-		installPath := ctx.InstallFile(installDir16k, filepath.Base(m.String()), m)
-		dests = append(dests, installPath.String())
-	}
-	srcs := android.PathsForModuleSrc(ctx, pkm.properties.Srcs.GetOrDefault(ctx, nil)).Strings()
-	srcs = append(srcs, android.PathsForModuleSrc(ctx, pkm.properties.Srcs_16k).Strings()...)
+	var dests []string
+	var srcs []string
 	// Use ANDROID-GEN to identify the source of module.* files which are generated in the build process.
 	// See the use of ANDROID-GEN in build/make/core/Makefile
 	androidGen := "ANDROID-GEN"
 	// Add ANDROID-GEN four time to match the number of "modules.*" files installed below.
 	srcs = append(srcs, androidGen, androidGen, androidGen, androidGen)
-	installPath := ctx.InstallFile(installDir, "modules.load", depmodOut.modulesLoad)
+	installPath := ctx.InstallFileWithExtraFilesZip(installDir, "modules.load", depmodOut.modulesLoad, allModulesZip)
 	dests = append(dests, installPath.String())
 	installPath = ctx.InstallFile(installDir, "modules.dep", depmodOut.modulesDep)
 	dests = append(dests, installPath.String())
@@ -185,6 +193,7 @@ func (pkm *prebuiltKernelModules) GenerateAndroidBuildActions(ctx android.Module
 
 	ctx.SetOutputFiles(android.Paths{modulesZip}, ".modules.zip")
 
+	// TODO(b/466436522): we no longer include the files in the zip file here.
 	android.SetProvider(ctx, android.PrebuiltKernelModulesComplianceMetadataProvider,
 		android.PrebuiltKernelModulesComplianceMetadata{
 			Srcs:  srcs,
@@ -237,24 +246,30 @@ var (
 		}, "stripCmd")
 )
 
-func stripDebugSymbols(ctx android.ModuleContext, modules android.Paths) android.Paths {
-	dir := android.PathForModuleOut(ctx, "stripped").OutputPath
-	var outputs android.Paths
+func stripDebugSymbols(ctx android.ModuleContext, modulesZip android.Path) android.ModuleOutPath {
+	output := android.PathForModuleOut(ctx, "stripped.zip")
+	tmpDir := android.PathForModuleOut(ctx, "stripped").OutputPath
 
-	for _, m := range modules {
-		stripped := dir.Join(ctx, filepath.Base(m.String()))
-		ctx.Build(pctx, android.BuildParams{
-			Rule:   StripRule,
-			Input:  m,
-			Output: stripped,
-			Args: map[string]string{
-				"stripCmd": "${config.ClangBin}/llvm-strip",
-			},
-		})
-		outputs = append(outputs, stripped)
-	}
+	builder := android.NewRuleBuilder(pctx, ctx)
+	builder.Command().BuiltTool("zipsync").
+		FlagWithArg("-d ", tmpDir.String()).
+		Input(modulesZip)
 
-	return outputs
+	llvmStrip := config.ClangPath(ctx, "bin/llvm-strip")
+	llvmLib := config.ClangPath(ctx, "lib/x86_64-unknown-linux-gnu/libc++.so")
+
+	builder.Command().
+		Textf("for f in $(ls %s/*.ko); do ", tmpDir.String()).
+		Tool(llvmStrip).ImplicitTool(llvmLib).Flag("-o $f").Flag("--strip-debug").Text("$f || exit $?").
+		Text("; done")
+
+	builder.Command().BuiltTool("soong_zip").
+		FlagWithOutput("-o ", output).
+		FlagWithArg("-C ", tmpDir.String()).
+		FlagWithArg("-D ", tmpDir.String())
+
+	builder.Build("strip_modules", "strip kernel modules")
+	return output
 }
 
 type depmodOutputs struct {
