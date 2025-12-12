@@ -35,6 +35,9 @@ type GeneratedJavaLibraryCallbacks interface {
 	// Called from inside GenerateAndroidBuildActions. Add the build rules to
 	// make the srcjar, and return the path to it.
 	GenerateSourceJarBuildActions(module *GeneratedJavaLibraryModule, ctx android.ModuleContext) (android.Path, android.Path)
+
+	// Called from inside IDEInfo. Allows the callback to add information to the IdeInfo struct.
+	IDEInfo(module *GeneratedJavaLibraryModule, ctx android.BaseModuleContext, dpInfo *android.IdeInfo)
 }
 
 // GeneratedJavaLibraryModuleFactory provides a utility for modules that are generated
@@ -60,6 +63,12 @@ func GeneratedJavaLibraryModuleFactory(moduleName string, callbacks GeneratedJav
 		module.AddProperties(properties)
 	}
 	return module
+}
+
+// IDEInfo Populates the IdeInfo struct with information from the module.
+func (module *GeneratedJavaLibraryModule) IDEInfo(ctx android.BaseModuleContext, dpInfo *android.IdeInfo) {
+	module.Library.IDEInfo(ctx, dpInfo)
+	module.callbacks.IDEInfo(module, ctx, dpInfo)
 }
 
 // Add a java shared library as a dependency, as if they had said `libs: [ "name" ]`

@@ -77,17 +77,13 @@ func (callbacks *JavaAconfigDeclarationsLibraryCallbacks) DepsMutator(module *ja
 
 func (callbacks *JavaAconfigDeclarationsLibraryCallbacks) GenerateSourceJarBuildActions(module *java.GeneratedJavaLibraryModule, ctx android.ModuleContext) (android.Path, android.Path) {
 	// Get the values that came from the global RELEASE_ACONFIG_VALUE_SETS flag
-	declarationsModules := ctx.GetDirectDepsProxyWithTag(declarationsTag)
 	srcJarPath := android.PathForModuleGen(ctx, ctx.ModuleName()+".srcjar")
-	if len(declarationsModules) != 1 {
-		if ctx.Config().AllowMissingDependencies() {
-			ctx.AddMissingDependencies([]string{"exactly_one_aconfig_declarations_required"})
-			return srcJarPath, android.PathForModuleOut(ctx, "missing_declarations")
-		} else {
-			panic("Exactly one aconfig_declarations property required")
-		}
+	declarationsModule := callbacks.getDeclarationsModule(ctx)
+	if declarationsModule == nil {
+		return srcJarPath, android.PathForModuleOut(ctx, "missing_declarations")
 	}
-	declarations, _ := android.OtherModuleProvider(ctx, declarationsModules[0], android.AconfigDeclarationsProviderKey)
+
+	declarations, _ := android.OtherModuleProvider(ctx, declarationsModule, android.AconfigDeclarationsProviderKey)
 
 	// Generate the action to build the srcjar
 
@@ -124,7 +120,7 @@ func (callbacks *JavaAconfigDeclarationsLibraryCallbacks) GenerateSourceJarBuild
 	}
 
 	android.SetProvider(ctx, android.CodegenInfoProvider, android.CodegenInfo{
-		AconfigDeclarations:          []string{declarationsModules[0].Name()},
+		AconfigDeclarations:          []string{declarationsModule.Name()},
 		IntermediateCacheOutputPaths: android.Paths{declarations.IntermediateCacheOutputPath},
 		Srcjars:                      android.Paths{srcJarPath},
 		ModeInfos: map[string]android.ModeInfo{
@@ -137,6 +133,35 @@ func (callbacks *JavaAconfigDeclarationsLibraryCallbacks) GenerateSourceJarBuild
 	return srcJarPath, declarations.IntermediateCacheOutputPath
 }
 
+func (callbacks *JavaAconfigDeclarationsLibraryCallbacks) getDeclarationsModule(ctx android.BaseModuleContext) *android.ModuleProxy {
+	declarationsModules := ctx.GetDirectDepsProxyWithTag(declarationsTag)
+	if len(declarationsModules) != 1 {
+		if ctx.Config().AllowMissingDependencies() {
+			ctx.AddMissingDependencies([]string{"exactly_one_aconfig_declarations_required"})
+			return nil
+		} else {
+			panic("Exactly one aconfig_declarations property required")
+		}
+	}
+	return &declarationsModules[0]
+}
+
 func isModeSupported(mode string) bool {
 	return android.InList(mode, aconfigSupportedModes)
+}
+
+func (callbacks *JavaAconfigDeclarationsLibraryCallbacks) IDEInfo(module *java.GeneratedJavaLibraryModule, ctx android.BaseModuleContext, dpInfo *android.IdeInfo) {
+	declarationsModule := callbacks.getDeclarationsModule(ctx)
+	if declarationsModule == nil {
+		return
+	}
+
+	declarations, _ := android.OtherModuleProvider(ctx, declarationsModule, android.AconfigDeclarationsProviderKey)
+	if dpInfo.Aconfig == nil {
+		dpInfo.Aconfig = &android.AconfigIdeInfo{}
+	}
+	dpInfo.Aconfig.Srcs = append(dpInfo.Aconfig.Srcs, declarations.Srcs.Strings()...)
+	dpInfo.Aconfig.Mode = proptools.String(callbacks.properties.Mode)
+	dpInfo.Aconfig.Package = declarations.Package
+	dpInfo.Aconfig.Container = declarations.Container
 }
