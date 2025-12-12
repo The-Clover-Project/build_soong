@@ -49,6 +49,14 @@ const commonBp = `
 	cc_library_shared {
 		name: "libstatspull",
 	}
+
+	cc_library_headers {
+		name: "libstatssocket_headers",
+	}
+
+	cc_library_headers {
+		name: "libstatspull_headers",
+	}
 `
 
 // Prepare the test environment for cc_atomslog_library
@@ -129,7 +137,7 @@ func TestCcAtomslogLibrary_VerifyCodeGen(t *testing.T) {
 }
 
 // Test that lib dependencies are added
-func TestCcAtomslogLibrary_VerifyDeps(t *testing.T) {
+func TestCcAtomslogLibrary_VerifyExtraCCLibAdded(t *testing.T) {
 	bp := `
 		cc_atomslog_library {
 			name: "mystatslog",
@@ -141,10 +149,94 @@ func TestCcAtomslogLibrary_VerifyDeps(t *testing.T) {
 	module := result.ModuleForTests(t, "mystatslog", "android_arm64_armv8-a_static")
 	rule := module.Rule("arWithLibs")
 	android.EnsureListContainsSuffix(t, rule.Inputs.Strings(), "stats-log-api-gen-cc-lib.a")
+}
 
+func TestCcAtomslogLibrary_IncludeDefaultLibsFull(t *testing.T) {
+	testCases := []struct {
+		name string
+		bp   string
+	}{
+		{
+			name: "include_default_libs missing",
+			bp: `
+				cc_atomslog_library {
+					name: "mystatslog",
+					atoms_module: "myatoms",
+					namespace: "test::namespace",
+				}
+			`,
+		},
+		{
+			name: "include_default_libs full",
+			bp: `
+				cc_atomslog_library {
+					name: "mystatslog",
+					atoms_module: "myatoms",
+					namespace: "test::namespace",
+					include_default_libs: "full",
+				}
+			`,
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			result := testCcAtomslogLibraryFixturePreparers(t).RunTestWithBp(t, commonBp+tt.bp)
+			module := result.ModuleForTests(t, "mystatslog", "android_arm64_armv8-a_static")
+			deps := DirectDepsList(result, module.Module())
+			android.AssertStringListContains(t, "missing libstatssocket", deps, "libstatssocket")
+			android.AssertStringListContains(t, "missing libstatspull", deps, "libstatspull")
+		})
+	}
+}
+
+func TestCcAtomslogLibrary_IncludeDefaultLibsHeaders(t *testing.T) {
+	bp := `
+		cc_atomslog_library {
+			name: "mystatslog",
+			atoms_module: "myatoms",
+			namespace: "test::namespace",
+			include_default_libs: "headers_only",
+		}
+	`
+	result := testCcAtomslogLibraryFixturePreparers(t).RunTestWithBp(t, commonBp+bp)
+	module := result.ModuleForTests(t, "mystatslog", "android_arm64_armv8-a_static")
 	deps := DirectDepsList(result, module.Module())
-	android.AssertStringListContains(t, "missing libstatssocket", deps, "libstatssocket")
-	android.AssertStringListContains(t, "missing libstatspull", deps, "libstatspull")
+	android.AssertStringListContains(t, "missing libstatssocket_headers", deps, "libstatssocket_headers")
+	android.AssertStringListContains(t, "missing libstatspull_headers", deps, "libstatspull_headers")
+}
+
+func TestCcAtomslogLibrary_IncludeDefaultLibsNone(t *testing.T) {
+	bp := `
+		cc_atomslog_library {
+			name: "mystatslog",
+			atoms_module: "myatoms",
+			namespace: "test::namespace",
+			include_default_libs: "none",
+		}
+	`
+	result := testCcAtomslogLibraryFixturePreparers(t).RunTestWithBp(t, commonBp+bp)
+	module := result.ModuleForTests(t, "mystatslog", "android_arm64_armv8-a_static")
+	deps := DirectDepsList(result, module.Module())
+	android.AssertStringListDoesNotContain(t, "unexpected libstatssocket", deps, "libstatssocket")
+	android.AssertStringListDoesNotContain(t, "unexpected libstatspull", deps, "libstatspull")
+	android.AssertStringListDoesNotContain(t, "unexpected libstatssocket_headers", deps, "libstatssocket_headers")
+	android.AssertStringListDoesNotContain(t, "unexpected libstatspull_headers", deps, "libstatspull_headers")
+}
+
+func TestCcAtomslogLibrary_IncludeDefaultLibsInvalid(t *testing.T) {
+	bp := `
+		cc_atomslog_library {
+			name: "mystatslog",
+			atoms_module: "myatoms",
+			namespace: "test::namespace",
+			include_default_libs: "invalid",
+		}
+	`
+	testCcAtomslogLibraryFixturePreparers(t).
+		ExtendWithErrorHandler(android.FixtureExpectsOneErrorPattern(
+			"include_default_libs: must be one of \"full\", \"headers_only\", or \"none\"")).
+		RunTestWithBp(t, commonBp+bp)
 }
 
 func TestCcAtomslogLibrary_NoAtomsModule(t *testing.T) {
@@ -162,22 +254,6 @@ func TestCcAtomslogLibrary_NoAtomsModule(t *testing.T) {
 
 	android.AssertStringDoesNotContain(t, "no module param", cppRule.RuleParams.Command, "--module")
 	android.AssertStringDoesNotContain(t, "no module param", hdrRule.RuleParams.Command, "--module")
-}
-
-func TestCcAtomslogLibrary_VerifyExcludeDefaultSharedLibs(t *testing.T) {
-	bp := `
-		cc_atomslog_library {
-			name: "mystatslog",
-			atoms_module: "myatoms",
-			namespace: "test::namespace",
-			include_default_shared_libs: false,
-		}
-	`
-	result := testCcAtomslogLibraryFixturePreparers(t).RunTestWithBp(t, commonBp+bp)
-	module := result.ModuleForTests(t, "mystatslog", "android_arm64_armv8-a_static")
-	deps := DirectDepsList(result, module.Module())
-	android.AssertStringListDoesNotContain(t, "unexpected libstatssocket", deps, "libstatssocket")
-	android.AssertStringListDoesNotContain(t, "unexpected libstatspull", deps, "libstatspull")
 }
 
 func TestCcAtomslogLibrary_VerifyStaticCannotBeLinkedAsShared(t *testing.T) {
