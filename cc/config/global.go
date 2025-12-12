@@ -291,6 +291,9 @@ var (
 		// http://b/323050889
 		"-Wno-packed-non-pod",
 
+		// http://b/72331526 Disable -Wtautological-* until the instances detected by these
+		// new warnings are fixed.
+		"-Wno-error=tautological-constant-compare",
 		// http://b/145211066
 		"-Wno-implicit-int-float-conversion",
 		// New warnings to be fixed after clang-r377782.
@@ -331,7 +334,6 @@ var (
 
 	// Extra cflags applied to tests code.
 	extraTestsCflags = []string{
-		"-Wno-error=tautological-constant-compare", // http://b/72331526
 		"-Wno-error=unused-but-set-variable",
 	}
 
@@ -369,7 +371,7 @@ var (
 		"-Wno-unused",
 		"-Wno-unused-but-set-variable",
 		"-Wno-deprecated",
-		"-Wno-error=tautological-constant-compare", // http://b/72331526
+		"-Wno-tautological-constant-compare",
 	}
 
 	// This is similar to noOverrideGlobalCflags, but applies only to third-party
