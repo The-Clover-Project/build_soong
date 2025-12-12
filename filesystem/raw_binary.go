@@ -134,6 +134,9 @@ func (r *rawBinary) AndroidMkEntries() []android.AndroidMkEntries {
 				if r.symbolsInfo != nil {
 					fmt.Fprintf(w, "ALL_MODULES.$(my_register_name).SYMBOLIC_OUTPUT_PATH := %s\n", strings.Join(r.symbolsInfo.SortedUniqueSymbolicOutputPaths().Strings(), " "))
 					fmt.Fprintf(w, "ALL_MODULES.$(my_register_name).ELF_SYMBOL_MAPPING_PATH := %s\n", strings.Join(r.symbolsInfo.SortedUniqueElfMappingProtoPaths().Strings(), " "))
+					for _, symbol := range r.symbolsInfo.SortedUniqueSymbolicOutputPaths().Strings() {
+						fmt.Fprintf(w, "INSTALLED_SYMBOLS.%s := true\n", symbol)
+					}
 				}
 			},
 		}},
