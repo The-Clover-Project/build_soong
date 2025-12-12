@@ -297,6 +297,11 @@ func newConfig(ctx Context, isDumpVar bool, args ...string) Config {
 		ctx.Fatalln("Failed to get working directory:", err)
 	}
 
+	// If ResolveSoongEnvVars did work, log it.
+	for _, msg := range resolveSoongEnvVarsMsgs {
+		ctx.Verbosef("%s\n", msg)
+	}
+
 	// Skip soong tests by default on Linux
 	if runtime.GOOS == "linux" {
 		ret.skipSoongTests = true
@@ -2196,6 +2201,8 @@ var envVarFlagDirs = []string{
 	"vendor/google/release",
 }
 
+var resolveSoongEnvVarsMsgs []string
+
 // Look for environment variable defaults for TARGET_RELEASE.
 //
 // This allows us to effectively guard changes to Soong where the value of the guard flag needs to
@@ -2211,7 +2218,6 @@ func ResolveSoongEnvVars() error {
 		return nil
 	}
 	envMap := OsEnvironment().AsMap()
-	quiet := OsEnvironment().IsEnvTrue("ANDROID_QUIET_BUILD")
 	flagDirs := slices.Concat(envVarFlagDirs, strings.Fields(os.Getenv("SOONG_ENVVAR_FLAG_DIRS")))
 
 	// Starting with the last directory, look for variables for ${TARGET_RELEASE}
@@ -2252,9 +2258,8 @@ func ResolveSoongEnvVars() error {
 			}
 			if _, exists := envMap[key]; !exists {
 				v := fmt.Sprintf("%v", value)
-				if !quiet {
-					fmt.Fprintf(os.Stderr, "[%s] Setting %s=%v\n", jsonPath, key, v)
-				}
+				// These will get logged via `ctx.Verbosef` in newConfig.
+				resolveSoongEnvVarsMsgs = append(resolveSoongEnvVarsMsgs, fmt.Sprintf("[%s] Setting %s=%v", jsonPath, key, v))
 				os.Setenv(key, v)
 				envMap[key] = v
 			}
