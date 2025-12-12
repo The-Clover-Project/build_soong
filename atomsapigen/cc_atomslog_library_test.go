@@ -15,12 +15,13 @@
 package atomsapigen
 
 import (
-	"android/soong/android"
-	"android/soong/cc"
 	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"android/soong/android"
+	"android/soong/cc"
 )
 
 func DirectDepsList(ctx *android.TestResult, module android.Module) []string {
@@ -121,15 +122,15 @@ func TestCcAtomslogLibrary_VerifyCodeGen(t *testing.T) {
 			android.AssertPathsEndWith(t, "atomslog_generation_paths", expectedRelPaths, outputPaths)
 
 			expectedCppCmd := fmt.Sprintf(
-				"out/host/linux-x86/bin/stats-log-api-gen --cpp %s --namespace test::namespace --importHeader %s --omitExtraSrcs --module myatoms",
-				cppRule.Output.String(), hdrRule.Output.Base())
+				"out/host/%s/bin/stats-log-api-gen --cpp %s --namespace test::namespace --importHeader %s --omitExtraSrcs --module myatoms",
+				result.Config.PrebuiltOS(), cppRule.Output.String(), hdrRule.Output.Base())
 			cppCmd, _, _ := strings.Cut(cppRule.RuleParams.Command, " # ") // Remove the hash comment
 			android.AssertStringEquals(t, "wrong .cpp gen command", expectedCppCmd, cppCmd)
 
 			includePath := filepath.Dir(hdrRule.Output.String())
 			expectedHdrCmd := fmt.Sprintf(
-				"rm -rf %s && mkdir -p %s && out/host/linux-x86/bin/stats-log-api-gen --header %s --namespace test::namespace --omitExtraSrcs --module myatoms",
-				includePath, includePath, hdrRule.Output.String())
+				"rm -rf %s && mkdir -p %s && out/host/%s/bin/stats-log-api-gen --header %s --namespace test::namespace --omitExtraSrcs --module myatoms",
+				includePath, includePath, result.Config.PrebuiltOS(), hdrRule.Output.String())
 			hdrCmd, _, _ := strings.Cut(hdrRule.RuleParams.Command, " # ") // Remove the hash comment
 			android.AssertStringEquals(t, "wrong .h gen command", expectedHdrCmd, hdrCmd)
 		})
