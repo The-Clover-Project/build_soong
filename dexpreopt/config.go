@@ -776,7 +776,7 @@ func buildAssumedValues(ctx android.BuilderContext, global *GlobalConfig, global
 		// Otherwise, just create an empty placeholder file that becomes a no-op.
 		// TODO(b/204924812): Remove the args check after prebuilt ART modules are updated from source.
 		cmd.Text("if (").Tool(globalSoong.Dex2oat).Text("--help 2>&1 | grep -q -- --assume-value)").
-			Text("; then echo").Text(maybeAssumedValues).Text(">").Output(assumeValueFlags).
+			Text("; then echo -n").Text(maybeAssumedValues).Text(">").Output(assumeValueFlags).
 			Text("; else >").Output(assumeValueFlags).
 			Text("; fi")
 		rule.Restat().Build("dexpreopt_assume_value_flags", "dexpreopt_assume_value_flags")
@@ -796,7 +796,7 @@ func buildAllowProfileCode(ctx android.BuilderContext, global *GlobalConfig, glo
 		// Otherwise, just create an empty placeholder file that becomes a no-op.
 		// TODO(b/204924812): Remove the args check after prebuilt ART modules are updated from source.
 		cmd.Text("if (").Tool(globalSoong.Dex2oat).Text("--help 2>&1 | grep -q -- --allow-profile-code)").
-			Text("; then echo --allow-profile-code >").Output(profileCodeFlag).
+			Text("; then echo -n --allow-profile-code  >").Output(profileCodeFlag).
 			Text("; else >").Output(profileCodeFlag).
 			Text("; fi")
 		rule.Restat().Build("dexpreopt_profile_code_flag", "dexpreopt_profile_code_flag")

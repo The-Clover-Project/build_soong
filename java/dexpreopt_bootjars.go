@@ -805,6 +805,8 @@ func (d *dexpreoptBootJars) buildBootZip(ctx android.ModuleContext) {
 			globalSoong.UffdGcFlag,
 			spaceFile,
 			globalSoong.AssumeValueFlags,
+			spaceFile,
+			globalSoong.ProfileCodeFlag,
 			newlineFile,
 		},
 		Output: bootZipMetadata,

@@ -435,7 +435,7 @@ func TestAssumeValueFlags(t *testing.T) {
 			if platformSdkVersion != "" {
 				rule := ctx.SingletonForTests(t, "dexpreopt-soong-config").Rule("dexpreopt_assume_value_flags")
 				android.AssertStringDoesContain(t, "", rule.RuleParams.Command,
-					"echo '--assume-value=Landroid/os/Build$$VERSION;->SDK_INT:"+platformSdkVersion+"'")
+					"echo -n '--assume-value=Landroid/os/Build$$VERSION;->SDK_INT:"+platformSdkVersion+"'")
 				android.AssertStringPathsRelativeToTopEquals(t, "", ctx.Config(), []string{
 					"out/soong/dexpreopt/assume_value_flags.txt",
 				}, rule.AllOutputs())
