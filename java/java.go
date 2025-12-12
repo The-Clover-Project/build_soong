@@ -3610,6 +3610,7 @@ var _ android.IDEInfo = (*Import)(nil)
 // Collect information for opening IDE project files in java/jdeps.go.
 func (j *Import) IDEInfo(ctx android.BaseModuleContext, dpInfo *android.IdeInfo) {
 	dpInfo.Jars = append(dpInfo.Jars, j.combinedImplementationFile.String())
+	dpInfo.Imported_jars = append(dpInfo.Imported_jars, android.PathsForModuleSrc(ctx, j.properties.Jars).Strings()...)
 }
 
 var _ android.PrebuiltInterface = (*Import)(nil)

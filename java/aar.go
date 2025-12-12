@@ -122,6 +122,7 @@ type aapt struct {
 	transitiveAaptResourcePackagesFile android.Path
 	exportPackage                      android.Path
 	manifestPath                       android.Path
+	originalManifestPath               android.Path
 	proguardOptionsFile                android.Path
 	rTxt                               android.Path
 	rJar                               android.Path
@@ -505,6 +506,7 @@ func (a *aapt) buildActions(ctx android.ModuleContext, opts aaptBuildActionOptio
 		manifestFile := a.aaptProperties.Manifest.GetOrDefault(ctx, "AndroidManifest.xml")
 		manifestFilePath = android.PathForModuleSrc(ctx, manifestFile)
 	}
+	a.originalManifestPath = manifestFilePath
 
 	manifestPath := ManifestFixer(ctx, manifestFilePath, ManifestFixerParams{
 		SdkContext:                     opts.sdkContext,
@@ -1189,6 +1191,12 @@ func (a *aapt) IDEInfo(ctx android.BaseModuleContext, dpInfo *android.IdeInfo) {
 	}
 	dpInfo.Asset_dirs = append(dpInfo.Asset_dirs, a.assetDirs.Strings()...)
 	dpInfo.Resource_dirs = append(dpInfo.Resource_dirs, a.resourceDirs.Strings()...)
+	if a.originalManifestPath != nil {
+		dpInfo.Manifest = a.originalManifestPath.String()
+	}
+	if packageNameProp := a.aaptProperties.Package_name.Get(ctx); packageNameProp.IsPresent() {
+		dpInfo.PackageName = packageNameProp.Get()
+	}
 }
 
 // android_library builds and links sources into a `.jar` file for the device along with Android resources.
@@ -1801,6 +1809,7 @@ func AARImportFactory() android.Module {
 func (a *AARImport) IDEInfo(ctx android.BaseModuleContext, dpInfo *android.IdeInfo) {
 	dpInfo.Jars = append(dpInfo.Jars, a.implementationJarFile.String(), a.rJar.String(), a.aarPath.String())
 	dpInfo.Static_libs = append(dpInfo.Static_libs, a.properties.Static_libs.GetOrDefault(ctx, nil)...)
+	dpInfo.Imported_aars = append(dpInfo.Imported_aars, android.PathsForModuleSrc(ctx, a.properties.Aars).Strings()...)
 }
 
 // @auto-generate: gob
