@@ -783,6 +783,13 @@ func ReadReleaseConfigMaps(releaseConfigMapPaths StringList, targetRelease, vari
 	mapsRead := make(map[string]bool)
 	var idx int
 	for _, releaseConfigMapPath := range releaseConfigMapPaths {
+		// Soong needs to be able to find **ALL** of the contributions for some artifacts.
+		// Finder looks for `release_config_map.textproto` for those artifacts.
+		if filepath.Base(releaseConfigMapPath) != "release_config_map.textproto" {
+			ctx.errorsChan <- fmt.Errorf(
+				"%q: release config maps must be named `release_config_map.textproto`",
+				releaseConfigMapPath)
+		}
 		// Maintain an ordered list of release config directories.
 		configDir := filepath.Dir(releaseConfigMapPath)
 		if mapsRead[configDir] {
@@ -791,8 +798,6 @@ func ReadReleaseConfigMaps(releaseConfigMapPaths StringList, targetRelease, vari
 		mapsRead[configDir] = true
 		configs.configDirIndexes[configDir] = idx
 		configs.configDirs = append(configs.configDirs, configDir)
-		// Force the path to be the textproto path, so that both the scl and textproto formats can coexist.
-		releaseConfigMapPath = filepath.Join(configDir, "release_config_map.textproto")
 		m, err := configs.LoadReleaseConfigMap(ctx, releaseConfigMapPath, idx, declarationsOnly)
 		if err != nil {
 			ctx.errorsChan <- err
