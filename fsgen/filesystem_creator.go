@@ -1525,6 +1525,13 @@ func generateFsProps(ctx android.EarlyModuleContext, partitions allGeneratedPart
 		if s, err := strconv.ParseBool(partitionVars.BoardErofsShareDupBlocks); err == nil {
 			fsProps.Share_dup_blocks = proptools.BoolPtr(s)
 		}
+		if partitionVars.BoardErofsEnableDedupe != "" {
+			s, err := strconv.ParseBool(partitionVars.BoardErofsEnableDedupe)
+			if err != nil {
+				panic(fmt.Sprintf("erofs enable dedupe must be a bool, got %s", partitionVars.BoardErofsEnableDedupe))
+			}
+			fsProps.Erofs.Enable_dedupe = proptools.BoolPtr(s)
+		}
 		if len(partitionVars.BoardErofsPclusterSize) > 0 {
 			parsed, err := strconv.ParseInt(partitionVars.BoardErofsPclusterSize, 10, 64)
 			if err != nil {
@@ -1555,6 +1562,13 @@ func generateFsProps(ctx android.EarlyModuleContext, partitions allGeneratedPart
 				panic(fmt.Sprintf("%s erofs block size must be an int, got %s", partitionType, specificPartitionVars.BoardErofsBlockSize))
 			}
 			fsProps.Erofs.Block_size = &parsed
+		}
+		if specificPartitionVars.BoardErofsEnableDedupe != "" {
+			s, err := strconv.ParseBool(specificPartitionVars.BoardErofsEnableDedupe)
+			if err != nil {
+				panic(fmt.Sprintf("%s erofs enable dedupe must be a bool, got %s", partitionType, specificPartitionVars.BoardErofsEnableDedupe))
+			}
+			fsProps.Erofs.Enable_dedupe = proptools.BoolPtr(s)
 		}
 	case "ext4":
 		if s, err := strconv.ParseBool(partitionVars.BoardExt4ShareDupBlocks); err == nil {
