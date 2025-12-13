@@ -15,12 +15,13 @@
 package atomsapigen
 
 import (
-	"android/soong/android"
-	"android/soong/cc"
 	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"android/soong/android"
+	"android/soong/cc"
 )
 
 func DirectDepsList(ctx *android.TestResult, module android.Module) []string {
@@ -48,6 +49,14 @@ const commonBp = `
 
 	cc_library_shared {
 		name: "libstatspull",
+	}
+
+	cc_library_headers {
+		name: "libstatssocket_headers",
+	}
+
+	cc_library_headers {
+		name: "libstatspull_headers",
 	}
 `
 
@@ -113,15 +122,15 @@ func TestCcAtomslogLibrary_VerifyCodeGen(t *testing.T) {
 			android.AssertPathsEndWith(t, "atomslog_generation_paths", expectedRelPaths, outputPaths)
 
 			expectedCppCmd := fmt.Sprintf(
-				"out/host/linux-x86/bin/stats-log-api-gen --cpp %s --namespace test::namespace --importHeader %s --omitExtraSrcs --module myatoms",
-				cppRule.Output.String(), hdrRule.Output.Base())
+				"out/host/%s/bin/stats-log-api-gen --cpp %s --namespace test::namespace --importHeader %s --omitExtraSrcs --module myatoms",
+				result.Config.PrebuiltOS(), cppRule.Output.String(), hdrRule.Output.Base())
 			cppCmd, _, _ := strings.Cut(cppRule.RuleParams.Command, " # ") // Remove the hash comment
 			android.AssertStringEquals(t, "wrong .cpp gen command", expectedCppCmd, cppCmd)
 
 			includePath := filepath.Dir(hdrRule.Output.String())
 			expectedHdrCmd := fmt.Sprintf(
-				"rm -rf %s && mkdir -p %s && out/host/linux-x86/bin/stats-log-api-gen --header %s --namespace test::namespace --omitExtraSrcs --module myatoms",
-				includePath, includePath, hdrRule.Output.String())
+				"rm -rf %s && mkdir -p %s && out/host/%s/bin/stats-log-api-gen --header %s --namespace test::namespace --omitExtraSrcs --module myatoms",
+				includePath, includePath, result.Config.PrebuiltOS(), hdrRule.Output.String())
 			hdrCmd, _, _ := strings.Cut(hdrRule.RuleParams.Command, " # ") // Remove the hash comment
 			android.AssertStringEquals(t, "wrong .h gen command", expectedHdrCmd, hdrCmd)
 		})
@@ -129,7 +138,7 @@ func TestCcAtomslogLibrary_VerifyCodeGen(t *testing.T) {
 }
 
 // Test that lib dependencies are added
-func TestCcAtomslogLibrary_VerifyDeps(t *testing.T) {
+func TestCcAtomslogLibrary_VerifyExtraCCLibAdded(t *testing.T) {
 	bp := `
 		cc_atomslog_library {
 			name: "mystatslog",
@@ -141,10 +150,94 @@ func TestCcAtomslogLibrary_VerifyDeps(t *testing.T) {
 	module := result.ModuleForTests(t, "mystatslog", "android_arm64_armv8-a_static")
 	rule := module.Rule("arWithLibs")
 	android.EnsureListContainsSuffix(t, rule.Inputs.Strings(), "stats-log-api-gen-cc-lib.a")
+}
 
+func TestCcAtomslogLibrary_IncludeDefaultLibsFull(t *testing.T) {
+	testCases := []struct {
+		name string
+		bp   string
+	}{
+		{
+			name: "include_default_libs missing",
+			bp: `
+				cc_atomslog_library {
+					name: "mystatslog",
+					atoms_module: "myatoms",
+					namespace: "test::namespace",
+				}
+			`,
+		},
+		{
+			name: "include_default_libs full",
+			bp: `
+				cc_atomslog_library {
+					name: "mystatslog",
+					atoms_module: "myatoms",
+					namespace: "test::namespace",
+					include_default_libs: "full",
+				}
+			`,
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			result := testCcAtomslogLibraryFixturePreparers(t).RunTestWithBp(t, commonBp+tt.bp)
+			module := result.ModuleForTests(t, "mystatslog", "android_arm64_armv8-a_static")
+			deps := DirectDepsList(result, module.Module())
+			android.AssertStringListContains(t, "missing libstatssocket", deps, "libstatssocket")
+			android.AssertStringListContains(t, "missing libstatspull", deps, "libstatspull")
+		})
+	}
+}
+
+func TestCcAtomslogLibrary_IncludeDefaultLibsHeaders(t *testing.T) {
+	bp := `
+		cc_atomslog_library {
+			name: "mystatslog",
+			atoms_module: "myatoms",
+			namespace: "test::namespace",
+			include_default_libs: "headers_only",
+		}
+	`
+	result := testCcAtomslogLibraryFixturePreparers(t).RunTestWithBp(t, commonBp+bp)
+	module := result.ModuleForTests(t, "mystatslog", "android_arm64_armv8-a_static")
 	deps := DirectDepsList(result, module.Module())
-	android.AssertStringListContains(t, "missing libstatssocket", deps, "libstatssocket")
-	android.AssertStringListContains(t, "missing libstatspull", deps, "libstatspull")
+	android.AssertStringListContains(t, "missing libstatssocket_headers", deps, "libstatssocket_headers")
+	android.AssertStringListContains(t, "missing libstatspull_headers", deps, "libstatspull_headers")
+}
+
+func TestCcAtomslogLibrary_IncludeDefaultLibsNone(t *testing.T) {
+	bp := `
+		cc_atomslog_library {
+			name: "mystatslog",
+			atoms_module: "myatoms",
+			namespace: "test::namespace",
+			include_default_libs: "none",
+		}
+	`
+	result := testCcAtomslogLibraryFixturePreparers(t).RunTestWithBp(t, commonBp+bp)
+	module := result.ModuleForTests(t, "mystatslog", "android_arm64_armv8-a_static")
+	deps := DirectDepsList(result, module.Module())
+	android.AssertStringListDoesNotContain(t, "unexpected libstatssocket", deps, "libstatssocket")
+	android.AssertStringListDoesNotContain(t, "unexpected libstatspull", deps, "libstatspull")
+	android.AssertStringListDoesNotContain(t, "unexpected libstatssocket_headers", deps, "libstatssocket_headers")
+	android.AssertStringListDoesNotContain(t, "unexpected libstatspull_headers", deps, "libstatspull_headers")
+}
+
+func TestCcAtomslogLibrary_IncludeDefaultLibsInvalid(t *testing.T) {
+	bp := `
+		cc_atomslog_library {
+			name: "mystatslog",
+			atoms_module: "myatoms",
+			namespace: "test::namespace",
+			include_default_libs: "invalid",
+		}
+	`
+	testCcAtomslogLibraryFixturePreparers(t).
+		ExtendWithErrorHandler(android.FixtureExpectsOneErrorPattern(
+			"include_default_libs: must be one of \"full\", \"headers_only\", or \"none\"")).
+		RunTestWithBp(t, commonBp+bp)
 }
 
 func TestCcAtomslogLibrary_NoAtomsModule(t *testing.T) {
@@ -162,22 +255,6 @@ func TestCcAtomslogLibrary_NoAtomsModule(t *testing.T) {
 
 	android.AssertStringDoesNotContain(t, "no module param", cppRule.RuleParams.Command, "--module")
 	android.AssertStringDoesNotContain(t, "no module param", hdrRule.RuleParams.Command, "--module")
-}
-
-func TestCcAtomslogLibrary_VerifyExcludeDefaultSharedLibs(t *testing.T) {
-	bp := `
-		cc_atomslog_library {
-			name: "mystatslog",
-			atoms_module: "myatoms",
-			namespace: "test::namespace",
-			include_default_shared_libs: false,
-		}
-	`
-	result := testCcAtomslogLibraryFixturePreparers(t).RunTestWithBp(t, commonBp+bp)
-	module := result.ModuleForTests(t, "mystatslog", "android_arm64_armv8-a_static")
-	deps := DirectDepsList(result, module.Module())
-	android.AssertStringListDoesNotContain(t, "unexpected libstatssocket", deps, "libstatssocket")
-	android.AssertStringListDoesNotContain(t, "unexpected libstatspull", deps, "libstatspull")
 }
 
 func TestCcAtomslogLibrary_VerifyStaticCannotBeLinkedAsShared(t *testing.T) {

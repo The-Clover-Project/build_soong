@@ -162,6 +162,11 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 	}
 	args = append(args, ninjaArgs...)
 
+	// TODO(jihoonkang): Remove this check once non-ninja executors start supporting action sandboxing
+	if config.IsActionSandboxedBuild() && config.ninjaCommand != NINJA_NINJA {
+		ctx.Fatalf("Action sandboxing is not supported for %s, set SOONG_NINJA=ninja", config.ninjaCommand)
+	}
+
 	if config.keepGoing != 1 {
 		args = append(args, "-k", strconv.Itoa(config.keepGoing))
 	}

@@ -101,6 +101,52 @@ func TestCollectJavaLibraryPropertiesAddAidlIncludeDirs(t *testing.T) {
 	}
 }
 
+func TestCollectJavaLibraryPropertiesAddAidlSrcs(t *testing.T) {
+	t.Parallel()
+	ctx, _ := testJava(t,
+		`
+		filegroup {
+			name: "my_aidl_files",
+			srcs: ["Foo.aidl", "Bar.aidl"],
+		}
+
+		java_library {
+			name: "javalib",
+			srcs: [":my_aidl_files", "Baz.java"],
+		}
+	`)
+	module := ctx.ModuleForTests(t, "javalib", "android_common").Module().(*Library)
+	dpInfo := getIdeInfo(ctx, module)
+
+	expected := []string{"Foo.aidl", "Bar.aidl"}
+	if !reflect.DeepEqual(dpInfo.Aidl_srcs, expected) {
+		t.Errorf("Library.IDEInfo() Aidl_srcs = %v, want %v", dpInfo.Aidl_srcs, expected)
+	}
+}
+
+func TestCollectJavaLibraryPropertiesAddProtoSrcs(t *testing.T) {
+	t.Parallel()
+	ctx, _ := testJava(t,
+		`
+		filegroup {
+			name: "my_proto_files",
+			srcs: ["Foo.proto", "Bar.proto"],
+		}
+
+		java_library {
+			name: "javalib",
+			srcs: [":my_proto_files", "Baz.java"],
+		}
+	`)
+	module := ctx.ModuleForTests(t, "javalib", "android_common").Module().(*Library)
+	dpInfo := getIdeInfo(ctx, module)
+
+	expected := []string{"Foo.proto", "Bar.proto"}
+	if !reflect.DeepEqual(dpInfo.Proto_srcs, expected) {
+		t.Errorf("Library.IDEInfo() Proto_srcs = %v, want %v", dpInfo.Proto_srcs, expected)
+	}
+}
+
 func TestCollectJavaLibraryWithJarJarRules(t *testing.T) {
 	t.Parallel()
 	ctx, _ := testJava(t,
@@ -180,9 +226,77 @@ func TestDoNotAddNoneSystemModulesToDeps(t *testing.T) {
 	android.AssertStringListDoesNotContain(t, "IdeInfo.Deps should contain not contain `none`", dpInfo.Deps, "none")
 }
 
+func TestCollectJavaLibraryPropertiesAddModuleType(t *testing.T) {
+	t.Parallel()
+	ctx, _ := testJava(t, `java_library { name: "javalib" }`)
+	module := ctx.ModuleForTests(t, "javalib", "android_common").Module().(*Library)
+	dpInfo := getIdeInfo(ctx, module)
+	android.AssertStringEquals(t, "IdeInfo.ModuleType should be equal to", "java_library", dpInfo.ModuleType)
+}
+
+func TestCollectJavaLibraryPropertiesAddManifest(t *testing.T) {
+	t.Parallel()
+	ctx, _ := testJava(t, `
+		android_library { name: "androidlib", manifest: "lib/AndroidManifest.xml" }
+		android_app { name: "androidapp", manifest: "app/AndroidManifest.xml", sdk_version: "current" }
+	`)
+	module := ctx.ModuleForTests(t, "androidlib", "android_common").Module().(*AndroidLibrary)
+	dpInfo := getIdeInfo(ctx, module)
+	android.AssertStringEquals(t, "IdeInfo.Manifest should be equal to", "lib/AndroidManifest.xml", dpInfo.Manifest)
+
+	appModule := ctx.ModuleForTests(t, "androidapp", "android_common").Module().(*AndroidApp)
+	appDpInfo := getIdeInfo(ctx, appModule)
+	android.AssertStringEquals(t, "IdeInfo.Manifest should be equal to", "app/AndroidManifest.xml", appDpInfo.Manifest)
+}
+
+func TestCollectJavaLibraryPropertiesAddPackageName(t *testing.T) {
+	t.Parallel()
+	ctx, _ := testJava(t, `
+		android_library { name: "androidlib", package_name: "com.foo.bar" }
+	`)
+	module := ctx.ModuleForTests(t, "androidlib", "android_common").Module().(*AndroidLibrary)
+	dpInfo := getIdeInfo(ctx, module)
+	android.AssertStringEquals(t, "IdeInfo.PackageName should be equal to", "com.foo.bar", dpInfo.PackageName)
+}
+
 func getIdeInfo(ctx android.OtherModuleProviderContext, module android.ModuleOrProxy) android.IdeInfo {
 	if info, ok := android.OtherModuleProvider(ctx, module, android.CommonModuleInfoProvider); ok && info.IdeInfo != nil {
 		return *info.IdeInfo
 	}
 	return android.IdeInfo{}
+}
+
+func TestCollectJavaImportPropertiesAddImportedJars(t *testing.T) {
+	t.Parallel()
+	ctx, _ := testJava(t,
+		`
+		java_import {
+			name: "javalib",
+			jars: ["foo.jar", "bar.jar"],
+		}
+	`)
+	module := ctx.ModuleForTests(t, "javalib", "android_common").Module().(*Import)
+	dpInfo := getIdeInfo(ctx, module)
+
+	expected := []string{"foo.jar", "bar.jar"}
+	if !reflect.DeepEqual(dpInfo.Imported_jars, expected) {
+		t.Errorf("Import.IDEInfo() Imported_jars = %v, want %v", dpInfo.Imported_jars, expected)
+	}
+}
+func TestCollectJavaAARImportPropertiesAddImportedAars(t *testing.T) {
+	t.Parallel()
+	ctx, _ := testJava(t,
+		`
+		android_library_import {
+			name: "aar_import",
+			aars: ["foo.aar"],
+		}
+	`)
+	module := ctx.ModuleForTests(t, "aar_import", "android_common").Module().(*AARImport)
+	dpInfo := getIdeInfo(ctx, module)
+
+	expected := []string{"foo.aar"}
+	if !reflect.DeepEqual(dpInfo.Imported_aars, expected) {
+		t.Errorf("AARImport.IDEInfo() Imported_aars = %v, want %v", dpInfo.Imported_aars, expected)
+	}
 }

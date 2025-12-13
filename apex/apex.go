@@ -2024,7 +2024,9 @@ func (a *apexBundle) depVisitor(vctx *visitorContext, ctx android.ModuleContext,
 					src := ps.SrcPath()
 					dir := path.Dir(ps.RelPathInPackage())
 					makeModuleName := strings.ReplaceAll(filepath.Join(dir, src.Base()), "/", "_")
-					vctx.filesInfo = append(vctx.filesInfo, newApexFile(ctx, src, makeModuleName, dir, etc, child))
+					af := newApexFile(ctx, src, makeModuleName, dir, etc, child)
+					af.extraZip = ps.ExtraZip()
+					vctx.filesInfo = append(vctx.filesInfo, af)
 				}
 			} else {
 				ctx.PropertyErrorf("kernel_modules", "%q is not a prebuilt_kernel_modules module", depName)

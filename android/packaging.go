@@ -783,9 +783,9 @@ func (p *PackagingBase) CopySpecsToDirs(ctx ModuleContext, builder *RuleBuilder,
 				builder.Command().Textf("chmod a+x %s", destPath)
 			}
 			if ps.extraZip.Valid() {
-				builder.Command().Textf("(unzip -qDD -d '%s'", destDir).
-					Input(ps.extraZip.Path()).
-					Text(" 2>&1 | grep -v \"zipfile is empty\"; exit ${PIPESTATUS[0]} )")
+				builder.Command().BuiltTool("zipsync").
+					Textf("--keep-existing-files -d '%s'", destDir).
+					Input(ps.extraZip.Path())
 			}
 		}
 	}

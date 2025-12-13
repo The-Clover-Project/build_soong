@@ -1194,3 +1194,48 @@ func TestStageDeviceFiles(t *testing.T) {
 	android.AssertStringDoesContain(t, "staging dir contains expected files", allOutputsString, "another_file")
 	android.AssertStringDoesNotContain(t, "staging dir does not contain arbitrary subdir file", allOutputsString, "file3")
 }
+
+func TestCrossPartitionRequiredDepsOfPhony(t *testing.T) {
+	result := android.GroupFixturePreparers(
+		android.PrepareForIntegrationTestWithAndroid,
+		android.PrepareForTestWithAndroidBuildComponents,
+		android.PrepareForTestWithAllowMissingDependencies,
+		prepareForTestWithFsgenBuildComponents,
+		cc.PrepareForTestWithCcBuildComponents,
+		java.PrepareForTestWithJavaBuildComponents,
+		prepareMockRamdiksNodeList,
+		android.PrepareForTestWithNamespace,
+		phony.PrepareForTestWithPhony,
+		android.FixtureMergeMockFs(android.MockFS{
+			"external/avb/test/data/testkey_rsa4096.pem": nil,
+			"build/soong/fsgen/Android.bp": []byte(`
+			soong_filesystem_creator {
+				name: "foo",
+			}
+		`),
+		}),
+		android.FixtureModifyConfig(func(config android.Config) {
+			config.TestProductVariables.PartitionVarsForSoongMigrationOnlyDoNotUse.ProductPackagesSet = createProductPackagesSet([]string{"myphony"})
+		}),
+	).RunTestWithBp(t, `
+// myphony has a required dependency on a system_ext binary,
+// but does not set system_ext_specific to true.
+phony {
+	name: "myphony",
+	required: ["system_ext_bin"],
+}
+cc_binary {
+	name: "system_ext_bin",
+	shared_libs: ["system_lib"],
+	system_ext_specific: true,
+}
+`)
+	resolvedDeps := result.TestContext.Config().Get(fsGenStateOnceKey).(*FsGenState).fsDeps["system_ext"]
+	_, exists := (*resolvedDeps)["system_ext_bin"]
+	android.AssertBoolEquals(
+		t,
+		"Expected fsgen to add cross partition required dep of myphony",
+		true,
+		exists,
+	)
+}

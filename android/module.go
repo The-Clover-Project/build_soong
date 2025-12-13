@@ -2331,6 +2331,7 @@ func (m *ModuleBase) GenerateBuildActions(blueprintCtx blueprint.ModuleContext) 
 			ideInfo = &IdeInfo{}
 			x.IDEInfo(ctx, ideInfo)
 			ideInfo.BaseModuleName = x.BaseModuleName()
+			ideInfo.ModuleType = ctx.ModuleType()
 		}
 
 		if proptools.Bool(m.commonProperties.Unchecked_module) {
@@ -3671,11 +3672,18 @@ type IDEInfo interface {
 // @auto-generate: gob
 type IdeInfo struct {
 	BaseModuleName    string   `json:"-"`
+	ModuleType        string   `json:"module_type,omitempty"`
+	Manifest          string   `json:"manifest,omitempty"`
+	PackageName       string   `json:"package_name,omitempty"`
 	Deps              []string `json:"dependencies,omitempty"`
 	Srcs              []string `json:"srcs,omitempty"`
+	Aidl_srcs         []string `json:"aidl_srcs,omitempty"`
+	Proto_srcs        []string `json:"proto_srcs,omitempty"`
 	Aidl_include_dirs []string `json:"aidl_include_dirs,omitempty"`
 	Jarjar_rules      []string `json:"jarjar_rules,omitempty"`
 	Jars              []string `json:"jars,omitempty"`
+	Imported_jars     []string `json:"imported_jars,omitempty"`
+	Imported_aars     []string `json:"imported_aars,omitempty"`
 	Classes           []string `json:"class,omitempty"`
 	Installed_paths   []string `json:"installed,omitempty"`
 	SrcJars           []string `json:"srcjars,omitempty"`
@@ -3689,11 +3697,18 @@ type IdeInfo struct {
 // Merge merges two IdeInfos and produces a new one, leaving the origional unchanged
 func (i IdeInfo) Merge(other *IdeInfo) IdeInfo {
 	return IdeInfo{
+		ModuleType:        mergeString(i.ModuleType, other.ModuleType),
+		Manifest:          mergeString(i.Manifest, other.Manifest),
+		PackageName:       mergeString(i.PackageName, other.PackageName),
 		Deps:              mergeStringLists(i.Deps, other.Deps),
 		Srcs:              mergeStringLists(i.Srcs, other.Srcs),
+		Aidl_srcs:         mergeStringLists(i.Aidl_srcs, other.Aidl_srcs),
+		Proto_srcs:        mergeStringLists(i.Proto_srcs, other.Proto_srcs),
 		Aidl_include_dirs: mergeStringLists(i.Aidl_include_dirs, other.Aidl_include_dirs),
 		Jarjar_rules:      mergeStringLists(i.Jarjar_rules, other.Jarjar_rules),
 		Jars:              mergeStringLists(i.Jars, other.Jars),
+		Imported_jars:     mergeStringLists(i.Imported_jars, other.Imported_jars),
+		Imported_aars:     mergeStringLists(i.Imported_aars, other.Imported_aars),
 		Classes:           mergeStringLists(i.Classes, other.Classes),
 		Installed_paths:   mergeStringLists(i.Installed_paths, other.Installed_paths),
 		SrcJars:           mergeStringLists(i.SrcJars, other.SrcJars),
@@ -3703,6 +3718,14 @@ func (i IdeInfo) Merge(other *IdeInfo) IdeInfo {
 		Asset_dirs:        mergeStringLists(i.Asset_dirs, other.Asset_dirs),
 		Resource_dirs:     mergeStringLists(i.Resource_dirs, other.Resource_dirs),
 	}
+}
+
+// mergeString returns the first non-empty string.
+func mergeString(a, b string) string {
+	if a != "" {
+		return a
+	}
+	return b
 }
 
 // mergeStringLists appends the two string lists together and returns a new string list,

@@ -16,6 +16,7 @@ package kernel
 
 import (
 	"os"
+	"path"
 	"testing"
 
 	"android/soong/android"
@@ -25,6 +26,7 @@ import (
 func TestKernelModulesFilelist(t *testing.T) {
 	ctx := android.GroupFixturePreparers(
 		cc.PrepareForTestWithCcDefaultModules,
+		android.PrepareForTestWithHostTools("soong_zip", "zipsync"),
 		android.FixtureRegisterWithContext(registerKernelBuildComponents),
 		android.MockFS{
 			"depmod.cpp": nil,
@@ -40,22 +42,32 @@ func TestKernelModulesFilelist(t *testing.T) {
 	`)
 
 	expected := []string{
-		"lib/modules/5.10/mod1.ko",
-		"lib/modules/5.10/mod2.ko",
 		"lib/modules/5.10/modules.load",
 		"lib/modules/5.10/modules.dep",
 		"lib/modules/5.10/modules.softdep",
 		"lib/modules/5.10/modules.alias",
 	}
+	expectedZips := []string{
+		"stripped.zip unzips to lib/modules/5.10",
+	}
 
 	var actual []string
+	var actualZips []string
 	for _, ps := range android.GetInstallFiles(
 		ctx, ctx.ModuleForTests(t, "foo", "android_arm64_armv8-a").Module()).PackagingSpecs {
 		actual = append(actual, ps.RelPathInPackage())
+		zip := ps.ExtraZip()
+		if zip.Valid() {
+			actualZips = append(actualZips,
+				path.Base(zip.String())+" unzips to "+path.Dir(ps.RelPathInPackage()))
+		}
 	}
 	actual = android.SortedUniqueStrings(actual)
 	expected = android.SortedUniqueStrings(expected)
 	android.AssertDeepEquals(t, "foo packaging specs", expected, actual)
+	actualZips = android.SortedUniqueStrings(actualZips)
+	expectedZips = android.SortedUniqueStrings(expectedZips)
+	android.AssertDeepEquals(t, "foo extra zips", expectedZips, actualZips)
 }
 
 func TestMain(m *testing.M) {
