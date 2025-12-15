@@ -35,7 +35,11 @@ func (zipper *TestConfigZipper) validateTestSuites(ctx android.SingletonContext)
 	validate := func(plan *TestExecutionPlanProperties, moduleType, name string) {
 		for testModule := range plan.GetTestModules() {
 			if !ctx.Config().AllowMissingDependencies() {
-				testSuiteInfo := zipper.testModulesTestSuiteInfo[testModule]
+				testSuiteInfo, ok := zipper.testModulesTestSuiteInfo[testModule]
+				if !ok || testSuiteInfo == nil {
+					ctx.Errorf("%s \"%s\": could not find test suite info for module \"%s\"", moduleType, name, testModule)
+					continue // Skip to the next module
+				}
 				if !slices.ContainsFunc(testSuiteInfo.TestSuites, isValidTestSuite) {
 					ctx.Errorf("%s \"%s\": referenced test module \"%s\" that is not in a valid test suite: %s", moduleType, name, testModule, maps.Keys(validTestSuites))
 				}
