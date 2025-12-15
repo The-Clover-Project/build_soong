@@ -43,12 +43,9 @@ func TestKernelModulesFilelist(t *testing.T) {
 
 	expected := []string{
 		"lib/modules/5.10/modules.load",
-		"lib/modules/5.10/modules.dep",
-		"lib/modules/5.10/modules.softdep",
-		"lib/modules/5.10/modules.alias",
 	}
 	expectedZips := []string{
-		"stripped.zip unzips to lib/modules/5.10",
+		"installs.zip unzips to lib/modules/5.10",
 	}
 
 	var actual []string

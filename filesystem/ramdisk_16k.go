@@ -18,11 +18,20 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/google/blueprint"
 	"github.com/google/blueprint/proptools"
 
 	"android/soong/android"
 	_ "android/soong/cc/config"
-	"android/soong/kernel"
+)
+
+var (
+	stripRule = pctx.AndroidStaticRule("strip",
+		blueprint.RuleParams{
+			Command:         "$stripCmd -o $out --strip-debug $in",
+			CommandDeps:     []string{"$stripCmd"},
+			SandboxDisabled: true,
+		}, "stripCmd")
 )
 
 type ramdisk16kImg struct {
@@ -84,7 +93,7 @@ func (p *ramdisk16kImg) stripSymbols(ctx android.ModuleContext, stripDir android
 	for _, stripSymbolSrc := range android.PathsForModuleSrc(ctx, p.properties.Strip_symbol_srcs) {
 		strippedPath := stripDir.Join(ctx, stripSymbolSrc.Base())
 		ctx.Build(pctx, android.BuildParams{
-			Rule:   kernel.StripRule,
+			Rule:   stripRule,
 			Input:  stripSymbolSrc,
 			Output: strippedPath,
 			Args: map[string]string{

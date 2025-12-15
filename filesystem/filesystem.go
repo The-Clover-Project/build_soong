@@ -45,7 +45,6 @@ func init() {
 	pctx.HostBinToolVariable("fs_config", "fs_config")
 	pctx.HostBinToolVariable("SoongZipCmd", "soong_zip")
 	pctx.HostBinToolVariable("check_radio_versions", "check_radio_versions")
-	pctx.Import("android/soong/kernel")
 }
 
 func registerBuildComponents(ctx android.RegistrationContext) {
