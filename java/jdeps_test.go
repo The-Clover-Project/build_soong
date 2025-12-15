@@ -124,7 +124,7 @@ func TestCollectJavaLibraryPropertiesAddAidlSrcs(t *testing.T) {
 	}
 }
 
-func TestCollectJavaLibraryPropertiesAddProtoSrcs(t *testing.T) {
+func TestCollectJavaLibraryPropertiesAddProtoInfo(t *testing.T) {
 	t.Parallel()
 	ctx, _ := testJava(t,
 		`
@@ -136,14 +136,33 @@ func TestCollectJavaLibraryPropertiesAddProtoSrcs(t *testing.T) {
 		java_library {
 			name: "javalib",
 			srcs: [":my_proto_files", "Baz.java"],
+			proto: {
+				type: "lite",
+				canonical_path_from_root: false,
+				local_include_dirs: ["proto"],
+			},
 		}
 	`)
 	module := ctx.ModuleForTests(t, "javalib", "android_common").Module().(*Library)
 	dpInfo := getIdeInfo(ctx, module)
 
-	expected := []string{"Foo.proto", "Bar.proto"}
-	if !reflect.DeepEqual(dpInfo.Proto_srcs, expected) {
-		t.Errorf("Library.IDEInfo() Proto_srcs = %v, want %v", dpInfo.Proto_srcs, expected)
+	if dpInfo.Proto == nil {
+		t.Fatal("Library.IDEInfo() Proto is nil")
+	}
+
+	android.AssertStringEquals(t, "Library.IDEInfo() Proto.Type equal to", "lite", dpInfo.Proto.Type)
+	if dpInfo.Proto.CanonicalPathFromRoot == nil || *dpInfo.Proto.CanonicalPathFromRoot {
+		t.Errorf("Library.IDEInfo() Proto.CanonicalPathFromRoot = %v, want %v", dpInfo.Proto.CanonicalPathFromRoot, false)
+	}
+
+	expectedSrcs := []string{"Foo.proto", "Bar.proto"}
+	if !reflect.DeepEqual(dpInfo.Proto.Srcs, expectedSrcs) {
+		t.Errorf("Library.IDEInfo() Proto.Srcs = %v, want %v", dpInfo.Proto.Srcs, expectedSrcs)
+	}
+
+	expectedLocalIncludes := []string{"proto"}
+	if !reflect.DeepEqual(dpInfo.Proto.LocalIncludeDirs, expectedLocalIncludes) {
+		t.Errorf("Library.IDEInfo() Proto.LocalIncludeDirs = %v, want %v", dpInfo.Proto.LocalIncludeDirs, expectedLocalIncludes)
 	}
 }
 
