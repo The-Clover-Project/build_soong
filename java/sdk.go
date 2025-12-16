@@ -172,11 +172,26 @@ func decodeSdkDep(ctx android.EarlyModuleContext, sdkContext SdkVersionContext) 
 
 	switch sdkVersion.Kind {
 	case android.SdkPrivate:
+		// SdkPrivate is for platform apps that are not bundled in any APEX.
+		// Such apps are allowed to use private platform APIs.
+		//
+		// Allowlisted /product apps may use select hidden APIs, but not private resources.
+		// framework-minus-internal-res is identical to framework, except that
+		// com.android.internal.R is explicitly removed with jarjar.
+		classpath := append([]string{}, config.FrameworkLibraries...)
+		if ctx.ProductSpecific() {
+			for i, lib := range classpath {
+				if lib == "framework" {
+					classpath[i] = "framework-minus-internal-res"
+					break
+				}
+			}
+		}
 		return sdkDep{
 			useModule:          true,
 			systemModules:      corePlatformSystemModules(ctx),
 			bootclasspath:      corePlatformBootclasspathLibraries(ctx),
-			classpath:          config.FrameworkLibraries,
+			classpath:          classpath,
 			frameworkResModule: "framework-res",
 		}
 	case android.SdkNone:

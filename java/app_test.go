@@ -2081,6 +2081,11 @@ func TestAppSdkVersionByPartition(t *testing.T) {
 				product_specific: true,
 				platform_apis: true,
 			}
+
+			java_library {
+				name: "framework-minus-internal-res",
+				srcs: ["b.java"],
+			}
 		`
 
 		errorHandler := android.FixtureExpectsNoErrors
