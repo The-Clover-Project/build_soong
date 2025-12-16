@@ -80,7 +80,8 @@ var PrepareForTestWithComponentsMutator = FixtureRegisterWithContext(func(ctx Re
 var PrepareForTestWithPrebuilts = FixtureRegisterWithContext(RegisterPrebuiltMutators)
 
 var PrepareForTestWithOverrides = FixtureRegisterWithContext(func(ctx RegistrationContext) {
-	ctx.PostDepsMutators(RegisterOverridePostDepsMutators)
+	ctx.PostDepsMutators(RegisterOverrideDepsPostDepsMutators)
+	ctx.PostDepsMutators(RegisterReplaceDepsPostDepsMutators)
 })
 
 var PrepareForTestWithLicenses = GroupFixturePreparers(

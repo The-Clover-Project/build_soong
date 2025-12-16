@@ -569,6 +569,12 @@ type dependencyTag struct {
 	installable bool
 }
 
+type excludeFromVisibilityEnforcementDependencyTag struct {
+	dependencyTag
+}
+
+func (e excludeFromVisibilityEnforcementDependencyTag) ExcludeFromVisibilityEnforcement() {}
+
 var _ android.InstallNeededDependencyTag = (*dependencyTag)(nil)
 
 func (d dependencyTag) InstallDepNeeded() bool {
@@ -642,23 +648,24 @@ var (
 	composeEmbeddablePluginTag = dependencyTag{name: "compose-embeddable-plugin", toolchain: true}
 	composePluginTag           = dependencyTag{name: "compose-plugin", toolchain: true}
 	proguardRaiseTag           = dependencyTag{name: "proguard-raise"}
-	certificateTag             = dependencyTag{name: "certificate"}
-	headerJarOverrideTag       = dependencyTag{name: "header-jar-override"}
-	instrumentationForTag      = dependencyTag{name: "instrumentation_for"}
-	extraLintCheckTag          = dependencyTag{name: "extra-lint-check", toolchain: true}
-	jniLibTag                  = dependencyTag{name: "jnilib", runtimeLinked: true}
-	r8LibraryJarTag            = dependencyTag{name: "r8-libraryjar", runtimeLinked: true}
-	traceReferencesTag         = dependencyTag{name: "trace-references"}
-	syspropPublicStubDepTag    = dependencyTag{name: "sysprop public stub"}
-	javaApiContributionTag     = dependencyTag{name: "java-api-contribution"}
-	aconfigDeclarationTag      = dependencyTag{name: "aconfig-declaration"}
-	jniInstallTag              = dependencyTag{name: "jni install", runtimeLinked: true, installable: true}
-	usesLibReqTag              = makeUsesLibraryDependencyTag(dexpreopt.AnySdkVersion, false)
-	usesLibOptTag              = makeUsesLibraryDependencyTag(dexpreopt.AnySdkVersion, true)
-	usesLibCompat28OptTag      = makeUsesLibraryDependencyTag(28, true)
-	usesLibCompat29ReqTag      = makeUsesLibraryDependencyTag(29, false)
-	usesLibCompat30OptTag      = makeUsesLibraryDependencyTag(30, true)
-	usesLibStagingTag          = usesLibStagingTagStruct{}
+	//TODO(b/465840743): Enable the visibility enforcement for certificateTag dependency.
+	certificateTag          = excludeFromVisibilityEnforcementDependencyTag{dependencyTag{name: "certificate"}}
+	headerJarOverrideTag    = dependencyTag{name: "header-jar-override"}
+	instrumentationForTag   = dependencyTag{name: "instrumentation_for"}
+	extraLintCheckTag       = dependencyTag{name: "extra-lint-check", toolchain: true}
+	jniLibTag               = dependencyTag{name: "jnilib", runtimeLinked: true}
+	r8LibraryJarTag         = dependencyTag{name: "r8-libraryjar", runtimeLinked: true}
+	traceReferencesTag      = dependencyTag{name: "trace-references"}
+	syspropPublicStubDepTag = dependencyTag{name: "sysprop public stub"}
+	javaApiContributionTag  = dependencyTag{name: "java-api-contribution"}
+	aconfigDeclarationTag   = dependencyTag{name: "aconfig-declaration"}
+	jniInstallTag           = dependencyTag{name: "jni install", runtimeLinked: true, installable: true}
+	usesLibReqTag           = makeUsesLibraryDependencyTag(dexpreopt.AnySdkVersion, false)
+	usesLibOptTag           = makeUsesLibraryDependencyTag(dexpreopt.AnySdkVersion, true)
+	usesLibCompat28OptTag   = makeUsesLibraryDependencyTag(28, true)
+	usesLibCompat29ReqTag   = makeUsesLibraryDependencyTag(29, false)
+	usesLibCompat30OptTag   = makeUsesLibraryDependencyTag(30, true)
+	usesLibStagingTag       = usesLibStagingTagStruct{}
 )
 
 // A list of tags for deps used for compiling a module.
