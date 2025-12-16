@@ -165,11 +165,22 @@ func (*unbundledBuilder) GenerateAndroidBuildActions(ctx android.ModuleContext) 
 	ctx.Phony("apexkeys.txt", apexKeysFile)
 
 	// Dist symbols.zip
-	symbolsZip := android.PathForOutput(ctx, "unbundled_singleton", targetProductPrefix+"symbols.zip")
-	symbolsMapping := android.PathForOutput(ctx, "unbundled_singleton", targetProductPrefix+"symbols-mapping.textproto")
-	android.BuildSymbolsZip(ctx, appModules, nil, symbolsZip, symbolsMapping)
-	ctx.DistForGoalWithFilenameTag("apps_only", symbolsZip, symbolsZip.Base())
-	ctx.DistForGoalWithFilenameTag("apps_only", symbolsMapping, symbolsMapping.Base())
+	if ctx.Config().IsEnvTrue("GROUP_ARTIFACTS_BY_MODULE") {
+		for _, module := range appModules {
+			groupName := fmt.Sprintf("%s-", android.OtherModuleNameWithPossibleOverride(ctx, module))
+			symbolsZip := android.PathForOutput(ctx, "unbundled_singleton", targetProductPrefix+groupName+"symbols.zip")
+			symbolsMapping := android.PathForOutput(ctx, "unbundled_singleton", targetProductPrefix+groupName+"symbols-mapping.textproto")
+			android.BuildSymbolsZip(ctx, []android.ModuleProxy{module}, nil, symbolsZip, symbolsMapping)
+			ctx.DistForGoalWithFilenameTag("apps_only", symbolsZip, symbolsZip.Base())
+			ctx.DistForGoalWithFilenameTag("apps_only", symbolsMapping, symbolsMapping.Base())
+		}
+	} else {
+		symbolsZip := android.PathForOutput(ctx, "unbundled_singleton", targetProductPrefix+"symbols.zip")
+		symbolsMapping := android.PathForOutput(ctx, "unbundled_singleton", targetProductPrefix+"symbols-mapping.textproto")
+		android.BuildSymbolsZip(ctx, appModules, nil, symbolsZip, symbolsMapping)
+		ctx.DistForGoalWithFilenameTag("apps_only", symbolsZip, symbolsZip.Base())
+		ctx.DistForGoalWithFilenameTag("apps_only", symbolsMapping, symbolsMapping.Base())
+	}
 
 	// Dist lint reports
 	var reportFiles android.Paths
@@ -193,9 +204,17 @@ func (*unbundledBuilder) GenerateAndroidBuildActions(ctx android.ModuleContext) 
 
 	// Dist jacoco report jar
 	if ctx.Config().IsEnvTrue("EMMA_INSTRUMENT") {
-		jacocoZip := android.PathForModuleOut(ctx, "jacoco-report-classes-all.jar")
-		java.BuildJacocoZipWithPotentialDeviceTests(ctx, appModules, jacocoZip)
-		ctx.DistForGoal("apps_only", jacocoZip)
+		if ctx.Config().IsEnvTrue("GROUP_ARTIFACTS_BY_MODULE") {
+			for _, module := range appModules {
+				jacocoZip := android.PathForModuleOut(ctx, fmt.Sprintf("%s-jacoco.jar", android.OtherModuleNameWithPossibleOverride(ctx, module)))
+				java.BuildJacocoZipWithPotentialDeviceTests(ctx, []android.ModuleProxy{module}, jacocoZip)
+				ctx.DistForGoal("apps_only", jacocoZip)
+			}
+		} else {
+			jacocoZip := android.PathForModuleOut(ctx, "jacoco-report-classes-all.jar")
+			java.BuildJacocoZipWithPotentialDeviceTests(ctx, appModules, jacocoZip)
+			ctx.DistForGoal("apps_only", jacocoZip)
+		}
 	}
 
 	// Dist sboms
