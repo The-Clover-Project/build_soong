@@ -1,4 +1,4 @@
-// Copyright 2025 Google Inc. All rights reserved.
+// Copyright 2017 Google Inc. All rights reserved.
 //
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,23 +16,12 @@ package {
     default_applicable_licenses: ["Android-Apache-2.0"],
 }
 
-bootstrap_go_package {
-    name: "soong-kernel",
-    pkgPath: "android/soong/kernel",
+blueprint_go_binary {
+    name: "kernel_modules_builder",
     deps: [
-        "blueprint",
-        "blueprint-proptools",
-        "soong",
-        "soong-android",
-        "soong-cc",
-        "soong-cc-config",
         "soong-kernel-common",
     ],
     srcs: [
-        "prebuilt_kernel_modules.go",
+        "kernel_modules_builder.go",
     ],
-    testSrcs: [
-        "prebuilt_kernel_modules_test.go",
-    ],
-    pluginFor: ["soong_build"],
 }
