@@ -2,10 +2,12 @@ package main
 
 import (
 	"android/soong/kernel/common"
+	"archive/zip"
 	"encoding/json"
 	"errors"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -49,31 +51,45 @@ func main() {
 	var props common.PrebuiltKernelModulesPropertiesJSON
 	must(json.Unmarshal(must2(os.ReadFile(propsFile)), &props))
 
-	modules := props.Srcs
-
 	var loadFile = filepath.Join(outDir, "modules.load")
-	createLoadFile(&props, loadFile)
+	modules := createLoadFile(&props, loadFile)
 
 	modulesZip := filepath.Join(outDir, "modules.zip")
 	args := []string{"-o", modulesZip, "-j"}
 	for _, mod := range modules {
 		args = append(args, "-f", mod)
 	}
+
+	srcs16k := slices.Clone(props.Srcs_16k)
+	if String(props.Zip.Srcs_16k_cfg_file) != "" {
+		func() {
+			dir := filepath.Join(outDir, "unzipped_modules_16k")
+			must(os.MkdirAll(dir, 0o777))
+			f := must2(os.Open(*props.Zip.Src))
+			defer f.Close()
+			reader := must2(zip.NewReader(f, must2(f.Stat()).Size()))
+			contents := string(readZipFile(reader, *props.Zip.Srcs_16k_cfg_file))
+			for _, line := range strings.Split(contents, "\n") {
+				if line, ok := strings.CutPrefix(line, "modprobe|"); ok {
+					out := filepath.Join(dir, line)
+					extractZipFile(reader, filepath.Join("16kb", line), out)
+					srcs16k = append(srcs16k, out)
+				}
+			}
+		}()
+	}
+
+	if len(srcs16k) > 0 {
+		args = append(args, "-P", "16k-mode")
+		for _, mod := range srcs16k {
+			args = append(args, "-f", mod)
+		}
+	}
 	cmd(*soongZip, args...)
 
 	zipsToMerge := []string{modulesZip}
-	if len(props.Srcs_16k) > 0 {
-		zip := filepath.Join(outDir, "modules_16k.zip")
-		args := []string{"-o", zip, "-j", "-P", "16k-mode"}
-		for _, mod := range props.Srcs_16k {
-			args = append(args, "-f", mod)
-		}
-		cmd(*soongZip, args...)
 
-		zipsToMerge = append(zipsToMerge, zip)
-	}
-
-	runDepmod(modulesZip, loadFile, String(props.System_dep), &zipsToMerge)
+	runDepmod(modules, loadFile, String(props.System_dep), &zipsToMerge)
 	installBlocklistFile(&props, &zipsToMerge)
 	installOptionsFile(&props, &zipsToMerge)
 
@@ -89,14 +105,16 @@ func main() {
 	must(os.Rename(allInstallsZip, outInstallZip))
 }
 
-func runDepmod(modulesZip string, loadFile string, systemModulesZip string, zipsToMerge *[]string) {
+func runDepmod(modules []string, loadFile string, systemModulesZip string, zipsToMerge *[]string) {
 	baseDir := filepath.Join(outDir, "depmod_tmp")
 	fakeVer := "0.0" // depmod requires this
 	modulesDir := filepath.Join(baseDir, "lib", "modules", fakeVer)
 	modulesCpDir := modulesDirForAndroidDlkm(modulesDir, false)
 	must(os.MkdirAll(modulesCpDir, 0o777))
 
-	cmd(*zipSync, "-d", modulesCpDir, modulesZip)
+	for _, mod := range modules {
+		cp(mod, filepath.Join(modulesCpDir, filepath.Base(mod)))
+	}
 
 	if systemModulesZip != "" {
 		modulesDirForSystemDlkm := modulesDirForAndroidDlkm(modulesDir, true)
@@ -108,12 +126,11 @@ func runDepmod(modulesZip string, loadFile string, systemModulesZip string, zips
 		// precedence. Since depmod does not provide any guarantee about ordering of
 		// dependency resolution, we achieve this by maually removing any duplicate
 		// modules with lower priority.
-		for _, dirEnt := range must2(os.ReadDir(modulesCpDir)) {
-			if strings.HasSuffix(dirEnt.Name(), ".ko") {
-				err := os.Remove(filepath.Join(modulesDirForSystemDlkm, dirEnt.Name()))
-				if !errors.Is(err, os.ErrNotExist) {
-					must(err)
-				}
+		for _, mod := range modules {
+			name := filepath.Base(mod)
+			err := os.Remove(filepath.Join(modulesDirForSystemDlkm, name))
+			if !errors.Is(err, os.ErrNotExist) {
+				must(err)
 			}
 		}
 	}
@@ -163,31 +180,93 @@ func modulesDirForAndroidDlkm(modulesDir string, system bool) string {
 	}
 }
 
-func createLoadFile(props *common.PrebuiltKernelModulesPropertiesJSON, loadFile string) {
-	if !BoolDefault(props.Load_by_default, true) {
-		must(os.WriteFile(loadFile, nil, 0o777))
-	} else if len(props.Src_filenames_to_load) > 0 {
-		validNames := make(map[string]bool, len(props.Srcs))
-		for _, src := range props.Srcs {
-			validNames[filepath.Base(src)] = true
+// Creates the load file at the given location, then returns the list of modules that should be
+// installed. (which can be more than just the modules listed in the load file)
+func createLoadFile(props *common.PrebuiltKernelModulesPropertiesJSON, loadFile string) []string {
+	if props.Zip.Src != nil {
+		if props.Load_by_default != nil {
+			fmt.Fprintf(os.Stderr, "Load_by_default is incompatible with zip-based prebuilt_kernel_modules\n")
+			os.Exit(1)
 		}
-		var contents strings.Builder
-		for _, filenameToLoad := range props.Src_filenames_to_load {
-			if _, ok := validNames[filenameToLoad]; !ok {
-				fmt.Printf("%s in src_filenames_to_load not present in srcs\n", filenameToLoad)
+		if props.Src_filenames_to_load != nil {
+			fmt.Fprintf(os.Stderr, "Src_filenames_to_load is incompatible with zip-based prebuilt_kernel_modules\n")
+			os.Exit(1)
+		}
+
+		f := must2(os.Open(*props.Zip.Src))
+		defer f.Close()
+		reader := must2(zip.NewReader(f, must2(f.Stat()).Size()))
+		lf := readZipFile(reader, *props.Zip.Load_file)
+
+		dir := filepath.Join(outDir, "unzipped_modules")
+		must(os.MkdirAll(dir, 0o777))
+
+		// Extract the loaded kofiles to a directory
+		lines := slices.Concat(props.Zip.Extra_loads, strings.Split(string(lf), "\n"))
+		koFiles := make([]string, 0, len(lines)+len(props.Srcs))
+		koNames := make([]string, 0, len(lines))
+		seen := make(map[string]struct{})
+		for _, line := range lines {
+			if len(line) == 0 {
+				continue
+			}
+			koFile := filepath.Base(line)
+			if _, ok := seen[koFile]; ok {
+				fmt.Fprintf(os.Stderr, "Duplicate ko file: %q\n", koFile)
 				os.Exit(1)
 			}
-			contents.WriteString(filenameToLoad)
-			contents.WriteString("\n")
+			seen[koFile] = struct{}{}
+			extractedLocation := filepath.Join(dir, koFile)
+			extractZipFile(reader, koFile, extractedLocation)
+			koFiles = append(koFiles, extractedLocation)
+			koNames = append(koNames, koFile)
 		}
-		must(os.WriteFile(loadFile, []byte(contents.String()), 0o777))
+
+		must(os.WriteFile(loadFile, []byte(strings.Join(koNames, "\n")), 0o777))
+
+		// Also allow for extra kofiles to be passed outside the zip, via the srcs property.
+		// This is to support files that have traditionally been outside of TARGET_KERNEL_DIR:
+		// https://source.corp.google.com/h/googleplex-android/platform/superproject/main/+/main:device/google/common/etm/BoardUserdebugModules.mk;l=23;drc=ee64c48352187c839310d63d69142fa141f39809
+		for _, src := range props.Srcs {
+			koFile := filepath.Base(src)
+			if _, ok := seen[koFile]; ok {
+				fmt.Fprintf(os.Stderr, "Duplicate ko file: %q\n", koFile)
+				os.Exit(1)
+			}
+			seen[koFile] = struct{}{}
+			koFiles = append(koFiles, src)
+		}
+
+		return koFiles
+
 	} else {
-		var contents strings.Builder
-		for _, filenameToLoad := range props.Srcs {
-			contents.WriteString(filepath.Base(filenameToLoad))
-			contents.WriteString("\n")
+		if !BoolDefault(props.Load_by_default, true) {
+			must(os.WriteFile(loadFile, nil, 0o777))
+		} else if len(props.Src_filenames_to_load) > 0 {
+			validNames := make(map[string]bool, len(props.Srcs))
+			for _, src := range props.Srcs {
+				validNames[filepath.Base(src)] = true
+			}
+			var contents strings.Builder
+			for _, filenameToLoad := range props.Src_filenames_to_load {
+				if _, ok := validNames[filenameToLoad]; !ok {
+					fmt.Printf("%s in src_filenames_to_load not present in srcs\n", filenameToLoad)
+					os.Exit(1)
+				}
+				contents.WriteString(filenameToLoad)
+				contents.WriteString("\n")
+			}
+			must(os.WriteFile(loadFile, []byte(contents.String()), 0o777))
+		} else {
+			var contents strings.Builder
+			for _, filenameToLoad := range props.Srcs {
+				contents.WriteString(filepath.Base(filenameToLoad))
+				contents.WriteString("\n")
+			}
+			must(os.WriteFile(loadFile, []byte(contents.String()), 0o777))
 		}
-		must(os.WriteFile(loadFile, []byte(contents.String()), 0o777))
+
+		return props.Srcs
 	}
 }
 
@@ -199,7 +278,7 @@ func stripDebugSymbols(modulesZip string) string {
 	for _, dirEnt := range must2(os.ReadDir(tmpDir)) {
 		if strings.HasSuffix(dirEnt.Name(), ".ko") {
 			f := filepath.Join(tmpDir, dirEnt.Name())
-			cmd(*llvmStrip, f, "--strip-debug", f)
+			cmd(*llvmStrip, "-o", f, "--strip-debug", f)
 		}
 	}
 
@@ -211,11 +290,19 @@ func stripDebugSymbols(modulesZip string) string {
 // Install the blocklist file, removing empty lines and raising an error if a line is
 // not formatted as `blocklist $name.ko`
 func installBlocklistFile(props *common.PrebuiltKernelModulesPropertiesJSON, zipsToMerge *[]string) {
-	if String(props.Blocklist_file) == "" {
+	var originalContents string
+	if String(props.Zip.Blocklist_file) != "" {
+		f := must2(os.Open(*props.Zip.Src))
+		defer f.Close()
+		reader := must2(zip.NewReader(f, must2(f.Stat()).Size()))
+		originalContents = string(readZipFile(reader, *props.Zip.Blocklist_file))
+	} else if String(props.Blocklist_file) != "" {
+		originalContents = string(must2(os.ReadFile(*props.Blocklist_file)))
+	} else {
 		return
 	}
 
-	lines := strings.Split(string(must2(os.ReadFile(*props.Blocklist_file))), "\n")
+	lines := strings.Split(originalContents, "\n")
 	var contents strings.Builder
 	failed := false
 	for i, line := range lines {
@@ -282,6 +369,20 @@ func installOptionsFile(props *common.PrebuiltKernelModulesPropertiesJSON, zipsT
 	cmd(*soongZip, "-o", installZip, "-e", "modules.options", "-f", out)
 
 	*zipsToMerge = append(*zipsToMerge, installZip)
+}
+
+func readZipFile(zipFile *zip.Reader, pathInZip string) []byte {
+	in := must2(zipFile.Open(pathInZip))
+	defer in.Close()
+	return must2(io.ReadAll(in))
+}
+
+func extractZipFile(zipFile *zip.Reader, pathInZip string, outputPath string) {
+	in := must2(zipFile.Open(pathInZip))
+	defer in.Close()
+	out := must2(os.Create(outputPath))
+	defer out.Close()
+	must2(io.Copy(out, in))
 }
 
 func cp(from string, to string) {
