@@ -758,10 +758,10 @@ func (m *moduleContext) installFile(installPath InstallPath, name string, srcPat
 
 			extraCmds := ""
 			if extraZip != nil {
-				extraCmds += fmt.Sprintf(" && ( unzip -qDD -d '%s' '%s' 2>&1 | grep -v \"zipfile is empty\"; exit $${PIPESTATUS[0]} )",
-					extraZip.dir.String(), extraZip.zip.String())
-				extraCmds += " || ( code=$$?; if [ $$code -ne 0 -a $$code -ne 1 ]; then exit $$code; fi )"
-				implicitDeps = append(implicitDeps, extraZip.zip)
+				zipSync := m.Config().HostToolPath(m, "zipsync")
+				extraCmds += fmt.Sprintf(" && %s --keep-existing-files -d '%s' '%s'",
+					zipSync, extraZip.dir.String(), extraZip.zip.String())
+				implicitDeps = append(implicitDeps, extraZip.zip, zipSync)
 			}
 
 			var cpFlags = "-f"
