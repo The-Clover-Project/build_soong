@@ -266,6 +266,13 @@ func (c Config) ReleaseBuildClangShortVersion(defaultVersion string) string {
 	return defaultVersion
 }
 
+func (c Config) ReleaseBuildCppStdVersion(defaultVersion string) string {
+	if val, exists := c.GetBuildFlag("RELEASE_BUILD_CPP_STD_VERSION"); exists && val != "" {
+		return val
+	}
+	return defaultVersion
+}
+
 // The flag indicating behavior for the tree wrt building modules or using prebuilts
 // derived from RELEASE_DEFAULT_MODULE_BUILD_FROM_SOURCE
 func (c Config) ReleaseDefaultModuleBuildFromSource() bool {

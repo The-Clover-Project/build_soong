@@ -130,7 +130,7 @@ func makeVarsProvider(ctx android.MakeVarsContext) {
 	ctx.Strict("INTEGER_OVERFLOW_EXTRA_CFLAGS", strings.Join(intOverflowCflags, " "))
 
 	ctx.Strict("DEFAULT_C_STD_VERSION", config.CStdVersion)
-	ctx.Strict("DEFAULT_CPP_STD_VERSION", config.CppStdVersion)
+	ctx.Strict("DEFAULT_CPP_STD_VERSION", config.CppStdVersion(ctx))
 	ctx.Strict("EXPERIMENTAL_C_STD_VERSION", config.ExperimentalCStdVersion)
 	ctx.Strict("EXPERIMENTAL_CPP_STD_VERSION", config.ExperimentalCppStdVersion)
 
