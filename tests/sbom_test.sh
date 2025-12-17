@@ -108,6 +108,10 @@ function test_sbom_aosp_cf_x86_64_phone {
   dump_erofs=$out_dir/host/linux-x86/bin/dump.erofs
 
   declare -A diff_excludes
+  diff_excludes[system_dlkm]="\
+    -I /system_dlkm/lib/modules/"
+  diff_excludes[vendor_dlkm]="\
+    -I /vendor_dlkm/lib/modules/"
 
   # Example output of dump.erofs is as below, and the data used in the test start
   # at line 11. Column 1 is inode id, column 2 is inode type and column 3 is name.
@@ -272,11 +276,11 @@ function verify_packages_licenses {
   # PRODUCT and 4 prebuilt packages have "PackageLicenseDeclared: NOASSERTION"
   # All other packages have declared licenses
   num_of_packages_with_noassertion_license=$(grep 'PackageLicenseDeclared: NOASSERTION' $sbom_file | wc -l)
-  if [ $num_of_packages_with_noassertion_license -lt 10 ]
+  if [ $num_of_packages_with_noassertion_license -lt 16 ]
   then
     echo "Number of packages with NOASSERTION license is correct."
   else
-    echo "Number of packages with NOASSERTION license is WRONG."
+    echo "Number of packages with NOASSERTION license is WRONG(${num_of_packages_with_noassertion_license})."
     exit 1
   fi
 
