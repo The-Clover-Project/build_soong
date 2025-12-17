@@ -1023,6 +1023,8 @@ func (d *Droidstubs) commonMetalavaStubCmd(ctx android.ModuleContext, rule *andr
 		cmd.ImplicitOutput(android.PathForModuleGen(ctx, o))
 	}
 
+	generateMetalavaFlagConfigArgs(ctx, cmd, params.stubConfig.stubsType, params.stubConfig.deps.aconfigProtoFiles)
+
 	return cmd
 }
 
@@ -1067,8 +1069,6 @@ func (d *Droidstubs) everythingStubCmd(ctx android.ModuleContext, params stubsCo
 	}
 
 	cmd := d.commonMetalavaStubCmd(ctx, rule, commonCmdParams)
-
-	generateMetalavaFlagConfigArgs(ctx, cmd, params.stubsType, params.deps.aconfigProtoFiles)
 
 	d.everythingOptionalCmd(ctx, cmd, params.doApiLint, params.doCheckReleased)
 
@@ -1293,8 +1293,6 @@ func (d *Droidstubs) optionalStubCmd(ctx android.ModuleContext, params stubsComm
 	}
 
 	cmd := d.commonMetalavaStubCmd(ctx, rule, params)
-
-	generateMetalavaFlagConfigArgs(ctx, cmd, params.stubConfig.stubsType, params.stubConfig.deps.aconfigProtoFiles)
 
 	if params.stubConfig.doApiLint {
 		// Pass the lint baseline file as an input to resolve the lint errors.
