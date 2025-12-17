@@ -50,6 +50,9 @@ type generatedPartitionData struct {
 	// and the module couldn't be created.
 	supported   bool
 	handwritten bool
+	// diffRef is true if the module does not build an image but used only for the file list diff
+	// reference.
+	diffRef bool
 }
 
 type allGeneratedPartitionData []generatedPartitionData
@@ -57,7 +60,7 @@ type allGeneratedPartitionData []generatedPartitionData
 func (d allGeneratedPartitionData) moduleNames() []string {
 	var result []string
 	for _, data := range d {
-		if data.supported {
+		if data.supported && !data.diffRef {
 			result = append(result, data.moduleName)
 		}
 	}
@@ -67,7 +70,7 @@ func (d allGeneratedPartitionData) moduleNames() []string {
 func (d allGeneratedPartitionData) types() []string {
 	var result []string
 	for _, data := range d {
-		if data.supported {
+		if data.supported && !data.diffRef {
 			result = append(result, data.partitionType)
 		}
 	}
@@ -77,7 +80,7 @@ func (d allGeneratedPartitionData) types() []string {
 func (d allGeneratedPartitionData) unsupportedTypes() []string {
 	var result []string
 	for _, data := range d {
-		if !data.supported {
+		if !data.supported && !data.diffRef {
 			result = append(result, data.partitionType)
 		}
 	}
@@ -96,7 +99,7 @@ func (d allGeneratedPartitionData) names() []string {
 
 func (d allGeneratedPartitionData) nameForType(ty string) string {
 	for _, data := range d {
-		if data.supported && data.partitionType == ty {
+		if data.supported && !data.diffRef && data.partitionType == ty {
 			return data.moduleName
 		}
 	}
@@ -206,6 +209,15 @@ func generatedPartitions(ctx android.EarlyModuleContext) allGeneratedPartitionDa
 			supported:     true,
 			handwritten:   true,
 		})
+		// Add a separate generated module for file list comparison, with the "system" partition type.
+		// This does not create an image, but provides the list of installed files from PRODUCT_PACKAGES.
+		result = append(result, generatedPartitionData{
+			partitionType: "system",
+			moduleName:    generatedModuleName(ctx.Config(), "system_filelist_check_image"),
+			supported:     true,
+			handwritten:   false,
+			diffRef:       true,
+		})
 	} else {
 		addGenerated("system")
 	}
@@ -269,6 +281,16 @@ func (f *filesystemCreator) createInternalModules(ctx android.LoadHookContext) {
 	for i := range partitions {
 		f.createPartition(ctx, partitions, &partitions[i])
 	}
+
+	// Filter out file list diff reference from the partitions list for other image creations
+	// to avoid it being included in system_other, vbmeta, super image, etc.
+	var validPartitions allGeneratedPartitionData
+	for _, p := range partitions {
+		if !p.diffRef {
+			validPartitions = append(validPartitions, p)
+		}
+	}
+
 	// Create android_info.prop
 	f.createAndroidInfo(ctx)
 
@@ -327,13 +349,13 @@ func (f *filesystemCreator) createInternalModules(ctx android.LoadHookContext) {
 
 	var systemOtherImageName string
 	if buildingSystemOtherImage(partitionVars) {
-		systemModule := partitions.nameForType("system")
+		systemModule := validPartitions.nameForType("system")
 		systemOtherImageName = generatedModuleNameForPartition(ctx.Config(), "system_other")
 		ctx.CreateModule(
 			filesystem.SystemOtherImageFactory,
 			&filesystem.SystemOtherImageProperties{
 				System_image:                    &systemModule,
-				Preinstall_dexpreopt_files_from: partitions.moduleNames(),
+				Preinstall_dexpreopt_files_from: validPartitions.moduleNames(),
 			},
 			&struct {
 				Name *string
@@ -376,21 +398,21 @@ func (f *filesystemCreator) createInternalModules(ctx android.LoadHookContext) {
 		f.properties.Bootloader = bootloader
 	}
 
-	for _, x := range f.createVbmetaPartitions(ctx, partitions) {
+	for _, x := range f.createVbmetaPartitions(ctx, validPartitions) {
 		f.properties.Vbmeta_module_names = append(f.properties.Vbmeta_module_names, x.moduleName)
 		f.properties.Vbmeta_partition_names = append(f.properties.Vbmeta_partition_names, x.partitionName)
 	}
 
 	var superImageSubpartitions []string
 	if buildingSuperImage(partitionVars) {
-		superImageSubpartitions = createSuperImage(ctx, partitions, partitionVars, systemOtherImageName)
+		superImageSubpartitions = createSuperImage(ctx, validPartitions, partitionVars, systemOtherImageName)
 		f.properties.Super_image = ":" + generatedModuleNameForPartition(ctx.Config(), "super")
 	} else if partitionVars.ProductUseDynamicPartitions {
-		createSuperImage(ctx, partitions, partitionVars, systemOtherImageName)
+		createSuperImage(ctx, validPartitions, partitionVars, systemOtherImageName)
 	}
 
 	ctx.Config().Get(fsGenStateOnceKey).(*FsGenState).soongGeneratedPartitions = partitions
-	f.createDeviceModule(ctx, partitions, f.properties.Vbmeta_module_names, superImageSubpartitions)
+	f.createDeviceModule(ctx, validPartitions, f.properties.Vbmeta_module_names, superImageSubpartitions)
 }
 
 func generatedModuleName(cfg android.Config, suffix string) string {
@@ -676,6 +698,10 @@ func (f *filesystemCreator) createDeviceModule(
 
 	if f.properties.Radio_image != "" {
 		deviceProps.Radio_partition_name = &f.properties.Radio_image
+	}
+
+	if ctx.Config().SoongDefinedSystemImage() != "" {
+		deviceProps.System_filelist_diff_ref = proptools.StringPtr(generatedModuleName(ctx.Config(), "system_filelist_check_image"))
 	}
 
 	ctx.CreateModule(filesystem.AndroidDeviceFactory, baseProps, partitionProps, deviceProps)
@@ -1047,8 +1073,8 @@ var (
 
 // Creates a soong module to build the given partition.
 func (f *filesystemCreator) createPartition(ctx android.LoadHookContext, partitions allGeneratedPartitionData, partition *generatedPartitionData) {
-	// Nextgen team's handwritten soong system image, don't need to create anything ourselves
-	if partition.partitionType == "system" && ctx.Config().UseSoongSystemImage() {
+	// Handwritten images, don't need to create anything
+	if partition.handwritten {
 		return
 	}
 
@@ -1696,24 +1722,11 @@ func getAvbInfo(config android.Config, partitionType string) avbInfo {
 	return result
 }
 
-func (f *filesystemCreator) createFileListDiffTest(ctx android.ModuleContext, partitionType string, partitionModuleName string) android.Path {
-	partitionImage := ctx.GetDirectDepProxyWithTag(partitionModuleName, generatedFilesystemDepTag)
-	filesystemInfo, ok := android.OtherModuleProvider(ctx, partitionImage, filesystem.FilesystemProvider)
-	if !ok {
-		ctx.ModuleErrorf("Expected module %s to provide FileysystemInfo", partitionModuleName)
-		return nil
-	}
+func (f *filesystemCreator) createSoongMakeFileListDiffTest(ctx android.ModuleContext, partitionType string, partitionModuleName string) android.Path {
+	fileListFile := filesystem.GetFileListFile(ctx, partitionModuleName, generatedFilesystemDepTag)
 	makeFileList := android.PathForArbitraryOutput(ctx, fmt.Sprintf("target/product/%s/obj/PACKAGING/%s_intermediates/file_list.txt", ctx.Config().DeviceName(), partitionType))
-	diffTestResultFile := android.PathForModuleOut(ctx, fmt.Sprintf("diff_test_%s.txt", partitionModuleName))
-
-	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
-	builder.Command().BuiltTool("file_list_diff").
-		Input(makeFileList).
-		Input(filesystemInfo.FileListFile).
-		Text(partitionModuleName)
-	builder.Command().Text("touch").Output(diffTestResultFile)
-	builder.Build(partitionModuleName+" diff test", partitionModuleName+" diff test")
-	return diffTestResultFile
+	diffTestTimestamp := android.PathForModuleOut(ctx, fmt.Sprintf("diff_test_%s.timestamp", partitionModuleName))
+	return filesystem.CreateFileListDiffTest(ctx, diffTestTimestamp, makeFileList, fileListFile, partitionModuleName)
 }
 
 func createFailingCommand(ctx android.ModuleContext, message string) android.Path {
@@ -1817,7 +1830,7 @@ func (f *filesystemCreator) GenerateAndroidBuildActions(ctx android.ModuleContex
 		}) {
 			continue // Make packaging does not create a filter file for this partition.
 		}
-		diffTestFile := f.createFileListDiffTest(ctx, partitionType, partitions.nameForType(partitionType))
+		diffTestFile := f.createSoongMakeFileListDiffTest(ctx, partitionType, partitions.nameForType(partitionType))
 		diffTestFiles = append(diffTestFiles, diffTestFile)
 		ctx.Phony(fmt.Sprintf("soong_generated_%s_filesystem_test", partitionType), diffTestFile)
 	}
