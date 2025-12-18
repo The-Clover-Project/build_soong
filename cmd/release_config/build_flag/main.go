@@ -269,7 +269,7 @@ func GetCommand(configs *rc_lib.ReleaseConfigs, globalFlags GlobalFlags, getFlag
 		case isTrace:
 			return fmt.Errorf("trace command only allows one --release argument.  Got: %s", strings.Join(globalFlags.targetReleases, " "))
 		case getFlags.json:
-			return fmt.Errorf("--shell only allows one --release argument.  Got: %s", strings.Join(globalFlags.targetReleases, " "))
+			return fmt.Errorf("--json only allows one --release argument.  Got: %s", strings.Join(globalFlags.targetReleases, " "))
 		}
 	}
 

@@ -16,6 +16,7 @@ package testconfigs
 
 import (
 	"android/soong/android"
+	"fmt"
 )
 
 // TestConfigZipper compiles the test configuration related modules from
@@ -87,9 +88,37 @@ func (zipper *TestConfigZipper) gatherInlinedModuleInfos(ctx android.SingletonCo
 		}
 	}
 
-	for _, trigger := range zipper.testTriggers {
+	for name, trigger := range zipper.testTriggers {
 		if !trigger.TestTriggerInlineProperties.IsEmpty() {
+			inlinePlanName := fmt.Sprintf("%s_inline_plan", name)
+			inlineWorkflowName := fmt.Sprintf("%s_inline_workflow", name)
+
+			if _, exists := zipper.testExecutionPlans[inlinePlanName]; exists {
+				ctx.Errorf("Implicitly generated execution plan %q for trigger %q already exists", inlinePlanName, name)
+			}
+
+			// Create a copy for the inline plan name for all the module definitions.
+			zipper.testExecutionPlans[inlinePlanName] = &TestExecutionPlanProperties{
+				Tests: trigger.Tests,
+			}
+
+			if _, exists := zipper.testWorkflows[inlineWorkflowName]; exists {
+				ctx.Errorf("Implicitly generated workflow %q for trigger %q already exists", inlineWorkflowName, name)
+			}
+
+			// Create the new workflow structure using the correct TestExecutionPlanInlinable type.
+			zipper.testWorkflows[inlineWorkflowName] = &TestWorkflowProperties{
+				Scheduling_plan: trigger.Scheduling_plan,
+				Execution_plan: TestExecutionPlanInlinable{
+					Name: inlinePlanName,
+				},
+			}
+
 			zipper.testSchedulingPlans[trigger.Scheduling_plan.Name] = &trigger.Scheduling_plan.TestSchedulingPlanProperties
+
+			trigger.Test_workflows = append(trigger.Test_workflows, inlineWorkflowName)
+
+			trigger.TestTriggerInlineProperties = TestTriggerInlineProperties{}
 		}
 	}
 }

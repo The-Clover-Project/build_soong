@@ -17,22 +17,11 @@ package {
 }
 
 bootstrap_go_package {
-    name: "soong-kernel",
-    pkgPath: "android/soong/kernel",
+    name: "soong-kernel-common",
+    pkgPath: "android/soong/kernel/common",
     deps: [
-        "blueprint",
-        "blueprint-proptools",
-        "soong",
-        "soong-android",
-        "soong-cc",
-        "soong-cc-config",
-        "soong-kernel-common",
     ],
     srcs: [
-        "prebuilt_kernel_modules.go",
+        "prebuilt_kernel_modules_common.go",
     ],
-    testSrcs: [
-        "prebuilt_kernel_modules_test.go",
-    ],
-    pluginFor: ["soong_build"],
 }

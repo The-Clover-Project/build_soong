@@ -28,10 +28,9 @@ func init() {
 var metadataPctx = NewPackageContext("android/soong/android/metadata")
 
 type ModuleMetadata struct {
-	Name string `json:"name"`
-	Type string `json:"type"`
-	Path string `json:"path"`
-
+	Name         string   `json:"name"`
+	Type         string   `json:"type"`
+	Path         string   `json:"path"`
 	Enabled      bool     `json:"enabled"`
 	InstallFiles []string `json:"install_files,omitempty"`
 }
@@ -53,10 +52,9 @@ func (c *metadataSingleton) GenerateBuildActions(ctx SingletonContext) {
 		}
 
 		info := ModuleMetadata{
-			Name: ctx.ModuleName(m),
-			Type: ctx.ModuleType(m),
-			Path: ctx.ModuleDir(m),
-
+			Name:    ctx.ModuleName(m),
+			Type:    ctx.ModuleType(m),
+			Path:    ctx.ModuleDir(m),
 			Enabled: commonInfo.Enabled,
 		}
 
@@ -80,18 +78,42 @@ func (c *metadataSingleton) GenerateBuildActions(ctx SingletonContext) {
 
 	zipPath := PathForOutput(ctx, "metadata", "metadata.zip")
 	baseDir := filepath.Dir(jsonPath.String())
-	rb := NewRuleBuilder(metadataPctx, ctx)
-	rb.Command().
+
+	// Rule to build metadata.zip
+	zipRb := NewRuleBuilder(metadataPctx, ctx)
+	zipRb.Command().
 		BuiltTool("soong_zip").
 		FlagWithOutput("-o ", zipPath).
 		FlagWithArg("-C ", baseDir).
 		FlagWithInput("-f ", jsonPath)
+	zipRb.Build("build_metadata_zip", "Building metadata zip")
 
-	rb.Build("build_metadata_zip", "Building metadata zip")
-
+	// Phony target for 'm metadata.zip'
 	ctx.Build(metadataPctx, BuildParams{
 		Rule:   blueprint.Phony,
-		Inputs: []Path{zipPath},
+		Input:  zipPath,
 		Output: PathForPhony(ctx, "metadata.zip"),
+	})
+
+	// Rule to build metadata.db from metadata.zip
+	metadataDbPath := PathForOutput(ctx, "metadata", "metadata.db")
+	dbRb := NewRuleBuilder(metadataPctx, ctx)
+
+	// Get the path to the metadata_db_loader executable
+	loaderPath := ctx.Config().HostToolPath(ctx, "metadata_db_loader")
+
+	// Build the command: <path_to_loader_script> -i <input> -o <output>
+	dbRb.Command().
+		Tool(loaderPath).
+		FlagWithInput("-i ", jsonPath).
+		FlagWithOutput("-o ", metadataDbPath)
+
+	dbRb.Build("build_metadata_db", "Building metadata.db from metadata.json")
+
+	// Phony target for 'm metadata.db'
+	ctx.Build(metadataPctx, BuildParams{
+		Rule:   blueprint.Phony,
+		Input:  metadataDbPath,
+		Output: PathForPhony(ctx, "metadata.db"),
 	})
 }

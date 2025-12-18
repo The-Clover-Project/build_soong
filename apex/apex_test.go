@@ -3415,11 +3415,8 @@ func TestApex_withPrebuiltKernelModules(t *testing.T) {
 			"mod2.ko": nil,
 		}))
 	ensureExactContents(t, ctx, "myapex", "android_common_myapex", []string{
-		"lib/modules/modules.alias",
-		"lib/modules/modules.dep",
 		"lib/modules/modules.load",
-		"lib/modules/modules.softdep",
-		"stripped.zip unzips to lib/modules",
+		"installs.zip unzips to lib/modules",
 	})
 }
 

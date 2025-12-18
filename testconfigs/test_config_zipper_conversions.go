@@ -112,34 +112,17 @@ func (zipper *TestConfigZipper) convertTestTrigger(name string, trigger *TestTri
 		FilePatterns: trigger.File_patterns,
 	}
 
-	if trigger.TestTriggerInlineProperties.IsEmpty() {
-		workflows := []*protos.TestWorkflow{}
-		for _, workflowName := range trigger.Test_workflows {
-			workflows = append(workflows, &protos.TestWorkflow{Name: workflowName})
-		}
+	// Because we expanded all inline triggers into synthetic workflows in gatherInlinedModuleInfos,
+	// we only need to handle the standard list of workflows here.
+	workflows := []*protos.TestWorkflow{}
+	for _, workflowName := range trigger.Test_workflows {
+		workflows = append(workflows, &protos.TestWorkflow{Name: workflowName})
+	}
 
-		res.Workflow = &protos.TestTrigger_List{
-			List: &protos.TestWorkflowCollection{
-				Workflows: workflows,
-			},
-		}
-	} else {
-		tests := []*protos.ModulePlan{}
-		for _, test := range trigger.Tests {
-			tests = append(tests, &protos.ModulePlan{
-				Module:     test.Module,
-				Include:    test.Include,
-				Exclude:    test.Exclude,
-				ModuleArgs: convertArgsToKeyValue(test.Module_args),
-			})
-		}
-
-		res.Workflow = &protos.TestTrigger_Inline{
-			Inline: &protos.TestWorkflowInline{
-				SchedulingPlan: &protos.TestSchedulingPlan{Name: trigger.Scheduling_plan.Name},
-				Tests:          tests,
-			},
-		}
+	res.Workflow = &protos.TestTrigger_List{
+		List: &protos.TestWorkflowCollection{
+			Workflows: workflows,
+		},
 	}
 
 	return res
