@@ -289,3 +289,34 @@ func TestMkEntriesMatchedContainer(t *testing.T) {
 	makeVar := info.PrimaryInfo.EntryMap["LOCAL_ACONFIG_FILES"]
 	android.EnsureListContainsSuffix(t, makeVar, "my_aconfig_declarations_foo/aconfig-cache.pb")
 }
+
+func TestCollectJavaAconfigLibraryPropertiesAddAconfigSrcs(t *testing.T) {
+	result := android.GroupFixturePreparers(
+		PrepareForTestWithAconfigBuildComponents,
+		java.PrepareForTestWithJavaDefaultModules).
+		ExtendWithErrorHandler(android.FixtureExpectsNoErrors).
+		RunTestWithBp(t, `
+			aconfig_declarations {
+				name: "my_aconfig_declarations",
+				package: "com.example.package",
+				container: "system",
+				srcs: ["foo.aconfig", "bar.aconfig"],
+			}
+
+			java_aconfig_library {
+				name: "my_java_aconfig_library",
+				aconfig_declarations: "my_aconfig_declarations",
+				mode: "force-read-only",
+			}
+		`)
+
+	module := result.ModuleForTests(t, "my_java_aconfig_library", "android_common").Module().(*java.GeneratedJavaLibraryModule)
+	info, _ := android.OtherModuleProvider(result.TestContext.OtherModuleProviderAdaptor(), module, android.CommonModuleInfoProvider)
+	ideInfo := *info.IdeInfo
+
+	expectedSrcs := []string{"foo.aconfig", "bar.aconfig"}
+	android.AssertStringEquals(t, "Aconfig.Package", "com.example.package", ideInfo.Aconfig.Package)
+	android.AssertStringEquals(t, "Aconfig.Container", "system", ideInfo.Aconfig.Container)
+	android.AssertDeepEquals(t, "Aconfig.Srcs", expectedSrcs, ideInfo.Aconfig.Srcs)
+	android.AssertStringEquals(t, "Aconfig.Mode", "force-read-only", ideInfo.Aconfig.Mode)
+}

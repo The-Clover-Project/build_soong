@@ -228,6 +228,7 @@ func (module *DeclarationsModule) GenerateAndroidBuildActions(ctx android.Module
 			Exportable:                  module.properties.Exportable,
 			IntermediateCacheOutputPath: intermediateCacheFilePath,
 			IntermediateDumpOutputPath:  intermediateDumpFilePath,
+			Srcs:                        declarationFiles,
 		}
 	}
 	android.SetProvider(ctx, android.AconfigDeclarationsProviderKey, providerData.Data[""])

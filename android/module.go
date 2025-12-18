@@ -3671,35 +3671,45 @@ type IDEInfo interface {
 // Collect information for opening IDE project files in java/jdeps.go.
 // @auto-generate: gob
 type IdeInfo struct {
-	BaseModuleName    string   `json:"-"`
-	ModuleType        string   `json:"module_type,omitempty"`
-	Manifest          string   `json:"manifest,omitempty"`
-	PackageName       string   `json:"package_name,omitempty"`
-	Deps              []string `json:"dependencies,omitempty"`
-	Srcs              []string `json:"srcs,omitempty"`
-	Aidl_srcs         []string `json:"aidl_srcs,omitempty"`
-	Proto_srcs        []string `json:"proto_srcs,omitempty"`
-	Aidl_include_dirs []string `json:"aidl_include_dirs,omitempty"`
-	Jarjar_rules      []string `json:"jarjar_rules,omitempty"`
-	Jars              []string `json:"jars,omitempty"`
-	Imported_jars     []string `json:"imported_jars,omitempty"`
-	Imported_aars     []string `json:"imported_aars,omitempty"`
-	Classes           []string `json:"class,omitempty"`
-	Installed_paths   []string `json:"installed,omitempty"`
-	SrcJars           []string `json:"srcjars,omitempty"`
-	Paths             []string `json:"path,omitempty"`
-	Static_libs       []string `json:"static_libs,omitempty"`
-	Libs              []string `json:"libs,omitempty"`
-	Asset_dirs        []string `json:"asset_dirs,omitempty"`
-	Resource_dirs     []string `json:"resource_dirs,omitempty"`
+	BaseModuleName    string          `json:"-"`
+	ModuleType        string          `json:"module_type,omitempty"`
+	Manifest          string          `json:"manifest,omitempty"`
+	PackageName       string          `json:"package_name,omitempty"`
+	Aconfig           *AconfigIdeInfo `json:"aconfig,omitempty"`
+	Deps              []string        `json:"dependencies,omitempty"`
+	Srcs              []string        `json:"srcs,omitempty"`
+	Aidl_srcs         []string        `json:"aidl_srcs,omitempty"`
+	Proto_srcs        []string        `json:"proto_srcs,omitempty"`
+	Aidl_include_dirs []string        `json:"aidl_include_dirs,omitempty"`
+	Jarjar_rules      []string        `json:"jarjar_rules,omitempty"`
+	Jars              []string        `json:"jars,omitempty"`
+	Imported_jars     []string        `json:"imported_jars,omitempty"`
+	Imported_aars     []string        `json:"imported_aars,omitempty"`
+	Classes           []string        `json:"class,omitempty"`
+	Installed_paths   []string        `json:"installed,omitempty"`
+	SrcJars           []string        `json:"srcjars,omitempty"`
+	Paths             []string        `json:"path,omitempty"`
+	Static_libs       []string        `json:"static_libs,omitempty"`
+	Libs              []string        `json:"libs,omitempty"`
+	Asset_dirs        []string        `json:"asset_dirs,omitempty"`
+	Resource_dirs     []string        `json:"resource_dirs,omitempty"`
 }
 
-// Merge merges two IdeInfos and produces a new one, leaving the origional unchanged
+// @auto-generate: gob
+type AconfigIdeInfo struct {
+	Srcs      []string `json:"srcs,omitempty"`
+	Mode      string   `json:"mode,omitempty"`
+	Package   string   `json:"package,omitempty"`
+	Container string   `json:"container,omitempty"`
+}
+
+// Merge merges two IdeInfos and produces a new one, leaving the original unchanged
 func (i IdeInfo) Merge(other *IdeInfo) IdeInfo {
 	return IdeInfo{
 		ModuleType:        mergeString(i.ModuleType, other.ModuleType),
 		Manifest:          mergeString(i.Manifest, other.Manifest),
 		PackageName:       mergeString(i.PackageName, other.PackageName),
+		Aconfig:           i.Aconfig.merge(other.Aconfig),
 		Deps:              mergeStringLists(i.Deps, other.Deps),
 		Srcs:              mergeStringLists(i.Srcs, other.Srcs),
 		Aidl_srcs:         mergeStringLists(i.Aidl_srcs, other.Aidl_srcs),
@@ -3717,6 +3727,22 @@ func (i IdeInfo) Merge(other *IdeInfo) IdeInfo {
 		Libs:              mergeStringLists(i.Libs, other.Libs),
 		Asset_dirs:        mergeStringLists(i.Asset_dirs, other.Asset_dirs),
 		Resource_dirs:     mergeStringLists(i.Resource_dirs, other.Resource_dirs),
+	}
+}
+
+// Merge merges two AconfigIdeInfos and produces a new one, leaving the original unchanged
+func (i *AconfigIdeInfo) merge(other *AconfigIdeInfo) *AconfigIdeInfo {
+	if other == nil {
+		return i
+	}
+	if i == nil {
+		return other
+	}
+	return &AconfigIdeInfo{
+		Srcs:      mergeStringLists(i.Srcs, other.Srcs),
+		Mode:      mergeString(i.Mode, other.Mode),
+		Package:   mergeString(i.Package, other.Package),
+		Container: mergeString(i.Container, other.Container),
 	}
 }
 

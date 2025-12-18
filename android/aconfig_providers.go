@@ -43,6 +43,7 @@ type AconfigDeclarationsProviderData struct {
 	Exportable                  bool
 	IntermediateCacheOutputPath WritablePath
 	IntermediateDumpOutputPath  WritablePath
+	Srcs                        Paths
 }
 
 var AconfigDeclarationsProviderKey = blueprint.NewProvider[AconfigDeclarationsProviderData]()
