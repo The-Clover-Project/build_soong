@@ -16,6 +16,7 @@ package java
 
 import (
 	"fmt"
+	"path/filepath"
 	"testing"
 
 	"android/soong/android"
@@ -61,6 +62,18 @@ func TestJavaSystemModules(t *testing.T) {
 	// The expected paths are the header jars from the source input modules.
 	expectedSourcePaths := getModuleHeaderJarsAsRelativeToTopPaths(result, "system-module1", "system-module2")
 	android.AssertArrayString(t, "source system modules inputs", expectedSourcePaths, sourceInputs.RelativeToTop().Strings())
+
+	// Check for the zip output
+	zipRule := sourceSystemModules.Rule("zip_system_module")
+	expectedZipPath := filepath.Join("out/soong", ".intermediates/source/system-modules/android_common", "system-modules.zip")
+	android.AssertStringEquals(t, "zip output file", expectedZipPath, zipRule.Output.String())
+
+	// Check that the zip file is registered as an output with the correct tag
+	zipOutputs := sourceSystemModules.OutputFiles(result.TestContext, t, ".zip")
+	if len(zipOutputs) != 1 {
+		t.Fatalf("expected exactly one output with tag '.zip', got %d", len(zipOutputs))
+	}
+	android.AssertStringEquals(t, "tagged zip output file", expectedZipPath, zipOutputs[0].String())
 }
 
 var addPrebuiltSystemModules = android.FixtureAddTextFile("prebuilts/Android.bp", `
@@ -89,6 +102,18 @@ func TestJavaSystemModulesImport(t *testing.T) {
 	// The expected paths are the header jars from the renamed prebuilt input modules.
 	expectedPrebuiltPaths := getModuleHeaderJarsAsRelativeToTopPaths(result, "system-module1", "system-module2")
 	android.AssertArrayString(t, "renamed prebuilt system modules inputs", expectedPrebuiltPaths, prebuiltInputs.RelativeToTop().Strings())
+
+	// Check for the zip output
+	zipRule := prebuiltSystemModules.Rule("zip_system_module")
+	expectedZipPath := filepath.Join("out/soong", ".intermediates/prebuilts/system-modules/android_common", "system-modules.zip")
+	android.AssertStringEquals(t, "zip output file", expectedZipPath, zipRule.Output.String())
+
+	// Check that the zip file is registered as an output with the correct tag
+	zipOutputs := prebuiltSystemModules.OutputFiles(result.TestContext, t, ".zip")
+	if len(zipOutputs) != 1 {
+		t.Fatalf("expected exactly one output with tag '.zip', got %d", len(zipOutputs))
+	}
+	android.AssertStringEquals(t, "tagged zip output file", expectedZipPath, zipOutputs[0].String())
 }
 
 func TestJavaSystemModulesMixSourceAndPrebuilt(t *testing.T) {
