@@ -17,6 +17,7 @@ package build
 import (
 	"context"
 	"io"
+	"os"
 
 	"android/soong/ui/execution_metrics"
 	"android/soong/ui/logger"
@@ -44,6 +45,8 @@ type ContextImpl struct {
 	Tracer tracer.Tracer
 
 	CriticalPath *status.CriticalPath
+
+	SigNumFunc func() os.Signal
 
 	RBEProxyCmd *Cmd
 

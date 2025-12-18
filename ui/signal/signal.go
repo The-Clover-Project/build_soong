@@ -18,6 +18,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime/debug"
+	"sync"
 	"syscall"
 
 	"android/soong/ui/logger"
@@ -26,6 +27,8 @@ import (
 
 // SetupSignals sets up signal handling to ensure all of our subprocesses are killed and that
 // our log/trace buffers are flushed to disk.
+//
+// It returns a function that will return the os.Signal that we most recently received.
 //
 // All of our subprocesses are in the same process group, so they'll receive a SIGINT at the
 // same time we do. Most of the time this means we just need to ignore the signal and we'll
@@ -37,13 +40,32 @@ import (
 //  3. Wait three seconds to exit normally.
 //  4. Call cleanup() to close the log/trace buffers, then panic.
 //  5. If another three seconds passes (if cleanup got stuck, etc), then panic.
-func SetupSignals(log logger.Logger, cancel, cleanup func()) {
+func SetupSignals(log logger.Logger, cancel, cleanup func()) func() os.Signal {
+	signalInfo := &sigInfo{}
 	signals := make(chan os.Signal, 5)
 	signal.Notify(signals, os.Interrupt, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM)
-	go handleSignals(signals, log, cancel, cleanup)
+	go handleSignals(signals, log, signalInfo, cancel, cleanup)
+	return signalInfo.getSignal
 }
 
-func handleSignals(signals chan os.Signal, log logger.Logger, cancel, cleanup func()) {
+type sigInfo struct {
+	sigNum os.Signal
+	lock   sync.RWMutex
+}
+
+func (si *sigInfo) getSignal() os.Signal {
+	si.lock.RLock()
+	defer si.lock.RUnlock()
+	return si.sigNum
+}
+
+func (si *sigInfo) setSignal(s os.Signal) {
+	si.lock.Lock()
+	defer si.lock.Unlock()
+	si.sigNum = s
+}
+
+func handleSignals(signals chan os.Signal, log logger.Logger, sigInfo *sigInfo, cancel, cleanup func()) {
 	var timeouts int
 	var timeout <-chan time.Time
 
@@ -78,6 +100,8 @@ func handleSignals(signals chan os.Signal, log logger.Logger, cancel, cleanup fu
 		select {
 		case s := <-signals:
 			log.Println("Got signal:", s)
+			// Extract the signal number for the caller of SetupSignals to use.
+			sigInfo.setSignal(s)
 
 			// Another signal triggers our next timeout handler early
 			if timeout != nil {
