@@ -298,7 +298,10 @@ def append_additional_system_props(args):
     if "PRODUCT_PROPERTY_OVERRIDES" in config:
       props += config["PRODUCT_PROPERTY_OVERRIDES"]
 
-  props.append(f"ro.treble.enabled={'true' if config['FullTreble'] else 'false'}")
+  # We may be able to remove this property now and update all clients to assume
+  # that treble is enabled.
+  props.append(f"ro.treble.enabled=true")
+
   # Set ro.llndk.api_level to show the maximum vendor API level that the LLNDK
   # in the system partition supports.
   if config["VendorApiLevel"]:

@@ -145,19 +145,6 @@ func createTrebleRules() []Rule {
 			Without("owner", "").
 			Because("a VNDK module can never have an owner."),
 
-		// TODO(b/67974785): always enforce the manifest
-		NeverAllow().
-			Without("name", "libhidlbase-combined-impl").
-			Without("name", "libhidlbase").
-			With("product_variables.enforce_vintf_manifest.cflags", "*").
-			Because("manifest enforcement should be independent of ."),
-
-		// TODO(b/67975799): vendor code should always use /vendor/bin/sh
-		NeverAllow().
-			Without("name", "libc_bionic_ndk").
-			With("product_variables.treble_linker_namespaces.cflags", "*").
-			Because("nothing should care if linker namespaces are enabled or not"),
-
 		// Example:
 		// *NeverAllow().with("Srcs", "main.cpp"))
 	}

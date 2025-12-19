@@ -1570,9 +1570,7 @@ func (a *androidDevice) addMiscInfo(ctx android.ModuleContext) android.Path {
 	builder.Command().Textf("echo recovery_mount_options=%s >> %s", defaultTargetRecoveryFstypeMountOptions, miscInfo)
 
 	// vintf information
-	if proptools.Bool(ctx.Config().ProductVariables().Enforce_vintf_manifest) {
-		builder.Command().Textf("echo vintf_enforce=true >> %s", miscInfo)
-	}
+	builder.Command().Textf("echo vintf_enforce=true >> %s", miscInfo)
 	if len(ctx.Config().DeviceManifestFiles()) > 0 {
 		builder.Command().Textf("echo vintf_include_empty_vendor_sku=true >> %s", miscInfo)
 	}
@@ -2125,10 +2123,7 @@ func (a *androidDevice) checkVintf(ctx android.ModuleContext) android.Paths {
 	}
 	var checkVintfLogs android.Paths
 	fsInfoMap := a.getFsInfos(ctx)
-	// https://source.corp.google.com/h/googleplex-android/platform/superproject/main/+/main:build/make/core/Makefile;l=5561-5566?q=PRODUCT_ENFORCE_VINTF_MANIFEST%20f:build%2Fmake&ct=os&sq=repo:googleplex-android%2Fplatform%2Fsuperproject%2Fmain%20b:main
-	if !proptools.Bool(ctx.Config().ProductVariables().Enforce_vintf_manifest) {
-		return nil
-	}
+
 	if _, systemExists := fsInfoMap["system"]; !systemExists {
 		return nil
 	}
