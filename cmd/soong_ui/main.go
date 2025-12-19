@@ -174,7 +174,7 @@ func main() {
 	stat.AddOutput(trace.StatusTracer())
 
 	// Set up a cleanup procedure in case the normal termination process doesn't work.
-	signal.SetupSignals(log, cancel, func() {
+	sigNumFunc := signal.SetupSignals(log, cancel, func() {
 		trace.Close()
 		log.Cleanup()
 		stat.Finish()
@@ -190,6 +190,7 @@ func main() {
 		Writer:           output,
 		Status:           stat,
 		CriticalPath:     criticalPath,
+		SigNumFunc:       sigNumFunc,
 	}}
 
 	config := c.config(buildCtx, args...)
