@@ -142,7 +142,9 @@ type generatorProperties struct {
 	// List of directories to export generated headers from
 	Export_include_dirs []string
 
-	// list of input files
+	// list of input files without variations such as plain files, or output of another `genrule`.
+	// If you want to depend on modules with variations, use `device_first_srcs`,
+	// `device_common_srcs`, `common_os_srcs`, `host_first_srcs`, or `host_second_srcs` instead.
 	Srcs proptools.Configurable[[]string] `android:"path,arch_variant"`
 
 	// Same as srcs, but will add dependencies on modules via a device os variation and the device's
