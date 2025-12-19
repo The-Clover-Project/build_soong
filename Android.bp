@@ -196,6 +196,14 @@ rust_defaults {
     defaults_visibility: ["//visibility:public"],
 }
 
+// Dependencies of Tradefed need to be pinned to an earlier Java version
+// to support old branches. See b/267831518 for details.
+java_defaults {
+    name: "tradefed_dependency_defaults",
+    java_version: "11",
+    defaults_visibility: ["//visibility:public"],
+}
+
 // Dependencies of ErrorProne need to disable ErrorProne checking, otherwise
 // there would be a circular dependency.
 java_defaults {
