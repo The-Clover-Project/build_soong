@@ -78,21 +78,17 @@ type StubsType int
 
 const (
 	Everything StubsType = iota
-	Runtime
 	Exportable
-	Unavailable
 )
 
 func (s StubsType) String() string {
 	switch s {
 	case Everything:
 		return "everything"
-	case Runtime:
-		return "runtime"
 	case Exportable:
 		return "exportable"
 	default:
-		return ""
+		panic("Unsupported StubsType for String")
 	}
 }
 
@@ -107,16 +103,16 @@ func (s StubsType) OutputTagPrefix() string {
 	}
 }
 
-func StringToStubsType(s string) StubsType {
+var validStubsType = []StubsType{Everything, Exportable}
+
+func StringToStubsType(s string) (StubsType, error) {
 	switch strings.ToLower(s) {
 	case Everything.String():
-		return Everything
-	case Runtime.String():
-		return Runtime
+		return Everything, nil
 	case Exportable.String():
-		return Exportable
+		return Exportable, nil
 	default:
-		return Unavailable
+		return Everything, fmt.Errorf("%s is not a valid stubs type, must be one of %s", s, validStubsType)
 	}
 }
 
@@ -928,9 +924,6 @@ func generateMetalavaFlagConfigArgs(ctx android.ModuleContext, cmd *android.Rule
 	// everything stubs
 	case Everything:
 		overrideArgs = "--override-flag-state=ENABLED --override-flag-permission=READ_WRITE"
-
-	case Runtime:
-		filterArgs = "--filter='state:ENABLED+permission:READ_ONLY' --filter='permission:READ_WRITE'"
 
 	case Exportable:
 		// When the build flag RELEASE_EXPORT_RUNTIME_APIS is set to true, apis marked with

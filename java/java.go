@@ -2776,18 +2776,15 @@ func (al *ApiLibrary) sortApiFilesByApiScope(ctx android.ModuleContext, srcFiles
 	return srcFilesInfo
 }
 
-var validstubsType = []StubsType{Everything, Runtime, Exportable}
-
 func (al *ApiLibrary) validateProperties(ctx android.ModuleContext) {
 	if al.properties.Stubs_type == nil {
 		ctx.ModuleErrorf("java_api_library module type must specify stubs_type property.")
 	} else {
-		al.stubsType = StringToStubsType(proptools.String(al.properties.Stubs_type))
-	}
-
-	if !android.InList(al.stubsType, validstubsType) {
-		ctx.PropertyErrorf("stubs_type", "%s is not a valid stubs_type property value. "+
-			"Must be one of %s.", proptools.String(al.properties.Stubs_type), validstubsType)
+		stubsType, err := StringToStubsType(proptools.String(al.properties.Stubs_type))
+		if err != nil {
+			ctx.PropertyErrorf("stubs_type", err.Error())
+		}
+		al.stubsType = stubsType
 	}
 }
 
