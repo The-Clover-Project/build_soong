@@ -2,6 +2,7 @@ package main
 
 import (
 	"android/soong/filesystem/ramdisk_16k/common"
+	"archive/zip"
 	"bytes"
 	"encoding/json"
 	"flag"
@@ -9,7 +10,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"slices"
 	"strings"
 )
 
@@ -92,10 +92,22 @@ func mkLz4Bootfs(dir, out string) {
 }
 
 func strip(props *common.Ramdisk16kImgPropertiesJSON, modulesDir string) {
-	for _, src := range props.Strip_symbol_srcs {
-		if !slices.Contains(props.Srcs, src) {
-			fmt.Fprintf(os.Stderr, "%q is not found in srcs. All entries in strip_symbol_srcs must be listed in srcs.\n", src)
-			os.Exit(1)
+	excluded := make(map[string]struct{})
+	if props.System_dep != nil {
+		f := must2(os.Open(*props.System_dep))
+		defer f.Close()
+		reader := must2(zip.NewReader(f, must2(f.Stat()).Size()))
+		for _, f := range reader.File {
+			// only look at files in the root of the zip
+			if strings.Contains(f.Name, "/") {
+				continue
+			}
+			excluded[f.Name] = struct{}{}
+		}
+	}
+	for _, src := range props.Srcs {
+		if _, ok := excluded[filepath.Base(src)]; ok {
+			continue
 		}
 
 		cmd(*llvmStrip, "--strip-debug", filepath.Join(modulesDir, filepath.Base(src)))

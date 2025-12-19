@@ -6,11 +6,11 @@ type Ramdisk16kImgPropertiesJSON struct {
 	// List or filegroup of prebuilt kernel module files. Should have .ko suffix.
 	Srcs []string `json:",omitempty"`
 
-	// List or filegroup of prebuilt kernel module files that the debug symbols will be stripped.
-	// Should have .ko suffix. These entries must be listed in srcs as well, otherwise an error
-	// will be thrown. This is because ther order of the srcs is used for generating the
-	// modules.load file if load property is not specified.
-	Strip_symbol_srcs []string `json:",omitempty"`
+	// The zip of kernel modules from system_dlkm. Use `:module_name{.modules.zip}` here.
+	// Modules in this zip will not be stripped, as stripping would remove the signature
+	// of the kernel modules, and GKI modules must be signed for the kernel to load them.
+	// https://cs.android.com/android/platform/superproject/main/+/main:build/make/core/Makefile;l=1124;drc=a951ebf0198006f7fd38073a05c442d0eb92f97b
+	System_dep *string `json:",omitempty"`
 
 	// List specifying load order of kernel modules.
 	Load []string `json:",omitempty"`

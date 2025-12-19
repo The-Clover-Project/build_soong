@@ -19,6 +19,8 @@ import (
 	"android/soong/cc/config"
 	_ "android/soong/cc/config"
 	"android/soong/filesystem/ramdisk_16k/common"
+
+	"github.com/google/blueprint/proptools"
 )
 
 type ramdisk16kImg struct {
@@ -30,11 +32,11 @@ type Ramdisk16kImgProperties struct {
 	// List or filegroup of prebuilt kernel module files. Should have .ko suffix.
 	Srcs []string `android:"path,arch_variant"`
 
-	// List or filegroup of prebuilt kernel module files that the debug symbols will be stripped.
-	// Should have .ko suffix. These entries must be listed in srcs as well, otherwise an error
-	// will be thrown. This is because ther order of the srcs is used for generating the
-	// modules.load file if load property is not specified.
-	Strip_symbol_srcs []string `android:"path,arch_variant"`
+	// The zip of kernel modules from system_dlkm. Use `:module_name{.modules.zip}` here.
+	// Modules in this zip will not be stripped, as stripping would remove the signature
+	// of the kernel modules, and GKI modules must be signed for the kernel to load them.
+	// https://cs.android.com/android/platform/superproject/main/+/main:build/make/core/Makefile;l=1124;drc=a951ebf0198006f7fd38073a05c442d0eb92f97b
+	System_dep *string `android:"path,arch_variant"`
 
 	// List specifying load order of kernel modules.
 	Load []string
@@ -44,11 +46,15 @@ type Ramdisk16kImgProperties struct {
 }
 
 func (p *Ramdisk16kImgProperties) resolve(ctx android.ModuleContext) common.Ramdisk16kImgPropertiesJSON {
+	var system_dep *string
+	if p.System_dep != nil {
+		system_dep = proptools.StringPtr(android.PathForModuleSrc(ctx, *p.System_dep).String())
+	}
 	return common.Ramdisk16kImgPropertiesJSON{
-		Srcs:              android.PathsForModuleSrc(ctx, p.Srcs).Strings(),
-		Strip_symbol_srcs: android.PathsForModuleSrc(ctx, p.Strip_symbol_srcs).Strings(),
-		Load:              p.Load,
-		Kernel:            p.Kernel,
+		Srcs:       android.PathsForModuleSrc(ctx, p.Srcs).Strings(),
+		System_dep: system_dep,
+		Load:       p.Load,
+		Kernel:     p.Kernel,
 	}
 }
 
@@ -82,7 +88,7 @@ func (p *ramdisk16kImg) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	)
 
 	// Determine the kernel version during execution.
-	builder.Command().
+	cmd := builder.Command().
 		BuiltTool("ramdisk_16k_builder").
 		Flag("--extract_kernel").BuiltTool("extract_kernel").
 		Flag("--depmod").BuiltTool("depmod").
@@ -92,8 +98,11 @@ func (p *ramdisk16kImg) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		Input(propsFile).
 		Text(intermediatesDir.String()).
 		Output(output).
-		Implicits(android.PathsForModuleSrc(ctx, p.properties.Srcs)).
-		Implicits(android.PathsForModuleSrc(ctx, p.properties.Strip_symbol_srcs))
+		Implicits(android.PathsForModuleSrc(ctx, p.properties.Srcs))
+
+	if p.properties.System_dep != nil {
+		cmd.Implicit(android.PathForModuleSrc(ctx, *p.properties.System_dep))
+	}
 
 	builder.Build("ramdisk_16k", "ramdisk_16k")
 
