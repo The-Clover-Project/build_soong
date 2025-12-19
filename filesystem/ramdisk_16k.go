@@ -15,23 +15,10 @@
 package filesystem
 
 import (
-	"fmt"
-	"strings"
-
-	"github.com/google/blueprint"
-	"github.com/google/blueprint/proptools"
-
 	"android/soong/android"
+	"android/soong/cc/config"
 	_ "android/soong/cc/config"
-)
-
-var (
-	stripRule = pctx.AndroidStaticRule("strip",
-		blueprint.RuleParams{
-			Command:         "$stripCmd -o $out --strip-debug $in",
-			CommandDeps:     []string{"$stripCmd"},
-			SandboxDisabled: true,
-		}, "stripCmd")
+	"android/soong/filesystem/ramdisk_16k/common"
 )
 
 type ramdisk16kImg struct {
@@ -56,53 +43,20 @@ type Ramdisk16kImgProperties struct {
 	Kernel *string `android:"path"`
 }
 
+func (p *Ramdisk16kImgProperties) resolve(ctx android.ModuleContext) common.Ramdisk16kImgPropertiesJSON {
+	return common.Ramdisk16kImgPropertiesJSON{
+		Srcs:              android.PathsForModuleSrc(ctx, p.Srcs).Strings(),
+		Strip_symbol_srcs: android.PathsForModuleSrc(ctx, p.Strip_symbol_srcs).Strings(),
+		Load:              p.Load,
+		Kernel:            p.Kernel,
+	}
+}
+
 func Ramdisk16kImgFactory() android.Module {
 	module := &ramdisk16kImg{}
 	android.InitAndroidArchModule(module, android.DeviceSupported, android.MultilibFirst)
 	module.AddProperties(&module.properties)
 	return module
-}
-
-func (p *ramdisk16kImg) getFilteredSrcs(ctx android.ModuleContext) android.Paths {
-	srcs := android.PathsForModuleSrc(ctx, p.properties.Srcs)
-	stripSymbolSrcs := android.PathsForModuleSrc(ctx, p.properties.Strip_symbol_srcs)
-
-	for _, stripSymbolSrc := range stripSymbolSrcs {
-		if !android.InList(stripSymbolSrc.String(), srcs.Strings()) {
-			ctx.PropertyErrorf(
-				"strip_symbol_srcs",
-				"%q is not found in srcs. All entries in strip_symbol_srcs must be listed in srcs.",
-				stripSymbolSrc.String(),
-			)
-		}
-	}
-
-	var filteredSrcs android.Paths
-	for _, src := range srcs {
-		if android.InList(src.String(), stripSymbolSrcs.Strings()) {
-			continue
-		}
-		filteredSrcs = append(filteredSrcs, src)
-	}
-
-	return filteredSrcs
-}
-
-func (p *ramdisk16kImg) stripSymbols(ctx android.ModuleContext, stripDir android.OutputPath) android.Paths {
-	var strippedPaths android.Paths
-	for _, stripSymbolSrc := range android.PathsForModuleSrc(ctx, p.properties.Strip_symbol_srcs) {
-		strippedPath := stripDir.Join(ctx, stripSymbolSrc.Base())
-		ctx.Build(pctx, android.BuildParams{
-			Rule:   stripRule,
-			Input:  stripSymbolSrc,
-			Output: strippedPath,
-			Args: map[string]string{
-				"stripCmd": "${config.ClangBin}/llvm-strip",
-			},
-		})
-		strippedPaths = append(strippedPaths, strippedPath)
-	}
-	return strippedPaths
 }
 
 // Extracts version information from the kernel and packages the .ko modules in
@@ -114,69 +68,36 @@ func (p *ramdisk16kImg) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	outputDir := android.PathForModuleOut(ctx, "ramdisk_16k")
 	output := outputDir.Join(ctx, "ramdisk_16k.img")
 	intermediatesDir := outputDir.Join(ctx, "intermediates")
-	filteredSrcs := p.getFilteredSrcs(ctx)
 
-	// needs to be outside of the sandbox directory, which is outputDir
-	stripSymbolsDir := android.PathForIntermediates(ctx, "stripped")
+	propsFile := android.PathForModuleOut(ctx, "props.json")
+	props := p.properties.resolve(ctx)
+	android.WriteFileRule(ctx, propsFile, props.ToJSON())
+
+	llvmStrip := config.ClangPath(ctx, "bin/llvm-strip")
+	llvmLib := config.ClangPath(ctx, "lib/x86_64-unknown-linux-gnu/libc++.so")
 
 	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled().Sbox(
 		outputDir,
 		android.PathForModuleOut(ctx, "ramdisk_16k_intermediates.textproto"),
 	)
 
-	strippedPaths := p.stripSymbols(ctx, stripSymbolsDir)
-
-	extractKernel := android.PathForSource(ctx, "build/make/tools/extract_kernel.py")
-	lz4 := ctx.Config().HostToolPath(ctx, "lz4")
-
 	// Determine the kernel version during execution.
 	builder.Command().
-		Textf("KERNEL_RELEASE=`").
-		Input(extractKernel).
-		Textf("--tools lz4:%s", lz4).Implicit(lz4).
-		FlagWithInput("--input ", android.PathForModuleSrc(ctx, proptools.String(p.properties.Kernel))).
-		Text("--output-release` ; ").
-		Textf("IS_16K_KERNEL=`").
-		Input(extractKernel).
-		Textf("--tools lz4:%s", lz4).Implicit(lz4).
-		FlagWithInput("--input ", android.PathForModuleSrc(ctx, proptools.String(p.properties.Kernel))).
-		Flag("--output-config` ; ").
-		Text(" if [[ \"$IS_16K_KERNEL\" == *\"CONFIG_ARM64_16K_PAGES=y\"* ]]; then SUFFIX=_16k; fi")
-
-	modulesLoadFile := p.createModulesLoadFile(ctx)
-	builder.Command().
-		Textf("mkdir -p %s/lib/modules/\"$KERNEL_RELEASE\"\"$SUFFIX\"", intermediatesDir)
-
-	// Copy the .ko files and modules.load to a staging directory.
-	// Kernel version is one of the path components of the staging directory.
-	builder.Command().
-		Textf("cp -t %s/lib/modules/\"$KERNEL_RELEASE\"\"$SUFFIX\"", intermediatesDir).
-		Inputs(filteredSrcs).
-		Inputs(strippedPaths).
-		Input(modulesLoadFile)
-
-	// Run depmod.
-	// This implementation is sligtly different than make, which first copies the .ko
-	// files to lib/modules/0.0, runs depmod, and then does a recursive cp to the final
-	// staging directory with kernel version as one of the path components.
-	builder.Command().
-		BuiltTool("depmod").
-		Flag("-b").
-		Flag(intermediatesDir.String()).
-		Flag("\"$KERNEL_RELEASE\"\"$SUFFIX\"") // FIX
-
-	builder.Command().
-		BuiltTool("mkbootfs").
+		BuiltTool("ramdisk_16k_builder").
+		Flag("--extract_kernel").BuiltTool("extract_kernel").
+		Flag("--depmod").BuiltTool("depmod").
+		Flag("--llvm-strip").Input(llvmStrip).Implicit(llvmLib).
+		Flag("--lz4").BuiltTool("lz4").
+		Flag("--mkbootfs").BuiltTool("mkbootfs").
+		Input(propsFile).
 		Text(intermediatesDir.String()).
-		Text(" | ").
-		BuiltTool("lz4").
-		Flag("-l").
-		Flag("-12").
-		Flag("--favor-decSpeed").
-		FlagWithOutput(" > ", output)
+		Output(output).
+		Implicits(android.PathsForModuleSrc(ctx, p.properties.Srcs)).
+		Implicits(android.PathsForModuleSrc(ctx, p.properties.Strip_symbol_srcs))
 
 	builder.Build("ramdisk_16k", "ramdisk_16k")
 
+	ctx.ModulePhonyFiles(output)
 	android.SetProvider(ctx, FilesystemProvider, FilesystemInfo{
 		Output: output,
 	})
@@ -184,23 +105,4 @@ func (p *ramdisk16kImg) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		Output:       output,
 		Ramdisk_name: "16K",
 	})
-}
-
-func (p *ramdisk16kImg) createModulesLoadFile(ctx android.ModuleContext) android.Path {
-	var loadOrder []string
-	if len(p.properties.Load) > 0 {
-		loadOrder = p.properties.Load
-	} else {
-		for _, src := range android.PathsForModuleSrc(ctx, p.properties.Srcs) {
-			loadOrder = append(loadOrder, src.Base())
-		}
-	}
-
-	modulesLoadFile := android.PathForModuleOut(ctx, "modules.load")
-	var contents strings.Builder
-	for _, l := range loadOrder {
-		contents.WriteString(fmt.Sprintf("%s\n", l))
-	}
-	android.WriteFileRuleVerbatim(ctx, modulesLoadFile, contents.String())
-	return modulesLoadFile
 }

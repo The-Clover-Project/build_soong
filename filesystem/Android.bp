@@ -12,10 +12,11 @@ bootstrap_go_package {
         "blueprint-proptools",
         "soong",
         "soong-android",
-        "soong-etc",
         "soong-bpf", // for testing
-        "soong-cc", // for testing
         "soong-cc-config",
+        "soong-cc", // for testing
+        "soong-etc",
+        "soong-filesystem-ramdisk_16k-common",
         "soong-java", // for testing
         "soong-kernel",
         "soong-linkerconfig",
