@@ -778,28 +778,12 @@ func createRamdisk16k(ctx android.LoadHookContext) string {
 		return ""
 	}
 
-	var systemDlkmModulePatterns []string
-	for _, path := range partitionVars.SystemKernelModules {
-		systemDlkmModulePatterns = append(systemDlkmModulePatterns, filepath.Base(path))
-	}
-
-	// Find kernel modules 16k that the debug symbols will be stripped. All debug symbols of the
-	// non-GKI modules will be stripped.
-	// https://cs.android.com/android/platform/superproject/main/+/main:build/make/core/Makefile;l=1124;drc=a951ebf0198006f7fd38073a05c442d0eb92f97b
-	var kernelModules16KWithStrip []string
-	for _, kernelModule16k := range partitionVars.BoardKernelModules16K {
-		moduleBase := filepath.Base(kernelModule16k)
-		if !android.InList(moduleBase, systemDlkmModulePatterns) {
-			kernelModules16KWithStrip = append(kernelModules16KWithStrip, kernelModule16k)
-		}
-	}
-
 	name := generatedModuleNameForPartition(ctx.Config(), "ramdisk_16k")
 	props := filesystem.Ramdisk16kImgProperties{
-		Srcs:              partitionVars.BoardKernelModules16K,
-		Strip_symbol_srcs: kernelModules16KWithStrip,
-		Load:              partitionVars.BoardKernelModulesLoad16K,
-		Kernel:            proptools.StringPtr(kernelPath),
+		Srcs:       partitionVars.BoardKernelModules16K,
+		System_dep: proptools.StringPtr(fmt.Sprintf(":%s{.modules.zip}", generatedModuleName(ctx.Config(), "system_dlkm-kernel-modules"))),
+		Load:       partitionVars.BoardKernelModulesLoad16K,
+		Kernel:     proptools.StringPtr(kernelPath),
 	}
 
 	ctx.CreateModuleInDirectory(
@@ -1266,66 +1250,108 @@ func (f *filesystemCreator) createPrebuiltKernelModules(ctx android.LoadHookCont
 	fsGenState := ctx.Config().Get(fsGenStateOnceKey).(*FsGenState)
 	name := generatedModuleName(ctx.Config(), fmt.Sprintf("%s-kernel-modules", partitionType))
 	partitionVars := ctx.Config().ProductVariables().PartitionVarsForSoongMigrationOnlyDoNotUse
-	props := &struct {
+	commonProps := &struct {
 		Name                  *string
-		Srcs                  []string
-		Src_filenames_to_load []string
-		Srcs_16k              []string
-		System_dep            *string
 		System_dlkm_specific  *bool
 		Vendor_dlkm_specific  *bool
 		Odm_dlkm_specific     *bool
 		Vendor_ramdisk        *bool
 		Vendor_kernel_ramdisk *bool
-		Load_by_default       *bool
-		Blocklist_file        *string
-		Options_file          *string
-		Strip_debug_symbols   *bool
 	}{
 		Name: proptools.StringPtr(name),
 	}
+	props := &kernel.PrebuiltKernelModulesProperties{}
+
+	hasSrcs := []bool{false}
+	setSrcs := func(srcs []string) {
+		if len(srcs) > 0 {
+			props.Srcs = android.NewSimpleConfigurable(srcs)
+			hasSrcs[0] = true
+		}
+	}
+
+	if partitionVars.BoardKernelModulesZip != "" {
+		// This can be either a source file from the top of the tree, or a module reference.
+		// The source file case happens to work because we create these modules in the root
+		// directory.
+		props.Zip.Src = &partitionVars.BoardKernelModulesZip
+		hasSrcs[0] = true
+	}
+
 	switch partitionType {
 	case "system_dlkm":
-		props.Srcs = android.ExistentPathsForSources(ctx, partitionVars.SystemKernelModules).Strings()
-		props.System_dlkm_specific = proptools.BoolPtr(true)
-		if len(partitionVars.SystemKernelLoadModules) == 0 {
-			// Create empty modules.load file for system
-			// https://source.corp.google.com/h/googleplex-android/platform/build/+/ef55daac9954896161b26db4f3ef1781b5a5694c:core/Makefile;l=695-700;drc=549fe2a5162548bd8b47867d35f907eb22332023;bpv=1;bpt=0
-			props.Load_by_default = proptools.BoolPtr(false)
-		}
-		if blocklistFile := partitionVars.SystemKernelBlocklistFile; blocklistFile != "" {
-			props.Blocklist_file = proptools.StringPtr(blocklistFile)
-		}
+		commonProps.System_dlkm_specific = proptools.BoolPtr(true)
 		props.Strip_debug_symbols = proptools.BoolPtr(false)
+
+		if partitionVars.BoardKernelModulesZip != "" {
+			props.Zip.Load_file = proptools.StringPtr("system_dlkm.modules.load")
+			props.Zip.Blocklist_file = proptools.StringPtr("system_dlkm.modules.blocklist")
+		} else {
+			setSrcs(android.ExistentPathsForSources(ctx, partitionVars.SystemKernelModules).Strings())
+			if len(partitionVars.SystemKernelLoadModules) == 0 {
+				// Create empty modules.load file for system
+				// https://source.corp.google.com/h/googleplex-android/platform/build/+/ef55daac9954896161b26db4f3ef1781b5a5694c:core/Makefile;l=695-700;drc=549fe2a5162548bd8b47867d35f907eb22332023;bpv=1;bpt=0
+				props.Load_by_default = proptools.BoolPtr(false)
+			}
+			if blocklistFile := partitionVars.SystemKernelBlocklistFile; blocklistFile != "" {
+				props.Blocklist_file = proptools.StringPtr(blocklistFile)
+			}
+		}
 	case "vendor_dlkm":
-		props.Srcs = android.ExistentPathsForSources(ctx, partitionVars.VendorKernelModules).Strings()
-		props.Src_filenames_to_load = partitionVars.VendorKernelModulesLoad
-		props.Srcs_16k = android.ExistentPathsForSources(ctx, partitionVars.VendorKernelModules2ndStage16kbMode).Strings()
-		if len(partitionVars.SystemKernelModules) > 0 {
-			props.System_dep = proptools.StringPtr(":" + generatedModuleName(ctx.Config(), "system_dlkm-kernel-modules") + "{.modules.zip}")
-		}
-		props.Vendor_dlkm_specific = proptools.BoolPtr(true)
-		if blocklistFile := partitionVars.VendorKernelBlocklistFile; blocklistFile != "" {
-			props.Blocklist_file = proptools.StringPtr(blocklistFile)
-		}
+		commonProps.Vendor_dlkm_specific = proptools.BoolPtr(true)
 		if partitionVars.DoNotStripVendorModules {
 			props.Strip_debug_symbols = proptools.BoolPtr(false)
 		}
-	case "odm_dlkm":
-		props.Srcs = android.ExistentPathsForSources(ctx, partitionVars.OdmKernelModules).Strings()
-		props.Odm_dlkm_specific = proptools.BoolPtr(true)
-		if blocklistFile := partitionVars.OdmKernelBlocklistFile; blocklistFile != "" {
-			props.Blocklist_file = proptools.StringPtr(blocklistFile)
+
+		if partitionVars.BoardKernelModulesZip != "" {
+			setSrcs(android.ExistentPathsForSources(ctx, partitionVars.BoardKernelModulesZipExtraVendorKernelModules).Strings())
+			props.Zip.Load_file = proptools.StringPtr("vendor_dlkm.modules.load")
+			props.Zip.Blocklist_file = proptools.StringPtr("vendor_dlkm.modules.blocklist")
+			// TODO: Should probably remove the device name from this file
+			props.Zip.Srcs_16k_cfg_file = proptools.StringPtr(fmt.Sprintf("init.insmod.%s.cfg", ctx.Config().DeviceName()))
+			// unconditionally add this dep when using a zip, as we don't know if there are actually
+			// kernel modules for the system or not until execution time.
+			props.System_dep = proptools.StringPtr(":" + generatedModuleName(ctx.Config(), "system_dlkm-kernel-modules") + "{.modules.zip}")
+		} else {
+			setSrcs(android.ExistentPathsForSources(ctx, partitionVars.VendorKernelModules).Strings())
+			props.Src_filenames_to_load = partitionVars.VendorKernelModulesLoad
+			props.Srcs_16k = android.ExistentPathsForSources(ctx, partitionVars.VendorKernelModules2ndStage16kbMode).Strings()
+			if len(partitionVars.SystemKernelModules) > 0 {
+				props.System_dep = proptools.StringPtr(":" + generatedModuleName(ctx.Config(), "system_dlkm-kernel-modules") + "{.modules.zip}")
+			}
+			if blocklistFile := partitionVars.VendorKernelBlocklistFile; blocklistFile != "" {
+				props.Blocklist_file = proptools.StringPtr(blocklistFile)
+			}
 		}
+	case "odm_dlkm":
+		commonProps.Odm_dlkm_specific = proptools.BoolPtr(true)
 		props.Strip_debug_symbols = proptools.BoolPtr(false)
+
+		if partitionVars.BoardKernelModulesZip != "" {
+			props.Zip.Load_file = proptools.StringPtr("odm_dlkm.modules.load")
+			props.Zip.Blocklist_file = proptools.StringPtr("odm_dlkm.modules.blocklist")
+		} else {
+			setSrcs(android.ExistentPathsForSources(ctx, partitionVars.OdmKernelModules).Strings())
+			if blocklistFile := partitionVars.OdmKernelBlocklistFile; blocklistFile != "" {
+				props.Blocklist_file = proptools.StringPtr(blocklistFile)
+			}
+		}
 	case "vendor_ramdisk", "vendor_ramdisk-debug", "vendor_ramdisk-test-harness", "vendor_ramdisk_fragment_dlkm":
+		commonProps.Vendor_ramdisk = proptools.BoolPtr(true)
+
 		if partitionType == "vendor_ramdisk" && buildingVendorRamdiskFragmentDlkm(ctx, partitionVars) {
 			// Skip including the kernel modules in vendor_ramdisk.
 			// The kernel modules will come from the dlkm ramdisk fragment.
-		} else {
-			props.Srcs = android.ExistentPathsForSources(ctx, partitionVars.VendorRamdiskKernelModules).Strings()
+			return
 		}
-		props.Vendor_ramdisk = proptools.BoolPtr(true)
+
+		if partitionVars.BoardKernelModulesZip != "" {
+			// Pixels don't use BOARD_VENDOR_RAMDISK_KERNEL_MODULES
+			return
+		}
+
+		setSrcs(android.ExistentPathsForSources(ctx, partitionVars.VendorRamdiskKernelModules).Strings())
+
 		if blocklistFile := partitionVars.VendorRamdiskKernelBlocklistFile; blocklistFile != "" {
 			props.Blocklist_file = proptools.StringPtr(blocklistFile)
 		}
@@ -1336,20 +1362,26 @@ func (f *filesystemCreator) createPrebuiltKernelModules(ctx android.LoadHookCont
 			props.Strip_debug_symbols = proptools.BoolPtr(false)
 		}
 	case "vendor_kernel_ramdisk":
-		props.Srcs = android.ExistentPathsForSources(ctx, partitionVars.VendorKernelRamdiskKernelModules).Strings()
-		props.Vendor_kernel_ramdisk = proptools.BoolPtr(true)
+		commonProps.Vendor_kernel_ramdisk = proptools.BoolPtr(true)
 		props.Strip_debug_symbols = proptools.BoolPtr(false)
+		if partitionVars.BoardKernelModulesZip != "" {
+			props.Zip.Load_file = proptools.StringPtr("vendor_kernel_boot.modules.load")
+			props.Zip.Extra_loads = partitionVars.BoardKernelModulesZipExtraVendorKernelRamdiskLoads
+		} else {
+			setSrcs(android.ExistentPathsForSources(ctx, partitionVars.VendorKernelRamdiskKernelModules).Strings())
+		}
 	default:
 		ctx.ModuleErrorf("DLKM is not supported for %s\n", partitionType)
 	}
 
-	if len(props.Srcs) == 0 {
+	if !hasSrcs[0] {
 		return // do not generate `prebuilt_kernel_modules` if there are no sources
 	}
 
 	kernelModule := ctx.CreateModuleInDirectory(
 		kernel.PrebuiltKernelModulesFactory,
 		".", // create in root directory for now
+		commonProps,
 		props,
 	)
 	kernelModule.HideFromMake()

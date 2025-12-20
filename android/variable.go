@@ -768,18 +768,21 @@ type PartitionVariables struct {
 	DeviceFcmFileOfMakefile                     map[string][]string `json:",omitempty"`
 	ArtifactPathRequirementsIsRelaxedOfMakefile map[string]bool     `json:",omitempty"`
 
-	BuildingSystemDlkmImage             bool     `json:",omitempty"`
-	SystemKernelModules                 []string `json:",omitempty"`
-	SystemKernelBlocklistFile           string   `json:",omitempty"`
-	SystemKernelLoadModules             []string `json:",omitempty"`
-	BuildingVendorDlkmImage             bool     `json:",omitempty"`
-	VendorKernelModules                 []string `json:",omitempty"`
-	VendorKernelModulesLoad             []string `json:",omitempty"`
-	VendorKernelBlocklistFile           string   `json:",omitempty"`
-	VendorKernelModules2ndStage16kbMode []string `json:",omitempty"`
-	BuildingOdmDlkmImage                bool     `json:",omitempty"`
-	OdmKernelModules                    []string `json:",omitempty"`
-	OdmKernelBlocklistFile              string   `json:",omitempty"`
+	BoardKernelModulesZip                              string   `json:",omitempty"`
+	BoardKernelModulesZipExtraVendorKernelRamdiskLoads []string `json:",omitempty"`
+	BoardKernelModulesZipExtraVendorKernelModules      []string `json:",omitempty"`
+	BuildingSystemDlkmImage                            bool     `json:",omitempty"`
+	SystemKernelModules                                []string `json:",omitempty"`
+	SystemKernelBlocklistFile                          string   `json:",omitempty"`
+	SystemKernelLoadModules                            []string `json:",omitempty"`
+	BuildingVendorDlkmImage                            bool     `json:",omitempty"`
+	VendorKernelModules                                []string `json:",omitempty"`
+	VendorKernelModulesLoad                            []string `json:",omitempty"`
+	VendorKernelBlocklistFile                          string   `json:",omitempty"`
+	VendorKernelModules2ndStage16kbMode                []string `json:",omitempty"`
+	BuildingOdmDlkmImage                               bool     `json:",omitempty"`
+	OdmKernelModules                                   []string `json:",omitempty"`
+	OdmKernelBlocklistFile                             string   `json:",omitempty"`
 
 	VendorRamdiskKernelModules       []string `json:",omitempty"`
 	VendorRamdiskKernelBlocklistFile string   `json:",omitempty"`

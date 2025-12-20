@@ -52,7 +52,7 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 	// translates it to the soong_ui status output, displaying real-time
 	// progress of the build.
 	fifo := filepath.Join(config.OutDir(), ".ninja_fifo")
-	nr := status.NewNinjaReader(ctx, ctx.Status.StartTool(), fifo)
+	nr := status.NewNinjaReader(ctx, ctx.Status.StartTool(), fifo, ctx.SigNumFunc)
 	defer nr.Close()
 
 	var executable string

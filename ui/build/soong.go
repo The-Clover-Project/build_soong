@@ -616,7 +616,7 @@ func runSoong(ctx Context, config Config, enforceNoSoongOutput bool) {
 		defer e.End()
 
 		fifo := filepath.Join(config.OutDir(), ".ninja_fifo")
-		nr := status.NewNinjaReader(ctx, ctx.Status.StartTool(), fifo)
+		nr := status.NewNinjaReader(ctx, ctx.Status.StartTool(), fifo, ctx.SigNumFunc)
 		func() {
 			defer nr.Close()
 			var ninjaEnv Environment

@@ -41,10 +41,10 @@ var PrepareForTestWithPrebuiltKernelModules = android.FixtureRegisterWithContext
 type prebuiltKernelModules struct {
 	android.ModuleBase
 
-	properties prebuiltKernelModulesProperties
+	properties PrebuiltKernelModulesProperties
 }
 
-type prebuiltKernelModulesProperties struct {
+type PrebuiltKernelModulesProperties struct {
 	// List or filegroup of prebuilt kernel module files. Should have .ko suffix.
 	Srcs proptools.Configurable[[]string] `android:"path,arch_variant"`
 
@@ -84,12 +84,42 @@ type prebuiltKernelModulesProperties struct {
 	// Whether debug symbols should be stripped from the *.ko files.
 	// Defaults to true.
 	Strip_debug_symbols *bool
+
+	// Properties related to loading the kernel modules from a zip file.
+	// This is useful if you want the list of kernel modules to be dynamic, and unknown at analysis
+	// time, for example when supplying the kernel modules via CIPD.
+	//
+	// Most of these properties are mutually exclusive with the other, non-zip properties. But
+	// some such as srcs will be merged with the contents / information from the zip file.
+	Zip struct {
+		// The zip file containing the kernel modules and other files like the load/blocklist files.
+		Src *string
+
+		// The name of the load file inside of the zip file. Only modules listed in it will
+		// be installed.
+		Load_file *string
+
+		// List of extra kernel modules to add to the load file.
+		Extra_loads []string
+
+		// The name of the blocklist file inside of the zip file.
+		Blocklist_file *string
+
+		// Name of a .cfg file inside of the zip that's loaded by init.insmod.sh. This is just used
+		// to determine the list of 16k kernel modules, taken from all the modprobe| lines
+		// in the cfg file.
+		Srcs_16k_cfg_file *string
+	}
 }
 
-func (p *prebuiltKernelModulesProperties) resolve(ctx android.ModuleContext) common.PrebuiltKernelModulesPropertiesJSON {
+func (p *PrebuiltKernelModulesProperties) resolve(ctx android.ModuleContext) common.PrebuiltKernelModulesPropertiesJSON {
 	var systemDep *string
 	if p.System_dep != nil {
 		systemDep = proptools.StringPtr(android.PathForModuleSrc(ctx, *p.System_dep).String())
+	}
+	var zip *string
+	if p.Zip.Src != nil {
+		zip = proptools.StringPtr(android.PathForModuleSrc(ctx, *p.Zip.Src).String())
 	}
 	return common.PrebuiltKernelModulesPropertiesJSON{
 		Srcs:                  android.PathsForModuleSrc(ctx, p.Srcs.GetOrDefault(ctx, nil)).Strings(),
@@ -102,6 +132,13 @@ func (p *prebuiltKernelModulesProperties) resolve(ctx android.ModuleContext) com
 		Kernel_version:        p.Kernel_version,
 		Installable:           p.Installable,
 		Strip_debug_symbols:   p.Strip_debug_symbols,
+		Zip: common.ZipProperties{
+			Src:               zip,
+			Load_file:         p.Zip.Load_file,
+			Extra_loads:       p.Zip.Extra_loads,
+			Blocklist_file:    p.Zip.Blocklist_file,
+			Srcs_16k_cfg_file: p.Zip.Srcs_16k_cfg_file,
+		},
 	}
 }
 
@@ -138,6 +175,9 @@ func (pkm *prebuiltKernelModules) GenerateAndroidBuildActions(ctx android.Module
 	systemModulesZip := android.OptionalPathForModuleSrc(ctx, pkm.properties.System_dep)
 	if systemModulesZip.Valid() {
 		deps = append(deps, systemModulesZip.Path())
+	}
+	if proptools.String(pkm.properties.Zip.Src) != "" {
+		deps = append(deps, android.PathForModuleSrc(ctx, *pkm.properties.Zip.Src))
 	}
 
 	propsFile := android.PathForModuleOut(ctx, "props.json")

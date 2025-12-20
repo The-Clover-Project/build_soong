@@ -33,7 +33,7 @@ import (
 
 // NewNinjaReader reads the protobuf frontend format from ninja and translates it
 // into calls on the ToolStatus API.
-func NewNinjaReader(ctx logger.Logger, status ToolStatus, fifo string) *NinjaReader {
+func NewNinjaReader(ctx logger.Logger, status ToolStatus, fifo string, sigNumFunc func() os.Signal) *NinjaReader {
 	os.Remove(fifo)
 
 	if err := syscall.Mkfifo(fifo, 0666); err != nil {
@@ -43,6 +43,7 @@ func NewNinjaReader(ctx logger.Logger, status ToolStatus, fifo string) *NinjaRea
 	n := &NinjaReader{
 		status:     status,
 		fifo:       fifo,
+		sigNumFunc: sigNumFunc,
 		forceClose: make(chan bool),
 		done:       make(chan bool),
 		cancelOpen: make(chan bool),
@@ -57,6 +58,7 @@ func NewNinjaReader(ctx logger.Logger, status ToolStatus, fifo string) *NinjaRea
 type NinjaReader struct {
 	status       ToolStatus
 	fifo         string
+	sigNumFunc   func() os.Signal
 	forceClose   chan bool
 	done         chan bool
 	cancelOpen   chan bool
@@ -104,13 +106,15 @@ func (n *NinjaReader) Close() {
 		n.status.Verbose(fmt.Sprintf("ninja fifo didn't finish even after force closing after %s", NINJA_READER_CLOSE_TIMEOUT.String()))
 	}
 
-	err := fmt.Errorf("error: action cancelled when ninja exited")
-	for _, action := range n.running {
-		n.status.FinishAction(ActionResult{
-			Action: action,
-			Output: err.Error(),
-			Error:  err,
-		})
+	if n.sigNumFunc() != os.Interrupt {
+		err := fmt.Errorf("error: action cancelled when ninja exited")
+		for _, action := range n.running {
+			n.status.FinishAction(ActionResult{
+				Action: action,
+				Output: err.Error(),
+				Error:  err,
+			})
+		}
 	}
 }
 

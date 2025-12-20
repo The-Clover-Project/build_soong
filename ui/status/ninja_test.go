@@ -33,7 +33,11 @@ func TestNinjaReader_Close(t *testing.T) {
 	defer os.RemoveAll(tempDir)
 
 	stat := &Status{}
-	nr := NewNinjaReader(logger.New(ioutil.Discard), stat.StartTool(), filepath.Join(tempDir, "fifo"))
+	sigNumFunc := func() os.Signal {
+		var sig os.Signal
+		return sig
+	}
+	nr := NewNinjaReader(logger.New(ioutil.Discard), stat.StartTool(), filepath.Join(tempDir, "fifo"), sigNumFunc)
 
 	start := time.Now()
 
