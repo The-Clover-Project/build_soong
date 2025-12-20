@@ -60,8 +60,16 @@ type ZipProperties struct {
 	// be installed.
 	Load_file *string `json:",omitempty"`
 
+	// List of extra kernel modules to add to the load file.
+	Extra_loads []string `json:",omitempty"`
+
 	// The name of the blocklist file inside of the zip file.
 	Blocklist_file *string `json:",omitempty"`
+
+	// Name of a .cfg file that's loaded by init.insmod.sh. This is just used
+	// to determine the list of 16k kernel modules, taken from all the modprobe| lines
+	// in the cfg file.
+	Srcs_16k_cfg_file *string `json:",omitempty"`
 }
 
 func (p *PrebuiltKernelModulesPropertiesJSON) ToJSON() string {
