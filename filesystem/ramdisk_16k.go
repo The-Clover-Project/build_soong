@@ -43,6 +43,16 @@ type Ramdisk16kImgProperties struct {
 
 	// Path to the prebuilt 16KB kernel
 	Kernel *string `android:"path"`
+
+	// properties for getting the kernel modules from a zip file.
+	// Useful if the exact list of kernel modules to install isn't known at analysis time.
+	Zip struct {
+		// The zip file. Kernel modules will be looked up under the 16kb/ folder.
+		Src *string `android:"path,arch_variant"`
+
+		// Names of modules that will be removed from the load file.
+		Extra_blocked_modules []string
+	}
 }
 
 func (p *Ramdisk16kImgProperties) resolve(ctx android.ModuleContext) common.Ramdisk16kImgPropertiesJSON {
@@ -50,11 +60,19 @@ func (p *Ramdisk16kImgProperties) resolve(ctx android.ModuleContext) common.Ramd
 	if p.System_dep != nil {
 		system_dep = proptools.StringPtr(android.PathForModuleSrc(ctx, *p.System_dep).String())
 	}
+	var zip *string
+	if p.Zip.Src != nil {
+		zip = proptools.StringPtr(android.PathForModuleSrc(ctx, *p.Zip.Src).String())
+	}
 	return common.Ramdisk16kImgPropertiesJSON{
 		Srcs:       android.PathsForModuleSrc(ctx, p.Srcs).Strings(),
 		System_dep: system_dep,
 		Load:       p.Load,
 		Kernel:     p.Kernel,
+		Zip: common.ZipProperties{
+			Src:                   zip,
+			Extra_blocked_modules: p.Zip.Extra_blocked_modules,
+		},
 	}
 }
 
@@ -72,7 +90,7 @@ func (p *ramdisk16kImg) DepsMutator(ctx android.BottomUpMutatorContext) {
 // Extracts version information from the kernel and packages the .ko modules in
 // a version-specific subdirectory of the .img file.
 func (p *ramdisk16kImg) GenerateAndroidBuildActions(ctx android.ModuleContext) {
-	if len(p.properties.Srcs) == 0 {
+	if len(p.properties.Srcs) == 0 && p.properties.Zip.Src == nil {
 		return
 	}
 	outputDir := android.PathForModuleOut(ctx, "ramdisk_16k")
@@ -114,6 +132,9 @@ func (p *ramdisk16kImg) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	}
 	if p.properties.Kernel != nil {
 		cmd.Implicit(android.PathForModuleSrc(ctx, *p.properties.Kernel))
+	}
+	if p.properties.Zip.Src != nil {
+		cmd.Implicit(android.PathForModuleSrc(ctx, *p.properties.Zip.Src))
 	}
 
 	builder.Build("ramdisk_16k", "ramdisk_16k")

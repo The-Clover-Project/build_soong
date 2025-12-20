@@ -7,9 +7,11 @@ import (
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 )
 
@@ -58,12 +60,16 @@ func main() {
 	modulesDir := filepath.Join(intermediatesDir, "lib", "modules", kernelRelease)
 	must(os.MkdirAll(modulesDir, 0o777))
 
-	// Copy the .ko files and modules.load to a staging directory.
-	// Kernel version is one of the path components of the staging directory.
-	for _, src := range props.Srcs {
-		cp(src, filepath.Join(modulesDir, filepath.Base(src)))
+	if props.Zip.Src != nil {
+		zipLogic(&props, modulesDir)
+	} else {
+		// Copy the .ko files and modules.load to a staging directory.
+		// Kernel version is one of the path components of the staging directory.
+		for _, src := range props.Srcs {
+			cp(src, filepath.Join(modulesDir, filepath.Base(src)))
+		}
+		createLoadFile(&props, filepath.Join(modulesDir, "modules.load"))
 	}
-	createLoadFile(&props, filepath.Join(modulesDir, "modules.load"))
 
 	strip(&props, modulesDir)
 
@@ -114,6 +120,58 @@ func strip(props *common.Ramdisk16kImgPropertiesJSON, modulesDir string) {
 	}
 }
 
+func zipLogic(props *common.Ramdisk16kImgPropertiesJSON, modulesDir string) {
+	f := must2(os.Open(*props.Zip.Src))
+	defer f.Close()
+	reader := must2(zip.NewReader(f, must2(f.Stat()).Size()))
+
+	var loads []string
+
+	processLoadFile := func(file string) {
+		for _, line := range strings.Split(string(readZipFile(reader, file)), "\n") {
+			if line == "" {
+				continue
+			}
+			loads = append(loads, filepath.Base(line))
+		}
+	}
+	processLoadFile("16kb/vendor_kernel_boot.modules.load")
+	processLoadFile("16kb/system_dlkm.modules.load")
+	processLoadFile("16kb/vendor_dlkm.modules.load")
+
+	blocks := make(map[string]struct{})
+	processBlocklistFile := func(file string) {
+		for _, blocked := range strings.Fields(string(readZipFile(reader, file))) {
+			if blocked == "blocklist" {
+				continue
+			}
+			// some entries have .ko, some don't.
+			if !strings.HasSuffix(blocked, ".ko") {
+				blocked += ".ko"
+			}
+			blocks[blocked] = struct{}{}
+			blocks[strings.ReplaceAll(blocked, "_", "-")] = struct{}{}
+		}
+	}
+	processBlocklistFile("16kb/system_dlkm.modules.blocklist")
+	processBlocklistFile("16kb/vendor_dlkm.modules.blocklist")
+
+	var filteredLoads []string
+	for _, load := range loads {
+		if _, ok := blocks[load]; ok {
+			continue
+		}
+		if slices.Contains(props.Zip.Extra_blocked_modules, load) {
+			continue
+		}
+
+		extractZipFile(reader, "16kb/"+load, filepath.Join(modulesDir, load))
+		filteredLoads = append(filteredLoads, load)
+	}
+
+	os.WriteFile(filepath.Join(modulesDir, "modules.load"), []byte(strings.Join(filteredLoads, "\n")+"\n"), 0o666)
+}
+
 func createLoadFile(props *common.Ramdisk16kImgPropertiesJSON, out string) {
 	var loadOrder []string
 	if len(props.Load) > 0 {
@@ -140,6 +198,20 @@ func must2[T any](x T, err error) T {
 		os.Exit(1)
 	}
 	return x
+}
+
+func readZipFile(zipFile *zip.Reader, pathInZip string) []byte {
+	in := must2(zipFile.Open(pathInZip))
+	defer in.Close()
+	return must2(io.ReadAll(in))
+}
+
+func extractZipFile(zipFile *zip.Reader, pathInZip string, outputPath string) {
+	in := must2(zipFile.Open(pathInZip))
+	defer in.Close()
+	out := must2(os.Create(outputPath))
+	defer out.Close()
+	must2(io.Copy(out, in))
 }
 
 func cp(from string, to string) {
