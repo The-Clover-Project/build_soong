@@ -161,7 +161,7 @@ func (pkm *prebuiltKernelModules) KernelVersion() string {
 }
 
 func (pkm *prebuiltKernelModules) DepsMutator(ctx android.BottomUpMutatorContext) {
-	android.AddHostToolDependencies(ctx, "zipsync", "soong_zip")
+	ctx.AddHostToolDependencies("zipsync", "soong_zip")
 }
 
 func (pkm *prebuiltKernelModules) GenerateAndroidBuildActions(ctx android.ModuleContext) {

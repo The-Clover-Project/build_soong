@@ -262,6 +262,10 @@ type BottomUpMutatorContext interface {
 	// This method will pause until the new dependencies have had the current mutator called on them.
 	AddFarVariationDependencies([]blueprint.Variation, blueprint.DependencyTag, ...string) []ModuleProxy
 
+	// Adds dependencies to the Soong defined host tool modules. This should be called
+	// to utilize the tool in [RuleBuilderCommand.BuiltTool].
+	AddHostToolDependencies(...string)
+
 	// ReplaceDependencies finds all the variants of the module with the specified name, then
 	// replaces all dependencies onto those variants with the current variant of this module.
 	// Replacements don't take effect until after the mutator pass is finished.  May only
@@ -571,6 +575,10 @@ func (b *bottomUpMutatorContext) AddFarVariationDependencies(variations []bluepr
 	}
 
 	return bpModuleProxiesToModuleProxies(b.bp.AddFarVariationDependencies(variations, tag, names...))
+}
+
+func (b *bottomUpMutatorContext) AddHostToolDependencies(tools ...string) {
+	b.AddFarVariationDependencies(b.Config().BuildOSTarget.Variations(), HostToolDepTag, tools...)
 }
 
 func (b *bottomUpMutatorContext) ReplaceDependencies(name string) {
