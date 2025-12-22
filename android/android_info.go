@@ -24,13 +24,14 @@ import (
 var (
 	removeComments = pctx.AndroidStaticRule("remove_comments",
 		blueprint.RuleParams{
-			Command2: blueprint.NewCommand(Grep, " -v '#' $in > $out"),
+			Command:     "${Grep} -v '#' $in > $out",
+			CommandDeps: []string{"Grep-deps"},
 		},
 	)
 	androidInfoTxtToProp = pctx.AndroidStaticRule("android_info_txt_to_prop",
 		blueprint.RuleParams{
-			Command2: blueprint.NewCommand(
-				Grep, ` 'require version-' $in | `, Sed, ` -e 's/require version-/ro.build.expect./g' > $out`),
+			Command:     "${Grep} 'require version-' $in | ${Sed} -e 's/require version-/ro.build.expect./g' > $out",
+			CommandDeps: []string{"Grep-deps", "Sed-deps"},
 		},
 	)
 )

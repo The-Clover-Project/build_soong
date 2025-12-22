@@ -2,6 +2,9 @@ package android
 
 import (
 	"fmt"
+
+	"github.com/google/blueprint"
+	"github.com/google/blueprint/proptools"
 )
 
 func init() {
@@ -32,6 +35,11 @@ func removedPackageModuleFactory() Module {
 	return m
 }
 
+var removedPackageRule = pctx.AndroidStaticRule("removed_package", blueprint.RuleParams{
+	Command:     "${Echo} $message && false",
+	CommandDeps: []string{"Echo-deps"},
+}, "message")
+
 func (m *removedPackageModule) GenerateAndroidBuildActions(ctx ModuleContext) {
 	// Unchecked module so that checkbuild doesn't fail
 	ctx.UncheckedModule()
@@ -41,7 +49,13 @@ func (m *removedPackageModule) GenerateAndroidBuildActions(ctx ModuleContext) {
 	if m.properties.Message != nil {
 		message = *m.properties.Message
 	}
-	ErrorRule(ctx, out, message)
+	ctx.Build(pctx, BuildParams{
+		Rule:   removedPackageRule,
+		Output: out,
+		Args: map[string]string{
+			"message": proptools.ShellEscape(message),
+		},
+	})
 
 	ctx.InstallFile(PathForModuleInstall(ctx, "removed_module"), ctx.ModuleName(), out)
 }
