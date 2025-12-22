@@ -14,7 +14,8 @@
 package java
 
 import (
-	"strconv"
+	"fmt"
+	"strings"
 
 	"android/soong/aconfig"
 	"android/soong/android"
@@ -41,22 +42,6 @@ var ravenwoodUtilsTag = dependencyTag{name: "ravenwoodutils"}
 var ravenwoodRuntimeTag = dependencyTag{name: "ravenwoodruntime"}
 var ravenwoodTargetResourceApkTag = dependencyTag{name: "ravenwood-target-res-apk"}
 var allAconfigModuleTag = dependencyTag{name: "all_aconfig"}
-
-var genManifestProperties = pctx.AndroidStaticRule("genManifestProperties",
-	blueprint.RuleParams{
-		Command: "${android.Echo} targetSdkVersionInt=$targetSdkVersionInt > $out && " +
-			"${android.Echo} targetSdkVersionRaw=$targetSdkVersionRaw >> $out && " +
-			"${android.Echo} packageName=$packageName >> $out && " +
-			"${android.Echo} targetPackageName=$targetPackageName >> $out && " +
-			"${android.Echo} instrumentationClass=$instrumentationClass >> $out && " +
-			"${android.Echo} moduleName=$moduleName >> $out && " +
-			"${android.Echo} resourceApk=$resourceApk >> $out && " +
-			"${android.Echo} targetResourceApk=$targetResourceApk >> $out",
-		CommandDeps: []string{"Echo-deps"},
-	},
-	"targetSdkVersionInt", "targetSdkVersionRaw", "packageName", "targetPackageName",
-	"instrumentationClass", "moduleName", "resourceApk", "targetResourceApk",
-)
 
 const ravenwoodUtilsName = "ravenwood-utils"
 const ravenwoodRuntimeName = "ravenwood-runtime"
@@ -305,21 +290,22 @@ func (r *ravenwoodTest) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	packageName := r.aapt.aaptProperties.Package_name.GetOrDefault(ctx, "")
 	targetPackageName := proptools.StringDefault(r.ravenwoodTestProperties.Target_package_name, "")
 	instClassName := proptools.StringDefault(r.ravenwoodTestProperties.Instrumentation_class, "")
-	ctx.Build(pctx, android.BuildParams{
-		Rule:        genManifestProperties,
-		Description: "genManifestProperties",
-		Output:      propertiesOutputPath,
-		Args: map[string]string{
-			"targetSdkVersionInt":  strconv.Itoa(targetSdkVersionInt),
-			"targetSdkVersionRaw":  targetSdkVersion,
-			"packageName":          packageName,
-			"targetPackageName":    targetPackageName,
-			"instrumentationClass": instClassName,
-			"moduleName":           ctx.ModuleName(),
-			"resourceApk":          resApkName,
-			"targetResourceApk":    targetResApkName,
-		},
-	})
+
+	propertiesContents := fmt.Sprintf(`
+targetSdkVersionInt=%d
+targetSdkVersionRaw=%s
+packageName=%s
+targetPackageName=%s
+instrumentationClass=%s
+moduleName=%s
+resourceApk=%s
+targetResourceApk=%s
+`, targetSdkVersionInt, targetSdkVersion, packageName, targetPackageName, instClassName, ctx.ModuleName(), resApkName, targetResApkName)
+
+	propertiesContents = strings.TrimPrefix(propertiesContents, "\n")
+
+	android.WriteFileRule(ctx, propertiesOutputPath, propertiesContents)
+
 	installProps := ctx.InstallFile(installPath, "ravenwood.properties", propertiesOutputPath)
 	installDeps = append(installDeps, installProps)
 

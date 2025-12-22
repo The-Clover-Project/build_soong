@@ -2640,13 +2640,18 @@ func (m *ModuleBase) GenerateBuildActions(blueprintCtx blueprint.ModuleContext) 
 		})
 	}
 
-	// I don't know of a better way to check if this is the BuildOs variation than by comparing
-	// strings like this.
+	myTarget := ctx.Target()
+	myVariations := ctx.Target().Variations()
+	hasCovVariation := slices.ContainsFunc(myVariations, func(v blueprint.Variation) bool { return v.Mutator == "coverage" })
 	if htp, ok := m.module.(HostToolProvider); ok &&
 		m.Enabled(ctx) &&
 		ctx.requiresFullInstall() &&
-		(ctx.ModuleSubDir() == ctx.Config().BuildOSTarget.String() ||
-			ctx.ModuleSubDir() == ctx.Config().BuildOSCommonTarget.String()) {
+		myTarget.OsVariation() == ctx.Config().BuildOSTarget.OsVariation() &&
+		(myTarget.ArchVariation() == ctx.Config().BuildOSTarget.ArchVariation() || myTarget.ArchVariation() == ctx.Config().BuildOSCommonTarget.ArchVariation()) &&
+		// Only accept an exact match, or the coverage variation. On coverage builds,
+		// the coverage varition of host tools is what's installed. (but that should be fixed,
+		// as it makes coverage builds a lot slower)
+		(len(myVariations) == 2 || len(myVariations) == 3 && hasCovVariation) {
 
 		// This is kindof a hack, but in order to only process host tools, check if this module
 		// produces a binary with the same name as its module in out/host/linux-x86/bin

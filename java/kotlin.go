@@ -33,12 +33,12 @@ type KotlinCompileData struct {
 }
 
 const inputDeltaCmd = `${config.FindInputDeltaCmd} ` +
-        `--target "$out" ` +
+	`--target "$out" ` +
 	`--inputs_file "$out.rsp" ` +
 	`--new_state "$newStateFile" ` +
 	`--prior_state "$priorStateFile" ` +
 	`--inspect $srcJars ` +
-	`--version 2 `+
+	`--version 2 ` +
 	`> $sourceDeltaFile`
 
 const kotlinZipSyncCmd = `mkdir -p $srcJarDir && ` +
@@ -197,8 +197,8 @@ var kotlinKytheExtract = pctx.AndroidStaticRule("kotlinKythe",
 
 var kotlinIncrementalClean = pctx.AndroidStaticRule("kotlin-partialcompileclean",
 	blueprint.RuleParams{
-		Command:     `${android.Rm} -rf "$cpSnapshot" "$outDir" "$buildDir" "$workDir"`,
-		CommandDeps: []string{"Rm-deps"},
+		Command2: blueprint.NewCommand(
+			android.Rm, ` -rf "$cpSnapshot" "$outDir" "$buildDir" "$workDir"`),
 	},
 	"cpSnapshot", "outDir", "buildDir", "workDir",
 )
@@ -452,8 +452,7 @@ func getAssociateJars(ctx android.ModuleContext, associates []string) android.Pa
 
 var kspIncrementalClean = pctx.AndroidStaticRule("ksp-partialcompileclean",
 	blueprint.RuleParams{
-		Command:     `${android.Rm} -rf "$kspDir/out/caches"`,
-		CommandDeps: []string{"Rm-deps"},
+		Command2: blueprint.NewCommand(android.Rm, ` -rf "$kspDir/out/caches"`),
 	},
 	"kspDir")
 
