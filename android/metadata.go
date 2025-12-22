@@ -99,8 +99,8 @@ func (c *metadataSingleton) GenerateBuildActions(ctx SingletonContext) {
 	metadataDbPath := PathForOutput(ctx, "metadata", "metadata.db")
 	dbRb := NewRuleBuilder(metadataPctx, ctx)
 
-	// Get the path to the metadata_db_loader executable
-	loaderPath := ctx.Config().HostToolPath(ctx, "metadata_db_loader")
+	// Get the path to the soong_api_db_loader executable
+	loaderPath := ctx.Config().HostToolPath(ctx, "soong_api_db_loader")
 
 	// Build the command: <path_to_loader_script> -i <input> -o <output>
 	dbRb.Command().
