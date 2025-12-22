@@ -139,15 +139,15 @@ func writeFileRule(ctx BuilderContext, outputFile WritablePath, content string, 
 var (
 	rawFileCopy = pctx.AndroidStaticRule("rawFileCopy",
 		blueprint.RuleParams{
-			Command:     "if ! ${Cmp} -s $in $out; then ${Cp} $in $out; fi",
-			CommandDeps: []string{"Cmp-deps", "Cp-deps"},
+			Command2: blueprint.NewCommand(
+				"if ! ", Cmp, " -s $in $out; then ", Cp, " $in $out; fi"),
 			Description: "copy raw file $out",
 			Restat:      true,
 		})
 	rawFileCopyExecutable = pctx.AndroidStaticRule("rawFileCopyExecutable",
 		blueprint.RuleParams{
-			Command:     "if ! ${Cmp} -s $in $out; then ${Cp} $in $out; fi && ${Chmod} +x $out",
-			CommandDeps: []string{"Cmp-deps", "Cp-deps", "Chmod-deps"},
+			Command2: blueprint.NewCommand(
+				"if ! ", Cmp, " -s $in $out; then ", Cp, " $in $out; fi && ", Chmod, " +x $out"),
 			Description: "copy raw exectuable file $out",
 			Restat:      true,
 		})

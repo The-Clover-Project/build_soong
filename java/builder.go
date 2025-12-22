@@ -62,8 +62,9 @@ var (
 	// Removes all outputs of inc-javac rule
 	javacIncClean = pctx.AndroidStaticRule("javac-inc-partialcompileclean",
 		blueprint.RuleParams{
-			Command:     `${android.Rm} -rf "${srcJarDir}" "${outDir}" "${annoDir}" "${annoSrcJar}" "${builtOut}"`,
-			CommandDeps: []string{"Rm-deps"},
+			Command2: blueprint.NewCommand(
+				android.Rm, ` -rf "${srcJarDir}" "${outDir}" "${annoDir}" "${annoSrcJar}" "${builtOut}"`,
+			),
 		}, "srcJarDir", "outDir", "annoDir", "annoSrcJar", "builtOut",
 	)
 
@@ -427,13 +428,14 @@ var (
 
 	writeCombinedProguardFlagsFileRule = pctx.AndroidStaticRule("writeCombinedProguardFlagsFileRule",
 		blueprint.RuleParams{
-			Command: `${android.Rm} -f $out && ` +
-				`for f in $in; do ` +
-				` ${android.Echo}  && ` +
-				` ${android.Echo} "# including $$f" && ` +
-				` ${android.Cat} $$f; ` +
+			Command2: blueprint.NewCommand(
+				android.Rm, ` -f $out && `,
+				`for f in $in; do `,
+				android.Echo, ` && `,
+				android.Echo, ` "# including $$f" && `,
+				android.Cat, ` $$f; `,
 				`done > $out`,
-			CommandDeps: []string{"Rm-deps", "Echo-deps", "Cat-deps"},
+			),
 		})
 
 	gatherReleasedFlaggedApisRule = pctx.AndroidStaticRule("gatherReleasedFlaggedApisRule",
