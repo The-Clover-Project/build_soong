@@ -25,54 +25,60 @@ import (
 )
 
 var (
-	pctx = android.NewPackageContext("android/soong/python")
+	pctx      = android.NewPackageContext("android/soong/python")
+	soongZip  = android.SoongZip
+	mergeZips = android.MergeZips
+	sed       = android.Sed
+	echo      = android.Echo
+	chmod     = android.Chmod
+	rm        = android.Rm
+	dirname   = android.Dirname
 
 	zip = pctx.AndroidStaticRule("zip",
 		blueprint.RuleParams{
-			Command:         `$parCmd -o $out $args`,
-			CommandDeps:     []string{"$parCmd"},
-			SandboxDisabled: true,
+			Command2: blueprint.NewCommand(soongZip, " -o $out $args"),
 		},
 		"args")
 
 	combineZip = pctx.AndroidStaticRule("combineZip",
 		blueprint.RuleParams{
-			Command:         `$mergeParCmd $out $in`,
-			CommandDeps:     []string{"$mergeParCmd"},
-			SandboxDisabled: true,
+			Command2: blueprint.NewCommand(mergeZips, " $out $in"),
 		},
 	)
 
 	hostPar = pctx.AndroidStaticRule("hostPar",
 		blueprint.RuleParams{
-			Command: `sed -e 's/%interpreter%/$interp/g' -e 's/%main%/__soong_entrypoint_redirector__.py/g' build/soong/python/scripts/stub_template_host.txt > $out.main && ` +
-				"sed -e 's/ENTRY_POINT/$main/g' build/soong/python/scripts/main_non_embedded.py >`dirname $out`/__soong_entrypoint_redirector__.py && " +
-				"$parCmd -o $out.entrypoint_zip -C `dirname $out` -f `dirname $out`/__soong_entrypoint_redirector__.py && " +
-				`echo "#!/usr/bin/env $interp" >${out}.prefix &&` +
-				`$mergeParCmd -p --prefix ${out}.prefix -pm $out.main $out $srcsZips $out.entrypoint_zip && ` +
-				"chmod +x $out && (rm -f $out.main; rm -f ${out}.prefix; rm -f $out.entrypoint_zip; rm -f `dirname $out`/__soong_entrypoint_redirector__.py)",
-			CommandDeps:     []string{"$mergeParCmd", "$parCmd", "build/soong/python/scripts/stub_template_host.txt", "build/soong/python/scripts/main_non_embedded.py"},
-			SandboxDisabled: true,
+			Command2: blueprint.NewCommand(
+				sed, ` -e 's/%interpreter%/$interp/g' -e 's/%main%/__soong_entrypoint_redirector__.py/g' build/soong/python/scripts/stub_template_host.txt > $out.main && `,
+				sed, " -e 's/ENTRY_POINT/$main/g' build/soong/python/scripts/main_non_embedded.py >`", dirname, " $out`/__soong_entrypoint_redirector__.py && ",
+				soongZip, " -o $out.entrypoint_zip -C `", dirname, " $out` -f `", dirname, " $out`/__soong_entrypoint_redirector__.py && ",
+				echo, ` "#!/usr/bin/env $interp" >${out}.prefix &&`,
+				mergeZips, ` -p --prefix ${out}.prefix -pm $out.main $out $srcsZips $out.entrypoint_zip && `,
+				chmod, " +x $out && ", rm, " -f $out.main ${out}.prefix $out.entrypoint_zip `", dirname, " $out`/__soong_entrypoint_redirector__.py",
+			),
+			CommandDeps: []string{"build/soong/python/scripts/stub_template_host.txt", "build/soong/python/scripts/main_non_embedded.py"},
 		},
 		"interp", "main", "srcsZips")
 
 	embeddedPar = pctx.AndroidStaticRule("embeddedPar",
 		blueprint.RuleParams{
-			Command: `rm -f $out.main && ` +
-				`sed 's/ENTRY_POINT/$main/' build/soong/python/scripts/main.py >$out.main &&` +
-				`$mergeParCmd -p -pm $out.main --prefix $launcher $out $srcsZips && ` +
-				`chmod +x $out && rm -rf $out.main`,
-			CommandDeps:     []string{"$mergeParCmd", "build/soong/python/scripts/main.py"},
-			SandboxDisabled: true,
+			Command2: blueprint.NewCommand(
+				rm, ` -f $out.main && `,
+				sed, ` 's/ENTRY_POINT/$main/' build/soong/python/scripts/main.py >$out.main && `,
+				mergeZips, ` -p -pm $out.main --prefix $launcher $out $srcsZips && `,
+				chmod, ` +x $out && `,
+				rm, ` -rf $out.main`,
+			),
+			CommandDeps: []string{"build/soong/python/scripts/main.py"},
 		},
 		"main", "srcsZips", "launcher")
 
 	embeddedParNoMain = pctx.AndroidStaticRule("embeddedParNoMain",
 		blueprint.RuleParams{
-			Command: `$mergeParCmd -p --prefix $launcher $out $srcsZips && ` +
-				`chmod +x $out`,
-			CommandDeps:     []string{"$mergeParCmd"},
-			SandboxDisabled: true,
+			Command2: blueprint.NewCommand(
+				mergeZips, " -p --prefix $launcher $out $srcsZips && ",
+				chmod, " +x $out",
+			),
 		},
 		"srcsZips", "launcher")
 
@@ -91,9 +97,6 @@ var (
 
 func init() {
 	pctx.Import("android/soong/android")
-
-	pctx.HostBinToolVariable("parCmd", "soong_zip")
-	pctx.HostBinToolVariable("mergeParCmd", "merge_zips")
 }
 
 func registerBuildActionForParFile(ctx android.ModuleContext, embeddedLauncher bool,
