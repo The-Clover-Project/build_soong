@@ -26,36 +26,39 @@ import (
 // It also optionally validates the xml file against the schema.
 
 var (
-	pctx    = android.NewPackageContext("android/soong/xml")
-	xmlLint = pctx.HostTool("xmllint")
+	pctx = android.NewPackageContext("android/soong/xml")
 
 	xmllintDtd = pctx.AndroidStaticRule("xmllint-dtd",
 		blueprint.RuleParams{
-			Command2: blueprint.NewCommand(
-				xmlLint, ` --dtdvalid $dtd $in > /dev/null && `, android.Touch, ` -a $out`),
-			Restat: true,
+			Command:         `$XmlLintCmd --dtdvalid $dtd $in > /dev/null && ${android.Touch} -a $out`,
+			CommandDeps:     []string{"$XmlLintCmd", "Touch-deps"},
+			Restat:          true,
+			SandboxDisabled: true,
 		},
 		"dtd")
 
 	xmllintXsd = pctx.AndroidStaticRule("xmllint-xsd",
 		blueprint.RuleParams{
-			Command2: blueprint.NewCommand(
-				xmlLint, ` --schema $xsd $in > /dev/null && `, android.Touch, ` -a $out`),
-			Restat: true,
+			Command:         `$XmlLintCmd --schema $xsd $in > /dev/null && ${android.Touch} -a $out`,
+			CommandDeps:     []string{"$XmlLintCmd", "Touch-deps"},
+			Restat:          true,
+			SandboxDisabled: true,
 		},
 		"xsd")
 
 	xmllintMinimal = pctx.AndroidStaticRule("xmllint-minimal",
 		blueprint.RuleParams{
-			Command2: blueprint.NewCommand(
-				xmlLint, ` $in > /dev/null && `, android.Touch, ` -a $out`),
-			Restat: true,
+			Command:         `$XmlLintCmd $in > /dev/null && ${android.Touch} -a $out`,
+			CommandDeps:     []string{"$XmlLintCmd", "Touch-deps"},
+			Restat:          true,
+			SandboxDisabled: true,
 		})
 )
 
 func init() {
 	pctx.Import("android/soong/android")
 	registerXmlBuildComponents(android.InitRegistrationContext)
+	pctx.HostBinToolVariable("XmlLintCmd", "xmllint")
 }
 
 func registerXmlBuildComponents(ctx android.RegistrationContext) {
