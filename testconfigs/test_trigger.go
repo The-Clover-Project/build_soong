@@ -44,6 +44,9 @@ type TestTriggerProperties struct {
 	// The list of test workflows that are queued for testing when this configuration is triggered.
 	Test_workflows []string
 
+	// Owners metadata
+	Owners Owners
+
 	// If Test_workflows is unset, check for simple scheduling plan and included test use case.
 	TestTriggerInlineProperties
 }

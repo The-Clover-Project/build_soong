@@ -8,6 +8,47 @@ import (
 	"github.com/google/blueprint/proptools"
 )
 
+// begin of owners.go
+func init() {
+	OwnersGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(Owners) })
+}
+
+func (r Owners) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = gobtools.EncodeString(buf, r.Team); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r Owners) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":testconfigs.Owners")
+	hasher.WriteInt(1)
+	hasher.WriteString(":.string")
+	hasher.WriteString(r.Team)
+	return nil
+}
+
+func (r *Owners) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	err = gobtools.DecodeString(buf, &r.Team)
+	if err != nil {
+		return err
+	}
+
+	return err
+}
+
+var OwnersGobRegId int16
+
+func (r Owners) GetTypeId() int16 {
+	return OwnersGobRegId
+}
+
+// end of owners.go
+
 // begin of test_execution_plan.go
 func init() {
 	TestExecutionPlanPropertiesGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(TestExecutionPlanProperties) })
@@ -125,21 +166,6 @@ func (r TestExecutionPlanProperties) GetTypeId() int16 {
 func (r TestExecutionPlanMetadataProperties) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	var err error
 
-	if r.Owners == nil {
-		if err = gobtools.EncodeInt(buf, -1); err != nil {
-			return err
-		}
-	} else {
-		if err = gobtools.EncodeInt(buf, len(r.Owners)); err != nil {
-			return err
-		}
-		for val1 := 0; val1 < len(r.Owners); val1++ {
-			if err = gobtools.EncodeString(buf, r.Owners[val1]); err != nil {
-				return err
-			}
-		}
-	}
-
 	if r.Code_under_test == nil {
 		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
@@ -148,8 +174,8 @@ func (r TestExecutionPlanMetadataProperties) Encode(ctx gobtools.EncContext, buf
 		if err = gobtools.EncodeInt(buf, len(r.Code_under_test)); err != nil {
 			return err
 		}
-		for val2 := 0; val2 < len(r.Code_under_test); val2++ {
-			if err = gobtools.EncodeString(buf, r.Code_under_test[val2]); err != nil {
+		for val1 := 0; val1 < len(r.Code_under_test); val1++ {
+			if err = gobtools.EncodeString(buf, r.Code_under_test[val1]); err != nil {
 				return err
 			}
 		}
@@ -159,18 +185,12 @@ func (r TestExecutionPlanMetadataProperties) Encode(ctx gobtools.EncContext, buf
 
 func (r TestExecutionPlanMetadataProperties) CustomHash(hasher *proptools.Hasher) error {
 	hasher.WriteString(":testconfigs.TestExecutionPlanMetadataProperties")
-	hasher.WriteInt(2)
-	hasher.WriteString(":.[]string")
-	hasher.WriteInt(len(r.Owners))
-	for val1 := 0; val1 < len(r.Owners); val1++ {
-		hasher.WriteString(":.string")
-		hasher.WriteString(r.Owners[val1])
-	}
+	hasher.WriteInt(1)
 	hasher.WriteString(":.[]string")
 	hasher.WriteInt(len(r.Code_under_test))
-	for val2 := 0; val2 < len(r.Code_under_test); val2++ {
+	for val1 := 0; val1 < len(r.Code_under_test); val1++ {
 		hasher.WriteString(":.string")
-		hasher.WriteString(r.Code_under_test[val2])
+		hasher.WriteString(r.Code_under_test[val1])
 	}
 	return nil
 }
@@ -184,24 +204,9 @@ func (r *TestExecutionPlanMetadataProperties) Decode(ctx gobtools.EncContext, bu
 		return err
 	}
 	if val2 != -1 {
-		r.Owners = make([]string, val2)
+		r.Code_under_test = make([]string, val2)
 		for val3 := 0; val3 < int(val2); val3++ {
-			err = gobtools.DecodeString(buf, &r.Owners[val3])
-			if err != nil {
-				return err
-			}
-		}
-	}
-
-	var val6 int
-	err = gobtools.DecodeInt(buf, &val6)
-	if err != nil {
-		return err
-	}
-	if val6 != -1 {
-		r.Code_under_test = make([]string, val6)
-		for val7 := 0; val7 < int(val6); val7++ {
-			err = gobtools.DecodeString(buf, &r.Code_under_test[val7])
+			err = gobtools.DecodeString(buf, &r.Code_under_test[val3])
 			if err != nil {
 				return err
 			}
@@ -573,6 +578,10 @@ func (r TestTriggerProperties) Encode(ctx gobtools.EncContext, buf *bytes.Buffer
 		}
 	}
 
+	if err = r.Owners.Encode(ctx, buf); err != nil {
+		return err
+	}
+
 	if err = r.TestTriggerInlineProperties.Encode(ctx, buf); err != nil {
 		return err
 	}
@@ -581,7 +590,7 @@ func (r TestTriggerProperties) Encode(ctx gobtools.EncContext, buf *bytes.Buffer
 
 func (r TestTriggerProperties) CustomHash(hasher *proptools.Hasher) error {
 	hasher.WriteString(":testconfigs.TestTriggerProperties")
-	hasher.WriteInt(4)
+	hasher.WriteInt(5)
 	hasher.WriteString(":.[]string")
 	hasher.WriteInt(len(r.Imports))
 	for val1 := 0; val1 < len(r.Imports); val1++ {
@@ -599,6 +608,9 @@ func (r TestTriggerProperties) CustomHash(hasher *proptools.Hasher) error {
 	for val3 := 0; val3 < len(r.Test_workflows); val3++ {
 		hasher.WriteString(":.string")
 		hasher.WriteString(r.Test_workflows[val3])
+	}
+	if err := r.Owners.CustomHash(hasher); err != nil {
+		return err
 	}
 	if err := r.TestTriggerInlineProperties.CustomHash(hasher); err != nil {
 		return err
@@ -652,6 +664,10 @@ func (r *TestTriggerProperties) Decode(ctx gobtools.EncContext, buf *bytes.Reade
 				return err
 			}
 		}
+	}
+
+	if err = r.Owners.Decode(ctx, buf); err != nil {
+		return err
 	}
 
 	if err = r.TestTriggerInlineProperties.Decode(ctx, buf); err != nil {
