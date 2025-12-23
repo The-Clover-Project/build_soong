@@ -90,6 +90,7 @@ func (t *testSuiteFiles) GenerateBuildActions(ctx android.SingletonContext) {
 		"automotive-tests",
 		"automotive-general-tests",
 		"automotive-sdv-tests",
+		"chdts",
 	}
 
 	ctx.VisitAllModuleProxies(func(m android.ModuleProxy) {
