@@ -163,9 +163,9 @@ var (
 			Description: "concatenate sorted file contents to $out",
 		})
 
-	MergeZips = pctx.AndroidStaticRule("MergeZips",
+	MergeZipsRule = pctx.AndroidStaticRule("MergeZips",
 		blueprint.RuleParams{
-			Command2:        blueprint.NewCommand(mergeZips, " -s $out $in"),
+			Command2:        blueprint.NewCommand(MergeZips, " -s $out $in"),
 			SandboxDisabled: true,
 		})
 
@@ -274,7 +274,8 @@ var (
 
 	depfileVerifier = pctx.HostTool("depfile_verifier")
 	assembleVintf   = pctx.HostTool("assemble_vintf")
-	mergeZips       = pctx.HostTool("merge_zips")
+	SoongZip        = pctx.HostTool("soong_zip")
+	MergeZips       = pctx.HostTool("merge_zips")
 )
 
 var commonToyboxSymlinks = []string{
