@@ -3681,10 +3681,10 @@ type IdeInfo struct {
 	Manifest          string          `json:"manifest,omitempty"`
 	PackageName       string          `json:"package_name,omitempty"`
 	Aconfig           *AconfigIdeInfo `json:"aconfig,omitempty"`
+	Proto             *ProtoIdeInfo   `json:"proto,omitempty"`
 	Deps              []string        `json:"dependencies,omitempty"`
 	Srcs              []string        `json:"srcs,omitempty"`
 	Aidl_srcs         []string        `json:"aidl_srcs,omitempty"`
-	Proto_srcs        []string        `json:"proto_srcs,omitempty"`
 	Aidl_include_dirs []string        `json:"aidl_include_dirs,omitempty"`
 	Jarjar_rules      []string        `json:"jarjar_rules,omitempty"`
 	Jars              []string        `json:"jars,omitempty"`
@@ -3708,6 +3708,14 @@ type AconfigIdeInfo struct {
 	Container string   `json:"container,omitempty"`
 }
 
+// @auto-generate: gob
+type ProtoIdeInfo struct {
+	Srcs                  []string `json:"srcs,omitempty"`
+	Type                  string   `json:"type,omitempty"`
+	CanonicalPathFromRoot *bool    `json:"canonical_path_from_root,omitempty"`
+	LocalIncludeDirs      []string `json:"local_include_dirs,omitempty"`
+}
+
 // Merge merges two IdeInfos and produces a new one, leaving the original unchanged
 func (i IdeInfo) Merge(other *IdeInfo) IdeInfo {
 	return IdeInfo{
@@ -3715,10 +3723,10 @@ func (i IdeInfo) Merge(other *IdeInfo) IdeInfo {
 		Manifest:          mergeString(i.Manifest, other.Manifest),
 		PackageName:       mergeString(i.PackageName, other.PackageName),
 		Aconfig:           i.Aconfig.merge(other.Aconfig),
+		Proto:             i.Proto.merge(other.Proto),
 		Deps:              mergeStringLists(i.Deps, other.Deps),
 		Srcs:              mergeStringLists(i.Srcs, other.Srcs),
 		Aidl_srcs:         mergeStringLists(i.Aidl_srcs, other.Aidl_srcs),
-		Proto_srcs:        mergeStringLists(i.Proto_srcs, other.Proto_srcs),
 		Aidl_include_dirs: mergeStringLists(i.Aidl_include_dirs, other.Aidl_include_dirs),
 		Jarjar_rules:      mergeStringLists(i.Jarjar_rules, other.Jarjar_rules),
 		Jars:              mergeStringLists(i.Jars, other.Jars),
@@ -3751,9 +3759,33 @@ func (i *AconfigIdeInfo) merge(other *AconfigIdeInfo) *AconfigIdeInfo {
 	}
 }
 
+// Merge merges two ProtoIdeInfos and produces a new one, leaving the original unchanged
+func (i *ProtoIdeInfo) merge(other *ProtoIdeInfo) *ProtoIdeInfo {
+	if other == nil {
+		return i
+	}
+	if i == nil {
+		return other
+	}
+	return &ProtoIdeInfo{
+		Srcs:                  mergeStringLists(i.Srcs, other.Srcs),
+		CanonicalPathFromRoot: mergeBool(i.CanonicalPathFromRoot, other.CanonicalPathFromRoot),
+		Type:                  mergeString(i.Type, other.Type),
+		LocalIncludeDirs:      mergeStringLists(i.LocalIncludeDirs, other.LocalIncludeDirs),
+	}
+}
+
 // mergeString returns the first non-empty string.
 func mergeString(a, b string) string {
 	if a != "" {
+		return a
+	}
+	return b
+}
+
+// mergeBool returns the first non-nil *bool.
+func mergeBool(a, b *bool) *bool {
+	if a != nil {
 		return a
 	}
 	return b
