@@ -63,7 +63,6 @@ var allowedPluginsByName = map[string]bool{
 	"soong-robolectric":                      true,
 	"soong-sdv_binary_pdk":                   true,
 	"soong-selinux":                          true,
-	"soong-wayland-protocol-codegen":         true,
 	"treble_report_app":                      true,
 	"treble_report_local":                    true,
 	"treble_report_module":                   true,
