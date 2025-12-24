@@ -223,7 +223,7 @@ func BuildJacocoZipWithPotentialDeviceTests(ctx android.ModuleContext, modules [
 	jacocoZipWithoutDeviceTests := android.PathForModuleOut(ctx, "temp-jacoco-report-classes-all-without-device-tests.jar")
 	BuildJacocoZip(ctx, modules, jacocoZipWithoutDeviceTests)
 	ctx.Build(pctx, android.BuildParams{
-		Rule:   android.MergeZips,
+		Rule:   android.MergeZipsRule,
 		Output: outputFile,
 		Inputs: []android.Path{
 			jacocoZipWithoutDeviceTests,

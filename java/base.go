@@ -2592,7 +2592,14 @@ func (j *Module) IDEInfo(ctx android.BaseModuleContext, dpInfo *android.IdeInfo)
 	}
 	dpInfo.Srcs = append(dpInfo.Srcs, j.expandIDEInfoCompiledSrcs...)
 	dpInfo.Aidl_srcs = append(dpInfo.Aidl_srcs, j.aidlSrcs.Strings()...)
-	dpInfo.Proto_srcs = append(dpInfo.Proto_srcs, j.protoSrcs.Strings()...)
+	if len(j.protoSrcs) > 0 {
+		dpInfo.Proto = &android.ProtoIdeInfo{
+			Srcs:                  j.protoSrcs.Strings(),
+			Type:                  proptools.String(j.protoProperties.Proto.Type),
+			CanonicalPathFromRoot: j.protoProperties.Proto.Canonical_path_from_root,
+			LocalIncludeDirs:      j.protoProperties.Proto.Local_include_dirs,
+		}
+	}
 	dpInfo.SrcJars = append(dpInfo.SrcJars, j.compiledSrcJars.Strings()...)
 	dpInfo.SrcJars = append(dpInfo.SrcJars, j.annoSrcJars.Strings()...)
 	dpInfo.Deps = append(dpInfo.Deps, j.CompilerDeps()...)

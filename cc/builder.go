@@ -219,13 +219,6 @@ var (
 		},
 		"objects")
 
-	// Rule to create an empty file at a given path.
-	emptyFile = pctx.AndroidStaticRule("emptyFile",
-		blueprint.RuleParams{
-			Command:     "${android.Rm} -f $out && ${android.Touch} $out",
-			CommandDeps: []string{"Rm-deps", "Touch-deps"},
-		})
-
 	_ = pctx.SourcePathVariable("tocPath", "build/soong/scripts/toc.sh")
 
 	// A rule for extracting a table of contents from a shared library (.so).
