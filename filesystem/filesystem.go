@@ -456,7 +456,7 @@ func (f *filesystem) DepsMutator(ctx android.BottomUpMutatorContext) {
 	for _, partition := range f.properties.Include_files_of {
 		ctx.AddDependency(ctx.Module(), interPartitionInstallDependencyTag, partition)
 	}
-	// TODO: remove this once android_system_image_prebuilt is fully implemented.
+	// TODO: remove this once android_filesystem_prebuilt is fully implemented.
 	if f.properties.Prebuilt_module_name != nil {
 		ctx.AddDependency(ctx.Module(), android.PrebuiltDepTag, proptools.String(f.properties.Prebuilt_module_name))
 	}
