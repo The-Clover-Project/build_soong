@@ -53,6 +53,8 @@ message TestTrigger {
     // A single inline workflow to be ran by this test_trigger.
     TestWorkflowInline inline = 6;
   }
+  // Ownership information for the test trigger.
+  Owners owners = 7;
 }
 
 // TestWorkflow bundles a scheduling plan with an execution plan
@@ -109,8 +111,8 @@ message TestExecutionPlan {
 // TestExecutionMetadata contains extra information about the
 // configuration that is not directly related to its execution.
 message TestExecutionMetadata {
-  // The owners of the test execution plan.
-  repeated string owners = 1;
+  // [deprecated = true] indicates that the field is deprecated and will eventually be removed.
+  repeated string owners = 1 [deprecated = true]; // Deprecated: Use `Owners` message instead.
   // The self-reported code under test.
   // Purposed for coverage reporting.
   repeated string code_under_test = 2;
@@ -137,4 +139,10 @@ message KeyValue {
   string key = 1;
   // Value of the argument.
   string value = 2;
+}
+
+// Owners details the ownership information.
+message Owners {
+  // The trendy team that owns the component.
+  string team = 1;
 }

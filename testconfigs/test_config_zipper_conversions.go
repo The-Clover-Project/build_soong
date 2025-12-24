@@ -64,7 +64,6 @@ func (zipper *TestConfigZipper) convertTestExecutionPlan(name string, plan *Test
 		Tests:    tests,
 		TestArgs: convertArgsToKeyValue(plan.Args),
 		Metadata: &protos.TestExecutionMetadata{
-			Owners:        plan.Owners,
 			CodeUnderTest: plan.Code_under_test,
 		},
 	}
@@ -110,6 +109,9 @@ func (zipper *TestConfigZipper) convertTestTrigger(name string, trigger *TestTri
 		Path:         trigger.modulePath,
 		Imports:      trigger.Imports,
 		FilePatterns: trigger.File_patterns,
+		Owners: &protos.Owners{
+			Team: trigger.Owners.Team,
+		},
 	}
 
 	// Because we expanded all inline triggers into synthetic workflows in gatherInlinedModuleInfos,
