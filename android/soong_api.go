@@ -22,12 +22,16 @@ import (
 )
 
 func init() {
-	RegisterParallelSingletonType("metadata_db", metadataSingletonFactory)
+	RegisterParallelSingletonType("soong_api_db", soongApiSingletonFactory)
 }
 
-var metadataPctx = NewPackageContext("android/soong/android/metadata")
+var soongApiPctx = NewPackageContext("android/soong/android/soong_api")
 
-type ModuleMetadata struct {
+// SoongApiModuleRecord represents a single entry in the Soong API database.
+// The term "Record" is used to clarify that this is a data snapshot of a
+// module's properties intended for database storage (soong_api.db),
+// rather than a functional Soong module object.
+type SoongApiModuleRecord struct {
 	Name         string   `json:"name"`
 	Type         string   `json:"type"`
 	Path         string   `json:"path"`
@@ -35,14 +39,14 @@ type ModuleMetadata struct {
 	InstallFiles []string `json:"install_files,omitempty"`
 }
 
-func metadataSingletonFactory() Singleton {
-	return &metadataSingleton{}
+func soongApiSingletonFactory() Singleton {
+	return &soongApiSingleton{}
 }
 
-type metadataSingleton struct{}
+type soongApiSingleton struct{}
 
-func (c *metadataSingleton) GenerateBuildActions(ctx SingletonContext) {
-	var modules []ModuleMetadata
+func (c *soongApiSingleton) GenerateBuildActions(ctx SingletonContext) {
+	var records []SoongApiModuleRecord
 
 	ctx.VisitAllModuleProxies(func(m ModuleProxy) {
 		commonInfo, ok := OtherModuleProvider(ctx, m, CommonModuleInfoProvider)
@@ -51,7 +55,7 @@ func (c *metadataSingleton) GenerateBuildActions(ctx SingletonContext) {
 			return
 		}
 
-		info := ModuleMetadata{
+		record := SoongApiModuleRecord{
 			Name:    ctx.ModuleName(m),
 			Type:    ctx.ModuleType(m),
 			Path:    ctx.ModuleDir(m),
@@ -60,60 +64,58 @@ func (c *metadataSingleton) GenerateBuildActions(ctx SingletonContext) {
 
 		if commonInfo.InstallFiles != nil {
 			for _, p := range commonInfo.InstallFiles.InstallFiles {
-				info.InstallFiles = append(info.InstallFiles, p.String())
+				record.InstallFiles = append(record.InstallFiles, p.String())
 			}
 		}
 
-		modules = append(modules, info)
+		records = append(records, record)
 	})
 
-	jsonData, err := json.MarshalIndent(modules, "", "  ")
+	jsonData, err := json.MarshalIndent(records, "", "  ")
 	if err != nil {
-		ctx.Errorf("Failed to marshal metadata: %s", err)
+		ctx.Errorf("Failed to marshal soong api records: %s", err)
 		return
 	}
 
-	jsonPath := PathForOutput(ctx, "metadata", "metadata.json")
+	jsonPath := PathForOutput(ctx, "soong_api", "soong_api.json")
 	WriteFileRule(ctx, jsonPath, string(jsonData))
 
-	zipPath := PathForOutput(ctx, "metadata", "metadata.zip")
+	zipPath := PathForOutput(ctx, "soong_api", "soong_api.zip")
 	baseDir := filepath.Dir(jsonPath.String())
 
-	// Rule to build metadata.zip
-	zipRb := NewRuleBuilder(metadataPctx, ctx)
+	// Rule to build soong_api.zip
+	zipRb := NewRuleBuilder(soongApiPctx, ctx)
 	zipRb.Command().
 		BuiltTool("soong_zip").
 		FlagWithOutput("-o ", zipPath).
 		FlagWithArg("-C ", baseDir).
 		FlagWithInput("-f ", jsonPath)
-	zipRb.Build("build_metadata_zip", "Building metadata zip")
+	zipRb.Build("build_soong_api_zip", "Building soong_api zip")
 
-	// Phony target for 'm metadata.zip'
-	ctx.Build(metadataPctx, BuildParams{
+	// Phony target for soong_api.zip
+	ctx.Build(soongApiPctx, BuildParams{
 		Rule:   blueprint.Phony,
 		Input:  zipPath,
-		Output: PathForPhony(ctx, "metadata.zip"),
+		Output: PathForPhony(ctx, "soong_api.zip"),
 	})
 
-	// Rule to build metadata.db from metadata.zip
-	metadataDbPath := PathForOutput(ctx, "metadata", "metadata.db")
-	dbRb := NewRuleBuilder(metadataPctx, ctx)
+	soongApiDbPath := PathForOutput(ctx, "soong_api", "soong_api.db")
+	dbRb := NewRuleBuilder(soongApiPctx, ctx)
 
-	// Get the path to the soong_api_db_loader executable
 	loaderPath := ctx.Config().HostToolPath(ctx, "soong_api_db_loader")
 
-	// Build the command: <path_to_loader_script> -i <input> -o <output>
+	// Build the command: <loader> -i <json_input> -o <db_output>
 	dbRb.Command().
 		Tool(loaderPath).
 		FlagWithInput("-i ", jsonPath).
-		FlagWithOutput("-o ", metadataDbPath)
+		FlagWithOutput("-o ", soongApiDbPath)
 
-	dbRb.Build("build_metadata_db", "Building metadata.db from metadata.json")
+	dbRb.Build("build_soong_api_db", "Building soong_api.db from soong_api.json")
 
-	// Phony target for 'm metadata.db'
-	ctx.Build(metadataPctx, BuildParams{
+	// Phony target for 'm soong_api.db'
+	ctx.Build(soongApiPctx, BuildParams{
 		Rule:   blueprint.Phony,
-		Input:  metadataDbPath,
-		Output: PathForPhony(ctx, "metadata.db"),
+		Input:  soongApiDbPath,
+		Output: PathForPhony(ctx, "soong_api.db"),
 	})
 }
