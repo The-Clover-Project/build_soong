@@ -29,6 +29,7 @@ bootstrap_go_package {
     ],
     srcs: [
         "init.go",
+        "owners.go",
         "test_config_zipper_conversions.go",
         "test_config_zipper_output.go",
         "test_config_zipper_validations.go",
