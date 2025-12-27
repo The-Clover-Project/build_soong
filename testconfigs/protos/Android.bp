@@ -60,4 +60,6 @@ java_library_host {
         include_dirs: ["external/protobuf/src"],
         type: "full",
     },
+    // Pin to Java 11 until Tradefed support jar of higher version.
+    java_version: "11",
 }
