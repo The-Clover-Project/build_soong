@@ -47,7 +47,12 @@ type javaSystemFeaturesSrcs struct {
 		// method names, but don't want the fully generated API class (e.g., for linting).
 		Metadata_only *bool
 	}
-	outputFiles android.WritablePaths
+
+	// Explicitly generated Java sources.
+	outputSrcs android.Paths
+
+	// Implicitly generated Proguard flags corresponding to any optimized read-only system features.
+	outputProguardFlags android.Paths
 }
 
 var _ genrule.SourceFileGenerator = (*javaSystemFeaturesSrcs)(nil)
@@ -57,8 +62,9 @@ func (m *javaSystemFeaturesSrcs) GenerateAndroidBuildActions(ctx android.ModuleC
 	// Create a file name appropriate for the given fully qualified (w/ package) class name.
 	classNameParts := strings.Split(m.properties.Full_class_name, ".")
 	outputDir := android.PathForModuleGen(ctx)
-	outputFileName := classNameParts[len(classNameParts)-1] + ".java"
-	outputFile := android.PathForModuleGen(ctx, outputFileName)
+	outputSrcFileName := classNameParts[len(classNameParts)-1] + ".java"
+	outputSrcFile := android.PathForModuleGen(ctx, outputSrcFileName)
+	outputProguardFlagsFile := android.PathForModuleGen(ctx, "proguard.options")
 
 	// Collect all RELEASE_SYSTEM_FEATURE_$K:$V build flags into a list of "$K:$V" pairs.
 	var features []string
@@ -87,22 +93,27 @@ func (m *javaSystemFeaturesSrcs) GenerateAndroidBuildActions(ctx android.ModuleC
 		}
 	}
 
-	ruleCmd.FlagWithOutput("--output=", outputFile)
+	ruleCmd.FlagWithOutput("--output=", outputSrcFile)
+	ruleCmd.FlagWithOutput("--output-proguard-rules=", outputProguardFlagsFile)
 	rule.Build(ctx.ModuleName(), "Generating systemfeatures srcs filegroup")
 
-	m.outputFiles = append(m.outputFiles, outputFile)
+	m.outputSrcs = android.Paths{outputSrcFile}
+	m.outputProguardFlags = android.Paths{outputProguardFlagsFile}
+
+	ctx.SetOutputFiles(m.outputSrcs, "")
+	ctx.SetOutputFiles(m.outputProguardFlags, ".proguardFlagsFiles")
 }
 
 func (m *javaSystemFeaturesSrcs) Srcs() android.Paths {
-	return m.outputFiles.Paths()
+	return m.outputSrcs
 }
 
 func (m *javaSystemFeaturesSrcs) GeneratedSourceFiles() android.Paths {
-	return m.outputFiles.Paths()
+	return m.outputSrcs
 }
 
 func (m *javaSystemFeaturesSrcs) GeneratedDeps() android.Paths {
-	return m.outputFiles.Paths()
+	return m.outputSrcs
 }
 
 func (m *javaSystemFeaturesSrcs) GeneratedHeaderDirs() android.Paths {
