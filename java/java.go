@@ -4146,6 +4146,7 @@ func getCombinedAconfigProtoFile(ctx android.ModuleContext) android.Path {
 			Flag("--dedup").
 			Flag("--format").
 			Text("protobuf").
+			FlagForEachArg("--filter ", []string{"state:ENABLED", "permission:READ_WRITE"}).
 			FlagForEachInput("--cache ", aconfigProtoFiles).
 			FlagWithOutput("--out ", combinedAconfigProtoFile)
 
