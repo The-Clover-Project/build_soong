@@ -49,6 +49,9 @@ java_system_features_srcs {
 	systemFeaturesModule := module.Module().(*javaSystemFeaturesSrcs)
 	expectedOutputPath := "out/soong/.intermediates/system-features-srcs/gen/RoSystemFeatures.java"
 	android.AssertPathsRelativeToTopEquals(t, "Expected output file", []string{expectedOutputPath}, systemFeaturesModule.Srcs())
+
+	expectedProguardOutputPath := "out/soong/.intermediates/system-features-srcs/gen/proguard.options"
+	android.AssertPathsRelativeToTopEquals(t, "Expected Proguard output file", []string{expectedProguardOutputPath}, systemFeaturesModule.outputProguardFlags)
 }
 
 func TestJavaSystemFeaturesSrcsFromXml(t *testing.T) {
