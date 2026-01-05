@@ -101,7 +101,7 @@ var SdkVersionDependencyViolationAllowlist = map[string][]string{
 	},
 
 	"EventLib": {
-		"EventLibInternal",    	// system -> test
+		"EventLibInternal", // system -> test
 	},
 
 	"HarrierCommonAndroid": {
