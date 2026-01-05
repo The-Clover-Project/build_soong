@@ -50,7 +50,7 @@ type BaseLinkerProperties struct {
 	Header_libs proptools.Configurable[[]string] `android:"arch_variant,variant_prepend"`
 
 	// list of module-specific flags that will be used for all link steps
-	Ldflags []string `android:"arch_variant"`
+	Ldflags proptools.Configurable[[]string] `android:"arch_variant"`
 
 	// list of system libraries that will be dynamically linked to
 	// shared library and executable modules.  If unset, generally defaults to libc,
@@ -243,7 +243,7 @@ type BaseLinkerProperties struct {
 
 	// local files to pass to the linker as --script.  Not supported on darwin or windows, and will fail to build
 	// if provided to the darwin or windows variant of a module.
-	Linker_scripts []string `android:"path,arch_variant"`
+	Linker_scripts proptools.Configurable[[]string] `android:"path,arch_variant"`
 
 	// list of static libs that should not be used to build this module
 	Exclude_static_libs []string `android:"arch_variant"`
@@ -283,10 +283,6 @@ type baseLinker struct {
 	}
 
 	sanitize *sanitize
-}
-
-func (linker *baseLinker) appendLdflags(flags []string) {
-	linker.Properties.Ldflags = append(linker.Properties.Ldflags, flags...)
 }
 
 // linkerInit initializes dynamic properties of the linker.
@@ -546,7 +542,8 @@ func (linker *baseLinker) linkerFlags(ctx ModuleContext, flags Flags) Flags {
 		flags.Local.LdFlags = append(flags.Local.LdFlags, linker.Properties.Host_ldlibs...)
 	}
 
-	CheckBadLinkerFlags(ctx, "ldflags", linker.Properties.Ldflags)
+	ldflags := linker.Properties.Ldflags.GetOrDefault(ctx, nil)
+	CheckBadLinkerFlags(ctx, "ldflags", ldflags)
 
 	if !BoolDefault(linker.Properties.Pack_relocations, packRelocationsDefault) {
 		flags.Global.LdFlags = append(flags.Global.LdFlags, "-Wl,--pack-dyn-relocs=none")
@@ -566,7 +563,7 @@ func (linker *baseLinker) linkerFlags(ctx ModuleContext, flags Flags) Flags {
 		}
 	}
 
-	flags.Local.LdFlags = append(flags.Local.LdFlags, proptools.NinjaAndShellEscapeList(linker.Properties.Ldflags)...)
+	flags.Local.LdFlags = append(flags.Local.LdFlags, proptools.NinjaAndShellEscapeList(ldflags)...)
 
 	// Version_script is not needed when linking stubs lib where the version
 	// script is created from the symbol map file.
@@ -612,7 +609,7 @@ func (linker *baseLinker) linkerFlags(ctx ModuleContext, flags Flags) Flags {
 			}
 		}
 
-		linkerScriptPaths := android.PathsForModuleSrc(ctx, linker.Properties.Linker_scripts)
+		linkerScriptPaths := android.PathsForModuleSrc(ctx, linker.Properties.Linker_scripts.GetOrDefault(ctx, nil))
 		if len(linkerScriptPaths) > 0 {
 			if ctx.Darwin() {
 				ctx.AddMissingDependencies([]string{"linker_scripts_not_supported_on_darwin"})
