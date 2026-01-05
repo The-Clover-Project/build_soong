@@ -73,6 +73,9 @@ type platformBootclasspathModule struct {
 
 	// Path to the monolithic hiddenapi-unsupported.csv file.
 	hiddenAPIMetadataCSV android.OutputPath
+
+	// Path to the monolithic hiddenapi-flagged-apis.csv file.
+	hiddenAPIFlaggedAPIsCSV android.OutputPath
 }
 
 type platformBootclasspathProperties struct {
@@ -217,6 +220,7 @@ func (b *platformBootclasspathModule) GenerateAndroidBuildActions(ctx android.Mo
 	ctx.SetOutputFiles(android.Paths{b.hiddenAPIFlagsCSV}, "hiddenapi-flags.csv")
 	ctx.SetOutputFiles(android.Paths{b.hiddenAPIIndexCSV}, "hiddenapi-index.csv")
 	ctx.SetOutputFiles(android.Paths{b.hiddenAPIMetadataCSV}, "hiddenapi-metadata.csv")
+	ctx.SetOutputFiles(android.Paths{b.hiddenAPIFlaggedAPIsCSV}, "hiddenapi-flagged-apis.csv")
 	ctx.SetOutputFiles(android.Paths{srcjar}, ".srcjar")
 }
 
@@ -307,7 +311,7 @@ func (b *platformBootclasspathModule) generateHiddenAPIBuildActions(ctx android.
 	apexNameToFragment map[string]android.ModuleProxy) bootDexJarByModule {
 
 	createEmptyHiddenApiFiles := func() {
-		paths := android.OutputPaths{b.hiddenAPIFlagsCSV, b.hiddenAPIIndexCSV, b.hiddenAPIMetadataCSV}
+		paths := android.OutputPaths{b.hiddenAPIFlagsCSV, b.hiddenAPIIndexCSV, b.hiddenAPIMetadataCSV, b.hiddenAPIFlaggedAPIsCSV}
 		for _, path := range paths {
 			ctx.Build(pctx, android.BuildParams{
 				Rule:   android.TouchRule,
@@ -320,6 +324,7 @@ func (b *platformBootclasspathModule) generateHiddenAPIBuildActions(ctx android.
 	b.hiddenAPIFlagsCSV = hiddenAPISingletonPaths(ctx).flags
 	b.hiddenAPIIndexCSV = hiddenAPISingletonPaths(ctx).index
 	b.hiddenAPIMetadataCSV = hiddenAPISingletonPaths(ctx).metadata
+	b.hiddenAPIFlaggedAPIsCSV = hiddenAPISingletonPaths(ctx).flaggedApis
 
 	bootDexJarByModule := extractBootDexJarsFromModules(ctx, modules)
 
@@ -364,6 +369,18 @@ func (b *platformBootclasspathModule) generateHiddenAPIBuildActions(ctx android.
 	// Generate the annotation-flags.csv file from all the module annotations.
 	annotationFlags := android.PathForModuleOut(ctx, "hiddenapi-monolithic", "annotation-flags-from-classes.csv")
 	buildRuleToGenerateAnnotationFlags(ctx, "intermediate hidden API flags", classesJars, stubFlags, annotationFlags)
+
+	// Generate the flagged-apis.csv file from all the module annotations.
+	//
+	// This uses all the classes jars from the configured modules because the flagged-apis.csv file
+	// is not modularized yet.
+	var allClassesJars android.Paths
+	for _, module := range b.configuredModules {
+		if javaInfo, ok := android.OtherModuleProvider(ctx, module, JavaInfoProvider); ok {
+			allClassesJars = append(allClassesJars, javaInfo.ImplementationJars...)
+		}
+	}
+	buildRuleToGenerateFlaggedApis(ctx, "monolithic flagged APIs", allClassesJars, stubFlags, b.hiddenAPIFlaggedAPIsCSV)
 
 	// Generate the monolithic hiddenapi-flags.csv file.
 	//
