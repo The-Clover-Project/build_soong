@@ -17,6 +17,7 @@ package codegen
 import (
 	"android/soong/android"
 	"android/soong/java"
+	"strconv"
 
 	"github.com/google/blueprint"
 	"github.com/google/blueprint/proptools"
@@ -40,6 +41,13 @@ type JavaAconfigDeclarationsLibraryProperties struct {
 	// "force-read-only": to generate force-read-only mode version of the library
 	// an error will be thrown if the mode is not supported
 	Mode *string
+
+	// Whether to preserve the internal aconfig flags impl interface codegen for this library.
+	// If true, the generated library will include the full legacy interface for the flags impl.
+	// If false or not set, the generated library internals may be optimized in ways that don't
+	// export the entire set of flags impl APIs.
+	// Defaults to false.
+	Preserve_legacy_impl_interface *bool
 }
 
 type JavaAconfigDeclarationsLibraryCallbacks struct {
@@ -98,13 +106,21 @@ func (callbacks *JavaAconfigDeclarationsLibraryCallbacks) GenerateSourceJarBuild
 		ctx.PropertyErrorf("mode", "exported mode requires its aconfig_declaration has exportable prop true")
 	}
 
+	// Note that currently `preserve_legacy_impl_interface: false` is a no-op and will respect the
+	// release build flag value allowing for interface removal.
+	allow_impl_interface_removal := ctx.Config().GetBuildFlagBool("RELEASE_ACONFIG_DEFAULT_ALLOW_JAVA_IMPL_INTERFACE_REMOVAL")
+	if proptools.BoolDefault(callbacks.properties.Preserve_legacy_impl_interface, false) {
+		allow_impl_interface_removal = false
+	}
+
 	ctx.Build(pctx, android.BuildParams{
 		Rule:        javaRule,
 		Input:       declarations.IntermediateCacheOutputPath,
 		Output:      srcJarPath,
 		Description: "aconfig.srcjar",
 		Args: map[string]string{
-			"mode": mode,
+			"mode":                         mode,
+			"allow_impl_interface_removal": strconv.FormatBool(allow_impl_interface_removal),
 		},
 	})
 
