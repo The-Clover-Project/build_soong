@@ -21,6 +21,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/google/blueprint/depset"
 	"github.com/google/blueprint/proptools"
 
 	"android/soong/android"
@@ -654,18 +655,28 @@ func (compiler *baseCompiler) compilerFlags(ctx ModuleContext, flags Flags, deps
 		if len(compiler.Properties.Aidl.Local_include_dirs) > 0 {
 			localAidlIncludeDirs := android.PathsForModuleSrc(ctx, compiler.Properties.Aidl.Local_include_dirs)
 			flags.aidlFlags = append(flags.aidlFlags, includeDirsToFlags(localAidlIncludeDirs))
+			for _, includeDir := range localAidlIncludeDirs {
+				flags.aidlFlagsDeps = append(flags.aidlFlagsDeps, ctx.GlobFiles(filepath.Join(includeDir.String(), "**/*.aidl"), nil)...)
+			}
 		}
 		if len(compiler.Properties.Aidl.Include_dirs) > 0 {
 			rootAidlIncludeDirs := android.PathsForSource(ctx, compiler.Properties.Aidl.Include_dirs)
 			flags.aidlFlags = append(flags.aidlFlags, includeDirsToFlags(rootAidlIncludeDirs))
+			for _, includeDir := range rootAidlIncludeDirs {
+				flags.aidlFlagsDeps = append(flags.aidlFlagsDeps, ctx.GlobFilesOutsideModuleDir(filepath.Join(includeDir.String(), "**/*.aidl"), nil)...)
+			}
 		}
 
 		var rootAidlIncludeDirs android.Paths
+		var aidlLibraryHdrs []depset.DepSet[android.Path]
 		for _, aidlLibraryInfo := range deps.AidlLibraryInfos {
 			rootAidlIncludeDirs = append(rootAidlIncludeDirs, aidlLibraryInfo.IncludeDirs.ToList()...)
+			aidlLibraryHdrs = append(aidlLibraryHdrs, aidlLibraryInfo.Hdrs)
 		}
 		if len(rootAidlIncludeDirs) > 0 {
 			flags.aidlFlags = append(flags.aidlFlags, includeDirsToFlags(rootAidlIncludeDirs))
+			hdrs := depset.New(depset.PREORDER, nil, aidlLibraryHdrs).ToList()
+			flags.aidlFlagsDeps = append(flags.aidlFlagsDeps, hdrs...)
 		}
 
 		if proptools.BoolDefault(compiler.Properties.Aidl.Generate_traces, true) {

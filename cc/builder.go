@@ -428,13 +428,14 @@ type builderFlags struct {
 	localCppFlags        string
 	localLdFlags         string
 
-	noOverrideFlags string // Flags appended at the end so they are not overridden.
-	libFlags        string // Flags to add to the linker directly after specifying libraries to link.
-	extraLibFlags   string // Flags to add to the linker last.
-	tidyFlags       string // Flags that apply to clang-tidy
-	sAbiFlags       string // Flags that apply to header-abi-dumps
-	aidlFlags       string // Flags that apply to aidl source files
-	rsFlags         string // Flags that apply to renderscript source files
+	noOverrideFlags string        // Flags appended at the end so they are not overridden.
+	libFlags        string        // Flags to add to the linker directly after specifying libraries to link.
+	extraLibFlags   string        // Flags to add to the linker last.
+	tidyFlags       string        // Flags that apply to clang-tidy
+	sAbiFlags       string        // Flags that apply to header-abi-dumps
+	aidlFlags       string        // Flags that apply to aidl source files
+	aidlFlagsDeps   android.Paths // Implicit deps of the flags in aidlFlags
+	rsFlags         string        // Flags that apply to renderscript source files
 	toolchain       config.Toolchain
 
 	// True if these extra features are enabled.
