@@ -4613,6 +4613,44 @@ func TestPrivappAllowlist(t *testing.T) {
 	overrideApp.Output("out/target/product/test_device/system/etc/permissions/bar.xml")
 }
 
+func TestPreinstallAllowlist(t *testing.T) {
+	t.Parallel()
+
+	result := PrepareForTestWithJavaDefaultModules.RunTestWithBp(
+		t,
+		`
+		android_app {
+			name: "foo",
+			srcs: ["a.java"],
+			preinstall_allowlist: "preinstall_allowlist_com.android.foo.xml",
+			sdk_version: "current",
+		}
+		override_android_app {
+			name: "bar",
+			base: "foo",
+			package_name: "com.google.android.foo",
+		}
+		`,
+	)
+	app := result.ModuleForTests(t, "foo", "android_common")
+	overrideApp := result.ModuleForTests(t, "foo", "android_common_bar")
+
+	// verify that preinstall allowlist is created for override apps
+	overrideApp.Output("out/soong/.intermediates/foo/android_common_bar/preinstall_allowlist_com.google.android.foo.xml")
+	expectedAllowlistInput := "preinstall_allowlist_com.android.foo.xml"
+	overrideActualAllowlistInput := overrideApp.Rule("modifyPreinstallAllowlist").Input.String()
+	if expectedAllowlistInput != overrideActualAllowlistInput {
+		t.Errorf("expected override allowlist input to be %q; got %q", expectedAllowlistInput, overrideActualAllowlistInput)
+	}
+	expectedPackageName := "com.google.android.foo"
+	overrideActualPackageName := overrideApp.Rule("modifyPreinstallAllowlist").Args["packageName"]
+	if expectedPackageName != overrideActualPackageName {
+		t.Errorf("expected override package name to be %q; got %q", expectedPackageName, overrideActualPackageName)
+	}
+	app.Output("out/target/product/test_device/system/etc/sysconfig/foo_preinstall_allowlist.xml")
+	overrideApp.Output("out/target/product/test_device/system/etc/sysconfig/bar_preinstall_allowlist.xml")
+}
+
 func TestPrivappAllowlistAndroidMk(t *testing.T) {
 	t.Parallel()
 	result := android.GroupFixturePreparers(

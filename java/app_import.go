@@ -617,6 +617,10 @@ func (a *AndroidAppImport) PrivAppAllowlist() android.OptionalPath {
 	return android.OptionalPath{}
 }
 
+func (a *AndroidAppImport) PreinstallAllowlist() android.OptionalPath {
+	return android.OptionalPath{}
+}
+
 const (
 	ArchGroupName = "Arch"
 	DpiGroupName  = "Dpi_variants"
