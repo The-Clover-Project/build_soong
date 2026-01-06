@@ -96,6 +96,7 @@ type EarlyModuleContext interface {
 
 	Glob(globPattern string, excludes []string) Paths
 	GlobFiles(globPattern string, excludes []string) Paths
+	GlobFilesOutsideModuleDir(globPattern string, excludes []string) Paths
 	IsSymlink(path Path) bool
 	Readlink(path Path) string
 
@@ -127,6 +128,10 @@ func (e *earlyModuleContext) Glob(globPattern string, excludes []string) Paths {
 
 func (e *earlyModuleContext) GlobFiles(globPattern string, excludes []string) Paths {
 	return GlobFiles(e, globPattern, excludes)
+}
+
+func (e *earlyModuleContext) GlobFilesOutsideModuleDir(globPattern string, excludes []string) Paths {
+	return GlobFilesOutsideModuleDir(e, globPattern, excludes)
 }
 
 func (e *earlyModuleContext) IsSymlink(path Path) bool {

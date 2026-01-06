@@ -86,6 +86,29 @@ func GlobFiles(ctx EarlyModulePathContext, globPattern string, excludes []string
 	return pathsForModuleSrcFromFullPath(ctx, ret, false)
 }
 
+// GlobFiles globs *only* files (not directories) matching globPattern relative to ModuleDir().
+// Paths in the excludes parameter will be omitted.
+//
+// Unlike GlobFiles(), this function allows globbing files from anywhere in the source tree,
+// not just in the current module's directory. Prefer GlobFiles() over this, it was added to handle
+// legacy include_dirs use cases, which should be switched to local_include_dirs.
+func GlobFilesOutsideModuleDir(ctx EarlyModulePathContext, globPattern string, excludes []string) Paths {
+	globResults, err := ctx.GlobWithDeps(globPattern, excludes)
+	if err != nil {
+		ctx.ModuleErrorf("glob: %s", err.Error())
+	}
+
+	ret := make(Paths, 0, len(globResults))
+	for _, p := range globResults {
+		// no directories
+		if strings.HasSuffix(p, "/") {
+			continue
+		}
+		ret = append(ret, PathForSource(ctx, p))
+	}
+	return ret
+}
+
 // ModuleWithDepsPathContext is a subset of *ModuleContext methods required by
 // the Path methods that rely on module dependencies having been resolved.
 type ModuleWithDepsPathContext interface {
