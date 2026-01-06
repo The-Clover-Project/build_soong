@@ -427,10 +427,10 @@ var (
 	ClangDefaultBase = "prebuilts/clang/host"
 	// The Clang version used in the trunk branch.
 	// NOTE: This is deprecated and will be removed in a future version, use the getter function instead.
-	ClangDefaultVersion = "clang-r574158"
+	ClangDefaultVersion = "clang-r584948"
 	// The Clang short version used in the trunk branch.
 	// NOTE: This is deprecated and will be removed in a future version, use the getter function instead.
-	ClangDefaultShortVersion = "21"
+	ClangDefaultShortVersion = "22"
 
 	RsGlobalIncludes = []string{
 		"external/clang/lib/Headers",
