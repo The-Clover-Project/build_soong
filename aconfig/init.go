@@ -150,6 +150,7 @@ var (
 				`        --cache ${out}.pb.tmp/$$cache` +
 				`        --mode=exported` +
 				`        --single-exported-file true` +
+				`        --allow-impl-interface-removal false` +
 				`        --out ${out}.tmp; ` +
 				// LINT.ThenChange(/aconfig/codegen/init.go)
 				`  fi ` +
