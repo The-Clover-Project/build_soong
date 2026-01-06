@@ -276,7 +276,7 @@ function verify_packages_licenses {
   # PRODUCT and 4 prebuilt packages have "PackageLicenseDeclared: NOASSERTION"
   # All other packages have declared licenses
   num_of_packages_with_noassertion_license=$(grep 'PackageLicenseDeclared: NOASSERTION' $sbom_file | wc -l)
-  if [ $num_of_packages_with_noassertion_license -lt 18 ]
+  if [ $num_of_packages_with_noassertion_license -lt 16 ]
   then
     echo "Number of packages with NOASSERTION license is correct."
   else
