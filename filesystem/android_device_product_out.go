@@ -376,6 +376,16 @@ func (a *androidDevice) getFsInfos(ctx android.ModuleContext) map[string]Filesys
 			ctx.ModuleErrorf("Super partition %s does not set SuperImageProvider\n", superPartition.Name())
 		}
 	}
+	for _, customPartition := range a.customPartitionFilesystemInfos {
+		if customPartition.Output == nil {
+			continue
+		}
+		if _, present := filesystemInfos[customPartition.ModuleName]; present {
+			ctx.ModuleErrorf("Custom partition %s conflicts with standard partition", customPartition.ModuleName)
+			continue
+		}
+		filesystemInfos[customPartition.ModuleName] = customPartition
+	}
 
 	return filesystemInfos
 }
