@@ -60,6 +60,12 @@ var (
 		// module_type=license_kind
 		LK_CONDITIONS string
 		LK_URL        string
+
+		// module_type=cipd_package
+		CIPD_VERSION string
+
+		// module_type=prebuilt modules
+		CIPD_SRC string
 	}{
 		"name",
 		"package",
@@ -86,6 +92,10 @@ var (
 
 		"lk_conditions",
 		"lk_url",
+
+		"cipd_version",
+
+		"cipd_src",
 	}
 
 	// A constant list of all property names in compliance metadata
@@ -123,6 +133,10 @@ var (
 		// module_type=license_kind
 		ComplianceMetadataProp.LK_CONDITIONS,
 		ComplianceMetadataProp.LK_URL,
+		// module_type=cipd_package
+		ComplianceMetadataProp.CIPD_VERSION,
+		// module_type=prebuilt modules
+		ComplianceMetadataProp.CIPD_SRC,
 	}
 )
 
