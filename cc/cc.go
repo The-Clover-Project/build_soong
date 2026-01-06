@@ -856,7 +856,6 @@ type linker interface {
 	baseLinkerProps() BaseLinkerProperties
 
 	link(ctx ModuleContext, flags Flags, deps PathDeps, objs Objects) android.Path
-	appendLdflags([]string)
 	unstrippedOutputFilePath() android.Path
 	strippedAllOutputFilePath() android.Path
 

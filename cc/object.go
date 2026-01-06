@@ -15,7 +15,6 @@
 package cc
 
 import (
-	"fmt"
 	"strings"
 
 	"android/soong/android"
@@ -105,10 +104,6 @@ func ObjectFactory() android.Module {
 	module.sdkMemberTypes = []android.SdkMemberType{ccObjectSdkMemberType}
 
 	return module.Init()
-}
-
-func (object *objectLinker) appendLdflags(flags []string) {
-	panic(fmt.Errorf("appendLdflags on objectLinker not supported"))
 }
 
 func (object *objectLinker) linkerProps() []interface{} {
