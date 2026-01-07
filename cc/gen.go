@@ -104,7 +104,8 @@ func genYacc(ctx android.ModuleContext, rule *android.RuleBuilder, yaccFile andr
 		Flag("-d").
 		Flags(flags).
 		FlagWithOutput("--defines=", headerFile).
-		Flag("-o").Output(outFile).Input(yaccFile)
+		Flag("-o").Output(outFile).Input(yaccFile).
+		Implicits(ctx.GlobFilesOutsideModuleDir("prebuilts/build-tools/common/bison/**/*", nil))
 
 	return ret
 }
@@ -256,8 +257,12 @@ func genSources(
 	var yaccRule_ *android.RuleBuilder
 	yaccRule := func() *android.RuleBuilder {
 		if yaccRule_ == nil {
-			yaccRule_ = android.NewRuleBuilder(pctx, ctx).SandboxDisabled().Sbox(android.PathForModuleGen(ctx, "yacc"),
-				android.PathForModuleGen(ctx, "yacc.sbox.textproto"))
+			yaccRule_ = android.NewRuleBuilder(pctx, ctx).
+				SandboxDisabled().
+				Sbox(
+					android.PathForModuleGen(ctx, "yacc"),
+					android.PathForModuleGen(ctx, "yacc.sbox.textproto")).
+				SandboxInputs()
 		}
 		return yaccRule_
 	}
