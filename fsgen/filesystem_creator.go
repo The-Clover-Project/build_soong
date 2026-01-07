@@ -455,11 +455,14 @@ func (f *filesystemCreator) createBootloader(ctx android.LoadHookContext) (strin
 		return "", false
 	}
 
+	boardPlatform := proptools.String(ctx.Config().ProductVariables().BoardPlatform)
+
 	bootloaderModuleName := generatedModuleName(ctx.Config(), "bootloader")
 	bootloaderProps := filesystem.PrebuiltBootloaderProperties{
 		Src:               proptools.StringPtr(bootloaderPath),
 		Ab_ota_partitions: partitionVars.AbOtaBootloaderPartitions,
-		Unpack_tool:       proptools.StringPtr(fmt.Sprintf("vendor/google_devices/%s/prebuilts/misc_bins/fbimg/fbpacktool.py", proptools.String(ctx.Config().ProductVariables().BoardPlatform))),
+		Unpack_tool:       proptools.StringPtr(fmt.Sprintf("vendor/google_devices/%s/prebuilts/misc_bins/fbimg/fbpacktool.py", boardPlatform)),
+		Unpack_tool_deps:  []string{fmt.Sprintf("vendor/google_devices/%s/prebuilts/misc_bins/fbimg/*.py", boardPlatform)},
 	}
 	ctx.CreateModuleInDirectory(filesystem.PrebuiltBootloaderFactory, ".",
 		&struct {

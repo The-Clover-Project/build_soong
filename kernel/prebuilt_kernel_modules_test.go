@@ -26,7 +26,7 @@ import (
 func TestKernelModulesFilelist(t *testing.T) {
 	ctx := android.GroupFixturePreparers(
 		cc.PrepareForTestWithCcDefaultModules,
-		android.PrepareForTestWithHostTools("soong_zip", "zipsync"),
+		android.PrepareForTestWithHostTools("kernel_modules_builder", "zipsync", "soong_zip", "merge_zips", "depmod"),
 		android.FixtureRegisterWithContext(registerKernelBuildComponents),
 		android.MockFS{
 			"depmod.cpp": nil,

@@ -65,6 +65,10 @@ func Ramdisk16kImgFactory() android.Module {
 	return module
 }
 
+func (p *ramdisk16kImg) DepsMutator(ctx android.BottomUpMutatorContext) {
+	ctx.AddHostToolDependencies("ramdisk_16k_builder", "extract_kernel", "depmod", "lz4", "mkbootfs")
+}
+
 // Extracts version information from the kernel and packages the .ko modules in
 // a version-specific subdirectory of the .img file.
 func (p *ramdisk16kImg) GenerateAndroidBuildActions(ctx android.ModuleContext) {
@@ -80,21 +84,26 @@ func (p *ramdisk16kImg) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	android.WriteFileRule(ctx, propsFile, props.ToJSON())
 
 	llvmStrip := config.ClangPath(ctx, "bin/llvm-strip")
+	// llvm-strip is a symlink to llvm-objcopy
+	llvmObjcopy := config.ClangPath(ctx, "bin/llvm-objcopy")
 	llvmLib := config.ClangPath(ctx, "lib/x86_64-unknown-linux-gnu/libc++.so")
 
 	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled().Sbox(
 		outputDir,
 		android.PathForModuleOut(ctx, "ramdisk_16k_intermediates.textproto"),
-	)
+	).SandboxInputs()
 
 	// Determine the kernel version during execution.
 	cmd := builder.Command().
 		BuiltTool("ramdisk_16k_builder").
 		Flag("--extract_kernel").BuiltTool("extract_kernel").
 		Flag("--depmod").BuiltTool("depmod").
-		Flag("--llvm-strip").Input(llvmStrip).Implicit(llvmLib).
+		Flag("--llvm-strip").Input(llvmStrip).Implicit(llvmLib).Implicit(llvmObjcopy).
 		Flag("--lz4").BuiltTool("lz4").
 		Flag("--mkbootfs").BuiltTool("mkbootfs").
+		// depmod needs libc++
+		// TODO: Get this from the depmod dep automatically
+		ImplicitTool(ctx.Config().HostCcSharedLibPath(ctx, "libc++")).
 		Input(propsFile).
 		Text(intermediatesDir.String()).
 		Output(output).
@@ -102,6 +111,9 @@ func (p *ramdisk16kImg) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 
 	if p.properties.System_dep != nil {
 		cmd.Implicit(android.PathForModuleSrc(ctx, *p.properties.System_dep))
+	}
+	if p.properties.Kernel != nil {
+		cmd.Implicit(android.PathForModuleSrc(ctx, *p.properties.Kernel))
 	}
 
 	builder.Build("ramdisk_16k", "ramdisk_16k")
