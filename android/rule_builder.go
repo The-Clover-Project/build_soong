@@ -18,6 +18,7 @@ import (
 	"crypto/sha256"
 	"fmt"
 	"path/filepath"
+	"runtime"
 	"sort"
 	"strings"
 	"testing"
@@ -549,15 +550,11 @@ func (r *RuleBuilder) SandboxDisabled() *RuleBuilder {
 	return r
 }
 
+var sandboxEnvOnceKey = NewOnceKey("sandbox_environment_variables")
+
 // Build adds the built command line to the build graph, with dependencies on Inputs and Tools, and output files for
 // Outputs.
 func (r *RuleBuilder) Build(name string, desc string) {
-	r.build(name, desc)
-}
-
-var sandboxEnvOnceKey = NewOnceKey("sandbox_environment_variables")
-
-func (r *RuleBuilder) build(name string, desc string) {
 	name = ninjaNameEscape(name)
 
 	if len(r.missingDeps) > 0 {
@@ -963,6 +960,19 @@ func (r *RuleBuilder) build(name string, desc string) {
 		i++
 	}
 
+	_, file, line, ok := runtime.Caller(1)
+	if !ok {
+		panic("Could not get caller of rulebuilder")
+	}
+	// absSrcDir is "" in tests
+	if absSrcDir != "" {
+		var err error
+		file, err = filepath.Rel(absSrcDir, file)
+		if err != nil {
+			panic(err)
+		}
+	}
+
 	r.ctx.Build(r.pctx, BuildParams{
 		Rule: r.ctx.Rule(r.pctx, name, blueprint.RuleParams{
 			Command:         commandString,
@@ -972,6 +982,7 @@ func (r *RuleBuilder) build(name string, desc string) {
 			RspfileContent:  rspFileContent,
 			Pool:            pool,
 			SandboxDisabled: r.sandboxDisabled,
+			Source:          fmt.Sprintf("%s:%d", file, line),
 		}, args_vars...),
 		Inputs:          rspFileInputs,
 		Implicits:       inputs,

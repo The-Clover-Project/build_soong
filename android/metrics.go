@@ -164,6 +164,12 @@ func collectMetrics(ctx *Context, config Config, eventHandler *metrics.EventHand
 			TotalRules:    proto.Uint32(uint32(sandboxMetrics.TotalRules())),
 			DisabledRules: proto.Uint32(uint32(sandboxMetrics.DisabledRules())),
 		}
+		for _, rule := range sandboxMetrics.Actions() {
+			metrics.SandboxMetrics.Actions = append(metrics.SandboxMetrics.Actions, &soong_metrics_proto.SandboxAction{
+				Name:      &rule.Name,
+				Sandboxed: &rule.Sandboxed,
+			})
+		}
 	}
 
 	if soongMetrics.incrementalAnalysis {
