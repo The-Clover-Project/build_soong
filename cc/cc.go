@@ -3188,41 +3188,6 @@ func FilterNdkLibs(c LinkableInterface, config android.Config, list []string) (n
 
 }
 
-func rewriteLibsForApiImports(c LinkableInterface, libs []string, replaceList map[string]string, config android.Config) ([]string, []string) {
-	nonVariantLibs := []string{}
-	variantLibs := []string{}
-
-	for _, lib := range libs {
-		replaceLibName := GetReplaceModuleName(lib, replaceList)
-		if replaceLibName == lib {
-			// Do not handle any libs which are not in API imports
-			nonVariantLibs = append(nonVariantLibs, replaceLibName)
-		} else if c.UseSdk() && inList(replaceLibName, *getNDKKnownLibs(config)) {
-			variantLibs = append(variantLibs, replaceLibName)
-		} else {
-			nonVariantLibs = append(nonVariantLibs, replaceLibName)
-		}
-	}
-
-	return nonVariantLibs, variantLibs
-}
-
-func (c *Module) shouldUseApiSurface() bool {
-	if c.Os() == android.Android && c.Target().NativeBridge != android.NativeBridgeEnabled {
-		if GetImageVariantType(c) == vendorImageVariant || GetImageVariantType(c) == productImageVariant {
-			// LLNDK Variant
-			return true
-		}
-
-		if c.Properties.IsSdkVariant {
-			// NDK Variant
-			return true
-		}
-	}
-
-	return false
-}
-
 func (c *Module) DepsMutator(actx android.BottomUpMutatorContext) {
 	if !c.Enabled(actx) {
 		return
