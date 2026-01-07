@@ -572,7 +572,6 @@ func (c *config) parsePartialCompileFlags(isEngBuild bool) (partialCompileFlags,
 		default:
 			panic(fmt.Errorf("Invalid state %v in parsePartialCompileFlags.makeVal", state))
 		}
-		return false
 	}
 	for _, tok := range tokens {
 		var state string

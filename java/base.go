@@ -773,7 +773,7 @@ func (j *Module) provideHiddenAPIPropertyInfo(ctx android.ModuleContext) {
 }
 
 // helper method for java modules to set OutputFilesProvider
-func setOutputFiles(ctx android.ModuleContext, m Module) {
+func setOutputFiles(ctx android.ModuleContext, m *Module) {
 	ctx.SetOutputFiles(append(android.PathsIfNonNil(m.outputFile), m.extraOutputFiles...), "")
 	ctx.SetOutputFiles(android.PathsIfNonNil(m.outputFile), android.DefaultDistTag)
 	ctx.SetOutputFiles(android.PathsIfNonNil(m.implementationAndResourcesJar), ".jar")
@@ -3251,7 +3251,7 @@ func collectDirectDepsProviders(ctx android.ModuleContext) (result *JarJarProvid
 	return
 }
 
-func (this Module) GetDebugString() string {
+func (this *Module) GetDebugString() string {
 	return "sdk_version=" + proptools.String(this.deviceProperties.Sdk_version)
 }
 

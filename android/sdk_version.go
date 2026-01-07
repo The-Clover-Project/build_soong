@@ -201,7 +201,6 @@ func (s SdkSpec) Stable() bool {
 	default:
 		panic(fmt.Errorf("unknown SdkKind=%v", s.Kind))
 	}
-	return false
 }
 
 // PrebuiltSdkAvailableForUnbundledBuild tells whether this SdkSpec can have a prebuilt SDK
@@ -258,7 +257,6 @@ func (s SdkSpec) UsePrebuilt(ctx EarlyModuleContext) bool {
 		if s.Kind != SdkPublic && s.Kind != SdkSystem && s.Kind != SdkTest &&
 			s.Kind != SdkTestFrameworksCore && s.Kind != SdkModule && s.Kind != SdkSystemServer {
 			panic(fmt.Errorf("prebuilt SDK is not not available for SdkKind=%q", s.Kind))
-			return false
 		}
 		// numbered SDKs are always from prebuilt
 		return true

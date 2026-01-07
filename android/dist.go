@@ -294,7 +294,7 @@ func (s *soongDist) parseDistContributions(allDistContributions []distContributi
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		slices.Grow(s.goals, len(s.goalToDests))
+		s.goals = slices.Grow(s.goals, len(s.goalToDests))
 		s.goals = slices.AppendSeq(s.goals, maps.Keys(s.goalToDests))
 		slices.Sort(s.goals)
 	}()

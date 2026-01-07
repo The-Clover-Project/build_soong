@@ -1000,7 +1000,6 @@ func getDexJarForApex(ctx android.ModuleContext, pair apexJarModulePair, apexNam
 		}
 		return jar
 	}
-	return nil
 }
 
 // copyBootJarsToPredefinedLocations generates commands that will copy boot jars to predefined
