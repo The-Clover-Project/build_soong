@@ -369,7 +369,10 @@ func generateApiMapReport(ctx android.SingletonContext, pctx android.PackageCont
 		Output(jarFilesList)
 	jarFiles_rule.Build(jarFilesList.Base(), fmt.Sprintf("Jar files list for %s", suite))
 
-	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled().Sbox(sboxOut, sboxManifest)
+	rule := android.NewRuleBuilder(pctx, ctx).
+		SandboxDisabled().
+		Sbox(sboxOut, sboxManifest).
+		SandboxInputs()
 	switch reportType {
 	case apiMapReportType:
 		rule.Command().BuiltTool("cts-api-map").
