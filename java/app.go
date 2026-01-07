@@ -1236,7 +1236,7 @@ func (a *AndroidApp) setOutputFiles(ctx android.ModuleContext) {
 	ctx.SetOutputFiles([]android.Path{a.outputFile}, ".apk")
 	ctx.SetOutputFiles([]android.Path{a.exportPackage}, ".export-package.apk")
 	ctx.SetOutputFiles([]android.Path{a.aapt.manifestPath}, ".manifest.xml")
-	setOutputFiles(ctx, a.Library.Module)
+	setOutputFiles(ctx, &a.Library.Module)
 }
 
 type appDepsInterface interface {

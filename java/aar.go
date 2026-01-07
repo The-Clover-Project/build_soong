@@ -1177,7 +1177,7 @@ func (a *AndroidLibrary) GenerateAndroidBuildActions(ctx android.ModuleContext) 
 
 func (a *AndroidLibrary) setOutputFiles(ctx android.ModuleContext) {
 	ctx.SetOutputFiles([]android.Path{a.aarFile}, ".aar")
-	setOutputFiles(ctx, a.Library.Module)
+	setOutputFiles(ctx, &a.Library.Module)
 }
 
 func (a *AndroidLibrary) IDEInfo(ctx android.BaseModuleContext, dpInfo *android.IdeInfo) {
@@ -1731,11 +1731,11 @@ func (a *AARImport) addKSnapshot(ctx android.ModuleContext, jarFile android.Path
 	}
 }
 
-func (a AARImport) JarToSnapshotMap() map[string]android.Path {
+func (a *AARImport) JarToSnapshotMap() map[string]android.Path {
 	return a.kSnapshotFiles
 }
 
-var _ KSnapshotContainer = AARImport{}
+var _ KSnapshotContainer = (*AARImport)(nil)
 
 func (a *AARImport) HeaderJars() android.Paths {
 	return android.Paths{a.headerJarFile}
