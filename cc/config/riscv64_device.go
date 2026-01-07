@@ -23,9 +23,15 @@ import (
 
 var (
 	riscv64Cflags = []string{
-		// Help catch common 32/64-bit errors. (This is duplicated in all 64-bit
-		// architectures' cflags.)
+		// Help catch common 32/64-bit errors.
+		// Common to all LP64 architectures.
 		"-Werror=implicit-function-declaration",
+
+		// For stack allocations larger than a page, touch each page immediately
+		// to ensure we hit the guard page on stack overflow.
+		// Common to all LP64 architectures.
+		"-fstack-clash-protection",
+
 		// This is already the driver's Android default, but duplicated here (and
 		// below) for ease of experimentation with additional extensions.
 		"-march=rv64gcv_zba_zbb_zbs_zvbb",
