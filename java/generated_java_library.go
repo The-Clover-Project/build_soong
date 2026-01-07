@@ -79,6 +79,14 @@ func (module *GeneratedJavaLibraryModule) AddSharedLibrary(name string) {
 	module.Library.properties.Libs.AppendSimpleValue([]string{name})
 }
 
+// Add a java static library as a dependency, as if they had said `static_libs: [ "name" ]`
+func (module *GeneratedJavaLibraryModule) AddStaticLibrary(name string) {
+	if module.depsMutatorDone {
+		panic("GeneratedJavaLibraryModule.AddStaticLibrary called after DepsMutator")
+	}
+	module.Library.properties.Static_libs.AppendSimpleValue([]string{name})
+}
+
 func (module *GeneratedJavaLibraryModule) DepsMutator(ctx android.BottomUpMutatorContext) {
 	module.callbacks.DepsMutator(module, ctx)
 	module.depsMutatorDone = true

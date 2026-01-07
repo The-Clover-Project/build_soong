@@ -20,7 +20,6 @@ import (
 	"testing"
 
 	"android/soong/android"
-	"android/soong/cc"
 )
 
 func DirectDepsList(ctx *android.TestResult, module android.Module) []string {
@@ -29,61 +28,6 @@ func DirectDepsList(ctx *android.TestResult, module android.Module) []string {
 		deps = append(deps, dep.Name())
 	})
 	return deps
-}
-
-func TestMain(m *testing.M) {
-	m.Run()
-}
-
-// Common Android.bp content needed for all tests
-const commonBp = `
-	cc_library_static {
-		name: "stats-log-api-gen-cc-lib",
-		// srcs: ["dummy.cpp"], // Not strictly necessary for dependency resolution
-	}
-
-	cc_library_shared {
-		name: "libstatssocket",
-	}
-
-	cc_library_shared {
-		name: "libstatspull",
-	}
-
-	cc_library_headers {
-		name: "libstatssocket_headers",
-	}
-
-	cc_library_headers {
-		name: "libstatspull_headers",
-	}
-
-	filegroup {
-		name: "my_atom_protos",
-		srcs: ["path/to/my/extension_atoms.proto"],
-	}
-
-	filegroup {
-		name: "libstats_atom_options_protos",
-		srcs: ["some/random/path/atom_field_options.proto"],
-	}
-
-	filegroup {
-		name: "libprotobuf-internal-descriptor-proto",
-		srcs: ["some/protobuf/loc/descriptor.proto"],
-	}
-`
-
-// Prepare the test environment for cc_atomslog_library
-func testCcAtomslogLibraryFixturePreparers(t *testing.T) android.FixturePreparer {
-	t.Helper()
-	return android.GroupFixturePreparers(
-		cc.PrepareForTestWithCcDefaultModules,
-		android.FixtureRegisterWithContext(func(ctx android.RegistrationContext) {
-			ctx.RegisterModuleType("cc_atomslog_library", CcAtomslogLibraryFactory)
-			ctx.RegisterModuleType("cc_atomslog_library_static", CcAtomslogLibraryStaticFactory)
-			ctx.RegisterModuleType("cc_atomslog_library_shared", CcAtomslogLibrarySharedFactory)
-		}))
 }
 
 // Test valid cases
@@ -168,7 +112,7 @@ func TestCcAtomslogLibrary_VerifyCodeGen(t *testing.T) {
 				}
 			`, tt.optionalParams)
 
-			result := testCcAtomslogLibraryFixturePreparers(t).RunTestWithBp(t, commonBp+bp)
+			result := prepareForTestWithAtomslogBuildComponents.RunTestWithBp(t, commonBp+bp)
 			module := result.ModuleForTests(t, "libmyatoms_test", "android_arm64_armv8-a_static")
 
 			outputs := strings.Join(module.AllOutputs(), " ")
@@ -217,7 +161,7 @@ func TestCcAtomslogLibrary_VerifyExtraCCLibAdded(t *testing.T) {
 			namespace: "test::namespace",
 		}
 	`
-	result := testCcAtomslogLibraryFixturePreparers(t).RunTestWithBp(t, commonBp+bp)
+	result := prepareForTestWithAtomslogBuildComponents.RunTestWithBp(t, commonBp+bp)
 	module := result.ModuleForTests(t, "mystatslog", "android_arm64_armv8-a_static")
 	rule := module.Rule("arWithLibs")
 	android.EnsureListContainsSuffix(t, rule.Inputs.Strings(), "stats-log-api-gen-cc-lib.a")
@@ -253,7 +197,7 @@ func TestCcAtomslogLibrary_IncludeDefaultLibsFull(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			result := testCcAtomslogLibraryFixturePreparers(t).RunTestWithBp(t, commonBp+tt.bp)
+			result := prepareForTestWithAtomslogBuildComponents.RunTestWithBp(t, commonBp+tt.bp)
 			module := result.ModuleForTests(t, "mystatslog", "android_arm64_armv8-a_static")
 			deps := DirectDepsList(result, module.Module())
 			android.AssertStringListContains(t, "missing libstatssocket", deps, "libstatssocket")
@@ -271,7 +215,7 @@ func TestCcAtomslogLibrary_IncludeDefaultLibsHeaders(t *testing.T) {
 			include_default_libs: "headers_only",
 		}
 	`
-	result := testCcAtomslogLibraryFixturePreparers(t).RunTestWithBp(t, commonBp+bp)
+	result := prepareForTestWithAtomslogBuildComponents.RunTestWithBp(t, commonBp+bp)
 	module := result.ModuleForTests(t, "mystatslog", "android_arm64_armv8-a_static")
 	deps := DirectDepsList(result, module.Module())
 	android.AssertStringListContains(t, "missing libstatssocket_headers", deps, "libstatssocket_headers")
@@ -287,7 +231,7 @@ func TestCcAtomslogLibrary_IncludeDefaultLibsNone(t *testing.T) {
 			include_default_libs: "none",
 		}
 	`
-	result := testCcAtomslogLibraryFixturePreparers(t).RunTestWithBp(t, commonBp+bp)
+	result := prepareForTestWithAtomslogBuildComponents.RunTestWithBp(t, commonBp+bp)
 	module := result.ModuleForTests(t, "mystatslog", "android_arm64_armv8-a_static")
 	deps := DirectDepsList(result, module.Module())
 	android.AssertStringListDoesNotContain(t, "unexpected libstatssocket", deps, "libstatssocket")
@@ -305,7 +249,7 @@ func TestCcAtomslogLibrary_IncludeDefaultLibsInvalid(t *testing.T) {
 			include_default_libs: "invalid",
 		}
 	`
-	testCcAtomslogLibraryFixturePreparers(t).
+	prepareForTestWithAtomslogBuildComponents.
 		ExtendWithErrorHandler(android.FixtureExpectsOneErrorPattern(
 			"include_default_libs: must be one of \"full\", \"headers_only\", or \"none\"")).
 		RunTestWithBp(t, commonBp+bp)
@@ -319,7 +263,7 @@ func TestCcAtomslogLibrary_NoAtomsModule(t *testing.T) {
 			namespace: "test::namespace",
 		}
 	`
-	result := testCcAtomslogLibraryFixturePreparers(t).RunTestWithBp(t, commonBp+bp)
+	result := prepareForTestWithAtomslogBuildComponents.RunTestWithBp(t, commonBp+bp)
 	module := result.ModuleForTests(t, "mystatslog", "android_arm64_armv8-a_static")
 	manifest := android.RuleBuilderSboxProtoForTests(t, result.TestContext, module.Output("cc.sbox.textproto"))
 	cmdStr := manifest.Commands[0].GetCommand()
@@ -340,7 +284,7 @@ func TestCcAtomslogLibrary_VerifyStaticCannotBeLinkedAsShared(t *testing.T) {
 			shared_libs: ["mystatslog"],
 		}
 	`
-	testCcAtomslogLibraryFixturePreparers(t).
+	prepareForTestWithAtomslogBuildComponents.
 		ExtendWithErrorHandler(android.FixtureExpectsOneErrorPattern(
 			"dependency \"mystatslog\" of \"myclientlib\" missing variant")).
 		RunTestWithBp(t, commonBp+bp)
@@ -359,7 +303,7 @@ func TestCcAtomslogLibrary_VerifySharedCannotBeLinkedAsStatic(t *testing.T) {
 			static_libs: ["mystatslog"],
 		}
 	`
-	testCcAtomslogLibraryFixturePreparers(t).
+	prepareForTestWithAtomslogBuildComponents.
 		ExtendWithErrorHandler(android.FixtureExpectsOneErrorPattern(
 			"dependency \"mystatslog\" of \"myclientlib\" missing variant")).
 		RunTestWithBp(t, commonBp+bp)
@@ -372,7 +316,7 @@ func TestCcAtomslogLibrary_MissingAtomsModuleAndBasename(t *testing.T) {
 			namespace: "test::namespace",
 		}
 	`
-	testCcAtomslogLibraryFixturePreparers(t).
+	prepareForTestWithAtomslogBuildComponents.
 		ExtendWithErrorHandler(android.FixtureExpectsOneErrorPattern(
 			"At least one of atoms_module or basename must be provided")).
 		RunTestWithBp(t, commonBp+bp)
@@ -385,7 +329,7 @@ func TestCcAtomslogLibrary_MissingNamespace(t *testing.T) {
 			atoms_module: "myatoms",
 		}
 	`
-	testCcAtomslogLibraryFixturePreparers(t).
+	prepareForTestWithAtomslogBuildComponents.
 		ExtendWithErrorHandler(android.FixtureExpectsOneErrorPattern(
 			"namespace: can't be empty")).
 		RunTestWithBp(t, commonBp+bp)
@@ -400,7 +344,7 @@ func TestCcAtomslogLibrary_BadInterface(t *testing.T) {
 			interface: "invalid",
 		}
 	`
-	testCcAtomslogLibraryFixturePreparers(t).
+	prepareForTestWithAtomslogBuildComponents.
 		ExtendWithErrorHandler(android.FixtureExpectsOneErrorPattern(
 			"interface: must be one of \\[platform bootstrap vendor\\]")).
 		RunTestWithBp(t, commonBp+bp)
@@ -414,12 +358,12 @@ func TestCcAtomslogLibrary_VendorIncludesAidlLib(t *testing.T) {
 	}{
 		{
 			name:        "default aidl version",
-			expectedLib: fmt.Sprintf(aidlLibFmt, 2),
+			expectedLib: fmt.Sprintf(aidlLibFmt, 2, "ndk"),
 		},
 		{
 			name:        "aidl version specified",
 			aidlVersion: 3,
-			expectedLib: fmt.Sprintf(aidlLibFmt, 3),
+			expectedLib: fmt.Sprintf(aidlLibFmt, 3, "ndk"),
 		},
 	}
 
@@ -442,7 +386,7 @@ func TestCcAtomslogLibrary_VendorIncludesAidlLib(t *testing.T) {
 					%s
 				}
 			`, tt.expectedLib, aidlVersionStr)
-			result := testCcAtomslogLibraryFixturePreparers(t).RunTestWithBp(t, commonBp+bp)
+			result := prepareForTestWithAtomslogBuildComponents.RunTestWithBp(t, commonBp+bp)
 			module := result.ModuleForTests(t, "mystatslog", "android_arm64_armv8-a_static")
 			deps := DirectDepsList(result, module.Module())
 			android.AssertStringListContains(t, "missing "+tt.expectedLib, deps, tt.expectedLib)
@@ -476,7 +420,7 @@ func TestCcAtomslogLibrary_VendorWithBadIncludeDefaultLibs(t *testing.T) {
 					include_default_libs: "%s",
 				}
 			`, tt.includeDefaultLibs)
-			testCcAtomslogLibraryFixturePreparers(t).
+			prepareForTestWithAtomslogBuildComponents.
 				ExtendWithErrorHandler(android.FixtureExpectsOneErrorPattern(
 					"include_default_libs: cannot be set to other than \"none\" when interface is set to \"vendor\"")).
 				RunTestWithBp(t, commonBp+bp)
@@ -493,7 +437,7 @@ func TestCcAtomslogLibrary_BadGenType(t *testing.T) {
 			gen_type: "invalid",
 		}
 	`
-	testCcAtomslogLibraryFixturePreparers(t).
+	prepareForTestWithAtomslogBuildComponents.
 		ExtendWithErrorHandler(android.FixtureExpectsOneErrorPattern(
 			"gen_type: must be one of \"default\" or \"typesafe\"")).
 		RunTestWithBp(t, commonBp+bp)

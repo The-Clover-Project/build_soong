@@ -22,37 +22,13 @@ import (
 	"strings"
 )
 
-var (
-	pctx = android.NewPackageContext("android/soong/atomsapigen")
-)
-
 const (
 	includeDefaultLibsFull   = "full"
 	includeDefaultLibsHeader = "headers_only"
 	includeDefaultLibsNone   = "none"
-
-	aidlLibFmt = "android.frameworks.stats-V%d-ndk"
-
-	genTypeDefault  = "default"
-	genTypeTypesafe = "typesafe"
 )
 
-var interfaceApis = []string{"platform", "bootstrap", "vendor"}
-
-var protoDepSrcs = []string{
-	":libprotobuf-internal-descriptor-proto",
-	":libstats_atom_options_protos",
-}
-
-func init() {
-	RegisterBuildComponents(android.InitRegistrationContext)
-}
-
-func RegisterBuildComponents(ctx android.RegistrationContext) {
-	ctx.RegisterModuleType("cc_atomslog_library", CcAtomslogLibraryFactory)
-	ctx.RegisterModuleType("cc_atomslog_library_static", CcAtomslogLibraryStaticFactory)
-	ctx.RegisterModuleType("cc_atomslog_library_shared", CcAtomslogLibrarySharedFactory)
-}
+var cppInterfaceApis = []string{"platform", "bootstrap", "vendor"}
 
 type CcAtomslogLibraryProperties struct {
 	// Atoms module annotation.
@@ -141,7 +117,7 @@ func (this *CcAtomslogLibraryCallbacks) GeneratorDeps(ctx cc.DepsContext, deps c
 			if this.properties.Aidl_version != nil {
 				aidlVersion = *this.properties.Aidl_version
 			}
-			deps.SharedLibs = append(deps.SharedLibs, fmt.Sprintf(aidlLibFmt, aidlVersion))
+			deps.SharedLibs = append(deps.SharedLibs, fmt.Sprintf(aidlLibFmt, aidlVersion, "ndk"))
 		}
 	} else {
 		switch this.properties.Include_default_libs {
@@ -237,11 +213,11 @@ func (this *CcAtomslogLibraryCallbacks) GeneratorBuildActions(ctx cc.ModuleConte
 	}
 
 	if interfaceApi := this.properties.Interface; interfaceApi != "" {
-		if android.InList(interfaceApi, interfaceApis) {
+		if android.InList(interfaceApi, cppInterfaceApis) {
 			cppGenCmd.FlagWithArg("--interface ", interfaceApi)
 			hdrGenCmd.FlagWithArg("--interface ", interfaceApi)
 		} else {
-			ctx.PropertyErrorf("interface", "must be one of %v", interfaceApis)
+			ctx.PropertyErrorf("interface", "must be one of %v", cppInterfaceApis)
 		}
 	}
 
