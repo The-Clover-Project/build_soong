@@ -783,10 +783,16 @@ func createRamdisk16k(ctx android.LoadHookContext) string {
 
 	name := generatedModuleNameForPartition(ctx.Config(), "ramdisk_16k")
 	props := filesystem.Ramdisk16kImgProperties{
-		Srcs:       partitionVars.BoardKernelModules16K,
 		System_dep: proptools.StringPtr(fmt.Sprintf(":%s{.modules.zip}", generatedModuleName(ctx.Config(), "system_dlkm-kernel-modules"))),
-		Load:       partitionVars.BoardKernelModulesLoad16K,
 		Kernel:     proptools.StringPtr(kernelPath),
+	}
+
+	if partitionVars.BoardKernelModulesZip != "" {
+		props.Zip.Src = &partitionVars.BoardKernelModulesZip
+		props.Zip.Extra_blocked_modules = partitionVars.BoardKernelModulesZipExtraBlocked16kModules
+	} else {
+		props.Srcs = partitionVars.BoardKernelModules16K
+		props.Load = partitionVars.BoardKernelModulesLoad16K
 	}
 
 	ctx.CreateModuleInDirectory(
