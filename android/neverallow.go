@@ -68,7 +68,7 @@ func init() {
 	AddNeverAllowRules(createPrebuiltEtcBpDefineRule())
 	AddNeverAllowRules(createAutogenRroBpDefineRule())
 	AddNeverAllowRules(createNoSha1HashRule())
-	AddNeverAllowRules(createNoPrebuiltSystemImageRule())
+	AddNeverAllowRules(createNoPrebuiltImageRule())
 	AddNeverAllowRules(createUncheckedModuleRule())
 }
 
@@ -366,7 +366,7 @@ func createNoSha1HashRule() Rule {
 		Because("sha1 is discouraged")
 }
 
-func createNoPrebuiltSystemImageRule() Rule {
+func createNoPrebuiltImageRule() Rule {
 	return NeverAllow().
 		ModuleType(
 			"filesystem",

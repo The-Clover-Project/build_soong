@@ -174,6 +174,7 @@ func (a *androidDevice) copyFilesToProductOutForSoongOnly(ctx android.ModuleCont
 	copyBootImg(a.partitionProps.Boot_partition_name, "boot")
 	copyBootImg(a.partitionProps.Vendor_boot_partition_name, "vendor_boot")
 	copyBootImg(a.partitionProps.Vendor_kernel_boot_partition_name, "vendor_kernel_boot")
+	copyBootImg(a.partitionProps.Vendor_boot_debug_partition_name, "vendor_boot-debug")
 
 	// vendor bootconfig
 	// https://cs.android.com/android/platform/superproject/main/+/main:build/make/core/Makefile;l=1672;drc=a951ebf0198006f7fd38073a05c442d0eb92f97b
@@ -353,6 +354,7 @@ func (a *androidDevice) getFsInfos(ctx android.ModuleContext) map[string]Filesys
 		// images inside of them
 		propToType{a.partitionProps.Init_boot_partition_name, "ramdisk"},
 		propToType{a.partitionProps.Vendor_boot_partition_name, "vendor_ramdisk"},
+		propToType{a.partitionProps.Vendor_kernel_ramdisk_partition_name, "vendor_kernel_ramdisk"},
 	}
 	for _, partitionDefinition := range partitionDefinitions {
 		if proptools.String(partitionDefinition.prop) != "" {

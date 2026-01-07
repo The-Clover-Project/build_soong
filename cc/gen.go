@@ -16,6 +16,7 @@ package cc
 
 import (
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"android/soong/aidl_library"
@@ -294,16 +295,24 @@ func genSources(
 			generatedSources = append(generatedSources, ccFile)
 		case ".aidl":
 			if aidlRule == nil {
-				aidlRule = android.NewRuleBuilder(pctx, ctx).SandboxDisabled().Sbox(android.PathForModuleGen(ctx, "aidl"),
-					android.PathForModuleGen(ctx, "aidl.sbox.textproto"))
+				aidlRule = android.NewRuleBuilder(pctx, ctx).
+					SandboxDisabled().
+					Sbox(
+						android.PathForModuleGen(ctx, "aidl"),
+						android.PathForModuleGen(ctx, "aidl.sbox.textproto")).
+					SandboxInputs()
 			}
 			baseDir := strings.TrimSuffix(srcFile.String(), srcFile.Rel())
+			flagDeps := slices.Concat(
+				buildFlags.aidlFlagsDeps,
+				ctx.GlobFilesOutsideModuleDir(filepath.Join(baseDir, "**/*.aidl"), nil),
+			)
 			cppFile, aidlHeaders := genAidl(
 				ctx,
 				aidlRule,
 				"aidl",
 				srcFile,
-				nil,
+				flagDeps,
 				buildFlags.aidlFlags+" -I"+baseDir,
 			)
 			srcFiles[i] = cppFile

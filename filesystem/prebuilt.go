@@ -25,30 +25,30 @@ func init() {
 }
 
 func RegisterPrebuiltFilesystemComponents(ctx android.RegistrationContext) {
-	ctx.RegisterModuleType("android_system_image_prebuilt", PrebuiltSystemImageFactory)
+	ctx.RegisterModuleType("android_filesystem_prebuilt", PrebuiltFilesystemFactory)
 }
 
-type prebuiltSystemImageProperties struct {
+type prebuiltFilesystemProperties struct {
 	// A prebuilt system image file
 	Src *string `android:"path"`
 }
 
-type prebuiltSystemImage struct {
-	systemImage
+type prebuiltFilesystem struct {
+	filesystem
 
-	prebuiltProperties prebuiltSystemImageProperties
+	prebuiltProperties prebuiltFilesystemProperties
 }
 
-func (p *prebuiltSystemImage) GenerateAndroidBuildActions(ctx android.ModuleContext) {
+func (p *prebuiltFilesystem) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	input := android.PathForModuleSrc(ctx, proptools.String(p.prebuiltProperties.Src))
 	rootDir := android.PathForModuleOut(ctx, p.rootDirString()).OutputPath
 	output := android.PathForModuleOut(ctx, p.installFileName())
 	p.output = output
 
-	// TODO: implement FilesystemInfo correctly to replace entire android_system_image.
+	// TODO: implement FilesystemInfo correctly to replace entire android_filesystem.
 	fsInfo := FilesystemInfo{
 		ModuleName:       ctx.ModuleName(),
-		PartitionName:    "system",
+		PartitionName:    p.partitionName(),
 		RootDir:          rootDir,
 		Output:           p.OutputPath(),
 		SignedOutputPath: p.SignedOutputPath(),
@@ -65,26 +65,26 @@ func (p *prebuiltSystemImage) GenerateAndroidBuildActions(ctx android.ModuleCont
 	case ext4Type:
 		builder.Command().Textf("rm -rf %s && ", rootDir.String()).BuiltTool("debugfs").Flag("-R").Textf("'rdump / %s'", rootDir.String()).Input(input)
 	default:
-		ctx.ModuleErrorf("prebuilt system image only supports erofs and ext4 but was %q", p.fsType(ctx).String())
+		ctx.ModuleErrorf("prebuilt filesystem only supports erofs and ext4 but was %q", p.fsType(ctx).String())
 		return
 	}
 
 	builder.Command().Text("touch").Output(rootdirTimestamp)
-	builder.Build("unpack_system_image", "unpacking prebuilt system image")
+	builder.Build("unpack_prebuilt_filesystem", "unpacking prebuilt filesystem image")
 
 	ctx.Build(pctx, android.BuildParams{
 		Rule:        android.CpRule,
-		Description: "install prebuilt system image",
+		Description: "install prebuilt filesystem",
 		Output:      output,
 		Input:       input,
 		Implicit:    rootdirTimestamp,
 	})
 }
 
-func PrebuiltSystemImageFactory() android.Module {
-	module := &prebuiltSystemImage{}
+func PrebuiltFilesystemFactory() android.Module {
+	module := &prebuiltFilesystem{}
 	module.filesystemBuilder = module
 	module.AddProperties(&module.prebuiltProperties)
-	initBaseFilesystemModule(module, &module.systemImage.filesystem)
+	initBaseFilesystemModule(module, &module.filesystem)
 	return module
 }

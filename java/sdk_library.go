@@ -661,6 +661,12 @@ type sdkLibraryProperties struct {
 // OptionalPaths are always set by java_sdk_library but may not be set by
 // java_sdk_library_import as not all instances provide that information.
 type scopePaths struct {
+	//' Determines whether this is for StubsType.Exportable paths or
+	// StubsType.Everything paths. This is false for
+	// commonToSdkLibraryAndImport.scopePaths and true for
+	// commonToSdkLibraryAndImport.exportableScopePaths.
+	stubsType StubsType
+
 	// The path (represented as Paths for convenience when returning) to the stubs header jar.
 	//
 	// That is the jar that is created by turbine.
@@ -818,7 +824,7 @@ func (paths *scopePaths) extractStubsSourceInfoFromApiStubsProviders(provider *S
 }
 
 func (paths *scopePaths) extractStubsSourceInfoFromDep(ctx android.ModuleContext, dep android.ModuleProxy) error {
-	stubsType := Everything
+	stubsType := paths.stubsType
 	if ctx.Config().ReleaseHiddenApiExportableStubs() {
 		stubsType = Exportable
 	}
@@ -828,7 +834,7 @@ func (paths *scopePaths) extractStubsSourceInfoFromDep(ctx android.ModuleContext
 }
 
 func (paths *scopePaths) extractStubsSourceAndApiInfoFromApiStubsProvider(ctx android.ModuleContext, dep android.ModuleProxy) error {
-	stubsType := Everything
+	stubsType := paths.stubsType
 	if ctx.Config().ReleaseHiddenApiExportableStubs() {
 		stubsType = Exportable
 	}
@@ -967,7 +973,13 @@ func (m *SdkLibraryImport) RootLibraryName() string {
 type commonToSdkLibraryAndImport struct {
 	module commonSdkLibraryAndImportModule
 
+	// Default paths for each scope. Usually uses the Everything files but can
+	// sometimes use Exportable files.
 	scopePaths map[*apiScope]*scopePaths
+
+	// Paths to Exportable files for each scope.
+	// Includes unflagged apis and flagged apis enabled by release configurations.
+	exportableScopePaths map[*apiScope]*scopePaths
 
 	commonSdkLibraryProperties commonToSdkLibraryAndImportProperties
 
@@ -1027,7 +1039,7 @@ func (c *commonToSdkLibraryAndImport) generateCommonBuildActions(ctx android.Mod
 		everythingStubPath := makeUnsetDexJarPath()
 		exportableStubPath := makeUnsetDexJarPath()
 		removedApiFilePath := android.OptionalPath{}
-		if scopePath := c.findClosestScopePath(sdkKindToApiScope(kind)); scopePath != nil {
+		if scopePath := c.findClosestScopePath(sdkKindToApiScope(kind), Everything); scopePath != nil {
 			everythingStubPath = scopePath.stubsDexJarPath
 			exportableStubPath = scopePath.exportableStubsDexJarPath
 			removedApiFilePath = scopePath.removedApiFilePath
@@ -1072,8 +1084,17 @@ func (module *commonToSdkLibraryAndImport) setOutputFiles(ctx android.ModuleCont
 	if module.doctagPaths != nil {
 		ctx.SetOutputFiles(module.doctagPaths, ".doctags")
 	}
+
+	// Add exportable and default scope paths to the output files.
+	module.addScopePathsToOutputFiles(ctx, Everything)
+	module.addScopePathsToOutputFiles(ctx, Exportable)
+}
+
+// addScopePathsToOutputFiles adds StubsType specific paths to the output files.
+func (module *commonToSdkLibraryAndImport) addScopePathsToOutputFiles(ctx android.ModuleContext, stubsType StubsType) {
+	stubsTypeTagPrefix := stubsType.OutputTagPrefix()
 	for _, scopeName := range android.SortedKeys(scopeByName) {
-		paths := module.findScopePaths(scopeByName[scopeName])
+		paths := module.findScopePaths(scopeByName[scopeName], stubsType)
 		if paths == nil {
 			continue
 		}
@@ -1087,38 +1108,54 @@ func (module *commonToSdkLibraryAndImport) setOutputFiles(ctx android.ModuleCont
 		}
 		for _, component := range android.SortedKeys(componentToOutput) {
 			if componentToOutput[component].Valid() {
-				ctx.SetOutputFiles(android.Paths{componentToOutput[component].Path()}, "."+scopeName+"."+component)
+				ctx.SetOutputFiles(android.Paths{componentToOutput[component].Path()}, stubsTypeTagPrefix+"."+scopeName+"."+component)
 			}
 		}
 	}
 }
 
-func (c *commonToSdkLibraryAndImport) getScopePathsCreateIfNeeded(scope *apiScope) *scopePaths {
-	if c.scopePaths == nil {
-		c.scopePaths = make(map[*apiScope]*scopePaths)
+func (c *commonToSdkLibraryAndImport) scopePathsPtr(stubsType StubsType) *map[*apiScope]*scopePaths {
+	if stubsType == Exportable {
+		return &c.exportableScopePaths
+	} else {
+		return &c.scopePaths
 	}
-	paths := c.scopePaths[scope]
+}
+
+func (c *commonToSdkLibraryAndImport) getScopePathsCreateIfNeeded(scope *apiScope, stubsType StubsType) *scopePaths {
+	scopeToPathsPtr := c.scopePathsPtr(stubsType)
+
+	// Get map from scope to paths suitable for exportablePaths, creating if needed.
+	scopeToPaths := *scopeToPathsPtr
+	if scopeToPaths == nil {
+		scopeToPaths = make(map[*apiScope]*scopePaths)
+		*scopeToPathsPtr = scopeToPaths
+	}
+
+	// Get scope specific paths, creating if needed.
+	paths := scopeToPaths[scope]
 	if paths == nil {
-		paths = &scopePaths{}
-		c.scopePaths[scope] = paths
+		paths = &scopePaths{stubsType: stubsType}
+		scopeToPaths[scope] = paths
 	}
 
 	return paths
 }
 
-func (c *commonToSdkLibraryAndImport) findScopePaths(scope *apiScope) *scopePaths {
-	if c.scopePaths == nil {
+func (c *commonToSdkLibraryAndImport) findScopePaths(scope *apiScope, stubsType StubsType) *scopePaths {
+	scopeToPaths := *c.scopePathsPtr(stubsType)
+	if scopeToPaths == nil {
 		return nil
 	}
 
-	return c.scopePaths[scope]
+	return scopeToPaths[scope]
 }
 
 // If this does not support the requested api scope then find the closest available
 // scope it does support. Returns nil if no such scope is available.
-func (c *commonToSdkLibraryAndImport) findClosestScopePath(scope *apiScope) *scopePaths {
+func (c *commonToSdkLibraryAndImport) findClosestScopePath(scope *apiScope, stubsType StubsType) *scopePaths {
 	for s := scope; s != nil; s = s.canAccess {
-		if paths := c.findScopePaths(s); paths != nil {
+		if paths := c.findScopePaths(s, stubsType); paths != nil {
 			return paths
 		}
 	}
@@ -1521,11 +1558,16 @@ func (module *SdkLibrary) GenerateAndroidBuildActions(ctx android.ModuleContext)
 		// Extract information from any of the scope specific dependencies.
 		if scopeTag, ok := tag.(scopeDependencyTag); ok {
 			apiScope := scopeTag.apiScope
-			scopePaths := module.getScopePathsCreateIfNeeded(apiScope)
+			scopePaths := module.getScopePathsCreateIfNeeded(apiScope, Everything)
 
 			// Extract information from the dependency. The exact information extracted
 			// is determined by the nature of the dependency which is determined by the tag.
 			scopeTag.extractDepInfo(ctx, to, scopePaths)
+
+			exportableScopePaths := module.getScopePathsCreateIfNeeded(apiScope, Exportable)
+			// Extract exportable information from the dependency. The exact information extracted
+			// is determined by the nature of the dependency which is determined by the tag.
+			scopeTag.extractDepInfo(ctx, to, exportableScopePaths)
 
 			exportedComponents[ctx.OtherModuleName(to)] = struct{}{}
 
@@ -2326,7 +2368,7 @@ func (module *SdkLibraryImport) GenerateAndroidBuildActions(ctx android.ModuleCo
 		// Extract information from any of the scope specific dependencies.
 		if scopeTag, ok := tag.(scopeDependencyTag); ok {
 			apiScope := scopeTag.apiScope
-			scopePaths := module.getScopePathsCreateIfNeeded(apiScope)
+			scopePaths := module.getScopePathsCreateIfNeeded(apiScope, Everything)
 
 			// Extract information from the dependency. The exact information extracted
 			// is determined by the nature of the dependency which is determined by the tag.
@@ -2348,12 +2390,15 @@ func (module *SdkLibraryImport) GenerateAndroidBuildActions(ctx android.ModuleCo
 			continue
 		}
 
-		paths := module.getScopePathsCreateIfNeeded(apiScope)
-		paths.annotationsZip = android.OptionalPathForModuleSrc(ctx, scopeProperties.Annotations)
-		paths.currentApiFilePath = android.OptionalPathForModuleSrc(ctx, scopeProperties.Current_api)
-		paths.checkedInCurrentApiFilePath = android.OptionalPathForModuleSrc(ctx, scopeProperties.Current_api)
-		paths.removedApiFilePath = android.OptionalPathForModuleSrc(ctx, scopeProperties.Removed_api)
-		paths.checkedInRemovedApiFilePath = android.OptionalPathForModuleSrc(ctx, scopeProperties.Removed_api)
+		// Store the information in default and exportable paths.
+		for _, stubsType := range []StubsType{Everything, Exportable} {
+			paths := module.getScopePathsCreateIfNeeded(apiScope, stubsType)
+			paths.annotationsZip = android.OptionalPathForModuleSrc(ctx, scopeProperties.Annotations)
+			paths.currentApiFilePath = android.OptionalPathForModuleSrc(ctx, scopeProperties.Current_api)
+			paths.checkedInCurrentApiFilePath = android.OptionalPathForModuleSrc(ctx, scopeProperties.Current_api)
+			paths.removedApiFilePath = android.OptionalPathForModuleSrc(ctx, scopeProperties.Removed_api)
+			paths.checkedInRemovedApiFilePath = android.OptionalPathForModuleSrc(ctx, scopeProperties.Removed_api)
+		}
 	}
 
 	if ctx.Device() {
@@ -2364,7 +2409,7 @@ func (module *SdkLibraryImport) GenerateAndroidBuildActions(ctx android.ModuleCo
 		ai, _ := android.ModuleProvider(ctx, android.ApexInfoProvider)
 		if ai.ForPrebuiltApex {
 			module.dexJarFile = makeDexJarPathFromPath(android.PathForModuleInstall(ctx, "intentionally_no_longer_supported"))
-			module.initHiddenAPI(ctx, module.dexJarFile, module.findScopePaths(apiScopePublic).stubsImplPath[0], nil)
+			module.initHiddenAPI(ctx, module.dexJarFile, module.findScopePaths(apiScopePublic, Everything).stubsImplPath[0], nil)
 		}
 	}
 

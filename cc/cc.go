@@ -501,12 +501,13 @@ type Flags struct {
 	Global          LocalOrGlobalFlags
 	NoOverrideFlags []string // Flags applied to the end of list of flags so they are not overridden
 
-	aidlFlags     []string // Flags that apply to aidl source files
-	rsFlags       []string // Flags that apply to renderscript source files
-	libFlags      []string // Flags to add libraries early to the link order
-	extraLibFlags []string // Flags to add libraries late in the link order after LdFlags
-	TidyFlags     []string // Flags that apply to clang-tidy
-	SAbiFlags     []string // Flags that apply to header-abi-dumper
+	aidlFlags     []string      // Flags that apply to aidl source files
+	aidlFlagsDeps android.Paths // Implicit deps of the flags in aidlFlags
+	rsFlags       []string      // Flags that apply to renderscript source files
+	libFlags      []string      // Flags to add libraries early to the link order
+	extraLibFlags []string      // Flags to add libraries late in the link order after LdFlags
+	TidyFlags     []string      // Flags that apply to clang-tidy
+	SAbiFlags     []string      // Flags that apply to header-abi-dumper
 
 	// Global include flags that apply to C, C++, and assembly source files
 	// These must be after any module include flags, which will be in CommonFlags.
@@ -856,7 +857,6 @@ type linker interface {
 	baseLinkerProps() BaseLinkerProperties
 
 	link(ctx ModuleContext, flags Flags, deps PathDeps, objs Objects) android.Path
-	appendLdflags([]string)
 	unstrippedOutputFilePath() android.Path
 	strippedAllOutputFilePath() android.Path
 

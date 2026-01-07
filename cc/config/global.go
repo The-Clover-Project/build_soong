@@ -48,6 +48,9 @@ var (
 		"-Werror=bool-operation",
 		// Using __DATE__/__TIME__ causes build nondeterminism.
 		"-Werror=date-time",
+		// Bans format strings in printf-like functions that are not known at
+		// compile time and cannot be checked against their arguments.
+		"-Werror=format-security",
 		// Detects forgotten */& that usually cause a crash
 		"-Werror=int-conversion",
 		// Detects multi-character constants such as 'abcd', which have
@@ -185,9 +188,6 @@ var (
 		"-Werror=address",
 		// Detects stuff like 'x++ = x++ * x++;', which has undefined effects.
 		"-Werror=sequence-point",
-		// Bans format strings in printf-like functions that are not known at
-		// compile time and cannot be checked against their arguments.
-		"-Werror=format-security",
 	}
 
 	commonGlobalLdflags = []string{
@@ -427,10 +427,10 @@ var (
 	ClangDefaultBase = "prebuilts/clang/host"
 	// The Clang version used in the trunk branch.
 	// NOTE: This is deprecated and will be removed in a future version, use the getter function instead.
-	ClangDefaultVersion = "clang-r574158"
+	ClangDefaultVersion = "clang-r584948"
 	// The Clang short version used in the trunk branch.
 	// NOTE: This is deprecated and will be removed in a future version, use the getter function instead.
-	ClangDefaultShortVersion = "21"
+	ClangDefaultShortVersion = "22"
 
 	RsGlobalIncludes = []string{
 		"external/clang/lib/Headers",
