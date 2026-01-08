@@ -69,7 +69,8 @@ var (
 				chmod, ` +x $out && `,
 				rm, ` -rf $out.main`,
 			),
-			CommandDeps: []string{"build/soong/python/scripts/main.py"},
+			CommandDeps:     []string{"build/soong/python/scripts/main.py"},
+			SandboxDisabled: true,
 		},
 		"main", "srcsZips", "launcher")
 
@@ -79,6 +80,7 @@ var (
 				mergeZips, " -p --prefix $launcher $out $srcsZips && ",
 				chmod, " +x $out",
 			),
+			SandboxDisabled: true,
 		},
 		"srcsZips", "launcher")
 
