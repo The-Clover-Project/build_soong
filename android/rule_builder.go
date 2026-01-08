@@ -1410,6 +1410,14 @@ func (c *RuleBuilderCommand) BuiltTool(tool string) *RuleBuilderCommand {
 // internally by RuleBuilder for helper tools that are known to be compiled statically.
 func (c *RuleBuilderCommand) builtToolWithoutDeps(tool string) *RuleBuilderCommand {
 	ctx := c.rule.ctx
+	if _, ok := commonToyboxSymlinks[tool]; ok {
+		binary := PathForSource(ctx, fmt.Sprintf("prebuilts/build-tools/%s/bin/toybox", ctx.Config().PrebuiltOS()))
+		symlink := PathForSource(ctx, fmt.Sprintf("prebuilts/build-tools/path/%s/%s", ctx.Config().PrebuiltOS(), tool))
+		c.Tool(symlink)
+		c.ImplicitTool(binary)
+		return c
+	}
+
 	cmd := c.Tool(ctx.Config().HostToolPath(c.rule.ctx, tool))
 	transitiveInstallFiles := c.getToolTransitiveDeps(tool).Paths()
 	if len(transitiveInstallFiles) > 0 {
