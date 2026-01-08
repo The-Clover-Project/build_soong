@@ -1443,7 +1443,7 @@ func (c *RuleBuilderCommand) builtToolWithoutDeps(tool string) *RuleBuilderComma
 	cmd := c.Tool(ctx.Config().HostToolPath(c.rule.ctx, tool))
 	transitiveInstallFiles := c.getToolTransitiveDeps(tool).Paths()
 	if len(transitiveInstallFiles) > 0 {
-		cmd.Implicits(transitiveInstallFiles)
+		cmd.ImplicitTools(transitiveInstallFiles)
 	}
 	return cmd
 }

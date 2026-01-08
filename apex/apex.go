@@ -1625,6 +1625,12 @@ func apexFilesForAndroidApp(ctx android.BaseModuleContext, module android.Module
 		apexFiles = append(apexFiles, privAppAllowlist)
 	}
 
+	if preinstall := aapp.PreinstallAllowlist; preinstall.Valid() {
+		dirInApex := filepath.Join("etc", "sysconfig")
+		preinstallAllowlist := newApexFile(ctx, preinstall.Path(), commonInfo.BaseModuleName+"_preinstall", dirInApex, etc, module)
+		apexFiles = append(apexFiles, preinstallAllowlist)
+	}
+
 	apexFiles = append(apexFiles, af)
 
 	return apexFiles

@@ -90,6 +90,12 @@ type hiddenAPISingletonPathsStruct struct {
 	// checks and filter out bridge methods that are part of the public API. The latter relies on the
 	// propagation of visibility across the inheritance hierarchy.
 	stubFlags android.OutputPath
+
+	// The path to the CSV file that contains the flagged APIs.
+	//
+	// It is created by the Class2NonSdkList tool which processes the .class files in the boot jars
+	// looking for FlaggedApi annotations.
+	flaggedApis android.OutputPath
 }
 
 var hiddenAPISingletonPathsKey = android.NewOnceKey("hiddenAPISingletonPathsKey")
@@ -104,10 +110,11 @@ func hiddenAPISingletonPaths(ctx android.PathContext) hiddenAPISingletonPathsStr
 		// hiddenapi directory in the resulting APK.
 		hiddenapiDir := android.PathForOutput(ctx, "hiddenapi")
 		return hiddenAPISingletonPathsStruct{
-			flags:     hiddenapiDir.Join(ctx, "hiddenapi-flags.csv"),
-			index:     hiddenapiDir.Join(ctx, "hiddenapi-index.csv"),
-			metadata:  hiddenapiDir.Join(ctx, "hiddenapi-unsupported.csv"),
-			stubFlags: hiddenapiDir.Join(ctx, "hiddenapi-stub-flags.txt"),
+			flags:       hiddenapiDir.Join(ctx, "hiddenapi-flags.csv"),
+			index:       hiddenapiDir.Join(ctx, "hiddenapi-index.csv"),
+			metadata:    hiddenapiDir.Join(ctx, "hiddenapi-unsupported.csv"),
+			stubFlags:   hiddenapiDir.Join(ctx, "hiddenapi-stub-flags.txt"),
+			flaggedApis: hiddenapiDir.Join(ctx, "hiddenapi-flagged-apis.csv"),
 		}
 	}).(hiddenAPISingletonPathsStruct)
 }

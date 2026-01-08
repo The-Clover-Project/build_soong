@@ -161,7 +161,7 @@ func (pkm *prebuiltKernelModules) KernelVersion() string {
 }
 
 func (pkm *prebuiltKernelModules) DepsMutator(ctx android.BottomUpMutatorContext) {
-	ctx.AddHostToolDependencies("zipsync", "soong_zip")
+	ctx.AddHostToolDependencies("kernel_modules_builder", "zipsync", "soong_zip", "merge_zips", "depmod")
 }
 
 func (pkm *prebuiltKernelModules) GenerateAndroidBuildActions(ctx android.ModuleContext) {
@@ -175,6 +175,14 @@ func (pkm *prebuiltKernelModules) GenerateAndroidBuildActions(ctx android.Module
 	systemModulesZip := android.OptionalPathForModuleSrc(ctx, pkm.properties.System_dep)
 	if systemModulesZip.Valid() {
 		deps = append(deps, systemModulesZip.Path())
+	}
+	blocklistFile := android.OptionalPathForModuleSrc(ctx, pkm.properties.Blocklist_file)
+	if blocklistFile.Valid() {
+		deps = append(deps, blocklistFile.Path())
+	}
+	optionsFile := android.OptionalPathForModuleSrc(ctx, pkm.properties.Options_file)
+	if optionsFile.Valid() {
+		deps = append(deps, optionsFile.Path())
 	}
 	if proptools.String(pkm.properties.Zip.Src) != "" {
 		deps = append(deps, android.PathForModuleSrc(ctx, *pkm.properties.Zip.Src))
@@ -190,9 +198,14 @@ func (pkm *prebuiltKernelModules) GenerateAndroidBuildActions(ctx android.Module
 	installsZip := sboxDir.Join(ctx, "installs.zip")
 	tempDir := sboxDir.Join(ctx, "temp")
 
-	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled().Sbox(sboxDir, sboxManifest)
+	builder := android.NewRuleBuilder(pctx, ctx).
+		SandboxDisabled().
+		Sbox(sboxDir, sboxManifest).
+		SandboxInputs()
 
 	llvmStrip := config.ClangPath(ctx, "bin/llvm-strip")
+	// llvm-strip is a symlink to llvm-objcopy
+	llvmObjcopy := config.ClangPath(ctx, "bin/llvm-objcopy")
 	llvmLib := config.ClangPath(ctx, "lib/x86_64-unknown-linux-gnu/libc++.so")
 
 	builder.Command().BuiltTool("kernel_modules_builder").
@@ -200,7 +213,10 @@ func (pkm *prebuiltKernelModules) GenerateAndroidBuildActions(ctx android.Module
 		Flag("--zipsync").BuiltTool("zipsync").
 		Flag("--merge_zips").BuiltTool("merge_zips").
 		Flag("--depmod").BuiltTool("depmod").
-		Flag("--llvm-strip").Input(llvmStrip).Implicit(llvmLib).
+		Flag("--llvm-strip").Input(llvmStrip).Implicit(llvmLib).Implicit(llvmObjcopy).
+		// depmod needs libc++
+		// TODO: Get this from the depmod dep automatically
+		ImplicitTool(ctx.Config().HostCcSharedLibPath(ctx, "libc++")).
 		Input(propsFile).
 		Text(partition(ctx)).
 		Text(tempDir.String()).

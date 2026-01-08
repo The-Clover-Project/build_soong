@@ -120,7 +120,7 @@ var prepareForApexTest = android.GroupFixturePreparers(
 	// General preparers in alphabetical order as test infrastructure will enforce correct
 	// registration order.
 	android.PrepareForTestWithAndroidBuildComponents,
-	android.PrepareForTestWithHostTools("soong_zip", "zipsync"),
+	android.PrepareForTestWithHostTools("kernel_modules_builder", "zipsync", "soong_zip", "merge_zips", "depmod"),
 	bpf.PrepareForTestWithBpf,
 	cc.PrepareForTestWithCcBuildComponents,
 	java.PrepareForTestWithDexpreopt,
@@ -6142,6 +6142,7 @@ func TestApexWithApps(t *testing.T) {
 			system_modules: "none",
 			privileged: true,
 			privapp_allowlist: "privapp_allowlist_com.android.AppFooPriv.xml",
+			preinstall_allowlist: "preinstall_allowlist_com.android.AppFooPriv.xml",
 			stl: "none",
 			apex_available: [ "myapex" ],
 		}
@@ -6172,6 +6173,7 @@ func TestApexWithApps(t *testing.T) {
 	ensureContains(t, copyCmds, "image.apex/app/AppFoo@TEST.BUILD_ID/AppFoo.apk")
 	ensureContains(t, copyCmds, "image.apex/priv-app/AppFooPriv@TEST.BUILD_ID/AppFooPriv.apk")
 	ensureContains(t, copyCmds, "image.apex/etc/permissions/privapp_allowlist_com.android.AppFooPriv.xml")
+	ensureContains(t, copyCmds, "image.apex/etc/sysconfig/preinstall_allowlist_com.android.AppFooPriv.xml")
 
 	appZipRule := ctx.ModuleForTests(t, "AppFoo", "android_common_apex10000").Description("zip jni libs")
 	// JNI libraries are uncompressed
@@ -6198,6 +6200,7 @@ func TestApexWithApps(t *testing.T) {
 	ensureMatches(t, androidMk, "LOCAL_SOONG_INSTALLED_MODULE := \\S+AppFoo.apk")
 	ensureMatches(t, androidMk, "LOCAL_SOONG_INSTALL_PAIRS := \\S+AppFooPriv.apk")
 	ensureContains(t, androidMk, "LOCAL_SOONG_INSTALL_PAIRS := privapp_allowlist_com.android.AppFooPriv.xml:$(PRODUCT_OUT)/apex/myapex/etc/permissions/privapp_allowlist_com.android.AppFooPriv.xml")
+	ensureContains(t, androidMk, "LOCAL_SOONG_INSTALL_PAIRS := preinstall_allowlist_com.android.AppFooPriv.xml:$(PRODUCT_OUT)/apex/myapex/etc/sysconfig/preinstall_allowlist_com.android.AppFooPriv.xml")
 }
 
 func TestApexWithAppImportBuildId(t *testing.T) {

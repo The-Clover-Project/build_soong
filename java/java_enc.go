@@ -902,6 +902,10 @@ func (r AppInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		return err
 	}
 
+	if err = r.PreinstallAllowlist.Encode(ctx, buf); err != nil {
+		return err
+	}
+
 	val2 := r.OverriddenManifestPackageName == nil
 	if err = gobtools.EncodeBool(buf, val2); err != nil {
 		return err
@@ -954,7 +958,7 @@ func (r AppInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 
 func (r AppInfo) CustomHash(hasher *proptools.Hasher) error {
 	hasher.WriteString(":java.AppInfo")
-	hasher.WriteInt(17)
+	hasher.WriteInt(18)
 	hasher.WriteString(":.bool")
 	if r.Updatable {
 		hasher.WriteByte(1)
@@ -1072,6 +1076,9 @@ func (r AppInfo) CustomHash(hasher *proptools.Hasher) error {
 		return err
 	}
 	if err := r.PrivAppAllowlist.CustomHash(hasher); err != nil {
+		return err
+	}
+	if err := r.PreinstallAllowlist.CustomHash(hasher); err != nil {
 		return err
 	}
 	hasher.WriteString(":.*string")
@@ -1255,65 +1262,69 @@ func (r *AppInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 		return err
 	}
 
-	var val21 bool
-	if err = gobtools.DecodeBool(buf, &val21); err != nil {
+	if err = r.PreinstallAllowlist.Decode(ctx, buf); err != nil {
 		return err
 	}
-	if !val21 {
-		var val20 string
-		err = gobtools.DecodeString(buf, &val20)
+
+	var val22 bool
+	if err = gobtools.DecodeBool(buf, &val22); err != nil {
+		return err
+	}
+	if !val22 {
+		var val21 string
+		err = gobtools.DecodeString(buf, &val21)
 		if err != nil {
 			return err
 		}
-		r.OverriddenManifestPackageName = &val20
+		r.OverriddenManifestPackageName = &val21
 	}
 
-	if val24, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+	if val25, err := gobtools.DecodeInterface(ctx, buf); err != nil {
 		return err
-	} else if val24 == nil {
+	} else if val25 == nil {
 		r.ApkCertsFile = nil
 	} else {
-		r.ApkCertsFile = val24.(android.Path)
+		r.ApkCertsFile = val25.(android.Path)
 	}
 
-	var val26 int
-	err = gobtools.DecodeInt(buf, &val26)
+	var val27 int
+	err = gobtools.DecodeInt(buf, &val27)
 	if err != nil {
 		return err
 	}
-	if val26 != -1 {
-		r.JniLibs = make([]jniLib, val26)
-		for val27 := 0; val27 < int(val26); val27++ {
-			if err = r.JniLibs[val27].Decode(ctx, buf); err != nil {
+	if val27 != -1 {
+		r.JniLibs = make([]jniLib, val27)
+		for val28 := 0; val28 < int(val27); val28++ {
+			if err = r.JniLibs[val28].Decode(ctx, buf); err != nil {
 				return err
 			}
 		}
 	}
 
-	var val31 int
-	err = gobtools.DecodeInt(buf, &val31)
+	var val32 int
+	err = gobtools.DecodeInt(buf, &val32)
 	if err != nil {
 		return err
 	}
-	if val31 != -1 {
-		r.JniCoverageOutputs = make([]android.Path, val31)
-		for val32 := 0; val32 < int(val31); val32++ {
-			if val34, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+	if val32 != -1 {
+		r.JniCoverageOutputs = make([]android.Path, val32)
+		for val33 := 0; val33 < int(val32); val33++ {
+			if val35, err := gobtools.DecodeInterface(ctx, buf); err != nil {
 				return err
-			} else if val34 == nil {
-				r.JniCoverageOutputs[val32] = nil
+			} else if val35 == nil {
+				r.JniCoverageOutputs[val33] = nil
 			} else {
-				r.JniCoverageOutputs[val32] = val34.(android.Path)
+				r.JniCoverageOutputs[val33] = val35.(android.Path)
 			}
 		}
 	}
 
-	if val36, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+	if val37, err := gobtools.DecodeInterface(ctx, buf); err != nil {
 		return err
-	} else if val36 == nil {
+	} else if val37 == nil {
 		r.PackedAdditionalOutputs = nil
 	} else {
-		r.PackedAdditionalOutputs = val36.(android.Path)
+		r.PackedAdditionalOutputs = val37.(android.Path)
 	}
 
 	return err

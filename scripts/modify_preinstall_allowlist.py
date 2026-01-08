@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 #
-# Copyright (C) 2022 The Android Open Source Project
+# Copyright (C) 2026 The Android Open Source Project
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-"""A tool for modifying privileged permission allowlists."""
+"""A tool for modifying preinstall permission allowlists."""
 
 import argparse
 import sys
@@ -25,18 +25,18 @@ class InvalidRootNodeException(Exception):
   pass
 
 
-class InvalidNumberOfPrivappPermissionChildren(Exception):
+class InvalidNumberOfAllowlistsException(Exception):
   pass
 
 
 def modify_allowlist(allowlist_dom, package_name):
-  if allowlist_dom.documentElement.tagName != 'permissions':
+  if allowlist_dom.documentElement.tagName != 'config':
     raise InvalidRootNodeException
-  nodes = allowlist_dom.getElementsByTagName('privapp-permissions')
+  nodes = allowlist_dom.getElementsByTagName('install-in-user-type')
   if nodes.length != 1:
-    raise InvalidNumberOfPrivappPermissionChildren
-  privapp_permissions = nodes[0]
-  privapp_permissions.setAttribute('package', package_name)
+    raise InvalidNumberOfAllowlistsException
+  install_in_user_type = nodes[0]
+  install_in_user_type.setAttribute('package', package_name)
 
 
 def parse_args():
