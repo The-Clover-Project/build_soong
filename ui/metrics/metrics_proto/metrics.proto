@@ -565,4 +565,14 @@ message SandboxMetrics {
   optional uint32 total_rules = 1;
   // The number of rules with sandboxing disabled.
   optional uint32 disabled_rules = 2;
+  // Detailed information about each action.
+  repeated SandboxAction actions = 3;
+}
+
+message SandboxAction {
+  // A name representing this action. For static rules it will just be the ninja name, for
+  // dynamic rules like RuleBuilder-created ones it will be the line of code that created it.
+  optional string name = 1;
+  // True if the rule is sandboxed
+  optional bool sandboxed = 2;
 }
