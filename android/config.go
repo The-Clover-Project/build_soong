@@ -2192,7 +2192,7 @@ func (c *config) XOMDisabledForPath(path string) bool {
 	if c.productVariables.XOMExcludePaths == nil {
 		return false
 	}
-	return PrefixInList(c.productVariables.XOMExcludePaths, path)
+	return HasAnyPrefix(path, c.productVariables.XOMExcludePaths)
 }
 
 func (c *config) VendorConfig(name string) VendorConfig {
