@@ -632,10 +632,15 @@ func ClangShortVersion(ctx android.PathContext) string {
 // Check if the Clang revision is greater or equal to minRev. Returns false if failed to parse.
 func ClangVersionAtLeast(ctx android.PathContext, minRev int) bool {
 	curRevStr := ClangVersion(ctx)
+	// Slice the string to keep only the digits (e.g., "584948")
 	if !strings.HasPrefix(curRevStr, "clang-r") {
 		return false
 	}
-	curRev, err := strconv.Atoi(curRevStr[7:])
+	i := 7
+	for i < len(curRevStr) && curRevStr[i] >= '0' && curRevStr[i] <= '9' {
+		i++
+	}
+	curRev, err := strconv.Atoi(curRevStr[7:i])
 	if err != nil {
 		return false
 	}
