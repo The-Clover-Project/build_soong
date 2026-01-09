@@ -741,7 +741,6 @@ func TestLibraryAssets(t *testing.T) {
 			} else {
 				aapt2link = m.Output("package-res.apk")
 			}
-			aapt2link = aapt2link
 			aapt2Flags := aapt2link.Args["flags"]
 			if test.assetFlag != "" {
 				android.AssertStringDoesContain(t, "asset flag", aapt2Flags, test.assetFlag)

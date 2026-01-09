@@ -15,6 +15,7 @@
 package java
 
 import (
+	"path"
 	"reflect"
 	"strings"
 	"testing"
@@ -24,7 +25,21 @@ import (
 
 func TestDroiddoc(t *testing.T) {
 	t.Parallel()
-	ctx, _ := testJavaWithFS(t, `
+
+	var outDir string
+	result := android.GroupFixturePreparers(
+		prepareForJavaTest,
+		android.FixtureModifyConfig(func(config android.Config) {
+			outDir = config.OutDir()
+		}),
+		android.FixtureModifyEnv(func(env map[string]string) {
+			env["BUILD_DATETIME_FILE"] = path.Join(outDir, "build_date.txt")
+		}),
+		android.FixtureMergeMockFs(map[string][]byte{
+			"bar-doc/a.java": nil,
+			"bar-doc/b.java": nil,
+		}),
+	).RunTestWithBp(t, `
 		droiddoc_exported_dir {
 		    name: "droiddoc-templates-sdk",
 		    path: ".",
@@ -65,11 +80,9 @@ func TestDroiddoc(t *testing.T) {
 		    todo_file: "libcore-docs-todo.html",
 		    flags: ["-offlinemode -title \"libcore\""],
 		}
-		`,
-		map[string][]byte{
-			"bar-doc/a.java": nil,
-			"bar-doc/b.java": nil,
-		})
+		`)
+
+	ctx := result.TestContext
 	barStubsOutputs := ctx.ModuleForTests(t, "bar-stubs", "android_common").OutputFiles(ctx, t, "")
 	if len(barStubsOutputs) != 1 {
 		t.Errorf("Expected one output from \"bar-stubs\" got %s", barStubsOutputs)

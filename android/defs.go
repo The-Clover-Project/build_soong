@@ -278,73 +278,73 @@ var (
 	MergeZips       = pctx.HostTool("merge_zips")
 )
 
-var commonToyboxSymlinks = []string{
-	"basename",
-	"cat",
-	"chmod",
-	"cmp",
-	"comm",
-	"cp",
-	"cut",
-	"date",
-	"dd",
-	"dirname",
-	"dos2unix",
-	"du",
-	"echo",
-	"egrep",
-	"env",
-	"file",
-	"find",
-	"getconf",
-	"getopt",
-	"grep",
-	"gzip",
-	"head",
-	"id",
-	"install",
-	"ln",
-	"ls",
-	"md5sum",
-	"mkdir",
-	"mktemp",
-	"mv",
-	"nl",
-	"od",
-	"paste",
-	"patch",
-	"printf",
-	"pwd",
-	"readlink",
-	"realpath",
-	"rm",
-	"rmdir",
-	"sed",
-	"seq",
-	"setsid",
-	"sha1sum",
-	"sha256sum",
-	"sha512sum",
-	"sleep",
-	"sort",
-	"stat",
-	"tail",
-	"tar",
-	"tee",
-	"test",
-	"timeout",
-	"touch",
-	"tr",
-	"true",
-	"truncate",
-	"uname",
-	"uniq",
-	"unix2dos",
-	"wc",
-	"which",
-	"whoami",
-	"xargs",
-	"xxd",
+var commonToyboxSymlinks = map[string]struct{}{
+	"basename":  struct{}{},
+	"cat":       struct{}{},
+	"chmod":     struct{}{},
+	"cmp":       struct{}{},
+	"comm":      struct{}{},
+	"cp":        struct{}{},
+	"cut":       struct{}{},
+	"date":      struct{}{},
+	"dd":        struct{}{},
+	"dirname":   struct{}{},
+	"dos2unix":  struct{}{},
+	"du":        struct{}{},
+	"echo":      struct{}{},
+	"egrep":     struct{}{},
+	"env":       struct{}{},
+	"file":      struct{}{},
+	"find":      struct{}{},
+	"getconf":   struct{}{},
+	"getopt":    struct{}{},
+	"grep":      struct{}{},
+	"gzip":      struct{}{},
+	"head":      struct{}{},
+	"id":        struct{}{},
+	"install":   struct{}{},
+	"ln":        struct{}{},
+	"ls":        struct{}{},
+	"md5sum":    struct{}{},
+	"mkdir":     struct{}{},
+	"mktemp":    struct{}{},
+	"mv":        struct{}{},
+	"nl":        struct{}{},
+	"od":        struct{}{},
+	"paste":     struct{}{},
+	"patch":     struct{}{},
+	"printf":    struct{}{},
+	"pwd":       struct{}{},
+	"readlink":  struct{}{},
+	"realpath":  struct{}{},
+	"rm":        struct{}{},
+	"rmdir":     struct{}{},
+	"sed":       struct{}{},
+	"seq":       struct{}{},
+	"setsid":    struct{}{},
+	"sha1sum":   struct{}{},
+	"sha256sum": struct{}{},
+	"sha512sum": struct{}{},
+	"sleep":     struct{}{},
+	"sort":      struct{}{},
+	"stat":      struct{}{},
+	"tail":      struct{}{},
+	"tar":       struct{}{},
+	"tee":       struct{}{},
+	"test":      struct{}{},
+	"timeout":   struct{}{},
+	"touch":     struct{}{},
+	"tr":        struct{}{},
+	"true":      struct{}{},
+	"truncate":  struct{}{},
+	"uname":     struct{}{},
+	"uniq":      struct{}{},
+	"unix2dos":  struct{}{},
+	"wc":        struct{}{},
+	"which":     struct{}{},
+	"whoami":    struct{}{},
+	"xargs":     struct{}{},
+	"xxd":       struct{}{},
 }
 
 func init() {
@@ -354,16 +354,7 @@ func init() {
 		return ctx.Config().RBEWrapper()
 	})
 
-	pctx.HostBinToolVariable("DepfileVerifier", "depfile_verifier")
 	pctx.SourcePathVariable("toybox", "prebuilts/build-tools/${HostPrebuiltTag}/bin/toybox")
-
-	// Create a variable for every toybox command. toybox_phonies_singleton will also create
-	// a -deps phony, but we can't do that here because blueprint doesn't currently have a way to
-	// create phonies in the init() function.
-	for _, name := range commonToyboxSymlinks {
-		varName := string(unicode.ToUpper(rune(name[0]))) + name[1:]
-		pctx.SourcePathVariable(varName, "prebuilts/build-tools/path/${HostPrebuiltTag}/"+name)
-	}
 
 	InitRegistrationContext.RegisterParallelSingletonType("toybox_phonies_singleton", toyboxPhoniesSingletonFactory)
 }
@@ -425,7 +416,7 @@ func toyboxPhoniesSingletonFactory() Singleton {
 // Generate the phonies for the deps in a singleton, as blueprint currently doesn't have
 // a way to create phonies from the init() function.
 func (t *toyboxPhoniesSingleton) GenerateBuildActions(ctx SingletonContext) {
-	for _, name := range commonToyboxSymlinks {
+	for _, name := range SortedKeys(commonToyboxSymlinks) {
 		varName := string(unicode.ToUpper(rune(name[0]))) + name[1:]
 		binary := PathForSource(ctx, fmt.Sprintf("prebuilts/build-tools/%s/bin/toybox", ctx.Config().PrebuiltOS()))
 		symlink := PathForSource(ctx, fmt.Sprintf("prebuilts/build-tools/path/%s/%s", ctx.Config().PrebuiltOS(), name))

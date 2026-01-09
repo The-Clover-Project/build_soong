@@ -34,6 +34,7 @@ func (reducer *TestConfigReducer) parse(args []string) error {
 	fs := flag.NewFlagSet("reduce-test-configs", flag.ExitOnError)
 
 	fs.StringVar(&reducer.Top, "top", "", "The top level directory")
+	fs.StringVar(&reducer.Projects, "projects", "", "The project repositories to consider when loading relevant modified files")
 
 	return fs.Parse(args)
 }
@@ -140,7 +141,13 @@ func (reducer *TestConfigReducer) loadModifiedFiles() error {
 func (reducer *TestConfigReducer) loadModifiedFilesFromRepoDiff() ([]string, error) {
 	modifiedFiles := []string{}
 
-	modifiedFilesCmd := exec.Command("repo", "forall", "-p", "-c", "git diff --name-only $(git merge-base @{u} HEAD)")
+	modifiedFilesArgs := []string{"forall"}
+	if reducer.Projects != "" {
+		modifiedFilesArgs = append(modifiedFilesArgs, strings.Split(reducer.Projects, ",")...)
+	}
+	modifiedFilesArgs = append(modifiedFilesArgs, "-p", "-c", "git diff --name-only $(git merge-base @{u} HEAD)")
+
+	modifiedFilesCmd := exec.Command("repo", modifiedFilesArgs...)
 	modifiedFilesCmd.Dir = reducer.Top
 
 	modifiedFilesOut, _ := modifiedFilesCmd.CombinedOutput()

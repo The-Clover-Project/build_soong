@@ -17,6 +17,18 @@ type Ramdisk16kImgPropertiesJSON struct {
 
 	// Path to the prebuilt 16KB kernel
 	Kernel *string `json:",omitempty"`
+
+	// properties for getting the kernel modules from a zip file.
+	// Useful if the exact list of kernel modules to install isn't known at analysis time.
+	Zip ZipProperties
+}
+
+type ZipProperties struct {
+	// The zip file. Kernel modules will be looked up under the 16kb/ folder.
+	Src *string `json:",omitempty"`
+
+	// Names of modules that will be removed from the load file.
+	Extra_blocked_modules []string `json:",omitempty"`
 }
 
 func (p *Ramdisk16kImgPropertiesJSON) ToJSON() string {

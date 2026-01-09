@@ -115,10 +115,14 @@ var prepareRavenwoodRuntime = android.GroupFixturePreparers(
 				"ravenwood-runtime-jni2",
 			],
 			data: [
-				":app1",
-			],
-			fonts: [
-				":Font.ttf"
+				{
+					path: "ravenwood-data",
+					srcs: [":app1"],
+				},
+				{
+					path: "fonts",
+					srcs: [":Font.ttf"],
+				},
 			],
 			subruntimes: [
 				"ravenwood-runtime.sub1",

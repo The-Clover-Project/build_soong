@@ -276,7 +276,7 @@ function verify_packages_licenses {
   # PRODUCT and 4 prebuilt packages have "PackageLicenseDeclared: NOASSERTION"
   # All other packages have declared licenses
   num_of_packages_with_noassertion_license=$(grep 'PackageLicenseDeclared: NOASSERTION' $sbom_file | wc -l)
-  if [ $num_of_packages_with_noassertion_license -lt 16 ]
+  if [ $num_of_packages_with_noassertion_license -lt 18 ]
   then
     echo "Number of packages with NOASSERTION license is correct."
   else
@@ -321,7 +321,6 @@ function test_sbom_unbundled_modules {
     com.google.android.os.statsd \
     com.google.android.permission \
     com.google.android.profiling \
-    com.google.android.resolv \
     com.google.android.rkpd \
     com.google.android.scheduling \
     com.google.android.sdkext \

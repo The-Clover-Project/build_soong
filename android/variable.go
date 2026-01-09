@@ -771,6 +771,7 @@ type PartitionVariables struct {
 	BoardKernelModulesZip                              string   `json:",omitempty"`
 	BoardKernelModulesZipExtraVendorKernelRamdiskLoads []string `json:",omitempty"`
 	BoardKernelModulesZipExtraVendorKernelModules      []string `json:",omitempty"`
+	BoardKernelModulesZipExtraBlocked16kModules        []string `json:",omitempty"`
 	BuildingSystemDlkmImage                            bool     `json:",omitempty"`
 	SystemKernelModules                                []string `json:",omitempty"`
 	SystemKernelBlocklistFile                          string   `json:",omitempty"`

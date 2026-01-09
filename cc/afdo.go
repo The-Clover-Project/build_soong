@@ -113,6 +113,20 @@ func (afdo *afdo) flags(ctx ModuleContext, flags Flags) Flags {
 		// Salvage stale profile by fuzzy matching renamed functions.
 		flags.Local.CFlags = append([]string{"-mllvm", "--salvage-unused-profile=true"}, flags.Local.CFlags...)
 		flags.Local.LdFlags = append([]string{profileUseFlag, "-Wl,-mllvm,-no-warn-sample-unused=true"}, flags.Local.LdFlags...)
+		// Enable Machine Function Splitting on ARM64.
+		if ctx.Config().GetBuildFlagBool("RELEASE_BUILD_AFDO_ENABLE_MFS") {
+			if ctx.Arch().ArchType == android.Arm64 {
+				flags.Local.CFlags = append([]string{"-fsplit-machine-functions"}, flags.Local.CFlags...)
+				flags.Local.LdFlags = append([]string{"-Wl,-mllvm,-enable-split-machine-functions"}, flags.Local.LdFlags...)
+			}
+		}
+		// Use extended TSP for basic block placement.
+		if ctx.Config().GetBuildFlagBool("RELEASE_BUILD_AFDO_ENABLE_EXT_TSP") {
+			if ctx.Arch().ArchType == android.Arm64 {
+				flags.Local.CFlags = append([]string{"-mllvm", "-enable-ext-tsp-block-placement=1"}, flags.Local.CFlags...)
+				flags.Local.LdFlags = append([]string{"-Wl,-mllvm,-enable-ext-tsp-block-placement=1"}, flags.Local.LdFlags...)
+			}
+		}
 
 		// Update CFlagsDeps and LdFlagsDeps so the module is rebuilt
 		// if profileFile gets updated
