@@ -39,5 +39,6 @@ DISABLE_LTO=true \
 
 if [ -n "${DIST_DIR}" ]; then
     mkdir -p ${DIST_DIR} || true
+    export PATH=${PWD}/prebuilts/build-tools/path/linux-x86:${PATH}
     tar cjf ${DIST_DIR}/ndk_platform.tar.bz2 -C ${OUT_DIR}/soong ndk
 fi
