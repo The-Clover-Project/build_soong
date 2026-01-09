@@ -36,12 +36,10 @@ var (
 				"-C linker=${RustcLinkerCmd} -C link-args=\"--android-clang-bin=${config.ClangCmd} ${linkerScriptFlags}\" " +
 				"-C link-args=@${out}.clang.rsp " +
 				"--emit ${emitType} -o $out --emit dep-info=$out.d.raw $in ${libFlags} $rustcFlags" +
-				" && ${DepfileVerifier} ${depfileVerifierSkip} --check-suffix-only $out.d ${soongSrcsFile}",
+				" && ${DepfileVerifier} --check-suffix-only $out.d ${soongSrcsFile}",
 			CommandDeps:     []string{"$rustcCmd", "${RustcLinkerCmd}", "${config.ClangCmd}", "${DepfileVerifier}", "${RustcWrapper}"},
 			Rspfile:         "${out}.clang.rsp",
 			RspfileContent:  "${crtBegin} ${earlyLinkFlags} ${linkFlags} ${crtEnd}",
-			Deps:            blueprint.DepsGCC,
-			Depfile:         "$out.d",
 			SandboxDisabled: true,
 		}, &remoteexec.REParams{
 			// Until there's a "rust" tool, use clang. This interprets "-L" flags
@@ -62,7 +60,7 @@ var (
 			},
 			Platform: map[string]string{remoteexec.PoolKey: "${config.RERustPool}"},
 		},
-		[]string{"rustcFlags", "linkerScriptFlags", "earlyLinkFlags", "linkFlags", "libFlags", "crtBegin", "crtEnd", "emitType", "envVars", "soongSrcsFile", "depfileVerifierSkip"},
+		[]string{"rustcFlags", "linkerScriptFlags", "earlyLinkFlags", "linkFlags", "libFlags", "crtBegin", "crtEnd", "emitType", "envVars", "soongSrcsFile"},
 		[]string{"rbeRspFile"})
 
 	_       = pctx.SourcePathVariable("rustdocCmd", "${config.RustBin}/rustdoc")
@@ -556,24 +554,18 @@ func transformSrctoCrate(ctx android.ModuleContext, main android.Path, deps Path
 	android.WriteFileRule(ctx, soongDepsFile, strings.Join(srcInputs.Strings(), "\n"))
 	implicits = append(implicits, soongDepsFile)
 
-	depfileVerifierSkipFlag := "--skip"
-	if !t.useExpansiveDefaultSrcs {
-		depfileVerifierSkipFlag = ""
-	}
-
 	rule := rustc
 	args := map[string]string{
-		"rustcFlags":          strings.Join(rustcFlags, " "),
-		"linkerScriptFlags":   strings.Join(linkerScriptFlags, " "),
-		"earlyLinkFlags":      earlyLinkFlags,
-		"linkFlags":           strings.Join(linkFlags, " "),
-		"libFlags":            strings.Join(libFlags, " "),
-		"crtBegin":            strings.Join(deps.CrtBegin.Strings(), " "),
-		"crtEnd":              strings.Join(deps.CrtEnd.Strings(), " "),
-		"envVars":             rustStringifyEnvVars(envVars),
-		"emitType":            t.emitType,
-		"soongSrcsFile":       soongDepsFile.String(),
-		"depfileVerifierSkip": depfileVerifierSkipFlag,
+		"rustcFlags":        strings.Join(rustcFlags, " "),
+		"linkerScriptFlags": strings.Join(linkerScriptFlags, " "),
+		"earlyLinkFlags":    earlyLinkFlags,
+		"linkFlags":         strings.Join(linkFlags, " "),
+		"libFlags":          strings.Join(libFlags, " "),
+		"crtBegin":          strings.Join(deps.CrtBegin.Strings(), " "),
+		"crtEnd":            strings.Join(deps.CrtEnd.Strings(), " "),
+		"envVars":           rustStringifyEnvVars(envVars),
+		"emitType":          t.emitType,
+		"soongSrcsFile":     soongDepsFile.String(),
 	}
 
 	// If SrcFiles populating is ever tied to some other property being set
