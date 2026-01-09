@@ -324,6 +324,10 @@ var (
 		"-Wno-default-const-init-var-unsafe",
 		"-Wno-preferred-type-bitfield-enum-conversion",
 		"-Wno-implicit-enum-enum-cast",
+		// New warnings to be fixed after clang-r584948
+		"-Wno-character-conversion", // http://b/452740154
+		// TODO: Disable this warning in external projects after switching clang.
+		"-Wno-error=uninitialized-const-pointer", // http://b/458489157
 
 		// Allow using VLA CXX extension.
 		"-Wno-vla-cxx-extension",
@@ -512,13 +516,6 @@ func init() {
 
 	pctx.VariableFunc("NoOverrideGlobalCflags", func(ctx android.PackageVarContext) string {
 		flags := noOverrideGlobalCflags
-		if ClangVersionAtLeast(ctx, 584948) {
-			// http://b/452740154
-			flags = append(flags, "-Wno-character-conversion")
-			// http://b/458489157.
-			// TODO: Disable this warning in external projects after switching clang.
-			flags = append(flags, "-Wno-error=uninitialized-const-pointer")
-		}
 		if ctx.Config().IsEnvTrue("LLVM_NEXT") {
 			flags = append(noOverrideGlobalCflags, llvmNextExtraCommonGlobalCflags...)
 			IllegalFlags = []string{} // Don't fail build while testing a new compiler.
