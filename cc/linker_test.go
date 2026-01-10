@@ -77,7 +77,7 @@ func TestXomDisableByDependency(t *testing.T) {
 		prepareForTestWithXom,
 		android.FixtureModifyProductVariables(func(variables android.FixtureProductVariables) {
 			variables.EnableXOM = BoolPtr(true)
-			variables.XOMExcludePaths = []string{"disable_path/"}
+			variables.XOMExcludePaths = []string{"disable_path"}
 		}),
 	).RunTest(t)
 
@@ -86,10 +86,14 @@ func TestXomDisableByDependency(t *testing.T) {
 
 	disabled_by_static_dep := result.ModuleForTests(t, "libxom_disabled_by_static_dep", buildOs+shared_suffix).Rule("ld").Args["ldFlags"]
 	disabled_by_static_dep_path := result.ModuleForTests(t, "libxom_disabled_by_static_dep_path", buildOs+shared_suffix).Rule("ld").Args["ldFlags"]
+	disabled_by_path := result.ModuleForTests(t, "libxom_path_disabled", buildOs+shared_suffix).Rule("ld").Args["ldFlags"]
 	static_dep_xom_path_override := result.ModuleForTests(t, "libxom_static_dep_path_override", buildOs+shared_suffix).Rule("ld").Args["ldFlags"]
 	override_static_deps_settings := result.ModuleForTests(t, "libxom_override_static_deps", buildOs+shared_suffix).Rule("ld").Args["ldFlags"]
 	if strings.Contains(disabled_by_static_dep, "--execute-only") {
 		t.Errorf("XOM not disabled in dependent of a static dep which explicitly disables XOM")
+	}
+	if strings.Contains(disabled_by_path, "--execute-only") {
+		t.Errorf("XOM not disabled in when XOM disabled by path")
 	}
 	if strings.Contains(disabled_by_static_dep_path, "--execute-only") {
 		t.Errorf("XOM not disabled in dependent of a static dep with XOM disabled by path")

@@ -35,6 +35,7 @@ func (reducer *TestConfigReducer) parse(args []string) error {
 
 	fs.StringVar(&reducer.Top, "top", "", "The top level directory")
 	fs.StringVar(&reducer.Projects, "projects", "", "The project repositories to consider when loading relevant modified files")
+	fs.StringVar(&reducer.Filepaths, "filepaths", "", "The explicit filepaths to consider when reducing test configurations.")
 
 	return fs.Parse(args)
 }
@@ -116,7 +117,9 @@ func (reducer *TestConfigReducer) load() error {
 }
 
 func (reducer *TestConfigReducer) loadModifiedFiles() error {
-	if changeInfoPath := os.Getenv("CHANGE_INFO"); changeInfoPath != "" {
+	if reducer.Filepaths != "" {
+		reducer.ModifiedFiles = strings.Split(reducer.Filepaths, ",")
+	} else if changeInfoPath := os.Getenv("CHANGE_INFO"); changeInfoPath != "" {
 		var err error
 		reducer.ModifiedFiles, err = reducer.loadModifiedFilesFromChangeInfo(changeInfoPath)
 		if err != nil {

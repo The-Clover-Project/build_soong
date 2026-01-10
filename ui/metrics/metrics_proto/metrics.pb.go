@@ -2501,6 +2501,8 @@ type SandboxMetrics struct {
 	TotalRules *uint32 `protobuf:"varint,1,opt,name=total_rules,json=totalRules" json:"total_rules,omitempty"`
 	// The number of rules with sandboxing disabled.
 	DisabledRules *uint32 `protobuf:"varint,2,opt,name=disabled_rules,json=disabledRules" json:"disabled_rules,omitempty"`
+	// Detailed information about each action.
+	Actions []*SandboxAction `protobuf:"bytes,3,rep,name=actions" json:"actions,omitempty"`
 }
 
 func (x *SandboxMetrics) Reset() {
@@ -2549,6 +2551,71 @@ func (x *SandboxMetrics) GetDisabledRules() uint32 {
 	return 0
 }
 
+func (x *SandboxMetrics) GetActions() []*SandboxAction {
+	if x != nil {
+		return x.Actions
+	}
+	return nil
+}
+
+type SandboxAction struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	// A name representing this action. For static rules it will just be the ninja name, for
+	// dynamic rules like RuleBuilder-created ones it will be the line of code that created it.
+	Name *string `protobuf:"bytes,1,opt,name=name" json:"name,omitempty"`
+	// True if the rule is sandboxed
+	Sandboxed *bool `protobuf:"varint,2,opt,name=sandboxed" json:"sandboxed,omitempty"`
+}
+
+func (x *SandboxAction) Reset() {
+	*x = SandboxAction{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_metrics_proto_msgTypes[24]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *SandboxAction) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SandboxAction) ProtoMessage() {}
+
+func (x *SandboxAction) ProtoReflect() protoreflect.Message {
+	mi := &file_metrics_proto_msgTypes[24]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SandboxAction.ProtoReflect.Descriptor instead.
+func (*SandboxAction) Descriptor() ([]byte, []int) {
+	return file_metrics_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *SandboxAction) GetName() string {
+	if x != nil && x.Name != nil {
+		return *x.Name
+	}
+	return ""
+}
+
+func (x *SandboxAction) GetSandboxed() bool {
+	if x != nil && x.Sandboxed != nil {
+		return *x.Sandboxed
+	}
+	return false
+}
+
 type OptimizedBuildMetrics_TargetOptimizationResult struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -2570,7 +2637,7 @@ type OptimizedBuildMetrics_TargetOptimizationResult struct {
 func (x *OptimizedBuildMetrics_TargetOptimizationResult) Reset() {
 	*x = OptimizedBuildMetrics_TargetOptimizationResult{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_metrics_proto_msgTypes[25]
+		mi := &file_metrics_proto_msgTypes[26]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2583,7 +2650,7 @@ func (x *OptimizedBuildMetrics_TargetOptimizationResult) String() string {
 func (*OptimizedBuildMetrics_TargetOptimizationResult) ProtoMessage() {}
 
 func (x *OptimizedBuildMetrics_TargetOptimizationResult) ProtoReflect() protoreflect.Message {
-	mi := &file_metrics_proto_msgTypes[25]
+	mi := &file_metrics_proto_msgTypes[26]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2650,7 +2717,7 @@ type OptimizedBuildMetrics_TargetOptimizationResult_OutputArtifact struct {
 func (x *OptimizedBuildMetrics_TargetOptimizationResult_OutputArtifact) Reset() {
 	*x = OptimizedBuildMetrics_TargetOptimizationResult_OutputArtifact{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_metrics_proto_msgTypes[26]
+		mi := &file_metrics_proto_msgTypes[27]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -2663,7 +2730,7 @@ func (x *OptimizedBuildMetrics_TargetOptimizationResult_OutputArtifact) String()
 func (*OptimizedBuildMetrics_TargetOptimizationResult_OutputArtifact) ProtoMessage() {}
 
 func (x *OptimizedBuildMetrics_TargetOptimizationResult_OutputArtifact) ProtoReflect() protoreflect.Message {
-	mi := &file_metrics_proto_msgTypes[26]
+	mi := &file_metrics_proto_msgTypes[27]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -3199,15 +3266,23 @@ var file_metrics_proto_rawDesc = []byte{
 	0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x18, 0x03, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x0d, 0x6d,
 	0x6f, 0x64, 0x69, 0x66, 0x69, 0x63, 0x61, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x12, 0x1c, 0x0a, 0x09,
 	0x64, 0x65, 0x6c, 0x65, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x18, 0x04, 0x20, 0x01, 0x28, 0x0d, 0x52,
-	0x09, 0x64, 0x65, 0x6c, 0x65, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x22, 0x58, 0x0a, 0x0e, 0x53, 0x61,
-	0x6e, 0x64, 0x62, 0x6f, 0x78, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x12, 0x1f, 0x0a, 0x0b,
-	0x74, 0x6f, 0x74, 0x61, 0x6c, 0x5f, 0x72, 0x75, 0x6c, 0x65, 0x73, 0x18, 0x01, 0x20, 0x01, 0x28,
-	0x0d, 0x52, 0x0a, 0x74, 0x6f, 0x74, 0x61, 0x6c, 0x52, 0x75, 0x6c, 0x65, 0x73, 0x12, 0x25, 0x0a,
-	0x0e, 0x64, 0x69, 0x73, 0x61, 0x62, 0x6c, 0x65, 0x64, 0x5f, 0x72, 0x75, 0x6c, 0x65, 0x73, 0x18,
-	0x02, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x0d, 0x64, 0x69, 0x73, 0x61, 0x62, 0x6c, 0x65, 0x64, 0x52,
-	0x75, 0x6c, 0x65, 0x73, 0x42, 0x28, 0x5a, 0x26, 0x61, 0x6e, 0x64, 0x72, 0x6f, 0x69, 0x64, 0x2f,
-	0x73, 0x6f, 0x6f, 0x6e, 0x67, 0x2f, 0x75, 0x69, 0x2f, 0x6d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73,
-	0x2f, 0x6d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x5f, 0x70, 0x72, 0x6f, 0x74, 0x6f,
+	0x09, 0x64, 0x65, 0x6c, 0x65, 0x74, 0x69, 0x6f, 0x6e, 0x73, 0x22, 0x96, 0x01, 0x0a, 0x0e, 0x53,
+	0x61, 0x6e, 0x64, 0x62, 0x6f, 0x78, 0x4d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x12, 0x1f, 0x0a,
+	0x0b, 0x74, 0x6f, 0x74, 0x61, 0x6c, 0x5f, 0x72, 0x75, 0x6c, 0x65, 0x73, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x0d, 0x52, 0x0a, 0x74, 0x6f, 0x74, 0x61, 0x6c, 0x52, 0x75, 0x6c, 0x65, 0x73, 0x12, 0x25,
+	0x0a, 0x0e, 0x64, 0x69, 0x73, 0x61, 0x62, 0x6c, 0x65, 0x64, 0x5f, 0x72, 0x75, 0x6c, 0x65, 0x73,
+	0x18, 0x02, 0x20, 0x01, 0x28, 0x0d, 0x52, 0x0d, 0x64, 0x69, 0x73, 0x61, 0x62, 0x6c, 0x65, 0x64,
+	0x52, 0x75, 0x6c, 0x65, 0x73, 0x12, 0x3c, 0x0a, 0x07, 0x61, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x73,
+	0x18, 0x03, 0x20, 0x03, 0x28, 0x0b, 0x32, 0x22, 0x2e, 0x73, 0x6f, 0x6f, 0x6e, 0x67, 0x5f, 0x62,
+	0x75, 0x69, 0x6c, 0x64, 0x5f, 0x6d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x2e, 0x53, 0x61, 0x6e,
+	0x64, 0x62, 0x6f, 0x78, 0x41, 0x63, 0x74, 0x69, 0x6f, 0x6e, 0x52, 0x07, 0x61, 0x63, 0x74, 0x69,
+	0x6f, 0x6e, 0x73, 0x22, 0x41, 0x0a, 0x0d, 0x53, 0x61, 0x6e, 0x64, 0x62, 0x6f, 0x78, 0x41, 0x63,
+	0x74, 0x69, 0x6f, 0x6e, 0x12, 0x12, 0x0a, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01,
+	0x28, 0x09, 0x52, 0x04, 0x6e, 0x61, 0x6d, 0x65, 0x12, 0x1c, 0x0a, 0x09, 0x73, 0x61, 0x6e, 0x64,
+	0x62, 0x6f, 0x78, 0x65, 0x64, 0x18, 0x02, 0x20, 0x01, 0x28, 0x08, 0x52, 0x09, 0x73, 0x61, 0x6e,
+	0x64, 0x62, 0x6f, 0x78, 0x65, 0x64, 0x42, 0x28, 0x5a, 0x26, 0x61, 0x6e, 0x64, 0x72, 0x6f, 0x69,
+	0x64, 0x2f, 0x73, 0x6f, 0x6f, 0x6e, 0x67, 0x2f, 0x75, 0x69, 0x2f, 0x6d, 0x65, 0x74, 0x72, 0x69,
+	0x63, 0x73, 0x2f, 0x6d, 0x65, 0x74, 0x72, 0x69, 0x63, 0x73, 0x5f, 0x70, 0x72, 0x6f, 0x74, 0x6f,
 }
 
 var (
@@ -3223,7 +3298,7 @@ func file_metrics_proto_rawDescGZIP() []byte {
 }
 
 var file_metrics_proto_enumTypes = make([]protoimpl.EnumInfo, 5)
-var file_metrics_proto_msgTypes = make([]protoimpl.MessageInfo, 27)
+var file_metrics_proto_msgTypes = make([]protoimpl.MessageInfo, 28)
 var file_metrics_proto_goTypes = []interface{}{
 	(MetricsBase_BuildVariant)(0),          // 0: soong_build_metrics.MetricsBase.BuildVariant
 	(MetricsBase_Arch)(0),                  // 1: soong_build_metrics.MetricsBase.Arch
@@ -3254,9 +3329,10 @@ var file_metrics_proto_goTypes = []interface{}{
 	(*AggregatedFileList)(nil),             // 26: soong_build_metrics.AggregatedFileList
 	(*FileCount)(nil),                      // 27: soong_build_metrics.FileCount
 	(*SandboxMetrics)(nil),                 // 28: soong_build_metrics.SandboxMetrics
-	nil,                                    // 29: soong_build_metrics.IncrementalMetrics.ProvidersEntry
-	(*OptimizedBuildMetrics_TargetOptimizationResult)(nil),                // 30: soong_build_metrics.OptimizedBuildMetrics.TargetOptimizationResult
-	(*OptimizedBuildMetrics_TargetOptimizationResult_OutputArtifact)(nil), // 31: soong_build_metrics.OptimizedBuildMetrics.TargetOptimizationResult.OutputArtifact
+	(*SandboxAction)(nil),                  // 29: soong_build_metrics.SandboxAction
+	nil,                                    // 30: soong_build_metrics.IncrementalMetrics.ProvidersEntry
+	(*OptimizedBuildMetrics_TargetOptimizationResult)(nil),                // 31: soong_build_metrics.OptimizedBuildMetrics.TargetOptimizationResult
+	(*OptimizedBuildMetrics_TargetOptimizationResult_OutputArtifact)(nil), // 32: soong_build_metrics.OptimizedBuildMetrics.TargetOptimizationResult.OutputArtifact
 }
 var file_metrics_proto_depIdxs = []int32{
 	0,  // 0: soong_build_metrics.MetricsBase.target_build_variant:type_name -> soong_build_metrics.MetricsBase.BuildVariant
@@ -3288,23 +3364,24 @@ var file_metrics_proto_depIdxs = []int32{
 	28, // 26: soong_build_metrics.SoongBuildMetrics.sandbox_metrics:type_name -> soong_build_metrics.SandboxMetrics
 	19, // 27: soong_build_metrics.IncrementalInfo.module_metrics:type_name -> soong_build_metrics.IncrementalMetrics
 	19, // 28: soong_build_metrics.IncrementalInfo.singleton_metrics:type_name -> soong_build_metrics.IncrementalMetrics
-	29, // 29: soong_build_metrics.IncrementalMetrics.providers:type_name -> soong_build_metrics.IncrementalMetrics.ProvidersEntry
+	30, // 29: soong_build_metrics.IncrementalMetrics.providers:type_name -> soong_build_metrics.IncrementalMetrics.ProvidersEntry
 	4,  // 30: soong_build_metrics.ExpConfigFetcher.status:type_name -> soong_build_metrics.ExpConfigFetcher.ConfigStatus
 	23, // 31: soong_build_metrics.CriticalPathInfo.critical_path:type_name -> soong_build_metrics.JobInfo
 	23, // 32: soong_build_metrics.CriticalPathInfo.long_running_jobs:type_name -> soong_build_metrics.JobInfo
 	11, // 33: soong_build_metrics.OptimizedBuildMetrics.analysis_perf:type_name -> soong_build_metrics.PerfInfo
 	11, // 34: soong_build_metrics.OptimizedBuildMetrics.packaging_perf:type_name -> soong_build_metrics.PerfInfo
-	30, // 35: soong_build_metrics.OptimizedBuildMetrics.target_result:type_name -> soong_build_metrics.OptimizedBuildMetrics.TargetOptimizationResult
+	31, // 35: soong_build_metrics.OptimizedBuildMetrics.target_result:type_name -> soong_build_metrics.OptimizedBuildMetrics.TargetOptimizationResult
 	26, // 36: soong_build_metrics.ExecutionMetrics.changed_files:type_name -> soong_build_metrics.AggregatedFileList
 	27, // 37: soong_build_metrics.AggregatedFileList.counts:type_name -> soong_build_metrics.FileCount
-	20, // 38: soong_build_metrics.IncrementalMetrics.ProvidersEntry.value:type_name -> soong_build_metrics.ProviderMetrics
-	11, // 39: soong_build_metrics.OptimizedBuildMetrics.TargetOptimizationResult.packaging_perf:type_name -> soong_build_metrics.PerfInfo
-	31, // 40: soong_build_metrics.OptimizedBuildMetrics.TargetOptimizationResult.output_artifact:type_name -> soong_build_metrics.OptimizedBuildMetrics.TargetOptimizationResult.OutputArtifact
-	41, // [41:41] is the sub-list for method output_type
-	41, // [41:41] is the sub-list for method input_type
-	41, // [41:41] is the sub-list for extension type_name
-	41, // [41:41] is the sub-list for extension extendee
-	0,  // [0:41] is the sub-list for field type_name
+	29, // 38: soong_build_metrics.SandboxMetrics.actions:type_name -> soong_build_metrics.SandboxAction
+	20, // 39: soong_build_metrics.IncrementalMetrics.ProvidersEntry.value:type_name -> soong_build_metrics.ProviderMetrics
+	11, // 40: soong_build_metrics.OptimizedBuildMetrics.TargetOptimizationResult.packaging_perf:type_name -> soong_build_metrics.PerfInfo
+	32, // 41: soong_build_metrics.OptimizedBuildMetrics.TargetOptimizationResult.output_artifact:type_name -> soong_build_metrics.OptimizedBuildMetrics.TargetOptimizationResult.OutputArtifact
+	42, // [42:42] is the sub-list for method output_type
+	42, // [42:42] is the sub-list for method input_type
+	42, // [42:42] is the sub-list for extension type_name
+	42, // [42:42] is the sub-list for extension extendee
+	0,  // [0:42] is the sub-list for field type_name
 }
 
 func init() { file_metrics_proto_init() }
@@ -3601,8 +3678,8 @@ func file_metrics_proto_init() {
 				return nil
 			}
 		}
-		file_metrics_proto_msgTypes[25].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*OptimizedBuildMetrics_TargetOptimizationResult); i {
+		file_metrics_proto_msgTypes[24].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*SandboxAction); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -3614,6 +3691,18 @@ func file_metrics_proto_init() {
 			}
 		}
 		file_metrics_proto_msgTypes[26].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*OptimizedBuildMetrics_TargetOptimizationResult); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_metrics_proto_msgTypes[27].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*OptimizedBuildMetrics_TargetOptimizationResult_OutputArtifact); i {
 			case 0:
 				return &v.state
@@ -3632,7 +3721,7 @@ func file_metrics_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_metrics_proto_rawDesc,
 			NumEnums:      5,
-			NumMessages:   27,
+			NumMessages:   28,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
