@@ -175,9 +175,13 @@ var (
 		"-fdata-sections",
 		"-fno-short-enums",
 		"-funwind-tables",
-		"-fstack-protector-strong",
 		"-Wa,--noexecstack",
 		"-D_FORTIFY_SOURCE=3",
+
+		// Add stack canaries on every frame, checked on return.
+		// -fstack-clash-protection isn't supported in clang for ILP32,
+		// so that's in each of the LP64 architectures' configurations instead.
+		"-fstack-protector-strong",
 
 		// Bans classes that have virtual functions and a public non-virtual destructor.
 		// This potentially allows the class to be partially destroyed, causing memory

@@ -24,7 +24,13 @@ import (
 var (
 	x86_64Cflags = []string{
 		// Help catch common 32/64-bit errors.
+		// Common to all LP64 architectures.
 		"-Werror=implicit-function-declaration",
+
+		// For stack allocations larger than a page, touch each page immediately
+		// to ensure we hit the guard page on stack overflow.
+		// Common to all LP64 architectures.
+		"-fstack-clash-protection",
 	}
 
 	x86_64Cppflags = []string{}
