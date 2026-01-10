@@ -575,7 +575,7 @@ func TestArchMutatorNativeBridge(t *testing.T) {
 			}
 
 			if g, w := enabledVariants(ctx, "baz"), tt.bazVariants; !reflect.DeepEqual(w, g) {
-				t.Errorf("want qux variants:\n%q\ngot:\n%q\n", w, g)
+				t.Errorf("want baz variants:\n%q\ngot:\n%q\n", w, g)
 			}
 		})
 	}
