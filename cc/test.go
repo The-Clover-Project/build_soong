@@ -460,7 +460,7 @@ func (test *testBinary) install(ctx ModuleContext, file android.Path) {
 }
 
 func getTestInstallBase(useVendor bool) string {
-	// TODO: (b/167308193) Switch to /data/local/tests/unrestricted as the default install base.
+	// The default test install base is /data/local/tmp for backward compatibility. See b/167308193 for context.
 	testInstallBase := "/data/local/tmp"
 	if useVendor {
 		testInstallBase = "/data/local/tests/vendor"
