@@ -634,6 +634,14 @@ func (b *BootclasspathFragmentModule) getProfileProviderApexFromSource(ctx andro
 		return "", nil
 	}
 
+	// Only use the profile from the art apex if the RELEASE_ART_COMPILE_BCP_APEX_SPEED_PROFILE
+	// flag is disabled.
+	if !("com.android.art" == apexInfo.BaseApexName ||
+		strings.HasPrefix(apexInfo.BaseApexName, "com.android.art.")) &&
+		!ctx.Config().GetBuildFlagBool("RELEASE_ART_COMPILE_BCP_APEX_SPEED_PROFILE") {
+		return "", nil
+	}
+
 	profile := b.properties.Dex_preopt.Profile.GetOrDefault(ctx, "")
 	if profile != "" {
 		// If the profile is specified, then it should exist, otherwise fail the build.
@@ -1246,6 +1254,8 @@ func (module *PrebuiltBootclasspathFragmentModule) RequiredFilesFromPrebuiltApex
 		return []string{ProfileInstallPathInApex}
 	}
 
+	// TODO(b/342163020): Remove once the prebuilt has the profile_guided property
+	// (expected when CP2A is finalized).
 	if module.Name() == "prebuilt_art-bootclasspath-fragment" {
 		// For old ART prebuilts, the profile is always present in the apex.
 		// This is for backwards compatibility.
