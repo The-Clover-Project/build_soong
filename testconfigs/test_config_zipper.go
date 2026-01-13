@@ -27,6 +27,7 @@ type TestConfigZipper struct {
 	testSchedulingPlans      map[string]*TestSchedulingPlanProperties
 	testWorkflows            map[string]*TestWorkflowProperties
 	testTriggers             map[string]*TestTriggerInfo
+	disabledModules          map[string]bool
 }
 
 func TestConfigZipperFactory() android.Singleton {
@@ -36,6 +37,7 @@ func TestConfigZipperFactory() android.Singleton {
 		testSchedulingPlans:      make(map[string]*TestSchedulingPlanProperties),
 		testWorkflows:            make(map[string]*TestWorkflowProperties),
 		testTriggers:             make(map[string]*TestTriggerInfo),
+		disabledModules:          make(map[string]bool),
 	}
 	return singleton
 }
@@ -45,6 +47,9 @@ func (zipper *TestConfigZipper) GenerateBuildActions(ctx android.SingletonContex
 	zipper.gatherRelatedModuleInfos(ctx)
 	zipper.gatherInlinedModuleInfos(ctx)
 
+	// Post-processing steps
+	zipper.removeDisabledModules(ctx)
+
 	// Validate test suites.
 	zipper.validateTestSuites(ctx)
 
@@ -52,8 +57,29 @@ func (zipper *TestConfigZipper) GenerateBuildActions(ctx android.SingletonContex
 	zipper.writeZip(ctx)
 }
 
+// Function that removes all the disabled modules from test execution in post-processing.
+func (zipper *TestConfigZipper) removeDisabledModules(ctx android.SingletonContext) {
+	for _, plan := range zipper.testExecutionPlans {
+		var activeTests []ModuleProperties
+
+		for _, moduleDef := range plan.Tests {
+			if !zipper.disabledModules[moduleDef.Module] {
+				activeTests = append(activeTests, moduleDef)
+			}
+		}
+
+		plan.Tests = activeTests
+	}
+}
+
 func (zipper *TestConfigZipper) gatherRelatedModuleInfos(ctx android.SingletonContext) {
 	ctx.VisitAllModuleProxies(func(proxy android.ModuleProxy) {
+		if commonModuleInfo, ok := android.OtherModuleProvider(ctx, proxy, android.CommonModuleInfoProvider); ok {
+			if !commonModuleInfo.Enabled {
+				zipper.disabledModules[commonModuleInfo.BaseModuleName] = true
+			}
+		}
+
 		if testSuiteInfo, ok := android.OtherModuleProvider(ctx, proxy, android.TestSuiteInfoProvider); ok {
 			zipper.testModulesTestSuiteInfo[proxy.Name()] = &testSuiteInfo
 		}
