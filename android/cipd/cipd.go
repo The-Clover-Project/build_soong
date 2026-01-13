@@ -139,6 +139,8 @@ func (p *cipdPackageModule) GenerateAndroidBuildActions(ctx android.ModuleContex
 		},
 	})
 	ctx.SetOutputFiles(android.Paths{outputZipFile}, ".zip")
+
+	ctx.ComplianceMetadataInfo().SetStringValue(android.ComplianceMetadataProp.CIPD_VERSION, version.Get())
 }
 
 // cipd_package module installs the given CIPD package version.
