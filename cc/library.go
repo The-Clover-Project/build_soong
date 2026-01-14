@@ -2296,6 +2296,10 @@ func (linkageTransitionMutator) Split(ctx android.BaseModuleContext) []string {
 	return []string{""}
 }
 
+func (linkageTransitionMutator) SplitOnDemand(ctx android.BaseModuleContext) []string {
+	return nil
+}
+
 func (linkageTransitionMutator) OutgoingTransition(ctx android.OutgoingTransitionContext, sourceVariation string) string {
 	if ctx.DepTag() == android.PrebuiltDepTag {
 		return sourceVariation
@@ -2472,6 +2476,10 @@ func (versionTransitionMutator) Split(ctx android.BaseModuleContext) []string {
 	}
 
 	return []string{""}
+}
+
+func (versionTransitionMutator) SplitOnDemand(ctx android.BaseModuleContext) []string {
+	return nil
 }
 
 func (versionTransitionMutator) OutgoingTransition(ctx android.OutgoingTransitionContext, sourceVariation string) string {

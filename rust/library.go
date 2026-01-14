@@ -1018,6 +1018,10 @@ func (libraryTransitionMutator) Split(ctx android.BaseModuleContext) []string {
 	return variants
 }
 
+func (libraryTransitionMutator) SplitOnDemand(ctx android.BaseModuleContext) []string {
+	return nil
+}
+
 func (libraryTransitionMutator) OutgoingTransition(ctx android.OutgoingTransitionContext, sourceVariation string) string {
 	if ctx.DepTag() == android.PrebuiltDepTag {
 		return sourceVariation
@@ -1129,6 +1133,10 @@ func (libstdTransitionMutator) Split(ctx android.BaseModuleContext) []string {
 		}
 	}
 	return []string{""}
+}
+
+func (libstdTransitionMutator) SplitOnDemand(ctx android.BaseModuleContext) []string {
+	return nil
 }
 
 func (libstdTransitionMutator) OutgoingTransition(ctx android.OutgoingTransitionContext, sourceVariation string) string {

@@ -480,6 +480,10 @@ func (o *osTransitionMutator) Split(ctx BaseModuleContext) []string {
 	return osNames
 }
 
+func (o *osTransitionMutator) SplitOnDemand(ctx BaseModuleContext) []string {
+	return nil
+}
+
 func (o *osTransitionMutator) OutgoingTransition(ctx OutgoingTransitionContext, sourceVariation string) string {
 	return sourceVariation
 }
@@ -703,6 +707,10 @@ func (a *archTransitionMutator) Split(ctx BaseModuleContext) []string {
 		Multilib:     multilib,
 	})
 	return targetNames
+}
+
+func (a *archTransitionMutator) SplitOnDemand(ctx BaseModuleContext) []string {
+	return nil
 }
 
 func (a *archTransitionMutator) OutgoingTransition(ctx OutgoingTransitionContext, sourceVariation string) string {

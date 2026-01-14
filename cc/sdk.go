@@ -56,6 +56,9 @@ func (sdkTransitionMutator) Split(ctx android.BaseModuleContext) []string {
 	return []string{""}
 }
 
+func (sdkTransitionMutator) SplitOnDemand(ctx android.BaseModuleContext) []string {
+	return nil
+}
 func (sdkTransitionMutator) OutgoingTransition(ctx android.OutgoingTransitionContext, sourceVariation string) string {
 	if _, ok := ctx.DepTag().(android.UsesUnbundledVariantDepTag); ok {
 		return "sdk"

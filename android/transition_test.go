@@ -30,6 +30,10 @@ func (t *testTransitionMutator) Split(ctx BaseModuleContext) []string {
 	return []string{""}
 }
 
+func (t *testTransitionMutator) SplitOnDemand(ctx BaseModuleContext) []string {
+	return nil
+}
+
 func (t *testTransitionMutator) OutgoingTransition(ctx OutgoingTransitionContext, sourceVariation string) string {
 	if t.outgoingTransition != nil {
 		return t.outgoingTransition(ctx, sourceVariation)

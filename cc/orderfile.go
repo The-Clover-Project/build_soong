@@ -207,6 +207,10 @@ func (o *orderfileTransitionMutator) Split(ctx android.BaseModuleContext) []stri
 	return []string{""}
 }
 
+func (o *orderfileTransitionMutator) SplitOnDemand(ctx android.BaseModuleContext) []string {
+	return nil
+}
+
 func (o *orderfileTransitionMutator) OutgoingTransition(ctx android.OutgoingTransitionContext, sourceVariation string) string {
 	if m, ok := ctx.Module().(*Module); ok && m.orderfile != nil {
 		if !orderfilePropagateViaDepTag(ctx.DepTag()) {

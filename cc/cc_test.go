@@ -55,6 +55,10 @@ func (t *testApexTransitionMutator) Split(ctx android.BaseModuleContext) []strin
 	return []string{apexVariationName}
 }
 
+func (t *testApexTransitionMutator) SplitOnDemand(ctx android.BaseModuleContext) []string {
+	return nil
+}
+
 func (t *testApexTransitionMutator) OutgoingTransition(ctx android.OutgoingTransitionContext, sourceVariation string) string {
 	return sourceVariation
 }

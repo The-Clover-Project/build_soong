@@ -169,6 +169,10 @@ func (a *afdoTransitionMutator) Split(ctx android.BaseModuleContext) []string {
 	return []string{""}
 }
 
+func (a *afdoTransitionMutator) SplitOnDemand(ctx android.BaseModuleContext) []string {
+	return nil
+}
+
 func (a *afdoTransitionMutator) OutgoingTransition(ctx android.OutgoingTransitionContext, sourceVariation string) string {
 	if ctx.Host() {
 		return ""

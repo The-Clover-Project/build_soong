@@ -252,6 +252,10 @@ func (s *sabiTransitionMutator) Split(ctx android.BaseModuleContext) []string {
 	return []string{""}
 }
 
+func (s *sabiTransitionMutator) SplitOnDemand(ctx android.BaseModuleContext) []string {
+	return nil
+}
+
 func (s *sabiTransitionMutator) OutgoingTransition(ctx android.OutgoingTransitionContext, sourceVariation string) string {
 	// Escape hatch to not check any ABI dump.
 	if ctx.Config().IsEnvTrue("SKIP_ABI_CHECKS") {
