@@ -248,6 +248,7 @@ type LinkableInfo struct {
 	InVendorOrProduct bool
 	// SubName returns the modules SubName, used for image and NDK/SDK variations.
 	SubName             string
+	IsHwasan            bool
 	InRamdisk           bool
 	OnlyInRamdisk       bool
 	InVendorRamdisk     bool
@@ -405,6 +406,7 @@ type RustRlibDep struct {
 	LinkDirs     []string       // flags required for dependency (e.g. -L flags)
 	LinkDirsDeps []android.Path // files in linkdirs to be used as implicit deps
 	CrateName    string         // crateNames associated with rlibDeps
+	IsHwasan     bool           // true if HAWSAN sanitizer is set
 }
 
 func EqRustRlibDeps(a RustRlibDep, b RustRlibDep) bool {
@@ -2770,6 +2772,7 @@ func (c *Module) GenerateAndroidBuildActions(actx android.ModuleContext) {
 }
 
 func CreateCommonLinkableInfo(ctx android.ModuleContext, mod VersionedLinkableInterface) *LinkableInfo {
+	sanitizeable := ctx.Module().(PlatformSanitizeable)
 	info := &LinkableInfo{
 		StaticExecutable:     mod.StaticExecutable(),
 		HasStubsVariants:     mod.HasStubsVariants(),
@@ -2786,6 +2789,7 @@ func CreateCommonLinkableInfo(ctx android.ModuleContext, mod VersionedLinkableIn
 		IsNdk:                mod.IsNdk(ctx.Config()),
 		HasNonSystemVariants: mod.HasNonSystemVariants(),
 		SubName:              mod.SubName(),
+		IsHwasan:             sanitizeable.IsSanitizerEnabled(Hwasan),
 		InVendorOrProduct:    mod.InVendorOrProduct(),
 		InRamdisk:            mod.InRamdisk(),
 		OnlyInRamdisk:        mod.OnlyInRamdisk(),
@@ -3863,6 +3867,7 @@ func (c *Module) depsToPaths(ctx android.ModuleContext) PathDeps {
 						CrateName:    linkableInfo.CrateName,
 						LinkDirs:     linkableInfo.ExportedCrateLinkDirs,
 						LinkDirsDeps: linkableInfo.ExportedCrateLinkDirsDeps,
+						IsHwasan:     linkableInfo.IsHwasan,
 					}
 					depPaths.RustRlibDeps = append(depPaths.RustRlibDeps, rlibDep)
 					depPaths.IncludeDirs = append(depPaths.IncludeDirs, depExporterInfo.IncludeDirs...)
