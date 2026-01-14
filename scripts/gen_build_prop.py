@@ -404,7 +404,6 @@ def append_additional_vendor_props(args):
   props.append(f"ro.bionic.2nd_arch={config['DeviceSecondaryArch']}")
   props.append(f"ro.bionic.2nd_cpu_variant={config['DeviceSecondaryCpuVariantRuntime']}")
 
-  props.append(f"persist.sys.dalvik.vm.lib.2=libart.so")
   props.append(f"dalvik.vm.isa.{config['DeviceArch']}.variant={config['Dex2oatTargetCpuVariantRuntime']}")
   if config["Dex2oatTargetInstructionSetFeatures"]:
     props.append(f"dalvik.vm.isa.{config['DeviceArch']}.features={config['Dex2oatTargetInstructionSetFeatures']}")
