@@ -217,13 +217,8 @@ func (cov *coverage) begin(ctx BaseModuleContext) {
 
 func IsCoverageEnabled(ctx android.BaseModuleContext) bool {
 	if ctx.Host() {
-		// Host coverage is only supported on Linux 64-bit binaries
-		if !ctx.Os().Linux() {
-			return false
-		}
-		if ctx.Arch().ArchType.Multilib == "lib32" {
-			return false
-		}
+		// Disable all coverage instrumentation and variants for host-side tools
+		return false
 	}
 	return true
 }
