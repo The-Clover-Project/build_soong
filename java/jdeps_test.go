@@ -319,3 +319,26 @@ func TestCollectJavaAARImportPropertiesAddImportedAars(t *testing.T) {
 		t.Errorf("AARImport.IDEInfo() Imported_aars = %v, want %v", dpInfo.Imported_aars, expected)
 	}
 }
+
+func TestCollectJavaLibraryPropertiesAddAssociates(t *testing.T) {
+	t.Parallel()
+	ctx, _ := testJava(t,
+		`
+			java_library {
+				name: "java_a",
+				srcs: ["a.java"],
+			}
+			java_library {
+				name: "java_b",
+				srcs: ["b.java"],
+				associates: ["java_a"],
+			}
+		`)
+	module := ctx.ModuleForTests(t, "java_b", "android_common").Module().(*Library)
+	dpInfo := getIdeInfo(ctx, module)
+
+	expected := []string{"java_a"}
+	if !reflect.DeepEqual(dpInfo.Associates, expected) {
+		t.Errorf("Library.IDEInfo() Associates = %v, want %v", dpInfo.Associates, expected)
+	}
+}

@@ -3698,6 +3698,7 @@ type IdeInfo struct {
 	Libs              []string        `json:"libs,omitempty"`
 	Asset_dirs        []string        `json:"asset_dirs,omitempty"`
 	Resource_dirs     []string        `json:"resource_dirs,omitempty"`
+	Associates        []string        `json:"associates,omitempty"`
 }
 
 // @auto-generate: gob
@@ -3740,6 +3741,7 @@ func (i IdeInfo) Merge(other *IdeInfo) IdeInfo {
 		Libs:              mergeStringLists(i.Libs, other.Libs),
 		Asset_dirs:        mergeStringLists(i.Asset_dirs, other.Asset_dirs),
 		Resource_dirs:     mergeStringLists(i.Resource_dirs, other.Resource_dirs),
+		Associates:        mergeStringLists(i.Associates, other.Associates),
 	}
 }
 
