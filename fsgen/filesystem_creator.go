@@ -969,6 +969,16 @@ func partitionSpecificFsProps(ctx android.EarlyModuleContext, partitions allGene
 		} else if len(partitionVars.ProductFsCompression) > 0 {
 			ctx.ModuleErrorf("Unrecognized PRODUCT_FS_COMPRESSION value %s", partitionVars.ProductFsCompression)
 		}
+		if s, err := strconv.ParseInt(partitionVars.BoardF2fsBlockSize, 10, 64); err == nil {
+			fsProps.F2fs_blocksize = proptools.Int64Ptr(s)
+		} else if len(partitionVars.BoardF2fsBlockSize) > 0 {
+			ctx.ModuleErrorf("Unrecognized BOARD_F2FS_BLOCKSIZE value %s", partitionVars.BoardF2fsBlockSize)
+		}
+		if s, err := strconv.ParseBool(partitionVars.BoardF2fsPackedSsa); err == nil {
+			fsProps.Support_f2fs_packedssa = proptools.BoolPtr(s)
+		} else if len(partitionVars.BoardF2fsPackedSsa) > 0 {
+			ctx.ModuleErrorf("Unrecognized BOARD_F2FS_PACKED_SSA value %s", partitionVars.BoardF2fsPackedSsa)
+		}
 
 	case "ramdisk":
 		// Following the logic in https://cs.android.com/android/platform/superproject/main/+/c3c5063df32748a8806ce5da5dd0db158eab9ad9:build/make/core/Makefile;l=1307

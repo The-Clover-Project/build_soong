@@ -806,6 +806,8 @@ type PartitionVariables struct {
 	ProductFsCasefold    string `json:",omitempty"`
 	ProductQuotaProjid   string `json:",omitempty"`
 	ProductFsCompression string `json:",omitempty"`
+	BoardF2fsBlockSize   string `json:",omitempty"`
+	BoardF2fsPackedSsa   string `json:",omitempty"`
 
 	ReleaseToolsExtensionDir string `json:",omitempty"`
 
