@@ -29,6 +29,7 @@ func TestLibraryVariants(t *testing.T) {
 			name: "libfoo",
 			srcs: ["foo.rs"],
 			crate_name: "foo",
+			split_all_variants: true,
 		}
 		rust_ffi {
 			name: "libfoo.ffi",
@@ -198,6 +199,7 @@ func TestNativeDependencyOfRlib(t *testing.T) {
 			srcs: ["foo.rs"],
 			shared_libs: ["libshared_cc_dep"],
 			static_libs: ["libstatic_cc_dep"],
+			split_all_variants: true,
 		}
 		cc_library_shared {
 			name: "libshared_cc_dep",
@@ -265,6 +267,7 @@ func TestAutoDeps(t *testing.T) {
 				"libbar",
 				"librlib_only",
 			],
+			split_all_variants: true,
 		}
 		rust_ffi {
 			name: "libfoo.ffi",
@@ -274,6 +277,7 @@ func TestAutoDeps(t *testing.T) {
 				"libbar",
 				"librlib_only",
 			],
+			split_all_variants: true,
 		}
 		rust_ffi_static {
 			name: "libfoo.ffi.static",
@@ -351,6 +355,7 @@ func TestLibstdLinkage(t *testing.T) {
 			name: "libfoo",
 			srcs: ["foo.rs"],
 			crate_name: "foo",
+			split_all_variants: true,
 		}
 		rust_ffi {
 			name: "libbar",
@@ -471,6 +476,7 @@ func TestRustVersionScript(t *testing.T) {
 		srcs: ["bar.rs"],
 		crate_name: "rs",
 		extra_exported_symbols: "librs.map.txt",
+		split_all_variants: true,
 	}
 	rust_ffi {
 		name: "libffi",
@@ -510,6 +516,7 @@ func TestRustVersionScriptPropertyErrors(t *testing.T) {
 			srcs: ["bar.rs"],
 			crate_name: "rs",
 			version_script: "libbar.map.txt",
+			split_all_variants: true,
 		}`)
 	testRustError(t, "version_script and extra_exported_symbols", `
 		rust_ffi {
@@ -518,6 +525,7 @@ func TestRustVersionScriptPropertyErrors(t *testing.T) {
 			crate_name: "rs",
 			version_script: "libbar.map.txt",
 			extra_exported_symbols: "libbar.map.txt",
+			split_all_variants: true,
 		}`)
 }
 
@@ -622,6 +630,7 @@ func TestVersionedStubs(t *testing.T) {
 		crate_name: "bar_rs",
 		srcs: ["bar.rs"],
 		shared_libs: ["libFoo#1"],
+		split_all_variants: true,
 	}
 	rust_ffi {
 		name: "libbar_ffi_rs",
@@ -949,6 +958,7 @@ func TestLibraryFeatureAndRustlibOverrides(t *testing.T) {
 				features: ["a", "b"],
 				rustlibs: ["libbar"],
 			},
+			split_all_variants: true,
 		}
 		rust_library {
 			name: "libbar",

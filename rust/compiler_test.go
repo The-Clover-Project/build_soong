@@ -53,6 +53,7 @@ func TestCfgsToFlags(t *testing.T) {
 				"std",
 				"cfg1=\"one\""
 			],
+			split_all_variants: true,
 		}`)
 
 	libfooDylib := ctx.ModuleForTests(t, "libfoo", "android_arm64_armv8-a_dylib").Rule("rustc")
@@ -71,13 +72,15 @@ func TestLtoFlag(t *testing.T) {
 			crate_name: "foo",
 			lto: {
 				thin: false,
-			}
+			},
+			split_all_variants: true,
 		}
 
 		rust_library {
 			name: "libfoo_lto",
 			srcs: ["foo.rs"],
 			crate_name: "foo",
+			split_all_variants: true,
 		}
 		`)
 
@@ -225,6 +228,7 @@ func TestLints(t *testing.T) {
 			name: "libfoo",
 			srcs: ["foo.rs"],
 			crate_name: "foo",
+			split_all_variants: true,
 		}
 		// bar forces the use of the "android" lint set
 		rust_library {
@@ -232,6 +236,7 @@ func TestLints(t *testing.T) {
 			srcs: ["foo.rs"],
 			crate_name: "bar",
 			lints: "android",
+			split_all_variants: true,
 		}
 		// foobar explicitly disable all lints
 		rust_library {
@@ -239,6 +244,7 @@ func TestLints(t *testing.T) {
 			srcs: ["foo.rs"],
 			crate_name: "foobar",
 			lints: "none",
+			split_all_variants: true,
 		}`
 
 	var lintTests = []struct {
@@ -282,6 +288,7 @@ func TestStdDeviceLinkage(t *testing.T) {
 			name: "libfoo",
 			srcs: ["foo.rs"],
 			crate_name: "foo",
+			split_all_variants: true,
 		}`)
 	fizz := ctx.ModuleForTests(t, "fizz", "android_arm64_armv8-a").Module().(*Module)
 	fooRlib := ctx.ModuleForTests(t, "libfoo", "android_arm64_armv8-a_rlib_dylib-std").Module().(*Module)

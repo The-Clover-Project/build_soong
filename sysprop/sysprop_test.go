@@ -353,6 +353,7 @@ func TestApexAvailabilityIsForwarded(t *testing.T) {
 			srcs: ["android/sysprop/PlatformProperties.sysprop"],
 			api_packages: ["android.sysprop"],
 			property_owner: "Platform",
+			split_all_variants: true,
 		}
 	`)
 
@@ -386,7 +387,8 @@ func TestMinSdkVersionIsForwarded(t *testing.T) {
 			},
 			rust: {
 				min_sdk_version: "29",
-			}
+			},
+			split_all_variants: true,
 		}
 	`)
 

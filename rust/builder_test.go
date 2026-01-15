@@ -54,21 +54,25 @@ func TestCompilationOutputFiles(t *testing.T) {
 			name: "libfizz_buzz",
 			crate_name:"fizz_buzz",
 			srcs: ["lib.rs"],
+			split_all_variants: true,
 		}
 		rust_binary {
 			name: "fizz_buzz",
 			crate_name:"fizz_buzz",
 			srcs: ["lib.rs"],
+			split_all_variants: true,
 		}
 		rust_ffi {
 			name: "librust_ffi",
 			crate_name: "rust_ffi",
 			srcs: ["lib.rs"],
+			split_all_variants: true,
 		}
 		rust_ffi_static {
 			name: "librust_ffi_static",
 			crate_name: "rust_ffi",
 			srcs: ["lib.rs"],
+			split_all_variants: true,
 		}
 	`)
 	testcases := []struct {
