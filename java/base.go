@@ -2606,6 +2606,7 @@ func (j *Module) IDEInfo(ctx android.BaseModuleContext, dpInfo *android.IdeInfo)
 	dpInfo.Aidl_include_dirs = append(dpInfo.Aidl_include_dirs, j.deviceProperties.Aidl.Include_dirs...)
 	dpInfo.Static_libs = append(dpInfo.Static_libs, j.staticLibs(ctx)...)
 	dpInfo.Libs = append(dpInfo.Libs, j.libs(ctx)...)
+	dpInfo.Associates = append(dpInfo.Associates, j.properties.Associates...)
 }
 
 func (j *Module) CompilerDeps() []string {

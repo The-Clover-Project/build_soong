@@ -9469,12 +9469,27 @@ func (r IdeInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 			}
 		}
 	}
+
+	if r.Associates == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r.Associates)); err != nil {
+			return err
+		}
+		for val19 := 0; val19 < len(r.Associates); val19++ {
+			if err = gobtools.EncodeString(buf, r.Associates[val19]); err != nil {
+				return err
+			}
+		}
+	}
 	return err
 }
 
 func (r IdeInfo) CustomHash(hasher *proptools.Hasher) error {
 	hasher.WriteString(":android.IdeInfo")
-	hasher.WriteInt(22)
+	hasher.WriteInt(23)
 	hasher.WriteString(":.string")
 	hasher.WriteString(r.BaseModuleName)
 	hasher.WriteString(":.string")
@@ -9608,6 +9623,12 @@ func (r IdeInfo) CustomHash(hasher *proptools.Hasher) error {
 	for val20 := 0; val20 < len(r.Resource_dirs); val20++ {
 		hasher.WriteString(":.string")
 		hasher.WriteString(r.Resource_dirs[val20])
+	}
+	hasher.WriteString(":.[]string")
+	hasher.WriteInt(len(r.Associates))
+	for val21 := 0; val21 < len(r.Associates); val21++ {
+		hasher.WriteString(":.string")
+		hasher.WriteString(r.Associates[val21])
 	}
 	return nil
 }
@@ -9893,6 +9914,21 @@ func (r *IdeInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 		r.Resource_dirs = make([]string, val72)
 		for val73 := 0; val73 < int(val72); val73++ {
 			err = gobtools.DecodeString(buf, &r.Resource_dirs[val73])
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	var val76 int
+	err = gobtools.DecodeInt(buf, &val76)
+	if err != nil {
+		return err
+	}
+	if val76 != -1 {
+		r.Associates = make([]string, val76)
+		for val77 := 0; val77 < int(val76); val77++ {
+			err = gobtools.DecodeString(buf, &r.Associates[val77])
 			if err != nil {
 				return err
 			}
