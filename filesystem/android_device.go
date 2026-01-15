@@ -1289,7 +1289,7 @@ func (a *androidDevice) copyMetadataToTargetZip(ctx android.ModuleContext, build
 		if fsInfos[partition].FilesystemConfig == nil {
 			continue
 		}
-		if android.InList(partition, []string{"userdata"}) {
+		if android.InList(partition, []string{"userdata", "vendor_kernel_ramdisk"}) {
 			continue
 		}
 		if partition != "vendor_ramdisk" {
