@@ -29,6 +29,10 @@ var (
 		// that could be called from JNI, so that movaps instruction
 		// will work on assumed stack aligned local variables.
 		"-mstackrealign",
+
+		// For stack allocations larger than a page, touch each page immediately
+		// to ensure we hit the guard page on stack overflow.
+		"-fstack-clash-protection",
 	}
 
 	x86Cppflags = []string{}

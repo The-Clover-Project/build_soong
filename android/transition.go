@@ -83,6 +83,12 @@ type TransitionMutator[T blueprint.TransitionInfo] interface {
 	// called on.
 	Split(ctx BaseModuleContext) []T
 
+	// SplitOnDemand returns the set of additional supported variations.
+	// Unlike Split(), these are not created when the transition runs.
+	// However if a subsequent mutator requests one of these variations via
+	// AddDependency*, the variation will be created adhoc.
+	SplitOnDemand(ctx BaseModuleContext) []T
+
 	// OutgoingTransition is called on a module to determine which variation it wants
 	// from its direct dependencies. The dependency itself can override this decision.
 	// This method should not mutate the module itself.
@@ -113,6 +119,7 @@ type TransitionMutator[T blueprint.TransitionInfo] interface {
 // from blueprint.BaseModuleContext to BaseModuleContext, etc.
 type androidTransitionMutator interface {
 	Split(ctx BaseModuleContext) []blueprint.TransitionInfo
+	SplitOnDemand(ctx BaseModuleContext) []blueprint.TransitionInfo
 	OutgoingTransition(ctx OutgoingTransitionContext, sourceTransitionInfo blueprint.TransitionInfo) blueprint.TransitionInfo
 	IncomingTransition(ctx IncomingTransitionContext, incomingTransitionInfo blueprint.TransitionInfo) blueprint.TransitionInfo
 	Mutate(ctx BottomUpMutatorContext, transitionInfo blueprint.TransitionInfo)
@@ -123,6 +130,7 @@ type androidTransitionMutator interface {
 // of a blueprint.TransitionInfo object.
 type VariationTransitionMutator interface {
 	Split(ctx BaseModuleContext) []string
+	SplitOnDemand(ctx BaseModuleContext) []string
 	OutgoingTransition(ctx OutgoingTransitionContext, sourceVariation string) string
 	IncomingTransition(ctx IncomingTransitionContext, incomingVariation string) string
 	Mutate(ctx BottomUpMutatorContext, variation string)
@@ -206,7 +214,11 @@ func (a *androidTransitionMutatorAdapter) Split(ctx blueprint.BaseModuleContext)
 }
 
 func (a *androidTransitionMutatorAdapter) SplitOnDemand(ctx blueprint.BaseModuleContext) []blueprint.TransitionInfo {
-	return nil
+	m := ctx.Module().(Module)
+	moduleContext := baseModuleContextPool.Get()
+	defer baseModuleContextPool.Put(moduleContext)
+	*moduleContext = m.base().baseModuleContextFactory(ctx)
+	return a.mutator.SplitOnDemand(moduleContext)
 }
 
 func (a *androidTransitionMutatorAdapter) OutgoingTransition(bpctx blueprint.OutgoingTransitionContext,
@@ -235,7 +247,12 @@ func (a *androidTransitionMutatorAdapter) IncomingTransition(bpctx blueprint.Inc
 
 func (a *androidTransitionMutatorAdapter) Mutate(ctx blueprint.BottomUpMutatorContext, transitionInfo blueprint.TransitionInfo) {
 	am := ctx.Module().(Module)
-	variation := transitionInfo.Variation()
+	var variation string
+	if transitionInfo == nil {
+		variation = ""
+	} else {
+		variation = transitionInfo.Variation()
+	}
 	if variation != "" {
 		// TODO: this should really be checking whether the TransitionMutator affected this module, not
 		//  the empty variant, but TransitionMutator has no concept of skipping a module.
@@ -265,6 +282,15 @@ type variationTransitionMutatorAdapter struct {
 
 func (v variationTransitionMutatorAdapter) Split(ctx BaseModuleContext) []blueprint.TransitionInfo {
 	variations := v.m.Split(ctx)
+	transitionInfos := make([]blueprint.TransitionInfo, 0, len(variations))
+	for _, variation := range variations {
+		transitionInfos = append(transitionInfos, variationTransitionInfo{variation})
+	}
+	return transitionInfos
+}
+
+func (v variationTransitionMutatorAdapter) SplitOnDemand(ctx BaseModuleContext) []blueprint.TransitionInfo {
+	variations := v.m.SplitOnDemand(ctx)
 	transitionInfos := make([]blueprint.TransitionInfo, 0, len(variations))
 	for _, variation := range variations {
 		transitionInfos = append(transitionInfos, variationTransitionInfo{variation})
@@ -328,6 +354,15 @@ func (g *genericTransitionMutatorAdapter[T]) convertTransitionInfoToT(transition
 
 func (g *genericTransitionMutatorAdapter[T]) Split(ctx BaseModuleContext) []blueprint.TransitionInfo {
 	transitionInfos := g.m.Split(ctx)
+	bpTransitionInfos := make([]blueprint.TransitionInfo, 0, len(transitionInfos))
+	for _, transitionInfo := range transitionInfos {
+		bpTransitionInfos = append(bpTransitionInfos, transitionInfo)
+	}
+	return bpTransitionInfos
+}
+
+func (g *genericTransitionMutatorAdapter[T]) SplitOnDemand(ctx BaseModuleContext) []blueprint.TransitionInfo {
+	transitionInfos := g.m.SplitOnDemand(ctx)
 	bpTransitionInfos := make([]blueprint.TransitionInfo, 0, len(transitionInfos))
 	for _, transitionInfo := range transitionInfos {
 		bpTransitionInfos = append(bpTransitionInfos, transitionInfo)

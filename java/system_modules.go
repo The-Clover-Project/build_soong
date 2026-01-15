@@ -177,6 +177,22 @@ func (system *SystemModules) commonBuildActions(ctx android.ModuleContext) *Syst
 
 	system.outputDir, system.outputDeps = TransformJarsToSystemModules(ctx, jars)
 
+	zipFileName := ctx.ModuleName() + ".zip"
+	zipOutputFile := android.PathForModuleOut(ctx, zipFileName)
+
+	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
+	cmd := rule.Command()
+	cmd.BuiltTool("soong_zip")
+	cmd.FlagWithOutput("-o ", zipOutputFile)
+	// Set the base directory for the paths within the zip to the root of the jlink output
+	cmd.Flag("-C " + system.outputDir.String())
+	// Add all files and directories recursively from the jlink output directory
+	cmd.Flag("-D " + system.outputDir.String())
+	cmd.Implicits(system.outputDeps)
+
+	rule.Build("zip_system_module", "Zipping System Module " + ctx.ModuleName())
+	ctx.SetOutputFiles(android.Paths{zipOutputFile}, ".zip")
+
 	return &SystemModulesProviderInfo{
 		HeaderJars:                     jars,
 		OutputDir:                      system.outputDir,

@@ -799,6 +799,10 @@ func (f *fakeApexMutator) Split(ctx android.BaseModuleContext) []string {
 	return []string{""}
 }
 
+func (f *fakeApexMutator) SplitOnDemand(ctx android.BaseModuleContext) []string {
+	return nil
+}
+
 func (f *fakeApexMutator) OutgoingTransition(ctx android.OutgoingTransitionContext, sourceVariation string) string {
 	return sourceVariation
 }

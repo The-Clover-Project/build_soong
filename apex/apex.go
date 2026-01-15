@@ -1252,6 +1252,10 @@ func (a *apexTransitionMutator) Split(ctx android.BaseModuleContext) []android.A
 	return []android.ApexInfo{{}}
 }
 
+func (a *apexTransitionMutator) SplitOnDemand(ctx android.BaseModuleContext) []android.ApexInfo {
+	return nil
+}
+
 func (a *apexTransitionMutator) OutgoingTransition(ctx android.OutgoingTransitionContext, sourceInfo android.ApexInfo) android.ApexInfo {
 	if ai, ok := ctx.Module().(ApexTransitionMutator); ok {
 		return ai.ApexTransitionMutatorOutgoing(ctx, sourceInfo)

@@ -28,7 +28,6 @@ package android
 // module based on it.
 
 import (
-	"fmt"
 	"reflect"
 	"slices"
 
@@ -300,6 +299,10 @@ func (overrideTransitionMutator) Split(ctx BaseModuleContext) []overrideTransiti
 	return []overrideTransitionMutatorInfo{overrideTransitionMutatorEmptyVariation}
 }
 
+func (overrideTransitionMutator) SplitOnDemand(ctx BaseModuleContext) []overrideTransitionMutatorInfo {
+	return nil
+}
+
 func (overrideTransitionMutator) OutgoingTransition(ctx OutgoingTransitionContext, sourceInfo overrideTransitionMutatorInfo) overrideTransitionMutatorInfo {
 	if _, ok := ctx.Module().(OverrideModule); ok {
 		if ctx.DepTag() == overrideBaseDepTag {
@@ -337,7 +340,7 @@ func (overrideTransitionMutator) Mutate(ctx BottomUpMutatorContext, info overrid
 }
 
 func (overrideTransitionMutator) TransitionInfoFromVariation(variation string) overrideTransitionMutatorInfo {
-	panic(fmt.Errorf("not implemented"))
+	return overrideTransitionMutatorInfo{name: variation}
 }
 
 func checkPrebuiltReplacesOverride(ctx BottomUpMutatorContext, bm OverridableModule, info overrideTransitionMutatorInfo) {

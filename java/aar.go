@@ -177,6 +177,10 @@ func (p propagateRROEnforcementTransitionMutator) Split(ctx android.BaseModuleCo
 	return []string{""}
 }
 
+func (p propagateRROEnforcementTransitionMutator) SplitOnDemand(ctx android.BaseModuleContext) []string {
+	return nil
+}
+
 func (p propagateRROEnforcementTransitionMutator) OutgoingTransition(ctx android.OutgoingTransitionContext, sourceVariation string) string {
 	// Non-static dependencies are not involved in RRO and always use the empty variant.
 	if ctx.DepTag() != staticLibTag {

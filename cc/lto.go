@@ -191,6 +191,10 @@ func (l *ltoTransitionMutator) Split(ctx android.BaseModuleContext) []string {
 	return []string{""}
 }
 
+func (l *ltoTransitionMutator) SplitOnDemand(ctx android.BaseModuleContext) []string {
+	return nil
+}
+
 func (l *ltoTransitionMutator) OutgoingTransition(ctx android.OutgoingTransitionContext, sourceVariation string) string {
 	if m, ok := ctx.Module().(*Module); ok && m.lto != nil {
 		if !ltoPropagateViaDepTag(ctx.DepTag()) {
