@@ -93,7 +93,7 @@ func TestRuntimeResourceOverlay(t *testing.T) {
 	// Check cert signing flags.
 	signedApk := m.Output("signed/foo.apk")
 	actualCertSigningFlags := signedApk.Args["flags"]
-	expectedCertSigningFlags := "--lineage lineage.bin --rotation-min-sdk-version 32"
+	expectedCertSigningFlags := "--lineage lineage.bin --rotation-min-sdk-version 32 --disable-v1"
 	if expectedCertSigningFlags != actualCertSigningFlags {
 		t.Errorf("Incorrect cert signing flags, expected: %q, got: %q", expectedCertSigningFlags, actualCertSigningFlags)
 	}

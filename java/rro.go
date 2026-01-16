@@ -202,7 +202,8 @@ func (r *RuntimeResourceOverlay) GenerateAndroidBuildActions(ctx android.ModuleC
 
 	rotationMinSdkVersion := String(r.properties.RotationMinSdkVersion)
 
-	SignAppPackage(ctx, signed, r.aapt.exportPackage, certificates, nil, lineageFile, rotationMinSdkVersion)
+	SignAppPackage(ctx, signed, r.aapt.exportPackage, certificates, nil, lineageFile,
+		rotationMinSdkVersion, r.MinSdkVersion(ctx))
 
 	r.outputFile = signed
 	partition := rroPartition(ctx)
@@ -434,7 +435,7 @@ func (a *AutogenRuntimeResourceOverlay) GenerateAndroidBuildActions(ctx android.
 	var certificates []Certificate
 	a.certificate, certificates = processMainCert(a.ModuleBase, "", nil, ctx)
 	signed := android.PathForModuleOut(ctx, "signed", a.Name()+".apk")
-	SignAppPackage(ctx, signed, a.exportPackage, certificates, nil, nil, "")
+	SignAppPackage(ctx, signed, a.exportPackage, certificates, nil, nil, "", a.MinSdkVersion(ctx))
 	a.outputFile = signed
 
 	// Install the signed apk

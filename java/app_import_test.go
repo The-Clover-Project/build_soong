@@ -195,7 +195,7 @@ func TestAndroidAppImport_SigningLineage(t *testing.T) {
 
 	// Check cert signing flags.
 	actualCertSigningFlags := signedApk.Args["flags"]
-	expectedCertSigningFlags := "--lineage lineage.bin --rotation-min-sdk-version 32"
+	expectedCertSigningFlags := "--lineage lineage.bin --rotation-min-sdk-version 32 --disable-v1"
 	if expectedCertSigningFlags != actualCertSigningFlags {
 		t.Errorf("Incorrect signing flags, expected: %q, got: %q", expectedCertSigningFlags, actualCertSigningFlags)
 	}
@@ -228,7 +228,7 @@ func TestAndroidAppImport_SigningLineageFilegroup(t *testing.T) {
 	signedApk := variant.Output("signed/foo.apk")
 	// Check cert signing lineage flag.
 	signingFlag := signedApk.Args["flags"]
-	expected := "--lineage lineage.bin"
+	expected := "--lineage lineage.bin --disable-v1"
 	if expected != signingFlag {
 		t.Errorf("Incorrect signing flags, expected: %q, got: %q", expected, signingFlag)
 	}
