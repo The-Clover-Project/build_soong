@@ -64,8 +64,9 @@ var (
 	CpWithBash = pctx.AndroidStaticRule("CpWithBash",
 		blueprint.RuleParams{
 			Command2: blueprint.NewCommand(
-				"/bin/bash -c \"", Rm, " -f $out && ", Cp, " $cpFlags $cpPreserveSymlinks $in $out$extraCmds\""),
-			Description: "cp $out",
+				"/bin/bash -c \"rm -f $out && cp $cpFlags $cpPreserveSymlinks $in $out$extraCmds\""),
+			Description:     "cp $out",
+			SandboxDisabled: true,
 		},
 		"cpFlags", "extraCmds")
 

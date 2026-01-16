@@ -281,6 +281,12 @@ type FilesystemProperties struct {
 	// Whether to enable per-file compression in f2fs
 	Enable_compression *bool
 
+	// F2FS block size which must be the same with the page size
+	F2fs_blocksize *int64
+
+	// Whether to format f2fs in a way that supports packed ssa feature
+	Support_f2fs_packedssa *bool
+
 	// Whether this partition is not supported by flashall.
 	// If true, this partition will not be included in the `updatedpackage` dist artifact.
 	No_flashall *bool
@@ -1460,6 +1466,13 @@ func (f *filesystem) buildPropFile(ctx android.ModuleContext) (android.Path, and
 			// https://source.corp.google.com/h/googleplex-android/platform/build/+/88b1c67239ca545b11580237242774b411f2fed9:core/Makefile;l=2294;drc=ea8f34bc1d6e63656b4ec32f2391e9d54b3ebb6b;bpv=1;bpt=0
 			addStr("f2fs_sparse_flag", "-S")
 		}
+		if f.properties.F2fs_blocksize != nil {
+			addStr("f2fs_blocksize", strconv.FormatInt(*f.properties.F2fs_blocksize, 10))
+		}
+		if proptools.BoolDefault(f.properties.Support_f2fs_packedssa, false) {
+			addStr("f2fs_packed_ssa", "1")
+		}
+
 	case ext4Type:
 		// build_image.py implicitly adds some properties when mount point is not specified.
 		// Make built prop files does not specify mount_point, but Soong built prop files do.
@@ -1571,6 +1584,12 @@ func (f *filesystem) buildPropFileForMiscInfo(ctx android.ModuleContext) android
 		if proptools.BoolDefault(f.properties.F2fs.Sparse, true) {
 			// https://source.corp.google.com/h/googleplex-android/platform/build/+/88b1c67239ca545b11580237242774b411f2fed9:core/Makefile;l=2294;drc=ea8f34bc1d6e63656b4ec32f2391e9d54b3ebb6b;bpv=1;bpt=0
 			addStr("f2fs_sparse_flag", "-S")
+		}
+		if f.properties.F2fs_blocksize != nil {
+			addStr("f2fs_blocksize", strconv.FormatInt(*f.properties.F2fs_blocksize, 10))
+		}
+		if proptools.BoolDefault(f.properties.Support_f2fs_packedssa, false) {
+			addStr("f2fs_packed_ssa", "1")
 		}
 	}
 

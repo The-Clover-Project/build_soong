@@ -38,6 +38,8 @@ var prepareForRustTest = android.GroupFixturePreparers(
 	genrule.PrepareForTestWithGenRuleBuildComponents,
 
 	PrepareForIntegrationTestWithRust,
+
+	android.PrepareForTestWithBuildFlag("RELEASE_SOONG_RUST_VARIANT_ON_DEMAND", "true"),
 )
 
 var rustMockedFiles = android.MockFS{
@@ -255,6 +257,7 @@ func TestSourceProviderDeps(t *testing.T) {
 			],
 			rlibs: ["libbindings"],
 			crate_name: "foo",
+			split_all_variants: true,
 		}
 		genrule {
 			name: "my_generator",
@@ -387,6 +390,7 @@ func TestMultilib(t *testing.T) {
 			name: "libfoo",
 			srcs: ["foo.rs"],
 			crate_name: "foo",
+			split_all_variants: true,
 		}`)
 
 	_ = ctx.ModuleForTests(t, "libfoo", "android_arm64_armv8-a_rlib_dylib-std")
@@ -533,6 +537,7 @@ func TestRustFFIRlibs(t *testing.T) {
 			srcs:["src/foo.rs"],
 			crate_name: "rs",
 			rustlibs: ["librs"],
+			split_all_variants: true,
 		}
 
 		rust_binary {
@@ -694,6 +699,7 @@ func TestStdLinkMismatch(t *testing.T) {
 				"foo.rs",
 			],
 			rlibs: ["libbar"],
+			split_all_variants: true,
 		}
 		rust_library {
 			name: "libbar",
@@ -800,6 +806,7 @@ func TestRustLinkPropagation(t *testing.T) {
 		crate_name: "rlib3",
 		srcs: ["src/lib.rs"],
 		rlibs: ["librlib2"],
+		split_all_variants: true,
 	}
 
 	rust_library_dylib {

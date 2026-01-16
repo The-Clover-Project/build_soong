@@ -30,6 +30,7 @@ func TestRustProtobuf3(t *testing.T) {
 			source_stem: "buf",
 			shared_libs: ["libfoo_shared"],
 			static_libs: ["libfoo_static"],
+			split_all_variants: true,
 		}
 		cc_library_shared {
 			name: "libfoo_shared",
@@ -127,6 +128,7 @@ func TestRustGrpc(t *testing.T) {
 			grpc_protos: ["foo.proto", "proto.proto"],
 			crate_name: "rust_grpcio",
 			source_stem: "buf",
+			split_all_variants: true,
 		}
 	`)
 
