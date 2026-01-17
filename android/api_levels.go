@@ -293,6 +293,8 @@ var FirstPackedRelocationsVersion = UncheckedFinalApiLevel(23)
 // a core-for-system-modules.jar for the module-lib API scope.
 var LastWithoutModuleLibCoreSystemModules = UncheckedFinalApiLevel(31)
 
+var FirstRiscv64Version = UncheckedFinalApiLevel(35)
+
 var ApiLevelR = UncheckedFinalApiLevel(30)
 
 var ApiLevelUpsideDownCake = UncheckedFinalApiLevel(34)
