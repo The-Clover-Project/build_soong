@@ -56,6 +56,8 @@ func TestCipdPackage(t *testing.T) {
 		wantRoot + "/package1_file1",
 		wantRoot + "/package1_file2",
 	}
+	wantPackage := "android/prebuilts/package1"
+	wantVersion := "version1"
 
 	var gotExportOutputs []string
 	for _, output := range export.Outputs {
@@ -68,10 +70,13 @@ func TestCipdPackage(t *testing.T) {
 		t.Errorf("export.Output = %v, want nil", export.Output)
 	}
 	if export.Args["root"] != wantRoot {
-		t.Errorf("export.Args{\"root\"] = %v, want %v", export.Args["root"], wantRoot)
+		t.Errorf("export.Args[\"root\"] = %v, want %v", export.Args["root"], wantRoot)
 	}
-	if len(export.Args) != 1 {
-		t.Errorf("len(export.Args) = %v, want 1", len(export.Args))
+	if export.Args["package"] != wantPackage {
+		t.Errorf("export.Args[\"package\"] = %v, want %v", export.Args["package"], wantPackage)
+	}
+	if export.Args["version"] != wantVersion {
+		t.Errorf("export.Args[\"version\"] = %v, want %v", export.Args["version"], wantVersion)
 	}
 
 	zipRule := module.Rule("soong_zip_from_dir")
@@ -83,12 +88,15 @@ func TestCipdPackage(t *testing.T) {
 	if zipRule.Input.String() != wantEnsureFile {
 		t.Errorf("zipRule.Input.String() = %q, want %q", zipRule.Input.String(), wantEnsureFile)
 	}
-	if len(zipRule.Args) != 1 {
-		t.Fatalf("len(zipRule.Args) = %v, want 1 (was %v)", len(zipRule.Args), zipRule.Args)
-	}
 	wantTempZipDir := intermediateDir + "/zip_temp_pkg_dir"
 	if zipRule.Args["tempZipDir"] != wantTempZipDir {
 		t.Errorf("zipRule.Args[\"tempZipDir\"] = %q, want %q", zipRule.Args["tempZipDir"], wantTempZipDir)
+	}
+	if export.Args["package"] != wantPackage {
+		t.Errorf("export.Args[\"package\"] = %v, want %v", export.Args["package"], wantPackage)
+	}
+	if export.Args["version"] != wantVersion {
+		t.Errorf("export.Args[\"version\"] = %v, want %v", export.Args["version"], wantVersion)
 	}
 
 	zipTaggedOutputs := module.OutputFiles(result.TestContext, t, ".zip")

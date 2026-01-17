@@ -130,7 +130,9 @@ def __step_config(ctx, vars, step_config):
             "prebuilts/gcc/linux-x86/host/x86_64-w64-mingw32-4.8/x86_64-w64-mingw32/lib32:lib32",
             "prebuilts/gcc/linux-x86/host/x86_64-w64-mingw32-4.8/x86_64-w64-mingw32/lib64",
         ],
-        # TODO(b/433611110): --sysroot out/soong/ndk/sysroot
+        # The NDK sysroot is generated mid-build, so its headers are not available
+        # for dependency scanning at the start of the build. The dependency is
+        # handled via a timestamp file instead. See b/433611110 for context.
         path.join(vars.OUT_DIR, "soong/ndk/sysroot:headers"): [
             path.join(vars.OUT_DIR, "soong/ndk_headers.timestamp") + ":inputs",
         ],
