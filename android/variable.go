@@ -592,10 +592,6 @@ type PartitionQualifiedVariablesType struct {
 	BoardJournalSize            string `json:",omitempty"`
 	BoardPartitionReservedSize  string `json:",omitempty"`
 	BoardPartitionSize          string `json:",omitempty"`
-	BoardSquashfsBlockSize      string `json:",omitempty"`
-	BoardSquashfsCompressor     string `json:",omitempty"`
-	BoardSquashfsCompressorOpt  string `json:",omitempty"`
-	BoardSquashfsDisable4kAlign string `json:",omitempty"`
 	ProductBaseFsPath           string `json:",omitempty"`
 	ProductHeadroom             string `json:",omitempty"`
 	ProductVerityPartition      string `json:",omitempty"`
@@ -641,7 +637,6 @@ type PartitionVariables struct {
 
 	TargetUserimagesSparseExtDisabled      bool `json:",omitempty"`
 	TargetUserimagesSparseErofsDisabled    bool `json:",omitempty"`
-	TargetUserimagesSparseSquashfsDisabled bool `json:",omitempty"`
 	TargetUserimagesSparseF2fsDisabled     bool `json:",omitempty"`
 
 	BoardErofsCompressor           string `json:",omitempty"`
