@@ -6436,7 +6436,7 @@ func TestApexAvailable_DirectDep(t *testing.T) {
 	}`)
 
 	// 'apex_available' check is bypassed for /product apex with a specific prefix.
-	// TODO: b/352818241 - Remove below two cases after APEX availability is enforced for /product APEXes.
+	// TODO: b/352818241 - Remove below three cases after APEX availability is enforced for /product APEXes.
 	testApex(t, `
 	apex {
 		name: "com.sdv.myapex",
@@ -6475,6 +6475,46 @@ func TestApexAvailable_DirectDep(t *testing.T) {
 		android.FixtureMergeMockFs(android.MockFS{
 			"system/sepolicy/apex/com.sdv.myapex-file_contexts":    nil,
 			"system/sepolicy/apex/com.any.otherapex-file_contexts": nil,
+		}))
+
+	testApex(t, `
+	apex {
+		name: "com.any.sdv.myapex",
+		key: "myapex.key",
+		native_shared_libs: ["libfoo"],
+		updatable: false,
+		product_specific: true,
+	}
+
+	apex_key {
+		name: "myapex.key",
+		public_key: "testkey.avbpubkey",
+		private_key: "testkey.pem",
+	}
+
+	apex {
+		name: "com.any.otherapex",
+		key: "otherapex.key",
+		native_shared_libs: ["libfoo"],
+		updatable: false,
+	}
+
+	apex_key {
+		name: "otherapex.key",
+		public_key: "testkey.avbpubkey",
+		private_key: "testkey.pem",
+	}
+
+	cc_library {
+		name: "libfoo",
+		stl: "none",
+		system_shared_libs: [],
+		apex_available: ["com.any.otherapex"],
+		product_specific: true,
+	}`,
+		android.FixtureMergeMockFs(android.MockFS{
+			"system/sepolicy/apex/com.any.sdv.myapex-file_contexts": nil,
+			"system/sepolicy/apex/com.any.otherapex-file_contexts":  nil,
 		}))
 
 	// 'apex_available' check is not bypassed for non-product apex with a specific prefix.
