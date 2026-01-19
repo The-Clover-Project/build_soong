@@ -55,11 +55,6 @@ func getImageNames() []string {
 }
 
 func genBootImageConfigRaw(ctx android.PathContext) map[string]*bootImageConfig {
-	mainlineBcpCompilerFilter := "verify"
-	if ctx.Config().GetBuildFlagBool("RELEASE_ART_COMPILE_BCP_APEX_SPEED_PROFILE") {
-		mainlineBcpCompilerFilter = "speed-profile"
-	}
-
 	return ctx.Config().Once(bootImageConfigRawKey, func() interface{} {
 		global := dexpreopt.GetGlobalConfig(ctx)
 
@@ -100,7 +95,7 @@ func genBootImageConfigRaw(ctx android.PathContext) map[string]*bootImageConfig 
 			stem:            bootImageStem,
 			installDir:      frameworkSubdir,
 			modules:         mainlineBcpModules,
-			compilerFilter:  mainlineBcpCompilerFilter,
+			compilerFilter:  "verify",
 			singleImage:     true,
 		}
 

@@ -337,7 +337,6 @@ func testDexpreoptBoot(t *testing.T, ruleFile string, expectedInputs, expectedOu
 		java.FixtureWithLastReleaseApis("foo"),
 		java.FixtureConfigureBootJars("com.android.art:core-oj", "platform:foo", "system_ext:bar", "platform:baz"),
 		java.FixtureConfigureApexBootJars("com.android.connectivity:framework-connectivity", "com.android.os.statsd:framework-statsd"),
-		android.PrepareForTestWithBuildFlag("RELEASE_ART_COMPILE_BCP_APEX_SPEED_PROFILE", "true"),
 		PrepareForTestWithApexBuildComponents,
 		prepareForTestWithArtApex,
 		prepareForTestWithMainlineApex,
@@ -420,10 +419,11 @@ func TestDexpreoptBootJarsWithSourceMainlineApex(t *testing.T) {
 		"out/soong/dexpreopt/uffd_gc_flag.txt",
 		"out/soong/dexpreopt_arm64/dex_mainlinejars_input/framework-statsd.jar",
 		"out/soong/dexpreopt_arm64/dex_mainlinejars_input/framework-connectivity.jar",
+		// TODO(b/342163020) - Enable the following input profiles for mainline APEXs once speed-profile is enabled for mainline APEXs.
 		// ART profile is here since we include all profiles from the bootclasspath fragments, but dex2oat will select only the one corresponding to the apex that is being built.
-		"out/soong/.intermediates/com.android.connectivity-bootclasspath-fragment/android_common_com.android.connectivity/com.android.connectivity-bootclasspath-fragment/boot.prof",
-		"out/soong/.intermediates/com.android.os.statsd-bootclasspath-fragment/android_common_com.android.os.statsd/com.android.os.statsd-bootclasspath-fragment/boot.prof",
-		"out/soong/.intermediates/art-bootclasspath-fragment/android_common_com.android.art/art-bootclasspath-fragment/boot.prof",
+		// "out/soong/.intermediates/com.android.connectivity-bootclasspath-fragment/android_common_com.android.connectivity/com.android.connectivity-bootclasspath-fragment/boot.prof",
+		// "out/soong/.intermediates/com.android.os.statsd-bootclasspath-fragment/android_common_com.android.os.statsd/com.android.os.statsd-bootclasspath-fragment/boot.prof",
+		// "out/soong/.intermediates/art-bootclasspath-fragment/android_common_com.android.art/art-bootclasspath-fragment/boot.prof",
 		// ART related inputs
 		"out/soong/dexpreopt_arm64/dex_bootjars/android/system/framework/arm64/boot-bar.art",
 		"out/soong/dexpreopt_arm64/dex_bootjars/android/system/framework/arm64/boot-bar.oat",
@@ -510,10 +510,11 @@ func TestDexpreoptBootJarsWithPrebuiltMainlineApex(t *testing.T) {
 		"out/soong/dexpreopt/uffd_gc_flag.txt",
 		"out/soong/dexpreopt_arm64/dex_mainlinejars_input/framework-statsd.jar",
 		"out/soong/dexpreopt_arm64/dex_mainlinejars_input/framework-connectivity.jar",
+		// TODO(b/342163020) - Enable the following input deapexed profiles for mainline APEXs once speed-profile is enabled for mainline APEXs.
 		// ART profile is here since we include all profiles from the bootclasspath fragments, but dex2oat will select only the one corresponding to the apex that is being built.
-		"out/soong/.intermediates/prebuilt_com.android.connectivity/android_common_prebuilt_com.android.connectivity/deapexer/etc/boot-image.prof",
-		"out/soong/.intermediates/prebuilt_com.android.os.statsd/android_common_prebuilt_com.android.os.statsd/deapexer/etc/boot-image.prof",
-		"out/soong/.intermediates/prebuilt_com.android.art/android_common_prebuilt_com.android.art/deapexer/etc/boot-image.prof",
+		// "out/soong/.intermediates/prebuilt_com.android.connectivity/android_common_prebuilt_com.android.connectivity/deapexer/etc/boot-image.prof",
+		// "out/soong/.intermediates/prebuilt_com.android.os.statsd/android_common_prebuilt_com.android.os.statsd/deapexer/etc/boot-image.prof",
+		// "out/soong/.intermediates/prebuilt_com.android.art/android_common_prebuilt_com.android.art/deapexer/etc/boot-image.prof",
 		// ART related inputs
 		"out/soong/dexpreopt_arm64/dex_bootjars/android/system/framework/arm64/boot-bar.art",
 		"out/soong/dexpreopt_arm64/dex_bootjars/android/system/framework/arm64/boot-bar.oat",
