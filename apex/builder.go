@@ -1007,7 +1007,7 @@ func (a *apexBundle) buildApex(ctx android.ModuleContext) {
 	rule := java.Signapk
 	args := map[string]string{
 		"certificates": pem.String() + " " + key.String(),
-		"flags":        "-a 4096 --align-file-size", //alignment
+		"flags":        "--disable-v1 -a 4096 --align-file-size", //alignment
 	}
 	implicits := android.Paths{pem, key}
 	if ctx.Config().UseREWrapper() && ctx.Config().IsEnvTrue("RBE_SIGNAPK") {
