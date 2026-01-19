@@ -7169,6 +7169,10 @@ func TestApexAvailable_PrefixMatch(t *testing.T) {
 			apexAvailable: "com.foo.*",
 		},
 		{
+			name:          "wildcard ? matches single segment",
+			apexAvailable: "?.foo.*",
+		},
+		{
 			name:          "prefix doesn't match",
 			apexAvailable: "com.bar.*",
 			expectedError: `Consider .* "com.foo\.\*"`,
@@ -7192,6 +7196,16 @@ func TestApexAvailable_PrefixMatch(t *testing.T) {
 			name:          "hint with prefix pattern",
 			apexAvailable: "//apex_available:platform",
 			expectedError: "Consider adding \"com.foo.bar\" or \"com.foo.*\"",
+		},
+		{
+			name:          "wildcard ? without dot on left",
+			apexAvailable: "com?.foo.*",
+			expectedError: "should be surrounded by dot",
+		},
+		{
+			name:          "wildcard ? without dot on right",
+			apexAvailable: "com.?foo.*",
+			expectedError: "should be surrounded by dot",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

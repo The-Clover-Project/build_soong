@@ -298,6 +298,7 @@ type ApexProperties struct {
 	// "//apex_available:anyapex" is a pseudo APEX name that matches to any APEX.
 	// "//apex_available:platform" refers to non-APEX partitions like "system.img".
 	// Prefix pattern (com.foo.*) can be used to match with any APEX name with the prefix(com.foo.).
+	// Wildcard ? can be used to match exactly one path segment (e.g. com.?.foo matches com.bar.foo). This may be combined with prefix pattern for complex routing (e.g., com.?.foo.*).
 	// Default is ["//apex_available:platform"].
 	Apex_available []string
 
@@ -521,12 +522,36 @@ func CheckAvailableForApex(what string, apex_available []string) bool {
 		if apex_name == AvailableToAnyApex && what != AvailableToPlatform {
 			return true
 		}
-		// prefix match.
-		if strings.HasSuffix(apex_name, ".*") && strings.HasPrefix(what, strings.TrimSuffix(apex_name, "*")) {
+		// wildcards match.
+		if strings.ContainsAny(apex_name, "*?") && MatchApex(apex_name, what) {
 			return true
 		}
 	}
 	return false
+}
+
+// Checks if the name matches the pattern.
+// The pattern can contain '?' which matches any single segment,
+// and '*' at the end which matches any suffix.
+func MatchApex(pattern, name string) bool {
+	patternParts := strings.Split(pattern, ".")
+	nameParts := strings.Split(name, ".")
+
+	if len(nameParts) < len(patternParts) {
+		return false
+	}
+
+	for i, part := range patternParts {
+		if part == "*" {
+			return true
+		}
+		if part == "?" || part == nameParts[i] {
+			continue
+		}
+		return false
+	}
+
+	return true
 }
 
 // Implements ApexModule
@@ -545,6 +570,15 @@ func (m *ApexModuleBase) checkApexAvailableProperty(mctx BaseModuleContext) {
 		if n == AvailableToPlatform || n == AvailableToAnyApex {
 			continue
 		}
+		// Optional segment should always have ? surrounded by dots(.) if in the middle.
+		if start := strings.IndexByte(n, '?'); start != -1 {
+			for i := start; i < len(n); i++ {
+				if n[i] == '?' && (i > 0 && n[i-1] != '.' || i < len(n)-1 && n[i+1] != '.') {
+					mctx.PropertyErrorf("apex_available", "Wildcard '?' should be surrounded by dot.")
+					break
+				}
+			}
+		}
 		// Prefix pattern should end with .* and has at least two components.
 		if strings.Contains(n, "*") {
 			if !strings.HasSuffix(n, ".*") {
@@ -554,7 +588,7 @@ func (m *ApexModuleBase) checkApexAvailableProperty(mctx BaseModuleContext) {
 				mctx.PropertyErrorf("apex_available", "Wildcard requires two or more components like com.foo.*")
 			}
 			if strings.Count(n, "*") != 1 {
-				mctx.PropertyErrorf("apex_available", "Wildcard is not allowed in the middle.")
+				mctx.PropertyErrorf("apex_available", "Wildcard '*' is not allowed in the middle.")
 			}
 			continue
 		}
