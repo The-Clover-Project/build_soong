@@ -40,8 +40,6 @@ var (
 
 func init() {
 	pctx.Import("android/soong/cc/config")
-
-	android.RegisterModuleType("raw_binary", rawBinaryFactory)
 }
 
 // @auto-generate: gob

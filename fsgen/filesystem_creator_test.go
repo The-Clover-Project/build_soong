@@ -1138,6 +1138,60 @@ func TestVbmetaGenerationWithCustomPartitions(t *testing.T) {
 	android.AssertStringDoesContain(t, "avb enabled custom partition must be included as chained partition", vbmetaImageCommand, "--chain_partition custom1:5:out/soong/.intermediates/custom1/android_common/custom1.avbpubkey")
 }
 
+func TestVbmetaGenerationWithPvmfw(t *testing.T) {
+	result := android.GroupFixturePreparers(
+		android.PrepareForIntegrationTestWithAndroid,
+		android.PrepareForTestWithAndroidBuildComponents,
+		android.PrepareForTestWithAllowMissingDependencies,
+		prepareForTestWithFsgenBuildComponents,
+		cc.PrepareForTestWithCcBuildComponents,
+		java.PrepareForTestWithJavaBuildComponents,
+		prepareMockRamdiksNodeList,
+		filesystem.PrepareForTestWithFilesystemBuildComponents,
+		android.FixtureMergeMockFs(android.MockFS{
+			"external/avb/test/data/testkey_rsa4096.pem": nil,
+			"build/soong/fsgen/Android.bp": []byte(`
+			soong_filesystem_creator {
+				name: "foo",
+			}
+		`),
+		}),
+		android.FixtureModifyConfig(func(config android.Config) {
+			config.TestProductVariables.PartitionVarsForSoongMigrationOnlyDoNotUse.BuildingVbmetaImage = true
+			config.TestProductVariables.PartitionVarsForSoongMigrationOnlyDoNotUse.BoardUsesPvmfwImage = true
+			config.TestProductVariables.PartitionVarsForSoongMigrationOnlyDoNotUse.PartitionQualifiedVariables =
+				map[string]android.PartitionQualifiedVariablesType{
+					"system": {
+						BoardFileSystemType:           "ext4",
+						BuildingImage:                 true,
+						BoardAvbKeyPath:               "external/avb/test/data/testkey_rsa4096.pem",
+						BoardAvbRollbackIndexLocation: "1",
+					},
+				}
+			config.TestProductVariables.PartitionVarsForSoongMigrationOnlyDoNotUse.BoardAvbEnable = true
+		}),
+	).RunTestWithBp(t, `
+		raw_binary {
+			name: "pvmfw_bin",
+		}
+		bootimg {
+			name: "pvmfw_img",
+			kernel_prebuilt: ":pvmfw_bin",
+			header_version: "3",
+			use_avb: true,
+		}
+	`)
+
+	generatedVbmetaImage := result.ModuleForTests(t, "test_product_generated_vbmeta_image", "android_common").Output("vbmeta.img")
+	vbmetaImageCommand := generatedVbmetaImage.RuleParams.Command
+
+	android.AssertStringDoesContain(t,
+		"avb enabled pvmfw partition must be included",
+		vbmetaImageCommand,
+		"--include_descriptors_from_image out/soong/.intermediates/pvmfw_img/android_arm64_armv8-a/pvmfw_img.img",
+	)
+}
+
 func TestStageDeviceFiles(t *testing.T) {
 	result := android.GroupFixturePreparers(
 		android.PrepareForIntegrationTestWithAndroid,
