@@ -17,4 +17,5 @@ package main
 const (
 	SoongUiScript = "build/soong/soong_ui.bash"
 	SoongZip      = "prebuilts/build-tools/linux-x86/bin/soong_zip"
+	LogPath       = "logs/test-configs-reducer.log"
 )
