@@ -209,16 +209,27 @@ func (cov *coverage) flags(ctx ModuleContext, flags Flags, deps PathDeps) (Flags
 	return flags, deps
 }
 
-func (cov *coverage) begin(ctx BaseModuleContext) {
-	if IsCoverageEnabled(ctx) {
+func (cov *coverage) begin(ctx BaseModuleContext, binary bool, test bool) {
+	if IsCoverageEnabled(ctx, binary, test) {
 		cov.Properties = SetCoverageProperties(ctx, cov.Properties, ctx.nativeCoverage(), ctx.useSdk(), ctx.sdkVersion())
 	}
 }
 
-func IsCoverageEnabled(ctx android.BaseModuleContext) bool {
+func IsCoverageEnabled(ctx android.BaseModuleContext, binary bool, test bool) bool {
 	if ctx.Host() {
-		// Disable all coverage instrumentation and variants for host-side tools
-		return false
+		// Only allow coverage for host modules if they are explicitly marked as tests
+		// or if they are libraries (which might be dependencies of tests).
+		// Build tools (binaries that are NOT tests) should be excluded.
+		if binary && !test {
+			return false
+		}
+		// Host coverage is only supported on Linux 64-bit binaries
+		if !ctx.Os().Linux() {
+			return false
+		}
+		if ctx.Arch().ArchType.Multilib == "lib32" {
+			return false
+		}
 	}
 	return true
 }
