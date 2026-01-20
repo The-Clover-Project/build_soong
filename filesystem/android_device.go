@@ -1292,6 +1292,9 @@ func (a *androidDevice) copyMetadataToTargetZip(ctx android.ModuleContext, build
 		if android.InList(partition, []string{"userdata", "vendor_kernel_ramdisk"}) {
 			continue
 		}
+		if android.InList(partition, a.partitionProps.Custom_partitions) {
+			continue
+		}
 		if partition != "vendor_ramdisk" {
 			// vendor_ramdisk will be handled separately.
 			builder.Command().Textf("cp").Input(fsInfos[partition].FilesystemConfig).Textf(" %s/META/%s", targetFilesDir.String(), a.filesystemConfigNameForTargetFiles(partition))
