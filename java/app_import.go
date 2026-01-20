@@ -524,7 +524,8 @@ func (a *AndroidAppImport) generateAndroidBuildActions(ctx android.ModuleContext
 
 		rotationMinSdkVersion := String(a.properties.RotationMinSdkVersion)
 
-		SignAppPackage(ctx, signed, jnisUncompressed, certificates, nil, lineageFile, rotationMinSdkVersion)
+		SignAppPackage(ctx, signed, jnisUncompressed, certificates, nil, lineageFile,
+			rotationMinSdkVersion, a.MinSdkVersion(ctx))
 		a.outputFile = signed
 	} else {
 		validationStamp := a.validatePresignedApk(ctx, srcApk)

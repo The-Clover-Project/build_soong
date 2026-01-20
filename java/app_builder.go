@@ -34,7 +34,7 @@ var (
 	Signapk, SignapkRE = pctx.RemoteStaticRules("signapk",
 		blueprint.RuleParams{
 			Command: `rm -f $out && $reTemplate${config.JavaCmd} ${config.JavaVmFlags} -Djava.library.path=$$(dirname ${config.SignapkJniLibrary}) ` +
-				`-jar ${config.SignapkCmd} --disable-v1 $flags $certificates $in $out`,
+				`-jar ${config.SignapkCmd} $flags $certificates $in $out`,
 			CommandDeps:     []string{"${config.SignapkCmd}", "${config.SignapkJniLibrary}"},
 			SandboxDisabled: true,
 		},
@@ -55,7 +55,9 @@ var combineApk = pctx.AndroidStaticRule("combineApk",
 	})
 
 func CreateAndSignAppPackage(ctx android.ModuleContext, outputFile android.WritablePath,
-	packageFile, jniJarFile, dexJarFile android.Path, certificates []Certificate, deps android.Paths, v4SignatureFile android.WritablePath, lineageFile android.Path, rotationMinSdkVersion string) {
+	packageFile, jniJarFile, dexJarFile android.Path, certificates []Certificate, deps android.Paths,
+	v4SignatureFile android.WritablePath, lineageFile android.Path, rotationMinSdkVersion string,
+	minSdkVersion android.ApiLevel) {
 
 	unsignedApkName := strings.TrimSuffix(outputFile.Base(), ".apk") + "-unsigned.apk"
 	unsignedApk := android.PathForModuleOut(ctx, unsignedApkName)
@@ -74,10 +76,13 @@ func CreateAndSignAppPackage(ctx android.ModuleContext, outputFile android.Writa
 		Output:    unsignedApk,
 		Implicits: deps,
 	})
-	SignAppPackage(ctx, outputFile, unsignedApk, certificates, v4SignatureFile, lineageFile, rotationMinSdkVersion)
+	SignAppPackage(ctx, outputFile, unsignedApk, certificates, v4SignatureFile, lineageFile, rotationMinSdkVersion,
+		minSdkVersion)
 }
 
-func SignAppPackage(ctx android.ModuleContext, signedApk android.WritablePath, unsignedApk android.Path, certificates []Certificate, v4SignatureFile android.WritablePath, lineageFile android.Path, rotationMinSdkVersion string) {
+func SignAppPackage(ctx android.ModuleContext, signedApk android.WritablePath, unsignedApk android.Path,
+	certificates []Certificate, v4SignatureFile android.WritablePath, lineageFile android.Path,
+	rotationMinSdkVersion string, minSdkVersion android.ApiLevel) {
 
 	var certificateArgs []string
 	var deps android.Paths
@@ -99,6 +104,10 @@ func SignAppPackage(ctx android.ModuleContext, signedApk android.WritablePath, u
 
 	if rotationMinSdkVersion != "" {
 		flags = append(flags, "--rotation-min-sdk-version", rotationMinSdkVersion)
+	}
+
+	if minSdkVersion.GreaterThanOrEqualTo(android.UncheckedFinalApiLevel(24)) {
+		flags = append(flags, "--disable-v1")
 	}
 
 	rule := Signapk
