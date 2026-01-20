@@ -2345,7 +2345,9 @@ func (m *ModuleBase) GenerateBuildActions(blueprintCtx blueprint.ModuleContext) 
 			ideInfo = &IdeInfo{}
 			x.IDEInfo(ctx, ideInfo)
 			ideInfo.BaseModuleName = x.BaseModuleName()
-			ideInfo.ModuleType = ctx.ModuleType()
+			if ideInfo.ModuleType == "" {
+				ideInfo.ModuleType = ctx.ModuleType()
+			}
 		}
 
 		if proptools.Bool(m.commonProperties.Unchecked_module) {
@@ -2687,6 +2689,11 @@ func (m *ModuleBase) GenerateBuildActions(blueprintCtx blueprint.ModuleContext) 
 		// then there are no references directly to the Module and it can be freed.
 		ctx.bp.FreeModuleAfterGenerateBuildActions()
 	}
+}
+
+// IdeInfoPopulator is an interface that can be implemented to populate the IdeInfo struct.
+type IdeInfoPopulator interface {
+	PopulateIdeInfo(ctx BaseModuleContext, ideInfo *IdeInfo)
 }
 
 // computeHostToolInfo returns a *HostToolInfo to embed into the CommonInfo for this

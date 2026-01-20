@@ -2611,6 +2611,11 @@ func (j *Module) IDEInfo(ctx android.BaseModuleContext, dpInfo *android.IdeInfo)
 	dpInfo.Annotation_processor_flags = append(dpInfo.Annotation_processor_flags, j.properties.Annotation_processor_flags...)
 	dpInfo.Plugins = append(dpInfo.Plugins, j.properties.Plugins...)
 
+	for _, props := range j.GetProperties() {
+		if p, ok := props.(android.IdeInfoPopulator); ok {
+			p.PopulateIdeInfo(ctx, dpInfo)
+		}
+	}
 }
 
 func (j *Module) CompilerDeps() []string {
