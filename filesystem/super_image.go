@@ -222,6 +222,27 @@ func (s *superImage) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	ctx.SetOutputFiles([]android.Path{output}, "")
 	ctx.CheckbuildFile(output)
 
+	var installedApexKeys android.Paths
+	ctx.VisitDirectDepsProxy(func(m android.ModuleProxy) {
+		if info, ok := android.OtherModuleProvider(ctx, m, ApexKeyPathInfoProvider); ok {
+			installedApexKeys = append(installedApexKeys, info.ApexKeyPath)
+		}
+	})
+
+	if len(installedApexKeys) > 0 {
+		apexKeys := android.PathForModuleOut(ctx, "apexkeys.txt")
+		ctx.Build(pctx, android.BuildParams{
+			Rule:        android.CatRule,
+			Inputs:      installedApexKeys,
+			Output:      apexKeys,
+			Description: "generating apexkeys.txt for " + ctx.ModuleName(),
+		})
+
+		android.SetProvider(ctx, ApexKeyPathInfoProvider, ApexKeyPathInfo{
+			ApexKeyPath: apexKeys,
+		})
+	}
+
 	buildComplianceMetadata(ctx, subImageDepTag)
 }
 
