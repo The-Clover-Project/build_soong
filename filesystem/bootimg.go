@@ -81,7 +81,7 @@ type CommonBootimgProperties struct {
 
 	// The size of the partition on the device. It will be a build error if this built partition
 	// image exceeds this size.
-	Partition_size *int64
+	Partition_size proptools.Configurable[int64] `android:"replace_instead_of_append"`
 
 	// When set to true, sign the image with avbtool. Default is false.
 	Use_avb *bool
@@ -468,8 +468,8 @@ func (b *bootimg) buildBootImage(ctx android.ModuleContext, kernel android.Path)
 	}
 	cmd.FlagWithOutput(flag, output)
 
-	if b.commonProperties.Partition_size != nil {
-		assertMaxImageSize(builder, output, *b.commonProperties.Partition_size, proptools.Bool(b.commonProperties.Use_avb))
+	if s := b.commonProperties.Partition_size.Get(ctx); s.IsPresent() {
+		assertMaxImageSize(builder, output, s.Get(), proptools.Bool(b.commonProperties.Use_avb))
 	}
 
 	android.SetProvider(ctx, ramdiskFragmentsInfoProvider, rfi)
@@ -486,8 +486,8 @@ func (b *bootimg) addAvbFooter(ctx android.ModuleContext, unsignedImage android.
 		Text("add_hash_footer").
 		FlagWithInput("--image ", output)
 
-	if b.commonProperties.Partition_size != nil {
-		cmd.FlagWithArg("--partition_size ", strconv.FormatInt(*b.commonProperties.Partition_size, 10))
+	if s := b.commonProperties.Partition_size.Get(ctx); s.IsPresent() {
+		cmd.FlagWithArg("--partition_size ", strconv.FormatInt(s.Get(), 10))
 	} else {
 		cmd.Flag("--dynamic_partition_size")
 	}
@@ -624,8 +624,8 @@ func (b *bootimg) buildPropFileForMiscInfo(ctx android.ModuleContext) android.Pa
 		addStr("avb_"+bootImgType+"_key_path", android.PathForModuleSrc(ctx, proptools.String(b.commonProperties.Avb_private_key)).String())
 		addStr("avb_"+bootImgType+"_rollback_index_location", strconv.Itoa(proptools.Int(b.commonProperties.Avb_rollback_index_location)))
 	}
-	if b.commonProperties.Partition_size != nil {
-		addStr(bootImgType+"_size", strconv.FormatInt(*b.commonProperties.Partition_size, 10))
+	if s := b.commonProperties.Partition_size.Get(ctx); s.IsPresent() {
+		addStr(bootImgType+"_size", strconv.FormatInt(s.Get(), 10))
 	}
 	if bootImgType != "boot" {
 		addStr(bootImgType, "true")
@@ -780,8 +780,8 @@ func (b *prebuiltBootImg) signWithAvb(ctx android.ModuleContext, src android.Pat
 		Textf(`--salt $(sha256sum "%s" | cut -d " " -f 1)`, unpackDir.Join(ctx, "kernel")).
 		FlagWithArg("--partition_name ", b.bootImageType.String())
 
-	if b.commonProperties.Partition_size != nil {
-		cmd.FlagWithArg("--partition_size ", strconv.FormatInt(*b.commonProperties.Partition_size, 10))
+	if s := b.commonProperties.Partition_size.Get(ctx); s.IsPresent() {
+		cmd.FlagWithArg("--partition_size ", strconv.FormatInt(s.Get(), 10))
 	} else {
 		cmd.Flag("--dynamic_partition_size")
 	}
@@ -831,8 +831,8 @@ func (b *prebuiltBootImg) buildPropFileForMiscInfo(ctx android.ModuleContext) an
 		addStr("avb_"+bootImgType+"_key_path", android.PathForModuleSrc(ctx, proptools.String(b.commonProperties.Avb_private_key)).String())
 		addStr("avb_"+bootImgType+"_rollback_index_location", strconv.Itoa(proptools.Int(b.commonProperties.Avb_rollback_index_location)))
 	}
-	if b.commonProperties.Partition_size != nil {
-		addStr(bootImgType+"_size", strconv.FormatInt(*b.commonProperties.Partition_size, 10))
+	if s := b.commonProperties.Partition_size.Get(ctx); s.IsPresent() {
+		addStr(bootImgType+"_size", strconv.FormatInt(s.Get(), 10))
 	}
 	addStr("boot_images", bootImgType+".img")
 
