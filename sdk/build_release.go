@@ -103,6 +103,7 @@ var (
 	buildReleaseU = initBuildRelease("UpsideDownCake")
 	buildReleaseV = initBuildRelease("VanillaIceCream")
 	buildReleaseB = initBuildRelease("Baklava")
+	buildReleaseC = initBuildRelease("CinnamonBun")
 
 	// Add the current build release which is always treated as being more recent than any other
 	// build release, including those added in tests.
