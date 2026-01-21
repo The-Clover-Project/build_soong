@@ -1,0 +1,31 @@
+package {
+    default_applicable_licenses: ["Android-Apache-2.0"],
+}
+
+python_defaults {
+    name: "build_sdk_lib_defaults",
+    srcs: [
+        "api/*.py",
+    ],
+}
+
+python_library_host {
+    name: "build_sdk_lib",
+    defaults: [
+        "build_sdk_lib_defaults",
+    ],
+}
+
+python_test_host {
+    name: "build_sdk_lib_test",
+    main: "tests/test_main.py",
+    srcs: [
+        "tests/*.py",
+    ],
+    libs: [
+        "build_sdk_lib",
+    ],
+    test_options: {
+        unit_test: true,
+    },
+}
