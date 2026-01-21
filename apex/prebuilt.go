@@ -718,11 +718,7 @@ func (p *Prebuilt) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 
 	android.SetProvider(ctx, filesystem.ApexKeyPathInfoProvider, filesystem.ApexKeyPathInfo{p.apexKeysPath})
 
-	if module := android.SrcIsModule(prebuiltApex); module != "" {
-		if ctx.OtherModuleType(android.GetModuleProxyFromPathDep(ctx, module, "")) == "cipd_package" {
-			ctx.ComplianceMetadataInfo().SetStringValue(android.ComplianceMetadataProp.CIPD_SRC, module)
-		}
-	}
+	ctx.ComplianceMetadataInfo().SetCipdSrc(ctx, prebuiltApex)
 }
 
 // Creates a timestamp file that will be used to validate that there is no mismtach

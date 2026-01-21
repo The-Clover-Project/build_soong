@@ -563,6 +563,8 @@ func (a *AndroidAppImport) generateAndroidBuildActions(ctx android.ModuleContext
 	ctx.SetOutputFiles([]android.Path{a.outputFile}, "")
 
 	buildComplianceMetadata(ctx)
+	src := a.prebuilt.SingleSource(ctx)
+	ctx.ComplianceMetadataInfo().SetCipdSrc(ctx, src)
 
 	// TODO: androidmk converter jni libs
 }
