@@ -266,6 +266,7 @@ func (a *androidDevice) copyFilesToProductOutForSoongOnly(ctx android.ModuleCont
 				Input:  info.SuperImage,
 				Output: installPath,
 			})
+			ctx.Phony("superimage", installPath)
 			deps = append(deps, installPath)
 			if info.SuperEmptyImage != nil {
 				installPath := android.PathForModuleInPartitionInstall(ctx, "", "super_empty.img")
