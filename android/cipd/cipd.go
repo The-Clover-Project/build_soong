@@ -47,7 +47,7 @@ var (
 	// set up in build/soong/ui/build/cipd.go.
 	cipdExportRule = pctx.AndroidStaticRule("cipd_export",
 		blueprint.RuleParams{
-			Command:         "rm -rf $root && $cipd export -ensure-file $in -root $root",
+			Command:         "rm -rf $root && $cipd export -log-level warning  -ensure-file $in -root $root",
 			CommandDeps:     []string{"$cipd"},
 			Description:     "CIPD export $package@$version",
 			Pool:            cipdPool,
@@ -58,7 +58,7 @@ var (
 	soongZipFromDirRule = pctx.AndroidStaticRule("soong_zip_from_dir",
 		blueprint.RuleParams{
 			Command: "rm -rf $tempZipDir && " +
-				"$cipd export -ensure-file $in -root $tempZipDir && " +
+				"$cipd export -log-level warning -ensure-file $in -root $tempZipDir && " +
 				"$soong_zip -write_if_changed -o $out -C $tempZipDir -D $tempZipDir && " +
 				"rm -rf $tempZipDir",
 			CommandDeps:     []string{"$cipd", "$soong_zip"},
