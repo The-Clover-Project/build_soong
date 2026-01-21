@@ -6,6 +6,10 @@ python_defaults {
     name: "build_sdk_lib_defaults",
     srcs: [
         "api/*.py",
+        "interface/*.py",
+    ],
+    data: [
+        "settings.json",
     ],
 }
 
@@ -16,6 +20,14 @@ python_library_host {
     ],
 }
 
+python_binary_host {
+    name: "build_sdk_bin",
+    defaults: [
+        "build_sdk_lib_defaults",
+    ],
+    main: "interface/cli.py",
+}
+
 python_test_host {
     name: "build_sdk_lib_test",
     main: "tests/test_main.py",
@@ -24,6 +36,9 @@ python_test_host {
     ],
     libs: [
         "build_sdk_lib",
+    ],
+    data: [
+        ":build_sdk_bin",
     ],
     test_options: {
         unit_test: true,
