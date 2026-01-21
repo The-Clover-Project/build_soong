@@ -357,7 +357,9 @@ func main() {
 		// Soong does not have sufficient information to determine if an androidmk module
 		// has a dependency on a non primary soong module variant.
 		// Analyze all variants in soong+make builds.
-		cmdlineArgs.KatiEnabled {
+		cmdlineArgs.KatiEnabled ||
+		// TODO (b/477627661): Enable on demand variants with AllowMissingDependencies
+		configuration.AllowMissingDependencies() {
 		ctx.SetSplitAllVariants(true)
 	}
 
