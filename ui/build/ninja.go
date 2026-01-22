@@ -104,10 +104,11 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 			// b/430486641
 			"ignore-missing-out-in-depfile",
 		)
+		var sisoConfigs []string
 		switch {
 		case config.StartReproxy():
 			ctx.Verbosef("with reclient\n")
-			args = append(args, "--config", "reclient")
+			sisoConfigs = append(sisoConfigs, "reclient") // not used in siso config star?
 			if config.RemoteParallel() != 0 {
 				args = append(args, "--remote_jobs", strconv.Itoa(config.RemoteParallel()))
 			}
@@ -131,6 +132,18 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 			args = append(args, "--reapi_insecure")
 		default:
 			ctx.Verbosef("local only\n")
+		}
+		// when action sandboxing enabled, sisoConfigVars
+		// has nsjail_path, which passed as template vars
+		// for main.star and add "sandbox" config in step_config.
+		// we share siso config between bootstrap and ninja,
+		// but enable sandbox only for ninja by
+		// `--config action_sandbox`.
+		if config.IsActionSandboxedBuild() {
+			sisoConfigs = append(sisoConfigs, "action_sandbox")
+		}
+		if len(sisoConfigs) > 0 {
+			args = append(args, "--config", strings.Join(sisoConfigs, ","))
 		}
 	default:
 		// NINJA_NINJA or NINJA_NINJAGO.
@@ -163,8 +176,12 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 	args = append(args, ninjaArgs...)
 
 	// TODO(jihoonkang): Remove this check once non-ninja executors start supporting action sandboxing
-	if config.IsActionSandboxedBuild() && config.ninjaCommand != NINJA_NINJA {
-		ctx.Fatalf("Action sandboxing is not supported for %s, set SOONG_NINJA=ninja", config.ninjaCommand)
+	if config.IsActionSandboxedBuild() {
+		switch config.ninjaCommand {
+		case NINJA_NINJA, NINJA_SISO:
+		default:
+			ctx.Fatalf("Action sandboxing is not supported for %s, set SOONG_NINJA=ninja or SOONG_NINJA=siso", config.ninjaCommand)
+		}
 	}
 
 	if config.keepGoing != 1 {
