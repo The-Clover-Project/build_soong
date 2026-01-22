@@ -364,7 +364,7 @@ type VendorConfig soongconfig.SoongConfig
 // envDeps must be a singleton. non-generic and generic configurations share a single
 // instance of envDeps.
 type envDeps struct {
-	envLock   sync.Mutex
+	envLock   sync.RWMutex
 	envDeps   map[string]string
 	envFrozen bool
 }
@@ -1086,6 +1086,16 @@ func (c *config) CpPreserveSymlinksFlags() string {
 func (c *config) Getenv(key string) string {
 	var val string
 	var exists bool
+	c.envDeps.envLock.RLock()
+	if c.envDeps.envDeps != nil {
+		val, exists = c.envDeps.envDeps[key]
+	}
+	c.envDeps.envLock.RUnlock()
+
+	if exists {
+		return val
+	}
+
 	c.envDeps.envLock.Lock()
 	defer c.envDeps.envLock.Unlock()
 	if c.envDeps.envDeps == nil {
