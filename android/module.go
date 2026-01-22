@@ -3703,9 +3703,9 @@ type IdeInfo struct {
 	PackageName                string          `json:"package_name,omitempty"`
 	Aconfig                    *AconfigIdeInfo `json:"aconfig,omitempty"`
 	Proto                      *ProtoIdeInfo   `json:"proto,omitempty"`
+	Aidl                       *AidlIdeInfo    `json:"aidl,omitempty"`
 	Deps                       []string        `json:"dependencies,omitempty"`
 	Srcs                       []string        `json:"srcs,omitempty"`
-	Aidl_srcs                  []string        `json:"aidl_srcs,omitempty"`
 	Aidl_include_dirs          []string        `json:"aidl_include_dirs,omitempty"`
 	Jarjar_rules               []string        `json:"jarjar_rules,omitempty"`
 	Jars                       []string        `json:"jars,omitempty"`
@@ -3741,6 +3741,12 @@ type ProtoIdeInfo struct {
 	LocalIncludeDirs      []string `json:"local_include_dirs,omitempty"`
 }
 
+// @auto-generate: gob
+type AidlIdeInfo struct {
+	Srcs      []string `json:"srcs,omitempty"`
+	Stability string   `json:"stability,omitempty"`
+}
+
 // Merge merges two IdeInfos and produces a new one, leaving the original unchanged
 func (i IdeInfo) Merge(other *IdeInfo) IdeInfo {
 	return IdeInfo{
@@ -3749,9 +3755,9 @@ func (i IdeInfo) Merge(other *IdeInfo) IdeInfo {
 		PackageName:                mergeString(i.PackageName, other.PackageName),
 		Aconfig:                    i.Aconfig.merge(other.Aconfig),
 		Proto:                      i.Proto.merge(other.Proto),
+		Aidl:                       i.Aidl.merge(other.Aidl),
 		Deps:                       mergeStringLists(i.Deps, other.Deps),
 		Srcs:                       mergeStringLists(i.Srcs, other.Srcs),
-		Aidl_srcs:                  mergeStringLists(i.Aidl_srcs, other.Aidl_srcs),
 		Aidl_include_dirs:          mergeStringLists(i.Aidl_include_dirs, other.Aidl_include_dirs),
 		Jarjar_rules:               mergeStringLists(i.Jarjar_rules, other.Jarjar_rules),
 		Jars:                       mergeStringLists(i.Jars, other.Jars),
@@ -3801,6 +3807,20 @@ func (i *ProtoIdeInfo) merge(other *ProtoIdeInfo) *ProtoIdeInfo {
 		CanonicalPathFromRoot: mergeBool(i.CanonicalPathFromRoot, other.CanonicalPathFromRoot),
 		Type:                  mergeString(i.Type, other.Type),
 		LocalIncludeDirs:      mergeStringLists(i.LocalIncludeDirs, other.LocalIncludeDirs),
+	}
+}
+
+// Merge merges two AidlIdeInfo and produces a new one, leaving the original unchanged
+func (a *AidlIdeInfo) merge(other *AidlIdeInfo) *AidlIdeInfo {
+	if a == nil {
+		return other
+	}
+	if other == nil {
+		return a
+	}
+	return &AidlIdeInfo{
+		Srcs:      mergeStringLists(a.Srcs, other.Srcs),
+		Stability: mergeString(a.Stability, other.Stability),
 	}
 }
 

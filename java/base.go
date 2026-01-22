@@ -2591,7 +2591,11 @@ func (j *Module) IDEInfo(ctx android.BaseModuleContext, dpInfo *android.IdeInfo)
 		dpInfo.Jars = append(dpInfo.Jars, j.headerJarFile.String())
 	}
 	dpInfo.Srcs = append(dpInfo.Srcs, j.expandIDEInfoCompiledSrcs...)
-	dpInfo.Aidl_srcs = append(dpInfo.Aidl_srcs, j.aidlSrcs.Strings()...)
+	if len(j.aidlSrcs) > 0 {
+		dpInfo.Aidl = &android.AidlIdeInfo{
+			Srcs: j.aidlSrcs.Strings(),
+		}
+	}
 	if len(j.protoSrcs) > 0 {
 		dpInfo.Proto = &android.ProtoIdeInfo{
 			Srcs:                  j.protoSrcs.Strings(),

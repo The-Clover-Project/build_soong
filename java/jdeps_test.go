@@ -119,8 +119,11 @@ func TestCollectJavaLibraryPropertiesAddAidlSrcs(t *testing.T) {
 	dpInfo := getIdeInfo(ctx, module)
 
 	expected := []string{"Foo.aidl", "Bar.aidl"}
-	if !reflect.DeepEqual(dpInfo.Aidl_srcs, expected) {
-		t.Errorf("Library.IDEInfo() Aidl_srcs = %v, want %v", dpInfo.Aidl_srcs, expected)
+	if dpInfo.Aidl == nil {
+		t.Fatalf("Library.IDEInfo() Aidl is nil")
+	}
+	if !reflect.DeepEqual(dpInfo.Aidl.Srcs, expected) {
+		t.Errorf("Library.IDEInfo() Aidl.Srcs = %v, want %v", dpInfo.Aidl.Srcs, expected)
 	}
 }
 
