@@ -1534,7 +1534,7 @@ type autoDeppable interface {
 
 func (mod *Module) begin(ctx BaseModuleContext) {
 	if mod.coverage != nil {
-		mod.coverage.begin(ctx)
+		mod.coverage.begin(ctx, mod.Binary(), mod.testModule)
 	}
 	if mod.sanitize != nil {
 		mod.sanitize.begin(ctx)

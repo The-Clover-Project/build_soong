@@ -97,8 +97,8 @@ func (cov *coverage) flags(ctx ModuleContext, flags Flags, deps PathDeps) (Flags
 	return flags, deps
 }
 
-func (cov *coverage) begin(ctx BaseModuleContext) {
-	if cc.IsCoverageEnabled(ctx) {
+func (cov *coverage) begin(ctx BaseModuleContext, binary bool, test bool) {
+	if cc.IsCoverageEnabled(ctx, binary, test) {
 		// Update useSdk and sdkVersion args if Rust modules become SDK aware.
 		cov.Properties = cc.SetCoverageProperties(ctx, cov.Properties, ctx.RustModule().nativeCoverage(), false, "")
 	}

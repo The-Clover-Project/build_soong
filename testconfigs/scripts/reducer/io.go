@@ -65,7 +65,7 @@ func (reducer *TestConfigReducer) setup() (closer func() error, err error) {
 	}
 	reducer.DistDir = strings.Trim(string(distDirOut), " \n")
 
-	file, err := os.OpenFile(filepath.Join(reducer.TestConfigsReducedDir, "log.txt"), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	file, err := os.OpenFile(filepath.Join(reducer.DistDir, LogPath), os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		return nil, err
 	}
@@ -180,15 +180,36 @@ func (reducer *TestConfigReducer) loadModifiedFilesFromChangeInfo(path string) (
 	if err := json.Unmarshal(changeInfo, &data); err != nil {
 		return nil, err
 	}
-	changes := data["changes"].([]any)
+	changes, ok := data["changes"].([]any)
+	if !ok {
+		log.Println("CHANGE_INFO does not contain changes")
+		return nil, nil
+	}
 	for _, change := range changes {
-		projectPath := change.(map[string]any)["projectPath"].(string)
-		revisions := change.(map[string]any)["revisions"].([]any)
+		projectPath, ok := change.(map[string]any)["projectPath"].(string)
+		if !ok {
+			log.Println("CHANGE_INFO does not specify a project path in the changes")
+			continue
+		}
+		revisions, ok := change.(map[string]any)["revisions"].([]any)
+		if !ok {
+			log.Println("CHANGE_INFO does not list revisions in the changes")
+			continue
+		}
 		for _, revision := range revisions {
-			fileInfos := revision.(map[string]any)["fileInfos"].([]any)
+			fileInfos, ok := revision.(map[string]any)["fileInfos"].([]any)
+			if !ok {
+				log.Println("CHANGE_INFO does not list file infos in the revision")
+				continue
+			}
 			for _, fileInfo := range fileInfos {
-				path := filepath.Join(projectPath, fileInfo.(map[string]any)["path"].(string))
-				modifiedFiles[path] = true
+				path, ok := fileInfo.(map[string]any)["path"].(string)
+				if !ok {
+					log.Println("CHANGE_INFO does not specify a path in the file info")
+					continue
+				}
+				fullPath := filepath.Join(projectPath, path)
+				modifiedFiles[fullPath] = true
 			}
 		}
 	}

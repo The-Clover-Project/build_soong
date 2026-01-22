@@ -78,6 +78,7 @@ def run_build_target_files_zip(product: Product, soong_only: bool) -> bool:
                 f'TARGET_BUILD_VARIANT={product.variant}',
                 'target-files-package',
                 'droid',
+                'superimage',
                 soong_only_arg,
             ], stdout=f, stderr=subprocess.STDOUT, env=os.environ)
 
@@ -281,6 +282,7 @@ _INSTALLED_IMG_FILES = [
     "product.img",
     "pvmfw.img",
     "ramdisk.img",
+    "super.img",
     "system_dlkm.img",
     "system_ext.img",
     "system_other.img",
