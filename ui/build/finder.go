@@ -94,6 +94,7 @@ func NewSourceFinder(ctx Context, config Config) (f *finder.Finder) {
 			// otatools cert files
 			".pk8",
 			".pem",
+			".prop",
 			".avbpubkey",
 		},
 	}
@@ -125,6 +126,17 @@ func findOtaToolsCertFiles(entries finder.DirEntries) (dirNames []string, fileNa
 		if strings.HasSuffix(foundName, ".pk8") ||
 			strings.HasSuffix(foundName, ".pem") ||
 			strings.HasSuffix(foundName, ".avbpubkey") {
+			matches = append(matches, foundName)
+		}
+	}
+	return entries.DirNames, matches
+}
+
+func findOtaToolsOemPropFiles(entries finder.DirEntries) (dirNames []string, fileNames []string) {
+	matches := []string{}
+	for _, foundName := range entries.FileNames {
+		if strings.HasPrefix(foundName, "oem") &&
+			strings.HasSuffix(foundName, ".prop") {
 			matches = append(matches, foundName)
 		}
 	}
@@ -222,6 +234,8 @@ func FindSources(ctx Context, config Config, f *finder.Finder) {
 	otatools_cert_files = append(otatools_cert_files, f.FindMatching("external/avb/test/data", findOtaToolsCertFiles)...)
 	otatools_cert_files = append(otatools_cert_files, f.FindMatching("packages/modules", findOtaToolsCertFiles)...)
 	otatools_cert_files = append(otatools_cert_files, f.FindMatching("vendor", findOtaToolsCertFiles)...)
+	otatools_cert_files = append(otatools_cert_files, f.FindMatching("device", findOtaToolsOemPropFiles)...)
+	otatools_cert_files = append(otatools_cert_files, f.FindMatching("vendor", findOtaToolsOemPropFiles)...)
 	err = dumpListToFile(ctx, config, otatools_cert_files, filepath.Join(dumpDir, "OtaToolsCertFiles.list"))
 	if err != nil {
 		ctx.Fatalf("Could not find otatools cert files: %v", err)
