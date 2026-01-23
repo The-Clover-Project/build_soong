@@ -565,7 +565,7 @@ func (configs *ReleaseConfigs) LoadReleaseConfigMap(ctx *loadContext, path strin
 		ctx.errorsChan <- fmt.Errorf("Failed to read %q: %v", dupFlagFile, err)
 	}
 
-	err = WalkTextprotoFiles(dir, "flag_declarations", func(path string, d fs.DirEntry, err error) error {
+	err = WalkTextprotoFilesCheckName(dir, "flag_declarations", func(path string, d fs.DirEntry, err error) error {
 		// Gather up all errors found in flag declarations and report them together, so that it is easier to
 		// find all of the duplicate declarations, for example.
 		ctx.declReaderChan <- &declReq{
@@ -608,7 +608,7 @@ func (configs *ReleaseConfigs) LoadReleaseConfigMap(ctx *loadContext, path strin
 
 	if !declarationsOnly {
 		for _, rcName := range m.FlagValueDirs["flag_values"] {
-			err := WalkTextprotoFiles(dir, filepath.Join("flag_values", rcName), func(path string, d fs.DirEntry, err error) error {
+			err := WalkTextprotoFilesCheckName(dir, filepath.Join("flag_values", rcName), func(path string, d fs.DirEntry, err error) error {
 				ctx.valueReaderChan <- &valueReq{
 					Map:        m,
 					ConfigName: &rcName,
