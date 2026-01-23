@@ -217,6 +217,12 @@ func LoadMessage(path string, message proto.Message) error {
 
 // Call Func for any textproto files found in {root}/{subdir}.
 func WalkTextprotoFiles(root string, subdir string, Func fs.WalkDirFunc) error {
+	return walkTextprotoFiles(root, subdir, Func, false)
+}
+func WalkTextprotoFilesCheckName(root string, subdir string, Func fs.WalkDirFunc) error {
+	return walkTextprotoFiles(root, subdir, Func, true)
+}
+func walkTextprotoFiles(root string, subdir string, Func fs.WalkDirFunc, checkname bool) error {
 	path := filepath.Join(root, subdir)
 	if _, err := os.Stat(path); err != nil {
 		// Missing subdirs are not an error.
@@ -226,8 +232,12 @@ func WalkTextprotoFiles(root string, subdir string, Func fs.WalkDirFunc) error {
 		if err != nil {
 			return err
 		}
-		if strings.HasSuffix(d.Name(), ".textproto") && d.Type().IsRegular() {
-			return Func(path, d, err)
+		if d.Type().IsRegular() {
+			if strings.HasSuffix(d.Name(), ".textproto") {
+				return Func(path, d, err)
+			} else if checkname && strings.HasPrefix(d.Name(), "RELEASE_") {
+				return fmt.Errorf("%s lacks .textproto suffix", path)
+			}
 		}
 		return nil
 	})
