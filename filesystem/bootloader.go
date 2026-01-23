@@ -88,7 +88,7 @@ func (p *prebuiltBootloader) partitionFilesBootloader(ctx android.ModuleContext)
 	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled().Sbox(
 		unpackedDir,
 		android.PathForModuleOut(ctx, "unpack_bootloader.textproto"),
-	).SandboxInputs()
+	)
 	for _, partition := range p.properties.Ab_ota_partitions {
 		unpackedImg := unpackedDir.Join(ctx, partition+".img")
 		cmd := builder.Command()

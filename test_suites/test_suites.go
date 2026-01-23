@@ -371,8 +371,7 @@ func generateApiMapReport(ctx android.SingletonContext, pctx android.PackageCont
 
 	rule := android.NewRuleBuilder(pctx, ctx).
 		SandboxDisabled().
-		Sbox(sboxOut, sboxManifest).
-		SandboxInputs()
+		Sbox(sboxOut, sboxManifest)
 	switch reportType {
 	case apiMapReportType:
 		rule.Command().BuiltTool("cts-api-map").

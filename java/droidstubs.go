@@ -1026,8 +1026,7 @@ func (d *Droidstubs) everythingStubCmd(ctx android.ModuleContext, params stubsCo
 	srcJarDir := android.PathForModuleOut(ctx, Everything.String(), "srcjars")
 	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	rule.Sbox(android.PathForModuleOut(ctx, Everything.String()),
-		android.PathForModuleOut(ctx, "metalava.sbox.textproto")).
-		SandboxInputs()
+		android.PathForModuleOut(ctx, "metalava.sbox.textproto"))
 
 	var stubsDir android.OptionalPath
 	if params.generateStubs {
@@ -1278,8 +1277,7 @@ func (d *Droidstubs) optionalStubCmd(ctx android.ModuleContext, params stubsComm
 	params.srcJarDir = android.PathForModuleOut(ctx, params.stubConfig.stubsType.String(), "srcjars")
 	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	rule.Sbox(android.PathForModuleOut(ctx, params.stubConfig.stubsType.String()),
-		android.PathForModuleOut(ctx, fmt.Sprintf("metalava_%s.sbox.textproto", params.stubConfig.stubsType.String()))).
-		SandboxInputs()
+		android.PathForModuleOut(ctx, fmt.Sprintf("metalava_%s.sbox.textproto", params.stubConfig.stubsType.String())))
 
 	if params.stubConfig.generateStubs {
 		params.stubsDir = android.OptionalPathForPath(android.PathForModuleOut(ctx, params.stubConfig.stubsType.String(), "stubsDir"))

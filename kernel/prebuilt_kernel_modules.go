@@ -200,8 +200,7 @@ func (pkm *prebuiltKernelModules) GenerateAndroidBuildActions(ctx android.Module
 
 	builder := android.NewRuleBuilder(pctx, ctx).
 		SandboxDisabled().
-		Sbox(sboxDir, sboxManifest).
-		SandboxInputs()
+		Sbox(sboxDir, sboxManifest)
 
 	llvmStrip := config.ClangPath(ctx, "bin/llvm-strip")
 	// llvm-strip is a symlink to llvm-objcopy

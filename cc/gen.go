@@ -261,8 +261,7 @@ func genSources(
 				SandboxDisabled().
 				Sbox(
 					android.PathForModuleGen(ctx, "yacc"),
-					android.PathForModuleGen(ctx, "yacc.sbox.textproto")).
-				SandboxInputs()
+					android.PathForModuleGen(ctx, "yacc.sbox.textproto"))
 		}
 		return yaccRule_
 	}
@@ -304,8 +303,7 @@ func genSources(
 					SandboxDisabled().
 					Sbox(
 						android.PathForModuleGen(ctx, "aidl"),
-						android.PathForModuleGen(ctx, "aidl.sbox.textproto")).
-					SandboxInputs()
+						android.PathForModuleGen(ctx, "aidl.sbox.textproto"))
 			}
 			baseDir := strings.TrimSuffix(srcFile.String(), srcFile.Rel())
 			flagDeps := slices.Concat(
@@ -351,7 +349,7 @@ func genSources(
 			aidlLibraryRule = android.NewRuleBuilder(pctx, ctx).SandboxDisabled().Sbox(
 				android.PathForModuleGen(ctx, "aidl_library"),
 				android.PathForModuleGen(ctx, "aidl_library.sbox.textproto"),
-			).SandboxInputs()
+			)
 		}
 		for _, aidlSrc := range aidlLibraryInfo.Srcs {
 			cppFile, aidlHeaders := genAidl(

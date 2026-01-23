@@ -81,7 +81,7 @@ func (p *prebuiltRadioImg) partitionFiles(ctx android.ModuleContext) android.Pat
 	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled().Sbox(
 		unpackedDir,
 		android.PathForModuleOut(ctx, "unpack_radio.textproto"),
-	).SandboxInputs()
+	)
 	input := android.PathForModuleSrc(ctx, proptools.String(p.properties.Src))
 	for _, partition := range p.properties.Ab_ota_partitions {
 		unpackedImg := unpackedDir.Join(ctx, partition+".img")
