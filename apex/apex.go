@@ -40,6 +40,8 @@ import (
 	"android/soong/sh"
 )
 
+var sdvApexPattern = regexp.MustCompile(`^com\.(?:\w+\.)?sdv\.`)
+
 func init() {
 	registerApexBuildComponents(android.InitRegistrationContext)
 }
@@ -2736,7 +2738,7 @@ func (a *apexBundle) checkApexAvailability(ctx android.ModuleContext) {
 
 	// Temporarily bypass /product APEXes with a specific prefix.
 	// TODO: b/352818241 - Remove this after APEX availability is enforced for /product APEXes.
-	if a.ProductSpecific() && strings.HasPrefix(a.ApexVariationName(), "com.sdv.") {
+	if a.ProductSpecific() && sdvApexPattern.MatchString(a.ApexVariationName()) {
 		return
 	}
 
