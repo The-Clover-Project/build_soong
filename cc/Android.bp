@@ -82,6 +82,7 @@ bootstrap_go_package {
         "ndk_headers.go",
         "ndk_library.go",
         "ndk_sysroot.go",
+        "artless_denylist.go",
 
         "ndk_translation_package.go",
 
@@ -99,6 +100,7 @@ bootstrap_go_package {
     ],
     testSrcs: [
         "afdo_test.go",
+        "artless_denylist_test.go",
         "binary_test.go",
         "cc_preprocess_no_configuration_test.go",
         "cc_test.go",

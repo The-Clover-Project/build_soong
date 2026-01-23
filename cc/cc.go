@@ -2218,6 +2218,10 @@ func (c *Module) getSymbolInfo(ctx android.ModuleContext, t any, info *SymbolInf
 		info.Uninstallable = true
 	case *kernelHeadersDecorator:
 		c.getSymbolInfo(ctx, tt.libraryDecorator, info)
+	case *artlessDenylistDecorator:
+		c.getSymbolInfo(ctx, tt.libraryDecorator, info)
+	case *allArtlessDenylistsDecorator:
+		c.getSymbolInfo(ctx, tt.libraryDecorator, info)
 	}
 	return info
 }
