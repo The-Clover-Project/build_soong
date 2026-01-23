@@ -1,30 +1,22 @@
 package fsgen
 
 import (
-	"android/soong/android"
-	"android/soong/filesystem"
-	"android/soong/genrule"
 	"fmt"
 	"path/filepath"
 	"strconv"
 	"strings"
+
+	"android/soong/android"
+	"android/soong/filesystem"
+	"android/soong/genrule"
 
 	"github.com/google/blueprint/proptools"
 )
 
 // helper function to create boot.img and boot_16k.img
 func createBootImageCommon(ctx android.LoadHookContext, kernelPath string, prebuiltBootImagePath string, dtbImg dtbImg, stem *string) bool {
-	getPartitionSize := func(partitionVariables android.PartitionVariables) *int64 {
-		var partitionSize *int64
-		if partitionVariables.BoardBootimagePartitionSize != "" {
-			// Base of zero will allow base 10 or base 16 if starting with 0x
-			parsed, err := strconv.ParseInt(partitionVariables.BoardBootimagePartitionSize, 0, 64)
-			if err != nil {
-				panic(fmt.Sprintf("BOARD_BOOTIMAGE_PARTITION_SIZE must be an int, got %s", partitionVariables.BoardBootimagePartitionSize))
-			}
-			partitionSize = &parsed
-		}
-		return partitionSize
+	getPartitionSize := func(partitionVariables android.PartitionVariables) proptools.Configurable[int64] {
+		return getPartitionSizeFromString(ctx, partitionVariables.BoardBootimagePartitionSize, "BOARD_BOOTIMAGE_PARTITION_SIZE")
 	}
 	partitionVariables := ctx.Config().ProductVariables().PartitionVarsForSoongMigrationOnlyDoNotUse
 	avbInfo := getAvbInfo(ctx.Config(), "boot")
@@ -149,6 +141,18 @@ func createBootImage16k(ctx android.LoadHookContext) bool {
 	return createBootImageCommon(ctx, partitionVariables.BoardKernelPath16k, "", dtbImg{include: false}, proptools.StringPtr("boot_16k.img"))
 }
 
+func getPartitionSizeFromString(ctx android.LoadHookContext, s string, name string) proptools.Configurable[int64] {
+	if s == "" {
+		return proptools.NewEmptyConfigurable[int64]()
+	}
+	// Base of zero will allow base 10 or base 16 if starting with 0x
+	parsed, err := strconv.ParseInt(s, 0, 64)
+	if err != nil {
+		ctx.ModuleErrorf("%s must be an int, got %s", name, s)
+	}
+	return proptools.NewSimpleConfigurable(parsed)
+}
+
 func createVendorBootImage(ctx android.LoadHookContext, dtbImg dtbImg) bool {
 	partitionVariables := ctx.Config().ProductVariables().PartitionVarsForSoongMigrationOnlyDoNotUse
 
@@ -168,15 +172,7 @@ func createVendorBootImage(ctx android.LoadHookContext, dtbImg dtbImg) bool {
 		vendorBootConfigImg = proptools.StringPtr(":" + name)
 	}
 
-	var partitionSize *int64
-	if partitionVariables.BoardVendorBootimagePartitionSize != "" {
-		// Base of zero will allow base 10 or base 16 if starting with 0x
-		parsed, err := strconv.ParseInt(partitionVariables.BoardVendorBootimagePartitionSize, 0, 64)
-		if err != nil {
-			ctx.ModuleErrorf("BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE must be an int, got %s", partitionVariables.BoardVendorBootimagePartitionSize)
-		}
-		partitionSize = &parsed
-	}
+	partitionSize := getPartitionSizeFromString(ctx, partitionVariables.BoardVendorBootimagePartitionSize, "BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE")
 
 	var ramdiskFragmentModules []string
 	if buildingVendorRamdiskFragmentDlkm(ctx, partitionVariables) {
@@ -239,15 +235,7 @@ func createVendorBootDebugImage(ctx android.LoadHookContext, dtbImg dtbImg) bool
 		vendorBootConfigImg = proptools.StringPtr(":" + name)
 	}
 
-	var partitionSize *int64
-	if partitionVariables.BoardVendorBootimagePartitionSize != "" {
-		// Base of zero will allow base 10 or base 16 if starting with 0x
-		parsed, err := strconv.ParseInt(partitionVariables.BoardVendorBootimagePartitionSize, 0, 64)
-		if err != nil {
-			ctx.ModuleErrorf("BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE must be an int, got %s", partitionVariables.BoardVendorBootimagePartitionSize)
-		}
-		partitionSize = &parsed
-	}
+	partitionSize := getPartitionSizeFromString(ctx, partitionVariables.BoardVendorBootimagePartitionSize, "BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE")
 
 	var ramdiskFragmentModules []string
 	if buildingVendorRamdiskFragmentDlkm(ctx, partitionVariables) {
@@ -306,15 +294,7 @@ func createVendorBootTestHarnessImage(ctx android.LoadHookContext, dtbImg dtbImg
 		vendorBootConfigImg = proptools.StringPtr(":" + name)
 	}
 
-	var partitionSize *int64
-	if partitionVariables.BoardVendorBootimagePartitionSize != "" {
-		// Base of zero will allow base 10 or base 16 if starting with 0x
-		parsed, err := strconv.ParseInt(partitionVariables.BoardVendorBootimagePartitionSize, 0, 64)
-		if err != nil {
-			ctx.ModuleErrorf("BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE must be an int, got %s", partitionVariables.BoardVendorBootimagePartitionSize)
-		}
-		partitionSize = &parsed
-	}
+	partitionSize := getPartitionSizeFromString(ctx, partitionVariables.BoardVendorBootimagePartitionSize, "BOARD_VENDOR_BOOTIMAGE_PARTITION_SIZE")
 
 	var ramdiskFragmentModules []string
 	if buildingVendorRamdiskFragmentDlkm(ctx, partitionVariables) {
@@ -368,15 +348,7 @@ func createVendorKernelBootImage(ctx android.LoadHookContext, dtbImg dtbImg) boo
 		dtbPrebuilt = proptools.StringPtr(":" + dtbImg.name)
 	}
 
-	var partitionSize *int64
-	if vendorKernelBootVariables.BoardPartitionSize != "" {
-		// Base of zero will allow base 10 or base 16 if starting with 0x
-		parsed, err := strconv.ParseInt(vendorKernelBootVariables.BoardPartitionSize, 0, 64)
-		if err != nil {
-			ctx.ModuleErrorf("BOARD_VENDOR_KERNEL_BOOTIMAGE_PARTITION_SIZE must be an int, got %s", vendorKernelBootVariables.BoardPartitionSize)
-		}
-		partitionSize = &parsed
-	}
+	partitionSize := getPartitionSizeFromString(ctx, vendorKernelBootVariables.BoardPartitionSize, "BOARD_VENDOR_KERNEL_BOOTIMAGE_PARTITION_SIZE")
 
 	ctx.CreateModule(
 		filesystem.BootimgFactory,
@@ -420,15 +392,7 @@ func createInitBootImage(ctx android.LoadHookContext) bool {
 		securityPatch = &partitionVariables.BootSecurityPatch
 	}
 
-	var partitionSize *int64
-	if partitionVariables.BoardInitBootimagePartitionSize != "" {
-		// Base of zero will allow base 10 or base 16 if starting with 0x
-		parsed, err := strconv.ParseInt(partitionVariables.BoardInitBootimagePartitionSize, 0, 64)
-		if err != nil {
-			panic(fmt.Sprintf("BOARD_INIT_BOOT_IMAGE_PARTITION_SIZE must be an int, got %s", partitionVariables.BoardInitBootimagePartitionSize))
-		}
-		partitionSize = &parsed
-	}
+	partitionSize := getPartitionSizeFromString(ctx, partitionVariables.BoardInitBootimagePartitionSize, "BOARD_INIT_BOOT_IMAGE_PARTITION_SIZE")
 
 	avbInfo := getAvbInfo(ctx.Config(), "init_boot")
 

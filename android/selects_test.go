@@ -86,6 +86,22 @@ func TestSelects(t *testing.T) {
 			},
 		},
 		{
+			name: "basic int64",
+			bp: `
+			my_module_type {
+				name: "foo",
+				my_int64: select(soong_config_variable("my_namespace", "my_variable"), {
+					"a": 6,
+					"b": 7,
+					default: 8,
+				}),
+			}
+			`,
+			provider: selectsTestProvider{
+				my_int64: proptools.Int64Ptr(8),
+			},
+		},
+		{
 			name: "basic paths",
 			bp: `
 			my_module_type {
@@ -962,6 +978,31 @@ func TestSelects(t *testing.T) {
 			},
 		},
 		{
+			name: "Simple int64 binding",
+			bp: `
+			my_module_type {
+				name: "foo",
+				my_int64: select(soong_config_variable("my_namespace", "my_variable"), {
+					any @ my_binding: my_binding,
+					default: unset,
+				})
+			}
+			`,
+			vendorVars: map[string]map[string]string{
+				"my_namespace": {
+					"my_variable": "1234",
+				},
+			},
+			vendorVarTypes: map[string]map[string]string{
+				"my_namespace": {
+					"my_variable": "int",
+				},
+			},
+			provider: selectsTestProvider{
+				my_int64: proptools.Int64Ptr(1234),
+			},
+		},
+		{
 			name: "Any branch with binding not taken",
 			bp: `
 			my_module_type {
@@ -1266,6 +1307,10 @@ func (p *selectsTestProvider) String() string {
 	if p.my_bool != nil {
 		myBoolStr = fmt.Sprintf("%t", *p.my_bool)
 	}
+	myInt64Str := "nil"
+	if p.my_int64 != nil {
+		myInt64Str = fmt.Sprintf("%d", *p.my_int64)
+	}
 	myStringStr := "nil"
 	if p.my_string != nil {
 		myStringStr = *p.my_string
@@ -1276,6 +1321,7 @@ func (p *selectsTestProvider) String() string {
 	}
 	return fmt.Sprintf(`selectsTestProvider {
 	my_bool: %s,
+	my_int64: %s,
 	my_string: %s,
     my_string_list: %s,
     my_paths: %s,
@@ -1286,6 +1332,7 @@ func (p *selectsTestProvider) String() string {
 	my_nonconfigurable_string_list: %s,
 }`,
 		myBoolStr,
+		myInt64Str,
 		myStringStr,
 		p.my_string_list,
 		p.my_paths,
