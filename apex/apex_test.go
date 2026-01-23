@@ -7213,6 +7213,11 @@ func TestApexAvailable_PrefixMatch(t *testing.T) {
 			apexAvailable: "?.foo.*",
 		},
 		{
+			name:          "wildcard ? cannot match two segments",
+			apexAvailable: "com.?",
+			expectedError: `requires \"libfoo\" that doesn't list the APEX`,
+		},
+		{
 			name:          "prefix doesn't match",
 			apexAvailable: "com.bar.*",
 			expectedError: `Consider .* "com.foo\.\*"`,
