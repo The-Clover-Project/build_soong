@@ -1580,6 +1580,9 @@ func (f *filesystem) buildPropFileForMiscInfo(ctx android.ModuleContext) android
 		if f.properties.Erofs.Block_size != nil {
 			addStr(f.partitionName()+"_erofs_blocksize", fmt.Sprintf("%d", *f.properties.Erofs.Block_size))
 		}
+		if proptools.Bool(f.properties.Erofs.Enable_dedupe) {
+			addStr("erofs_enable_dedupe", "true")
+		}
 
 	case f2fsType:
 		if proptools.BoolDefault(f.properties.F2fs.Sparse, true) {

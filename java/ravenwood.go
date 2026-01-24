@@ -219,6 +219,11 @@ func (r *ravenwoodTest) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	r.Library.ravenizer.enabled = true
 
 	r.Library.GenerateAndroidBuildActions(ctx)
+	// r.Library.GenerateAndroidBuildActions() may fail, stop here to avoid overwriting its errors
+	// with new ones.
+	if ctx.Failed() {
+		return
+	}
 
 	// Start by depending on all files installed by dependencies
 	var installDeps android.InstallPaths

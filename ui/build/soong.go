@@ -651,8 +651,8 @@ func runSoong(ctx Context, config Config, enforceNoSoongOutput bool) {
 					"--log_dir", sisoLogDir, // for glog, e.g. siso.*INFO*
 					"ninja",
 					"-d", "keepdepfile",
-					"-d", "stats",
 					// TODO: implement these features, or remove them.
+					//"-d", "stats",
 					//"-o", "usesphonyoutputs=yes",
 					//"-o", "preremoveoutputs=yes",
 					//"-w", "dupbuild=err",

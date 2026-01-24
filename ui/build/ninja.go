@@ -86,7 +86,7 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 			//"-d", "trace",
 			"-d", "keepdepfile",
 			"-d", "keeprsp",
-			"-d", "stats",
+			//"-d", "stats",
 			"--frontend_file", fifo,
 			"--local_jobs", strconv.Itoa(config.Parallel()),
 			"--log_dir", config.LogsDir(),
