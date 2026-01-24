@@ -217,9 +217,11 @@ func (f *filesystemCreator) createVbmetaPartitions(ctx android.LoadHookContext, 
 		case "vbmeta_system", "vbmeta_vendor":
 			return false
 		case "bootloader":
-			bootloaderFilePath := partitionVars.BootloaderFilePath
+			path := partitionVars.BootloaderFilePath
+			isModule := android.SrcIsModule(path) != ""
+			isValidFile := path != "" && android.ExistentPathForSource(ctx, path, "bootloader.img").Valid()
 			ota := len(partitionVars.AbOtaBootloaderPartitions) > 0
-			return ota && bootloaderFilePath != "" && android.ExistentPathForSource(ctx, bootloaderFilePath, "bootloader.img").Valid()
+			return ota && (isModule || isValidFile)
 		default:
 			return false
 		}

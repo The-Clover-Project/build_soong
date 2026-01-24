@@ -447,11 +447,15 @@ func buildingSystemOtherImage(partitionVars android.PartitionVariables) bool {
 
 func (f *filesystemCreator) createBootloader(ctx android.LoadHookContext) (string, bool) {
 	partitionVars := ctx.Config().ProductVariables().PartitionVarsForSoongMigrationOnlyDoNotUse
-	bootloaderPath := partitionVars.PrebuiltBootloader
-	if filePath := android.ExistentPathForSource(ctx, partitionVars.BootloaderFilePath, "bootloader.img"); filePath.Valid() {
-		bootloaderPath = filePath.String()
+	var bootloaderSrc string
+	path := partitionVars.BootloaderFilePath
+
+	if android.SrcIsModule(path) != "" {
+		bootloaderSrc = path
+	} else if filePath := android.ExistentPathForSource(ctx, path, "bootloader.img"); filePath.Valid() {
+		bootloaderSrc = filePath.String()
 	}
-	if len(bootloaderPath) == 0 {
+	if bootloaderSrc == "" {
 		return "", false
 	}
 
@@ -459,18 +463,22 @@ func (f *filesystemCreator) createBootloader(ctx android.LoadHookContext) (strin
 
 	bootloaderModuleName := generatedModuleName(ctx.Config(), "bootloader")
 	bootloaderProps := filesystem.PrebuiltBootloaderProperties{
-		Src:               proptools.StringPtr(bootloaderPath),
+		Src:               &bootloaderSrc,
 		Ab_ota_partitions: partitionVars.AbOtaBootloaderPartitions,
 		Unpack_tool:       proptools.StringPtr(fmt.Sprintf("vendor/google_devices/%s/prebuilts/misc_bins/fbimg/fbpacktool.py", boardPlatform)),
 		Unpack_tool_deps:  []string{fmt.Sprintf("vendor/google_devices/%s/prebuilts/misc_bins/fbimg/*.py", boardPlatform)},
 	}
-	ctx.CreateModuleInDirectory(filesystem.PrebuiltBootloaderFactory, ".",
+
+	ctx.CreateModuleInDirectory(
+		filesystem.PrebuiltBootloaderFactory,
+		".",
 		&struct {
 			Name *string
 		}{
 			Name: &bootloaderModuleName,
 		},
-		&bootloaderProps)
+		&bootloaderProps,
+	)
 	return bootloaderModuleName, true
 }
 
