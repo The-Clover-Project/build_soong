@@ -31,4 +31,7 @@ bootstrap_go_package {
     srcs: [
         "main.go",
     ],
+    testSrcs: [
+        "main_test.go",
+    ],
 }
