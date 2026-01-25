@@ -106,6 +106,16 @@ type libraryProperties struct {
 	// https://github.com/android-ndk/ndk/issues/265.
 	Unversioned_until *string
 
+	// If true, allow all symbols in this library to be called in native-only
+	// app processes. This should be only used by libraries that have no
+	// dependency on the Android Runtime. If symbols need to be exposed
+	// selectively, use the artless tag in the symbol map file instead.
+	//
+	// As an exception, libraries that have duplicate symbol names also need
+	// this, as the denylist currently gather symbols from all libraries into
+	// one shared library.
+	Bypass_artless_denylist *bool
+
 	// DO NOT USE THIS
 	// NDK libraries should not export their headers. Headers belonging to NDK
 	// libraries should be added to the NDK with an ndk_headers module.
@@ -601,6 +611,32 @@ func newStubLibrary() *Module {
 	module.Properties.Sdk_version = StringPtr("current")
 
 	module.AddProperties(&stub.properties, &library.MutatedProperties)
+
+	module.SetDefaultableHook(func(ctx android.DefaultableHookContext) {
+		libName := strings.TrimSuffix(ctx.ModuleName(), ndkLibrarySuffix)
+		if proptools.Bool(stub.properties.Bypass_artless_denylist) {
+			// This module opted out of the denylist, but all_artless_denylists
+			// unconditionally add dependencies based on the list of NDK libraries.
+			// Generate an empty cc_library_static target to make it a noop.
+			props := &struct {
+				Name *string
+			}{
+				Name: proptools.StringPtr(libName + "_denylist"),
+			}
+			ctx.CreateModule(LibraryStaticFactory, props)
+			return
+		}
+		if stub.properties.Symbol_file != nil {
+			props := &struct {
+				Name        *string
+				Symbol_file *string `android:"path"`
+			}{
+				Name:        proptools.StringPtr(libName + "_denylist"),
+				Symbol_file: stub.properties.Symbol_file,
+			}
+			ctx.CreateModule(ArtlessDenylistFactory, props)
+		}
+	})
 
 	return module
 }

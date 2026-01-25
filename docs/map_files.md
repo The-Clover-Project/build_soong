@@ -76,6 +76,16 @@ NDK. For APIs exposed by the platform *for* APEX, use `systemapi`.
 May be used in combination with `llndk` if the symbol is exposed to both APEX
 and the LL-NDK.
 
+### artless
+
+Indicates that the symbol can be called from the app, in a process running
+without Android Runtime. Such a process can be created by an app declaring a
+service with `android:nativeService="true"`.
+
+Under the hood, the enforcement is done by preloading a shim library inside
+native service process that redirects everything that is not marked `artless` to
+abort. This is an implementation detail and subject to change.
+
 ### draft
 
 Indicates that the version or symbol is intended to be introduced in a future

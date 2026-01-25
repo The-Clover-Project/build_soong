@@ -165,6 +165,46 @@ class GeneratorTest(unittest.TestCase):
         self.assertEqual(expected_allowlist, symbol_list_file.getvalue())
 
 
+class ArtlessDenylistGeneratorTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.filter = symbolfile.Filter(Arch('arm'), 9, False, False)
+
+    def test_artless_denylist(self) -> None:
+        src_file = io.StringIO()
+        version_file = io.StringIO()
+        generator = ndkstubgen.ArtlessDenylistGenerator(src_file,
+                                                        version_file,
+                                                        self.filter)
+
+        versions = [
+            symbolfile.Version('VERSION_1', None, Tags(), [
+                symbolfile.Symbol('foo', Tags()),
+                # Can't stub variable symbols.
+                symbolfile.Symbol('bar', Tags.from_strs(['var'])),
+                # Platform symbols are likely called internally, and stub
+                # currently overrides both app and platform calls, so don't
+                # stub them to avoid accidentally breaking internal calls.
+                symbolfile.Symbol('baz', Tags.from_strs(['llndk'])),
+                symbolfile.Symbol('qux', Tags.from_strs(['apex'])),
+                symbolfile.Symbol('quux', Tags.from_strs(['systemapi'])),
+                symbolfile.Symbol('corge', Tags.from_strs(['platform-only'])),
+                # Draft is currently implemented as an alias of platform-only.
+                # To find draft symbols, the caller needs to dlsym anyway, which
+                # bypass the denylist, so skip this case for simplicity.
+                symbolfile.Symbol('garply', Tags.from_strs(['draft'])),
+                # This symbol is compatible with artless, don't stub it.
+                symbolfile.Symbol('grault', Tags.from_strs(['artless'])),
+            ]),
+        ]
+
+        generator.write(versions)
+        expected_src = textwrap.dedent("""\
+            #include <log/log.h>
+            void foo() { LOG_ALWAYS_FATAL("Function foo is not allowed in artless processes."); }
+        """)
+        self.assertEqual(expected_src, src_file.getvalue())
+
+
 class IntegrationTest(unittest.TestCase):
     def setUp(self) -> None:
         self.filter = symbolfile.Filter(Arch('arm'), 9, False, False)
