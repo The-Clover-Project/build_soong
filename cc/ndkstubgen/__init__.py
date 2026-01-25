@@ -20,21 +20,43 @@ import json
 import logging
 from pathlib import Path
 import sys
-from typing import Iterable, TextIO
+from typing import Iterable, List, TextIO, Tuple
 
 import symbolfile
-from symbolfile import Arch, Version
+from symbolfile import Arch, Symbol, Version
 
 
-class Generator:
+class BaseGenerator:
+    """Base output generator that writes stub source files and version scripts."""
+    def __init__(self, src_file: TextIO, version_script: TextIO,
+                 filt: symbolfile.Filter) -> None:
+        self.src_file = src_file
+        self.version_script = version_script
+        self.filter = filt
+        self.api = filt.api
+
+    def get_pruned_symbols(self, version: Version) -> Tuple[List[Symbol], bool]:
+        """Returns a list of symbols to write and a boolean indicating if the version is empty."""
+        version_empty = True
+        pruned_symbols = []
+        for symbol in version.symbols:
+            if self.filter.should_omit_symbol(symbol):
+                continue
+
+            if symbolfile.symbol_versioned_in_api(symbol.tags, self.api):
+                version_empty = False
+
+            pruned_symbols.append(symbol)
+
+        return pruned_symbols, version_empty
+
+
+class Generator(BaseGenerator):
     """Output generator that writes stub source files and version scripts."""
     def __init__(self, src_file: TextIO, version_script: TextIO,
                  symbol_list: TextIO, filt: symbolfile.Filter) -> None:
-        self.src_file = src_file
-        self.version_script = version_script
+        super().__init__(src_file, version_script, filt)
         self.symbol_list = symbol_list
-        self.filter = filt
-        self.api = filt.api
 
     def write(self, versions: Iterable[Version]) -> None:
         """Writes all symbol data to the output files."""
@@ -49,15 +71,7 @@ class Generator:
 
         section_versioned = symbolfile.symbol_versioned_in_api(
             version.tags, self.api)
-        version_empty = True
-        pruned_symbols = []
-        for symbol in version.symbols:
-            if self.filter.should_omit_symbol(symbol):
-                continue
-
-            if symbolfile.symbol_versioned_in_api(symbol.tags, self.api):
-                version_empty = False
-            pruned_symbols.append(symbol)
+        pruned_symbols, version_empty = self.get_pruned_symbols(version)
 
         if len(pruned_symbols) > 0:
             if not version_empty and section_versioned:
@@ -83,6 +97,40 @@ class Generator:
             if not version_empty and section_versioned:
                 base = '' if version.base is None else ' ' + version.base
                 self.version_script.write('}' + base + ';\n')
+
+
+class ArtlessDenylistGenerator(BaseGenerator):
+    """Output generator that writes stub source files and version scripts for artless denylist."""
+
+    def write(self, versions: Iterable[Version]) -> None:
+        """Writes all symbol data to the output files."""
+        self.src_file.write('#include <log/log.h>\n')
+        for version in versions:
+            self.write_version(version)
+
+    def write_version(self, version: Version) -> None:
+        """Writes a single version block's data to the output files."""
+        # Only write stubs for public symbols. The stub applies equally to
+        # app and internal calls, and we neither want to break internal calls
+        # nor maintain a list of allowed internal calls.
+        if self.filter.should_omit_version(version):
+            return
+
+        pruned_symbols, _ = self.get_pruned_symbols(version)
+
+        for symbol in pruned_symbols:
+            if symbol.tags.has_artless_tags:
+                continue
+
+            weak = ''
+            if 'weak' in symbol.tags:
+                weak = '__attribute__((weak)) '
+
+            if 'var' not in symbol.tags:
+                self.src_file.write(
+                    f'{weak}void {symbol.name}() {{ '
+                    f'LOG_ALWAYS_FATAL("Function {symbol.name} is not allowed in artless processes."); }}\n'
+                )
 
 
 def parse_args() -> argparse.Namespace:
@@ -116,6 +164,11 @@ def parse_args() -> argparse.Namespace:
         action='store_false',
         dest='ndk',
         help='Do not include NDK APIs.')
+    parser.add_argument(
+        '--artless-denylist',
+        action='store_true',
+        dest='artless_denylist',
+        help='Generate denylist based on the artless tag')
 
     parser.add_argument('--api-map',
                         type=resolved_path,
@@ -162,8 +215,12 @@ def main() -> None:
     with args.stub_src.open('w') as src_file:
         with args.version_script.open('w') as version_script:
             with args.symbol_list.open('w') as symbol_list:
-                generator = Generator(src_file, version_script, symbol_list,
-                                      filt)
+                if args.artless_denylist:
+                    generator = ArtlessDenylistGenerator(src_file, version_script,
+                                                         filt)
+                else:
+                    generator = Generator(src_file, version_script, symbol_list,
+                                          filt)
                 generator.write(versions)
 
 

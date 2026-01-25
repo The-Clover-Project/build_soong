@@ -55,6 +55,7 @@ SUPPORTED_TAGS = ALL_ARCHITECTURES + (
     Tag('systemapi'),
     Tag('var'),
     Tag('weak'),
+    Tag('artless'),
 )
 
 # Arbitrary magic number. We use the same one in api-level.h for this purpose.
@@ -110,6 +111,11 @@ class Tags:
     def has_platform_only_tags(self) -> bool:
         """Returns True if any platform-only tags are set."""
         return 'platform-only' in self.tags or 'draft' in self.tags
+
+    @property
+    def has_artless_tags(self) -> bool:
+        """Returns True if any artless tags are set."""
+        return 'artless' in self.tags
 
 
 @dataclass
