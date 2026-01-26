@@ -79,6 +79,7 @@ func TestSnapshotWithBootclasspathFragment_ImageName(t *testing.T) {
 		prepareForSdkTestWithJava,
 		java.PrepareForTestWithDexpreopt,
 		prepareForSdkTestWithApex,
+		android.PrepareForTestWithBuildFlag("RELEASE_ART_COMPILE_BCP_APEX_SPEED_PROFILE", "true"),
 
 		// Some additional files needed for the art apex.
 		android.FixtureMergeMockFs(android.MockFS{

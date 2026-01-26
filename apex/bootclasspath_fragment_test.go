@@ -658,6 +658,7 @@ func TestBootclasspathFragmentInStatsdApex(t *testing.T) {
 	t.Parallel()
 	commonPreparer := android.GroupFixturePreparers(
 		prepareForTestWithBootclasspathFragment,
+		android.PrepareForTestWithBuildFlag("RELEASE_ART_COMPILE_BCP_APEX_SPEED_PROFILE", "true"),
 		android.FixtureMergeMockFs(android.MockFS{
 			"com.android.os.statsd.avbpubkey":                          nil,
 			"com.android.os.statsd.pem":                                nil,

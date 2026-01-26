@@ -612,7 +612,7 @@ func (b *BootclasspathFragmentModule) GenerateAndroidBuildActions(ctx android.Mo
 		CorePlatformApiStubLibs: b.properties.Core_platform_api.Stub_libs.GetOrDefault(ctx, nil),
 		Fragments:               b.properties.Fragments,
 		ProfilePathOnHost:       b.profilePath,
-		DexPreoptProfileGuided:  b.properties.Dex_preopt.Profile.GetOrDefault(ctx, "") != "",
+		DexPreoptProfileGuided:  ctx.Config().GetBuildFlagBool("RELEASE_ART_COMPILE_BCP_APEX_SPEED_PROFILE") && b.properties.Dex_preopt.Profile.GetOrDefault(ctx, "") != "",
 	})
 
 	ctx.ComplianceMetadataInfo().AddBuiltFiles(classpathProtoOutputPath.String())
@@ -631,6 +631,12 @@ func (b *BootclasspathFragmentModule) getProfileProviderApexFromSource(ctx andro
 	// Bootclasspath fragment modules that are for the platform do not produce boot related files.
 	apexInfo, _ := android.ModuleProvider(ctx, android.ApexInfoProvider)
 	if apexInfo.IsForPlatform() {
+		return "", nil
+	}
+
+	// Only use the profile from the art apex if the RELEASE_ART_COMPILE_BCP_APEX_SPEED_PROFILE
+	// flag is disabled.
+	if "art" != proptools.String(b.properties.Image_name) && !ctx.Config().GetBuildFlagBool("RELEASE_ART_COMPILE_BCP_APEX_SPEED_PROFILE") {
 		return "", nil
 	}
 
@@ -1246,6 +1252,8 @@ func (module *PrebuiltBootclasspathFragmentModule) RequiredFilesFromPrebuiltApex
 		return []string{ProfileInstallPathInApex}
 	}
 
+	// TODO(b/342163020): Remove once the prebuilt has the profile_guided property
+	// (expected when CP2A is finalized).
 	if module.Name() == "prebuilt_art-bootclasspath-fragment" {
 		// For old ART prebuilts, the profile is always present in the apex.
 		// This is for backwards compatibility.
