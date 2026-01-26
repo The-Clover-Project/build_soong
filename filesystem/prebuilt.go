@@ -70,7 +70,19 @@ func (p *prebuiltFilesystem) GenerateAndroidBuildActions(ctx android.ModuleConte
 	}
 
 	builder.Command().Text("touch").Output(rootdirTimestamp)
+
+	apexKeys := android.PathForModuleOut(ctx, "apexkeys.txt")
+	builder.Command().
+		Text("for f in $(find").Text(rootDir.String()).Text("-name \"*.apex\" -o -name \"*.capex\" | sort ); do").
+		Text("name=$(basename $f); name=${name/.capex/.apex};").
+		Text("echo \"name=\\\"$name\\\" public_key=\\\"PRESIGNED\\\" private_key=\\\"PRESIGNED\\\" container_certificate=\\\"PRESIGNED\\\" container_private_key=\\\"PRESIGNED\\\" partition=\\\"" + p.partitionName() + "\\\"\"").
+		Text("; done >").Output(apexKeys)
+
 	builder.Build("unpack_prebuilt_filesystem", "unpacking prebuilt filesystem image")
+
+	android.SetProvider(ctx, ApexKeyPathInfoProvider, ApexKeyPathInfo{
+		ApexKeyPath: apexKeys,
+	})
 
 	ctx.Build(pctx, android.BuildParams{
 		Rule:        android.CpRule,

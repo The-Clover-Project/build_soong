@@ -822,6 +822,10 @@ func (f *filesystem) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		} else {
 			ctx.PropertyErrorf("prebuilt_module_name", "must provide filesystem")
 		}
+
+		if apexKeysInfo, ok := android.OtherModuleProvider(ctx, m, ApexKeyPathInfoProvider); ok {
+			android.SetProvider(ctx, ApexKeyPathInfoProvider, apexKeysInfo)
+		}
 	})
 
 	builder = android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
