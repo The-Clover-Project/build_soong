@@ -109,7 +109,7 @@ func (p *ramdisk16kImg) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled().Sbox(
 		outputDir,
 		android.PathForModuleOut(ctx, "ramdisk_16k_intermediates.textproto"),
-	).SandboxInputs()
+	)
 
 	// Determine the kernel version during execution.
 	cmd := builder.Command().

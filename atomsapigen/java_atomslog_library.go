@@ -104,7 +104,7 @@ func (this *JavaAtomslogLibraryCallbacks) GenerateSourceJarBuildActions(module *
 	srcJarDir := android.PathForModuleGen(ctx)
 	srcJarPath := android.PathForModuleGen(ctx, ctx.ModuleName()+".srcjar")
 
-	ruleBuilder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled().Sbox(srcJarDir, android.PathForModuleOut(ctx, "java.sbox.textproto")).SandboxInputs()
+	ruleBuilder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled().Sbox(srcJarDir, android.PathForModuleOut(ctx, "java.sbox.textproto"))
 	ruleBuilder.Command().Text("rm -rf").OutputDir(ctx.ModuleName() + ".srcjar.tmp")
 	ruleBuilder.Command().Text("mkdir -p").OutputDir(ctx.ModuleName() + ".srcjar.tmp")
 	javaGenCmd := ruleBuilder.Command().BuiltTool("stats-log-api-gen").
