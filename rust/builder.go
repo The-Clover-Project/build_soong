@@ -372,7 +372,6 @@ func transformSrctoCrate(ctx android.ModuleContext, main android.Path, deps Path
 	outputFile, checkJsonFile android.WritablePath, t transformProperties) buildOutput {
 
 	var inputs android.Paths
-	var implicits android.Paths
 	var validations android.Paths
 	var orderOnly android.Paths
 	var output buildOutput
@@ -447,18 +446,6 @@ func transformSrctoCrate(ctx android.ModuleContext, main android.Path, deps Path
 	libFlags := makeLibFlags(deps)
 
 	// Collect dependencies
-	implicits = append(implicits, rustLibsToPaths(deps.RLibs)...)
-	implicits = append(implicits, rustLibsToPaths(deps.DyLibs)...)
-	implicits = append(implicits, rustLibsToPaths(deps.ProcMacros)...)
-	implicits = append(implicits, deps.StaticLibs...)
-	implicits = append(implicits, deps.SharedLibDeps...)
-	implicits = append(implicits, deps.srcProviderFiles...)
-	implicits = append(implicits, deps.AfdoProfiles...)
-	implicits = append(implicits, deps.LinkerDeps...)
-
-	implicits = append(implicits, deps.CrtBegin...)
-	implicits = append(implicits, deps.CrtEnd...)
-
 	orderOnly = append(orderOnly, deps.SharedLibs...)
 
 	srcInputs := android.Paths{}
@@ -494,7 +481,6 @@ func transformSrctoCrate(ctx android.ModuleContext, main android.Path, deps Path
 					"outDir": t.cargoOutDir.String(),
 				},
 			})
-			implicits = append(implicits, outputs.Paths()...)
 		}
 	}
 	var implicitOutputs android.WritablePaths
@@ -512,6 +498,17 @@ func transformSrctoCrate(ctx android.ModuleContext, main android.Path, deps Path
 		linkFlags = append(linkFlags, " -Wl,--strip-debug -Wl,--pdb="+pdb.String()+" ")
 		implicitOutputs = append(implicitOutputs, pdb)
 	}
+
+	var implicits android.Paths
+	implicits = append(implicits, rustLibsToPaths(deps.RLibs)...)
+	implicits = append(implicits, rustLibsToPaths(deps.DyLibs)...)
+	implicits = append(implicits, rustLibsToPaths(deps.ProcMacros)...)
+	implicits = append(implicits, deps.StaticLibs...)
+	implicits = append(implicits, deps.SharedLibDeps...)
+	implicits = append(implicits, deps.LinkerDeps...)
+	implicits = append(implicits, deps.CrtBegin...)
+	implicits = append(implicits, deps.CrtEnd...)
+	implicits = append(implicits, srcInputs...)
 
 	if !t.synthetic {
 		// Only worry about clippy for actual Rust modules.
@@ -574,7 +571,6 @@ func transformSrctoCrate(ctx android.ModuleContext, main android.Path, deps Path
 		rule = rustcRbe
 		rbeInputs := android.Paths{}
 		rbeInputs = append(rbeInputs, implicits...)
-		rbeInputs = append(rbeInputs, srcInputs...)
 		rbeInputs = append(rbeInputs, depset.New(depset.PREORDER, deps.directApexImplementationDeps, deps.transitiveApexImplementationDeps).ToList()...)
 		rbeInputs = append(rbeInputs, depset.New(depset.PREORDER, deps.directNonApexImplementationDeps, deps.transitiveNonApexImplementationDeps).ToList()...)
 		rbeInputs = android.FirstUniquePaths(rbeInputs)
