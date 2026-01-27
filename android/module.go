@@ -438,6 +438,10 @@ type commonProperties struct {
 	// Whether this module is built for non-native architectures (also known as native bridge binary)
 	Native_bridge_supported *bool `android:"arch_variant"`
 
+	// Whether this module can be built with for lightweight fault isolation (LFI), an
+	// in-process sandboxing technique.
+	Lfi_supported *bool `android:"arch_variant"`
+
 	// The OsType of artifacts that this module variant is responsible for creating.
 	//
 	// Set by osMutator
