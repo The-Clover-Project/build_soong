@@ -18,6 +18,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"encoding/json"
+
 	"github.com/google/blueprint"
 )
 
@@ -94,8 +95,15 @@ func (c *soongApiSingleton) GenerateBuildActions(ctx SingletonContext) {
 	}
 	zipWriter.Close()
 
-	// Write the binary ZIP data to the output path.
-	zipPath := PathForOutput(ctx, "soong_api", "soong_api.zip")
+	// Use TARGET_PRODUCT (DeviceProduct) to partition the output directory.
+	product := "generic" // Fallback for safety
+	if ctx.Config().HasDeviceProduct() {
+		product = ctx.Config().DeviceProduct()
+	}
+
+	// Write the binary ZIP data to the product-specific output path.
+	// Path: out/soong/soong_api/<product>/soong_api.zip
+	zipPath := PathForOutput(ctx, "soong_api", product, "soong_api.zip")
 	WriteFileRule(ctx, zipPath, zipBuf.String())
 
 	// Phony target for 'm soong_api.zip'
@@ -106,7 +114,9 @@ func (c *soongApiSingleton) GenerateBuildActions(ctx SingletonContext) {
 	})
 
 	// Generate the soong_api.db using the ZIP file as the input source.
-	soongApiDbPath := PathForOutput(ctx, "soong_api", "soong_api.db")
+	// Path: out/soong/soong_api/<product>/soong_api.db
+	soongApiDbPath := PathForOutput(ctx, "soong_api", product, "soong_api.db")
+
 	dbRb := NewRuleBuilder(soongApiPctx, ctx)
 
 	loaderPath := ctx.Config().HostToolPath(ctx, "soong_api_db_loader")
