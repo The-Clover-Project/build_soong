@@ -342,3 +342,63 @@ func TestCollectJavaLibraryPropertiesAddAssociates(t *testing.T) {
 		t.Errorf("Library.IDEInfo() Associates = %v, want %v", dpInfo.Associates, expected)
 	}
 }
+
+func TestCollectJavaLibraryPropertiesAddKotlincFlags(t *testing.T) {
+	t.Parallel()
+	ctx, _ := testJava(t,
+		`
+		java_library {
+			name: "javalib",
+			kotlincflags: ["-flag1", "-flag2"],
+		}
+	`)
+	module := ctx.ModuleForTests(t, "javalib", "android_common").Module().(*Library)
+	dpInfo := getIdeInfo(ctx, module)
+
+	expectedKotlincFlags := []string{"-flag1", "-flag2"}
+	if !reflect.DeepEqual(dpInfo.Kotlincflags, expectedKotlincFlags) {
+		t.Errorf("Library.IDEInfo() Kotlincflags = %v, want %v", dpInfo.Kotlincflags, expectedKotlincFlags)
+	}
+}
+
+func TestCollectJavaLibraryPropertiesAddAnnotationProcessorFlags(t *testing.T) {
+	t.Parallel()
+	ctx, _ := testJava(t,
+		`
+		java_library {
+			name: "javalib",
+			annotation_processor_flags: ["-apflag1", "-apflag2"],
+		}
+	`)
+	module := ctx.ModuleForTests(t, "javalib", "android_common").Module().(*Library)
+	dpInfo := getIdeInfo(ctx, module)
+
+	expectedAnnotationProcessorFlags := []string{"-apflag1", "-apflag2"}
+	if !reflect.DeepEqual(dpInfo.Annotation_processor_flags, expectedAnnotationProcessorFlags) {
+		t.Errorf("Library.IDEInfo() Annotation_processor_flags = %v, want %v", dpInfo.Annotation_processor_flags, expectedAnnotationProcessorFlags)
+	}
+}
+
+func TestCollectJavaLibraryPropertiesAddPlugins(t *testing.T) {
+	t.Parallel()
+	ctx, _ := testJava(t,
+		`
+		java_plugin {
+			name: "plugin1",
+		}
+		java_plugin {
+			name: "plugin2",
+		}
+		java_library {
+			name: "javalib",
+			plugins: ["plugin1", "plugin2"],
+		}
+	`)
+	module := ctx.ModuleForTests(t, "javalib", "android_common").Module().(*Library)
+	dpInfo := getIdeInfo(ctx, module)
+
+	expectedPlugins := []string{"plugin1", "plugin2"}
+	if !reflect.DeepEqual(dpInfo.Plugins, expectedPlugins) {
+		t.Errorf("Library.IDEInfo() Plugins = %v, want %v", dpInfo.Plugins, expectedPlugins)
+	}
+}

@@ -2607,6 +2607,10 @@ func (j *Module) IDEInfo(ctx android.BaseModuleContext, dpInfo *android.IdeInfo)
 	dpInfo.Static_libs = append(dpInfo.Static_libs, j.staticLibs(ctx)...)
 	dpInfo.Libs = append(dpInfo.Libs, j.libs(ctx)...)
 	dpInfo.Associates = append(dpInfo.Associates, j.properties.Associates...)
+	dpInfo.Kotlincflags = append(dpInfo.Kotlincflags, j.properties.Kotlincflags...)
+	dpInfo.Annotation_processor_flags = append(dpInfo.Annotation_processor_flags, j.properties.Annotation_processor_flags...)
+	dpInfo.Plugins = append(dpInfo.Plugins, j.properties.Plugins...)
+
 }
 
 func (j *Module) CompilerDeps() []string {
