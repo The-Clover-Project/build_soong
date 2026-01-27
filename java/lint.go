@@ -436,8 +436,7 @@ func (l *linter) lint(ctx android.ModuleContext) {
 	rule := android.NewRuleBuilder(pctx, ctx).
 		SandboxDisabled().
 		Sbox(android.PathForModuleOut(ctx, "lint"),
-			android.PathForModuleOut(ctx, "lint.sbox.textproto")).
-		SandboxInputs()
+			android.PathForModuleOut(ctx, "lint.sbox.textproto"))
 
 	if ctx.Config().UseREWrapper() && ctx.Config().IsEnvTrue("RBE_LINT") {
 		pool := ctx.Config().GetenvWithDefault("RBE_LINT_POOL", "java16")

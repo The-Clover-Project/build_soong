@@ -245,26 +245,6 @@ func (r *RuleBuilder) NsjailKeepGendir() *RuleBuilder {
 	return r
 }
 
-// SandboxInputs enables input sandboxing for the rule by copying any referenced inputs into the
-// sandbox. It also implies that any tools will be sandboxed.
-//
-// Sandboxing inputs requires RuleBuilder to be aware of all references to input paths.  Paths
-// that are passed to RuleBuilder outside of the methods that expect inputs, for example
-// FlagWithArg, must use RuleBuilderCommand.PathForInput to translate the path to one that matches
-// the sandbox layout.
-//
-// This method is legacy at this point, it does nothing. Calling Sbox() will already imply
-// sandboxed inputs.
-func (r *RuleBuilder) SandboxInputs() *RuleBuilder {
-	if !r.sbox {
-		panic("SandboxInputs() must be called after Sbox()")
-	}
-	if len(r.commands) > 0 {
-		panic("SandboxInputs() may not be called after Command()")
-	}
-	return r
-}
-
 // Install associates an output of the rule with an install location, which can be retrieved later using
 // RuleBuilder.Installs.
 func (r *RuleBuilder) Install(from Path, to string) {

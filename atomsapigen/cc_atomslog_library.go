@@ -183,7 +183,7 @@ func (this *CcAtomslogLibraryCallbacks) GeneratorBuildActions(ctx cc.ModuleConte
 		ctx.PropertyErrorf("namespace", "can't be empty")
 	}
 
-	ruleBuilder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled().Sbox(this.genCppDir, android.PathForModuleOut(ctx, "cc.sbox.textproto")).SandboxInputs()
+	ruleBuilder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled().Sbox(this.genCppDir, android.PathForModuleOut(ctx, "cc.sbox.textproto"))
 	ruleBuilder.Command().Text("rm -rf").OutputDir("include")
 	ruleBuilder.Command().Text("mkdir -p").OutputDir("include")
 	hdrGenCmd := ruleBuilder.Command().BuiltTool("stats-log-api-gen").

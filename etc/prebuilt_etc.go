@@ -440,7 +440,12 @@ func (p *PrebuiltEtc) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	filename := proptools.String(p.properties.Filename)
 	filenameFromSrc := proptools.Bool(p.properties.Filename_from_src)
 	if srcProperty.IsPresent() {
-		p.sourceFilePaths = android.PathsForModuleSrc(ctx, []string{srcProperty.Get()})
+		src := srcProperty.Get()
+		p.sourceFilePaths = android.PathsForModuleSrc(ctx, []string{src})
+
+		// set CIPD_SRC if using cipd module as src
+		p.setMetadataIfCipd(ctx, src)
+
 		// If the source was not found, set a fake source path to
 		// support AllowMissingDependencies executions.
 		if len(p.sourceFilePaths) == 0 {
@@ -495,6 +500,13 @@ func (p *PrebuiltEtc) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		if len(dstsProperty) > 0 && len(p.sourceFilePaths) != len(dstsProperty) {
 			ctx.PropertyErrorf("dsts", "Must have one entry in dsts per source file")
 		}
+
+		// Iterate through srcs and set CIPD_SRC accordingly.
+		// Note: only the metadata for the last cipd source will be counted.
+		for _, s := range srcsProperty {
+			p.setMetadataIfCipd(ctx, s)
+		}
+
 		for i, src := range p.sourceFilePaths {
 			var filename string
 			var installDirPath android.InstallPath
@@ -586,6 +598,16 @@ func (p *PrebuiltEtc) updateModuleInfoJSON(ctx android.ModuleContext) {
 	}
 	moduleInfoJSON.SystemSharedLibs = []string{"none"}
 	moduleInfoJSON.Tags = []string{"optional"}
+}
+
+// Helper method to safely record CIPD metadata with nil check
+func (p *PrebuiltEtc) setMetadataIfCipd(ctx android.ModuleContext, src string) {
+	if module, tag := android.SrcIsModuleWithTag(src); module != "" {
+		proxy := android.GetModuleProxyFromPathDep(ctx, module, tag)
+		if !proxy.IsNil() && ctx.OtherModuleType(proxy) == "cipd_package" {
+			ctx.ComplianceMetadataInfo().SetStringValue(android.ComplianceMetadataProp.CIPD_SRC, module)
+		}
+	}
 }
 
 type installProperties struct {

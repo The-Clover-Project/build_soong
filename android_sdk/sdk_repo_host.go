@@ -118,8 +118,7 @@ func (s *sdkRepoHost) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	dir := android.PathForModuleOut(ctx, "zip")
 	outputZipFile := dir.Join(ctx, "output.zip")
 	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled().
-		Sbox(dir, android.PathForModuleOut(ctx, "out.sbox.textproto")).
-		SandboxInputs()
+		Sbox(dir, android.PathForModuleOut(ctx, "out.sbox.textproto"))
 
 	// Always create the dir not rely on BuildNoticeTextOutputFromLicenseMetadata because the notice text may not be generated if there's not other deps.
 	builder.Command().Textf("mkdir -p %s", dir)
