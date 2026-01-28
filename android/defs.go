@@ -277,6 +277,7 @@ var (
 	assembleVintf   = pctx.HostTool("assemble_vintf")
 	SoongZip        = pctx.HostTool("soong_zip")
 	MergeZips       = pctx.HostTool("merge_zips")
+	ZipSync         = pctx.HostTool("zipsync")
 )
 
 var commonToyboxSymlinks = map[string]struct{}{
