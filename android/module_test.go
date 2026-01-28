@@ -15,6 +15,7 @@
 package android
 
 import (
+	"fmt"
 	"path/filepath"
 	"runtime"
 	"testing"
@@ -1124,4 +1125,58 @@ func TestInvalidModuleName(t *testing.T) {
 	prepareForModuleTests.
 		ExtendWithErrorHandler(FixtureExpectsOneErrorPattern(`should use a valid name`)).
 		RunTestWithBp(t, bp)
+}
+
+type requiredModule struct {
+	ModuleBase
+}
+
+func (m *requiredModule) GenerateAndroidBuildActions(ctx ModuleContext) {}
+
+func requiredModuleFactory() Module {
+	m := &requiredModule{}
+	InitAndroidArchModule(m, HostAndDeviceDefault, MultilibCommon)
+	return m
+}
+
+var prepareForRequiredModuleTests = GroupFixturePreparers(FixtureRegisterWithContext(func(ctx RegistrationContext) {
+	ctx.RegisterModuleType("required_module", requiredModuleFactory)
+}),
+	PrepareForTestWithArchMutator,
+	PrepareForTestWithOverrides,
+)
+
+func TestInvalidRequiredModuleName(t *testing.T) {
+	tests := []struct {
+		name       string
+		moduleName string
+		wantError  string
+	}{
+		{
+			name:       "invalid module name",
+			moduleName: "bar baz",
+			wantError:  `\QAndroid.bp:4:14: module "foo" variant \E"[^"]+"\Q: required: "bar baz" is not a valid module name\E`,
+		},
+		{
+			name:       "invalid module name with colon",
+			moduleName: ":bar",
+			wantError:  `\QAndroid.bp:4:14: module "foo" variant \E"[^"]+"\Q: required: ":bar" is not a valid module name, did you mean "bar"?\E`,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			bp := fmt.Sprintf(`
+				required_module {
+					name: "foo",
+					required: [%q],
+				}
+			`, tt.moduleName)
+			t.Logf("bp:\n%s", bp)
+
+			prepareForRequiredModuleTests.
+				ExtendWithErrorHandler(FixtureExpectsAtLeastOneErrorMatchingPattern(tt.wantError)).
+				RunTestWithBp(t, bp)
+		})
+	}
 }
