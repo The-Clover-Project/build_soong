@@ -3135,7 +3135,7 @@ func (e configurationEvalutor) EvaluateConfiguration(condition proptools.Configu
 				case "bool":
 					return proptools.ConfigurableValueBool(v == "true")
 				case "int":
-					i, err := strconv.ParseInt(v, 10, 64)
+					i, err := strconv.ParseInt(v, 0, 64)
 					if err != nil {
 						ctx.OtherModulePropertyErrorf(m, property, "integer soong_config_variable was not an int: %q", v)
 						return proptools.ConfigurableValueUndefined()
