@@ -152,7 +152,7 @@ type allArtlessDenylistsDecorator struct {
 
 func (c *allArtlessDenylistsDecorator) linkerDeps(ctx DepsContext, deps Deps) Deps {
 	deps = c.libraryDecorator.linkerDeps(ctx, deps)
-	for _, lib := range *getNDKKnownLibs(ctx.Config()) {
+	for _, lib := range android.SortedUniqueStrings(*getNDKKnownLibs(ctx.Config())) {
 		libName := strings.TrimSuffix(lib, ndkLibrarySuffix)
 		deps.WholeStaticLibs = append(deps.WholeStaticLibs, libName+"_denylist")
 	}
