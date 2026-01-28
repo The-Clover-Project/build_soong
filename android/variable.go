@@ -558,6 +558,8 @@ type ProductVariables struct {
 	SELinuxTrebleLabelingTrackingListFile *string `json:",omitempty"`
 
 	BuildOTAPackage *bool `json:",omitempty"`
+
+	RestrictsAshmemUsage bool `json:",omitempty"`
 }
 
 type CompatibilityTestcaseJSON struct {
