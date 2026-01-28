@@ -551,7 +551,7 @@ func MatchApex(pattern, name string) bool {
 		return false
 	}
 
-	return true
+	return len(patternParts) == len(nameParts)
 }
 
 // Implements ApexModule
@@ -592,7 +592,7 @@ func (m *ApexModuleBase) checkApexAvailableProperty(mctx BaseModuleContext) {
 			}
 			continue
 		}
-		if !mctx.OtherModuleExists(n) && !mctx.Config().AllowMissingDependencies() {
+		if !strings.Contains(n, "?") && !mctx.OtherModuleExists(n) && !mctx.Config().AllowMissingDependencies() {
 			mctx.PropertyErrorf("apex_available", "%q is not a valid module name", n)
 		}
 	}

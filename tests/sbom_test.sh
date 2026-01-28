@@ -335,8 +335,7 @@ function test_sbom_unbundled_modules {
     DocumentsUIGoogle \
     GoogleExtServices \
     GooglePermissionController \
-    NetworkStackGoogle \
-    NetworkStackNextGoogle"
+    NetworkStackGoogle"
 
   # run_soong to build com.android.adbd.apex
   run_soong "${out_dir}" "sbom dist apex-ls deapexer debugfs fsck.erofs" "${APEXES} ${APKS}"
