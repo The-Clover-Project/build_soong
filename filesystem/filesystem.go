@@ -1665,7 +1665,7 @@ func (f *filesystem) getAvbAddHashtreeFooterArgs(ctx android.ModuleContext) (str
 	}
 	if f.properties.Security_patch != nil && proptools.String(f.properties.Security_patch) != "" {
 		avb_add_hashtree_footer_args += fmt.Sprintf(" --prop com.android.build.%s.security_patch:%s", f.partitionName(), proptools.String(f.properties.Security_patch))
-	} else {
+	} else if android.InList(f.partitionName(), []string{"system", "system_ext", "product"}) {
 		avb_add_hashtree_footer_args += fmt.Sprintf(" --prop com.android.build.%s.security_patch:%s", f.partitionName(), ctx.Config().PlatformSecurityPatch())
 	}
 	return avb_add_hashtree_footer_args, deps
