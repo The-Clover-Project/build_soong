@@ -190,7 +190,7 @@ func (system *SystemModules) commonBuildActions(ctx android.ModuleContext) *Syst
 	cmd.Flag("-D " + system.outputDir.String())
 	cmd.Implicits(system.outputDeps)
 
-	rule.Build("zip_system_module", "Zipping System Module " + ctx.ModuleName())
+	rule.Build("zip_system_module", "Zipping System Module "+ctx.ModuleName())
 	ctx.SetOutputFiles(android.Paths{zipOutputFile}, ".zip")
 
 	return &SystemModulesProviderInfo{
