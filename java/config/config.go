@@ -170,7 +170,6 @@ func init() {
 	pctx.HostBinToolVariable("DependencyMapperJavacCmd", "dependency-mapper")
 
 	pctx.SourcePathVariable("JarArgsCmd", "build/soong/scripts/jar-args.sh")
-	pctx.SourcePathVariable("PackageCheckCmd", "build/soong/scripts/package-check.sh")
 	pctx.HostBinToolVariable("ExtractJarPackagesCmd", "extract_jar_packages")
 	pctx.HostBinToolVariable("SoongZipCmd", "soong_zip")
 	pctx.HostBinToolVariable("MergeZipsCmd", "merge_zips")
