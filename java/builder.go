@@ -34,28 +34,30 @@ import (
 var (
 	pctx = android.NewPackageContext("android/soong/java")
 
+	mergeZips   = android.MergeZips
+	zipSync     = android.ZipSync
+	rm          = android.Rm
+	mkdir       = android.Mkdir
+	splitZips   = pctx.HostTool("split_zips")
+	extractApks = pctx.HostTool("extract_apks")
+
 	// Splits jars into a number of jars, with equal files in each output jar.
 	splitSrcJars = pctx.AndroidStaticRule("javac-split-srcJars",
 		blueprint.RuleParams{
-			Command: `${config.SplitZipCmd} -i "$rspFile" -f "*.java" $out`,
-			CommandDeps: []string{
-				"${config.SplitZipCmd}",
-			},
-			Restat:          true,
-			Rspfile:         "$rspFile",
-			RspfileContent:  "$in",
-			SandboxDisabled: true,
+			Command2:       blueprint.NewCommand(splitZips, ` -i "$rspFile" -f "*.java" $out`),
+			Restat:         true,
+			Rspfile:        "$rspFile",
+			RspfileContent: "$in",
 		}, "rspFile",
 	)
 
 	// Unzips java src files from supplied jars into a directory provided.
 	extractSrcJars = pctx.AndroidStaticRule("javac-extract-srcJars",
 		blueprint.RuleParams{
-			Command: `rm -rf "$extractDir" && mkdir -p "$extractDir" && ${config.ZipSyncCmd} -d "$extractDir" -l "$out" -f "*.java" $jars`,
-			CommandDeps: []string{
-				"${config.ZipSyncCmd}",
-			},
-			SandboxDisabled: true,
+			Command2: blueprint.NewCommand(
+				rm, ` -rf "$extractDir" && `,
+				mkdir, ` -p "$extractDir" && `,
+				zipSync, ` -d "$extractDir" -l "$out" -f "*.java" $jars`),
 		}, "extractDir", "jars",
 	)
 
@@ -260,14 +262,13 @@ var (
 	extractMatchingApks = pctx.StaticRule(
 		"extractMatchingApks",
 		blueprint.RuleParams{
-			Command: `rm -rf "$out" && ` +
-				`${config.ExtractApksCmd} -o "${out}" -zip "${zip}" -allow-prereleased=${allow-prereleased} ` +
-				`-sdk-version=${sdk-version} -skip-sdk-check=${skip-sdk-check} -abis=${abis} ` +
-				`--screen-densities=${screen-densities} --stem=${stem} ` +
-				`-apkcerts=${apkcerts} -partition=${partition} ` +
-				`${in}`,
-			CommandDeps:     []string{"${config.ExtractApksCmd}"},
-			SandboxDisabled: true,
+			Command2: blueprint.NewCommand(
+				rm, ` -rf "$out" && `,
+				extractApks, ` -o "${out}" -zip "${zip}" -allow-prereleased=${allow-prereleased} `,
+				`-sdk-version=${sdk-version} -skip-sdk-check=${skip-sdk-check} -abis=${abis} `,
+				`--screen-densities=${screen-densities} --stem=${stem} `,
+				`-apkcerts=${apkcerts} -partition=${partition} `,
+				`${in}`),
 		},
 		"abis", "allow-prereleased", "screen-densities", "sdk-version", "skip-sdk-check", "stem", "apkcerts", "partition", "zip")
 
@@ -331,18 +332,15 @@ var (
 
 	combineJar = pctx.AndroidStaticRule("combineJar",
 		blueprint.RuleParams{
-			Command:         `${config.MergeZipsCmd} --ignore-duplicates -j $jarArgs $out $in`,
-			CommandDeps:     []string{"${config.MergeZipsCmd}"},
-			SandboxDisabled: true,
+			Command2: blueprint.NewCommand(mergeZips, ` --ignore-duplicates -j $jarArgs $out $in`),
 		},
 		"jarArgs")
 	combineJarRsp = pctx.AndroidStaticRule("combineJarRsp",
 		blueprint.RuleParams{
-			Command:         `${config.MergeZipsCmd} --ignore-duplicates -j $jarArgs $out @$out.rsp`,
-			CommandDeps:     []string{"${config.MergeZipsCmd}"},
-			Rspfile:         "$out.rsp",
-			RspfileContent:  "$in",
-			SandboxDisabled: true,
+			Command2: blueprint.NewCommand(
+				mergeZips, ` --ignore-duplicates -j $jarArgs $out @$out.rsp`),
+			Rspfile:        "$out.rsp",
+			RspfileContent: "$in",
 		},
 		"jarArgs")
 
