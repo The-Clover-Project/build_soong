@@ -75,9 +75,13 @@ func convertArgsToKeyValue(args []string) []*protos.KeyValue {
 	res := []*protos.KeyValue{}
 	for _, arg := range args {
 		argSplit := strings.SplitN(arg, "=", 2)
-		if len(argSplit) != 2 {
-			return nil
+		if len(argSplit) < 2 {
+			continue
 		}
+		res = append(res, &protos.KeyValue{
+			Key:   argSplit[0],
+			Value: argSplit[1],
+		})
 	}
 	return res
 }
