@@ -17,6 +17,7 @@ package java
 import (
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -1000,7 +1001,22 @@ func (d *dexer) compileDex(ctx android.ModuleContext, dexParams *compileDexParam
 		debugMode := android.InList("--debug", commonFlags)
 		r8Flags, r8Deps, r8ArtProfileOutputPath := d.r8Flags(ctx, dexParams, debugMode, useD8Inc)
 		deps = append(deps, r8Deps...)
-		args["r8Flags"] = strings.Join(append(commonFlags, r8Flags...), " ")
+
+		var r8JvmFlags []string
+		if ctx.Config().IsEnvTrue("R8_DUMP_INPUT") {
+			r8Inputs := android.PathForModuleOut(ctx, "r8inputs.zip")
+			r8JvmFlags = append(r8JvmFlags, "-JDcom.android.tools.r8.dumpinputtofile="+r8Inputs.String())
+		}
+		if ctx.Config().IsEnvTrue("R8_DUMP_BLAST_RADIUS") {
+			r8BlastRadius := android.PathForModuleOut(ctx, "r8blastradius.pb")
+			r8JvmFlags = append(r8JvmFlags, "-JDcom.android.tools.r8.dumpblastradiustofile="+r8BlastRadius.String())
+		}
+		if ctx.Config().IsEnvTrue("R8_DUMP_PERFETTO_TRACE") {
+			r8PerfettoTrace := android.PathForModuleOut(ctx, "r8trace.ptrace")
+			r8JvmFlags = append(r8JvmFlags, "-JDcom.android.tools.r8.dumptracetofile="+r8PerfettoTrace.String())
+		}
+
+		args["r8Flags"] = strings.Join(slices.Concat(r8JvmFlags, commonFlags, r8Flags), " ")
 		if r8ArtProfileOutputPath != nil {
 			artProfileOutputPath = r8ArtProfileOutputPath
 			// Add the implicit r8 Art profile output to args so that r8RE knows

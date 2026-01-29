@@ -95,14 +95,12 @@ func init() {
 	}, dexerJavaVmFlagsList...), " "))
 
 	pctx.VariableFunc("R8Flags", func(ctx android.PackageVarContext) string {
-		r8flags := append([]string{
+		r8flags := []string{
 			"-JXmx4096M",
 			"-JDcom.android.tools.r8.emitRecordAnnotationsInDex",
 			"-JDcom.android.tools.r8.emitPermittedSubclassesAnnotationsInDex",
-		}, dexerJavaVmFlagsList...)
-		if r8DumpDir := ctx.Config().Getenv("R8_DUMP_DIRECTORY"); r8DumpDir != "" {
-			r8flags = append(r8flags, "-JDcom.android.tools.r8.dumpinputtodirectory="+r8DumpDir)
 		}
+		r8flags = append(r8flags, dexerJavaVmFlagsList...)
 		return strings.Join(r8flags, " ")
 
 	})
