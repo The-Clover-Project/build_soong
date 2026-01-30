@@ -382,6 +382,9 @@ func runMakeProductConfig(ctx Context, config Config) {
 	for _, k := range sisoStringVars {
 		config.SisoStringVars[k] = makeVars[k]
 	}
+	if config.IsActionSandboxedBuild() {
+		config.SisoStringVars["nsjail_path"] = config.PrebuiltBuildTool("nsjail")
+	}
 	config.SisoBoolVars = map[string]bool{
 		"use_reclient": config.UseRewrapper(),
 	}
