@@ -112,10 +112,10 @@ type PrebuiltKernelModulesProperties struct {
 	}
 }
 
-func (p *PrebuiltKernelModulesProperties) resolve(ctx android.ModuleContext) common.PrebuiltKernelModulesPropertiesJSON {
+func (p *PrebuiltKernelModulesProperties) resolve(ctx android.ModuleContext, command *android.RuleBuilderCommand) common.PrebuiltKernelModulesPropertiesJSON {
 	var systemDep *string
 	if p.System_dep != nil {
-		systemDep = proptools.StringPtr(android.PathForModuleSrc(ctx, *p.System_dep).String())
+		systemDep = proptools.StringPtr(command.PathForInputFromFile(android.PathForModuleSrc(ctx, *p.System_dep)))
 	}
 	var zip *string
 	if p.Zip.Src != nil {
@@ -189,9 +189,6 @@ func (pkm *prebuiltKernelModules) GenerateAndroidBuildActions(ctx android.Module
 	}
 
 	propsFile := android.PathForModuleOut(ctx, "props.json")
-	props := pkm.properties.resolve(ctx)
-	android.WriteFileRule(ctx, propsFile, props.ToJSON())
-
 	sboxDir := android.PathForModuleOut(ctx, "sbox")
 	sboxManifest := android.PathForModuleOut(ctx, "sbox.manifest")
 	loadFile := sboxDir.Join(ctx, "modules.load")
@@ -223,6 +220,9 @@ func (pkm *prebuiltKernelModules) GenerateAndroidBuildActions(ctx android.Module
 		Output(installsZip).
 		Implicits(deps)
 	builder.Build("zip_modules", "zip kernel modules")
+
+	props := pkm.properties.resolve(ctx, builder.Command())
+	android.WriteFileRule(ctx, propsFile, props.ToJSON())
 
 	installDir := android.PathForModuleInstall(ctx, "lib", "modules")
 	// Kernel module is installed to vendor_ramdisk/lib/modules regardless of product
