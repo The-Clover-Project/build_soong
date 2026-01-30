@@ -1069,7 +1069,11 @@ func (m *ModuleBase) baseOverridablePropertiesDepsMutator(ctx BottomUpMutatorCon
 func addRequiredDeps(ctx BottomUpMutatorContext) {
 	addDep := func(target Target, depName string) {
 		if !blueprint.IsValidModuleName(depName) {
-			ctx.PropertyErrorf("required", "%s is not a valid module", depName)
+			if strings.HasPrefix(depName, ":") {
+				ctx.PropertyErrorf("required", "%q is not a valid module name, did you mean %q?", depName, depName[1:])
+			} else {
+				ctx.PropertyErrorf("required", "%q is not a valid module name", depName)
+			}
 		}
 		if !ctx.OtherModuleExists(depName) {
 			if ctx.Config().AllowMissingDependencies() {
