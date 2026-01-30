@@ -93,7 +93,7 @@ type PrebuiltKernelModulesProperties struct {
 	// some such as srcs will be merged with the contents / information from the zip file.
 	Zip struct {
 		// The zip file containing the kernel modules and other files like the load/blocklist files.
-		Src *string
+		Src *string `android:"path,arch_variant"`
 
 		// The name of the load file inside of the zip file. Only modules listed in it will
 		// be installed.
