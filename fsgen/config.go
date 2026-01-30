@@ -55,6 +55,10 @@ var (
 			Name:   proptools.StringPtr("odm/app"),
 		},
 		{
+			Target: proptools.StringPtr("/vendor/odm/apex"),
+			Name:   proptools.StringPtr("odm/apex"),
+		},
+		{
 			Target: proptools.StringPtr("/vendor/odm/bin"),
 			Name:   proptools.StringPtr("odm/bin"),
 		},
