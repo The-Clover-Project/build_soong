@@ -1226,7 +1226,7 @@ type sanitizerSplitMutator struct {
 	sanitizer SanitizerType
 }
 
-func (s *sanitizerSplitMutator) Split(ctx android.BaseModuleContext) []string {
+func (s *sanitizerSplitMutator) split(ctx android.BaseModuleContext) []string {
 	if c, ok := ctx.Module().(PlatformSanitizeable); ok && c.SanitizePropDefined() {
 		// If the given sanitizer is not requested in the .bp file for a module, it
 		// won't automatically build the sanitized variation.
@@ -1268,8 +1268,22 @@ func (s *sanitizerSplitMutator) Split(ctx android.BaseModuleContext) []string {
 	return []string{""}
 }
 
+func (s *sanitizerSplitMutator) Split(ctx android.BaseModuleContext) []string {
+	allSplits := s.split(ctx)
+	if ctx.Config().GetBuildFlagBool("RELEASE_SOONG_SANITIZER_VARIANT_ON_DEMAND") {
+		return allSplits[0:1]
+	} else {
+		return allSplits
+	}
+}
+
 func (s *sanitizerSplitMutator) SplitOnDemand(ctx android.BaseModuleContext) []string {
-	return nil
+	allSplits := s.split(ctx)
+	if len(allSplits) <= 1 || !ctx.Config().GetBuildFlagBool("RELEASE_SOONG_SANITIZER_VARIANT_ON_DEMAND") {
+		return nil
+	} else {
+		return allSplits[1:]
+	}
 }
 
 func (s *sanitizerSplitMutator) OutgoingTransition(ctx android.OutgoingTransitionContext, sourceVariation string) string {
