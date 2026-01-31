@@ -34,12 +34,14 @@ import (
 var (
 	pctx = android.NewPackageContext("android/soong/java")
 
-	mergeZips   = android.MergeZips
-	zipSync     = android.ZipSync
-	rm          = android.Rm
-	mkdir       = android.Mkdir
-	splitZips   = pctx.HostTool("split_zips")
-	extractApks = pctx.HostTool("extract_apks")
+	mergeZips       = android.MergeZips
+	zipSync         = android.ZipSync
+	rm              = android.Rm
+	mkdir           = android.Mkdir
+	touch           = android.Touch
+	splitZips       = pctx.HostTool("split_zips")
+	extractApks     = pctx.HostTool("extract_apks")
+	packageCheckCmd = pctx.HostTool("package_check")
 
 	// Splits jars into a number of jars, with equal files in each output jar.
 	splitSrcJars = pctx.AndroidStaticRule("javac-split-srcJars",
@@ -373,11 +375,11 @@ var (
 
 	packageCheck = pctx.AndroidStaticRule("packageCheck",
 		blueprint.RuleParams{
-			Command: "rm -f $out && " +
-				"${config.PackageCheckCmd} $in $packages && " +
-				"touch $out",
-			CommandDeps:     []string{"${config.PackageCheckCmd}"},
-			SandboxDisabled: true,
+			Command2: blueprint.NewCommand(
+				rm, " -f $out && ",
+				packageCheckCmd, " $in $packages && ",
+				touch, " $out",
+			),
 		},
 		"packages")
 

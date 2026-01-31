@@ -90,7 +90,7 @@ func (plan *TestExecutionPlanProperties) Validate(ctx android.ModuleContext) {
 func validateArgs(ctx android.ModuleContext, args []string) {
 	for _, arg := range args {
 		argSplit := strings.SplitN(arg, "=", 2)
-		if len(argSplit) != 2 {
+		if len(argSplit) < 2 {
 			ctx.ModuleErrorf("contains invalid argument %s, must be format key=value", arg)
 		}
 	}

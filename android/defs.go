@@ -132,6 +132,14 @@ var (
 		},
 		"fromPath")
 
+	// A rule that verifies that $in is not a symlink. Touches a stamp file when done.
+	VerifyNotSymlinkRule = pctx.AndroidStaticRule("VerifyNotSymlink",
+		blueprint.RuleParams{
+			Command2: blueprint.NewCommand(
+				Rm, " -rf $out && ( ! ", Test, " -L $in ) && ", Touch, " $out"),
+			Description: "verify not a symlink: $in",
+		})
+
 	// A rule that always fails at execution time with the given error message.
 	// The error message must be passed through proptools.NinjaAndShellEscape() first.
 	// Calling ErrorRule() will do that for you and use this rule.
