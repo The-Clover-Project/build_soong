@@ -314,14 +314,17 @@ func TestPrebuiltLibrarySanitized(t *testing.T) {
 		shared: {
                         sanitized: { none: { srcs: ["libf.so"], }, hwaddress: { srcs: ["hwasan/libf.so"], }, },
 		},
+		split_all_variants: true,
 	}
 	cc_prebuilt_library_static {
 		name: "libtest_static",
                 sanitized: { none: { srcs: ["libf.a"], }, hwaddress: { srcs: ["libf.hwasan.a"], }, },
+		split_all_variants: true,
 	}
 	cc_prebuilt_library_shared {
 		name: "libtest_shared",
                 sanitized: { none: { srcs: ["libf.so"], }, hwaddress: { srcs: ["hwasan/libf.so"], }, },
+		split_all_variants: true,
 	}`
 
 	fs := map[string][]byte{

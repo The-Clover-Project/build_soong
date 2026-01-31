@@ -1041,6 +1041,18 @@ func (c *RuleBuilderCommand) PathForInput(path Path) string {
 	return path.String()
 }
 
+// PathForInputFromFile is like PathForInput but for file paths specified in a file which is used on the command line.
+// If sbox is enabled it doesn't prepend sboxSandboxBaseDir to the returned path.
+func (c *RuleBuilderCommand) PathForInputFromFile(path Path) string {
+	if c.rule.sbox {
+		rel, _ := c.rule._sboxPathForInputRel(path)
+		return rel
+	} else if c.rule.nsjail {
+		return c.rule.nsjailPathForInputRel(path)
+	}
+	return path.String()
+}
+
 // PathsForInputs takes a list of input paths and returns the appropriate paths to use on the
 // command line.  If sbox was enabled via a call to RuleBuilder.Sbox() a path was an output path, it
 // returns the path with the placeholder prefix used for outputs in sbox.  If sbox is not enabled it
