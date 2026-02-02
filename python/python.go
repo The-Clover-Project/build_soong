@@ -233,6 +233,8 @@ func (p *PythonLibraryModule) DepsMutator(ctx android.BottomUpMutatorContext) {
 	}
 
 	p.AddDepsOnPythonLauncherAndStdlib(ctx, hostStdLibTag, hostLauncherTag, hostlauncherSharedLibTag, false, ctx.Config().BuildOSTarget)
+
+	ctx.AddHostToolDependencies("aprotoc", "dep_fixer", "soong_zip")
 }
 
 // AddDepsOnPythonLauncherAndStdlib will make the current module depend on the python stdlib,

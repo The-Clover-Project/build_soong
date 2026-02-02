@@ -132,19 +132,20 @@ function create_mock_soong {
   copy_directory build/soong
   copy_directory build/make
 
-  symlink_directory prebuilts/sdk
-  symlink_directory prebuilts/go
-  symlink_directory prebuilts/build-tools
-  symlink_directory prebuilts/clang/host
   symlink_directory external/compiler-rt
   symlink_directory external/go-cmp
   symlink_directory external/golang-protobuf
   symlink_directory external/licenseclassifier
-  symlink_directory external/python
   symlink_directory external/pogreb
+  symlink_directory external/protobuf
+  symlink_directory external/python
   symlink_directory external/spdx-tools
   symlink_directory external/sqlite
   symlink_directory external/starlark-go
+  symlink_directory prebuilts/build-tools
+  symlink_directory prebuilts/clang/host
+  symlink_directory prebuilts/go
+  symlink_directory prebuilts/sdk
 
   touch "$MOCK_TOP/Android.bp"
 }
