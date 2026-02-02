@@ -239,9 +239,10 @@ type LinkableInfo struct {
 	// CrateName returns the crateName for a Rust library
 	CrateName string
 	// DepFlags returns a slice of Rustc string flags
-	ExportedCrateLinkDirs []string
-	HasNonSystemVariants  bool
-	IsLlndk               bool
+	ExportedCrateLinkDirs     []string
+	ExportedCrateLinkDirsDeps []android.Path
+	HasNonSystemVariants      bool
+	IsLlndk                   bool
 	// True if the library is in the configs known NDK list.
 	IsNdk             bool
 	InVendorOrProduct bool
@@ -400,9 +401,10 @@ type Deps struct {
 // A struct which to collect flags for rlib dependencies
 // @auto-generate: gob
 type RustRlibDep struct {
-	LibPath   android.Path // path to the rlib
-	LinkDirs  []string     // flags required for dependency (e.g. -L flags)
-	CrateName string       // crateNames associated with rlibDeps
+	LibPath      android.Path   // path to the rlib
+	LinkDirs     []string       // flags required for dependency (e.g. -L flags)
+	LinkDirsDeps []android.Path // files in linkdirs to be used as implicit deps
+	CrateName    string         // crateNames associated with rlibDeps
 }
 
 func EqRustRlibDeps(a RustRlibDep, b RustRlibDep) bool {
@@ -1383,7 +1385,7 @@ func (c *Module) CrateName() string {
 	panic(fmt.Errorf("CrateName called on non-Rust module: %q", c.BaseModuleName()))
 }
 
-func (c *Module) ExportedCrateLinkDirs() []string {
+func (c *Module) ExportedCrateLinkDirs() ([]string, android.Paths) {
 	panic(fmt.Errorf("ExportedCrateLinkDirs called on non-Rust module: %q", c.BaseModuleName()))
 }
 
@@ -3856,7 +3858,12 @@ func (c *Module) depsToPaths(ctx android.ModuleContext) PathDeps {
 
 			case libDepTag.static():
 				if linkableInfo.RustLibraryInterface {
-					rlibDep := RustRlibDep{LibPath: linkFile.Path(), CrateName: linkableInfo.CrateName, LinkDirs: linkableInfo.ExportedCrateLinkDirs}
+					rlibDep := RustRlibDep{
+						LibPath:      linkFile.Path(),
+						CrateName:    linkableInfo.CrateName,
+						LinkDirs:     linkableInfo.ExportedCrateLinkDirs,
+						LinkDirsDeps: linkableInfo.ExportedCrateLinkDirsDeps,
+					}
 					depPaths.RustRlibDeps = append(depPaths.RustRlibDeps, rlibDep)
 					depPaths.IncludeDirs = append(depPaths.IncludeDirs, depExporterInfo.IncludeDirs...)
 					if libDepTag.wholeStatic {
