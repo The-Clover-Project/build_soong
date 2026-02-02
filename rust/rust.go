@@ -1799,11 +1799,13 @@ func (mod *Module) depsToPaths(ctx android.ModuleContext) (PathDeps, []string) {
 			makeLibName := cc.MakeLibName(ccInfo, linkableInfo, commonInfo, depName)
 			if !hasRustInfo {
 				if commonInfo.Target.Os != ctx.Os() {
-					ctx.ModuleErrorf("OS mismatch between %q and %q", ctx.ModuleName(), depName)
+					ctx.ModuleErrorf("OS mismatch between %q (%s) and %q (%s)",
+						ctx.ModuleName(), ctx.Os().Name, depName, commonInfo.Target.Os.Name)
 					return
 				}
 				if commonInfo.Target.Arch.ArchType != ctx.Arch().ArchType {
-					ctx.ModuleErrorf("Arch mismatch between %q and %q", ctx.ModuleName(), depName)
+					ctx.ModuleErrorf("Arch mismatch between %q(%v) and %q(%v)",
+						ctx.ModuleName(), ctx.Arch().ArchType, depName, commonInfo.Target.Arch.ArchType)
 					return
 				}
 			}
