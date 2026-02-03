@@ -18,6 +18,7 @@ import (
 	"strings"
 
 	"android/soong/android"
+	cc_config "android/soong/cc/config"
 )
 
 var (
@@ -54,10 +55,12 @@ func (t *toolchainLinuxArm64) Name() string {
 	return "arm64"
 }
 
-func (t *toolchainLinuxArm64) ToolchainLinkFlags() string {
+func (t *toolchainLinuxArm64) ToolchainLinkFlags() cc_config.FlagsWithDeps {
 	// Prepend the lld flags from cc_config so we stay in sync with cc
-	return "${cc_config.LinuxLdflags} ${cc_config.LinuxArm64Ldflags} " +
-		"${config.LinuxToolchainLinkFlags} ${config.LinuxToolchainArm64LinkFlags}"
+	return cc_config.FlagsWithDeps{
+		Flags: "${cc_config.LinuxLdflags} ${cc_config.LinuxArm64Ldflags} " +
+			"${config.LinuxToolchainLinkFlags} ${config.LinuxToolchainArm64LinkFlags}",
+	}
 }
 
 func (t *toolchainLinuxArm64) ToolchainRustFlags() string {
@@ -74,8 +77,11 @@ func (t *toolchainLinuxMuslArm64) RustTriple() string {
 	return "aarch64-unknown-linux-musl"
 }
 
-func (t *toolchainLinuxMuslArm64) ToolchainLinkFlags() string {
-	return t.toolchainLinuxArm64.ToolchainLinkFlags() + " " + "${config.LinuxMuslToolchainLinkFlags}"
+func (t *toolchainLinuxMuslArm64) ToolchainLinkFlags() cc_config.FlagsWithDeps {
+	linuxMusl := cc_config.FlagsWithDeps{
+		Flags: "${config.LinuxMuslToolchainLinkFlags}",
+	}
+	return t.toolchainLinuxArm64.ToolchainLinkFlags().Append(linuxMusl)
 }
 
 func (t *toolchainLinuxMuslArm64) ToolchainRustFlags() string {
@@ -111,10 +117,12 @@ func (toolchainLinuxArm64) LibclangRuntimeLibraryArch() string {
 	return "arm64"
 }
 
-func (t *toolchainLinuxArm) ToolchainLinkFlags() string {
+func (t *toolchainLinuxArm) ToolchainLinkFlags() cc_config.FlagsWithDeps {
 	// Prepend the lld flags from cc_config so we stay in sync with cc
-	return "${cc_config.LinuxLdflags} ${cc_config.LinuxArmLdflags} " +
-		"${config.LinuxToolchainLinkFlags} ${config.LinuxToolchainArmLinkFlags}"
+	return cc_config.FlagsWithDeps{
+		Flags: "${cc_config.LinuxLdflags} ${cc_config.LinuxArmLdflags} " +
+			"${config.LinuxToolchainLinkFlags} ${config.LinuxToolchainArmLinkFlags}",
+	}
 }
 
 func (t *toolchainLinuxArm) ToolchainRustFlags() string {
@@ -131,8 +139,11 @@ func (t *toolchainLinuxMuslArm) RustTriple() string {
 	return "arm-unknown-linux-musleabihf"
 }
 
-func (t *toolchainLinuxMuslArm) ToolchainLinkFlags() string {
-	return t.toolchainLinuxArm.ToolchainLinkFlags() + " " + "${config.LinuxMuslToolchainLinkFlags}"
+func (t *toolchainLinuxMuslArm) ToolchainLinkFlags() cc_config.FlagsWithDeps {
+	linuxMusl := cc_config.FlagsWithDeps{
+		Flags: "${config.LinuxMuslToolchainLinkFlags}",
+	}
+	return t.toolchainLinuxArm.ToolchainLinkFlags().Append(linuxMusl)
 }
 
 func (t *toolchainLinuxMuslArm) ToolchainRustFlags() string {

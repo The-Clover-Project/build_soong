@@ -281,8 +281,10 @@ func (t *toolchainArm) Cppflags() string {
 	return "${config.ArmCppflags}"
 }
 
-func (t *toolchainArm) Ldflags() string {
-	return t.ldflags // TODO: handle V8 cases
+func (t *toolchainArm) Ldflags() FlagsWithDeps {
+	return FlagsWithDeps{
+		Flags: t.ldflags, // TODO: handle V8 cases
+	}
 }
 
 func (t *toolchainArm) InstructionSetFlags(isa string) (string, error) {

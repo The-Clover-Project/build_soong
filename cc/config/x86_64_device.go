@@ -156,8 +156,10 @@ func (t *toolchainX86_64) ClangTriple() string {
 	return "x86_64-linux-android"
 }
 
-func (t *toolchainX86_64) ToolchainLdflags() string {
-	return "${config.X86_64ToolchainLdflags}"
+func (t *toolchainX86_64) ToolchainLdflags() FlagsWithDeps {
+	return FlagsWithDeps{
+		Flags: "${config.X86_64ToolchainLdflags}",
+	}
 }
 
 func (t *toolchainX86_64) ToolchainCflags() string {
@@ -172,8 +174,10 @@ func (t *toolchainX86_64) Cppflags() string {
 	return "${config.X86_64Cppflags}"
 }
 
-func (t *toolchainX86_64) Ldflags() string {
-	return "${config.X86_64Ldflags}"
+func (t *toolchainX86_64) Ldflags() FlagsWithDeps {
+	return FlagsWithDeps{
+		Flags: "${config.X86_64Ldflags}",
+	}
 }
 
 func (t *toolchainX86_64) YasmFlags() string {

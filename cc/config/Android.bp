@@ -11,6 +11,7 @@ bootstrap_go_package {
     ],
     srcs: [
         "clang.go",
+        "flags_with_deps.go",
         "global.go",
         "tidy.go",
         "toolchain.go",

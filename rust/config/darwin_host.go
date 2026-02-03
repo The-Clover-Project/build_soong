@@ -19,6 +19,7 @@ import (
 	"strings"
 
 	"android/soong/android"
+	cc_config "android/soong/cc/config"
 )
 
 var (
@@ -102,18 +103,22 @@ func (t *toolchainDarwin) ProcMacroSuffix() string {
 	return ".dylib"
 }
 
-func (t *toolchainDarwinArm64) ToolchainLinkFlags() string {
+func (t *toolchainDarwinArm64) ToolchainLinkFlags() cc_config.FlagsWithDeps {
 	// Prepend the lld flags from cc_config so we stay in sync with cc
-	return "${cc_config.DarwinLdflags} ${config.DarwinToolchainLinkFlags} ${config.DarwinToolchainArm64LinkFlags}"
+	return cc_config.FlagsWithDeps{
+		Flags: "${cc_config.DarwinLdflags} ${config.DarwinToolchainLinkFlags} ${config.DarwinToolchainArm64LinkFlags}",
+	}
 }
 
 func (t *toolchainDarwinArm64) ToolchainRustFlags() string {
 	return "${config.DarwinToolchainRustFlags} ${config.DarwinToolchainArm64RustFlags}"
 }
 
-func (t *toolchainDarwinX8664) ToolchainLinkFlags() string {
+func (t *toolchainDarwinX8664) ToolchainLinkFlags() cc_config.FlagsWithDeps {
 	// Prepend the lld flags from cc_config so we stay in sync with cc
-	return "${cc_config.DarwinLdflags} ${config.DarwinToolchainLinkFlags} ${config.DarwinToolchainX8664LinkFlags}"
+	return cc_config.FlagsWithDeps{
+		Flags: "${cc_config.DarwinLdflags} ${config.DarwinToolchainLinkFlags} ${config.DarwinToolchainX8664LinkFlags}",
+	}
 }
 
 func (t *toolchainDarwinX8664) ToolchainRustFlags() string {

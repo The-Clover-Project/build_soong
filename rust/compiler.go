@@ -462,7 +462,7 @@ func (compiler *baseCompiler) cfgFlags(ctx ModuleContext, flags Flags) Flags {
 func CommonDefaultFlags(ctx android.ModuleContext, toolchain config.Toolchain, flags Flags) Flags {
 	flags.GlobalRustFlags = append(flags.GlobalRustFlags, config.GlobalRustFlags...)
 	flags.GlobalRustFlags = append(flags.GlobalRustFlags, toolchain.ToolchainRustFlags())
-	flags.GlobalLinkFlags = append(flags.GlobalLinkFlags, toolchain.ToolchainLinkFlags())
+	flags.GlobalLinkFlags = flags.GlobalLinkFlags.Append(toolchain.ToolchainLinkFlags())
 	flags.EmitXrefs = ctx.Config().EmitXrefRules()
 
 	if ctx.Host() && !ctx.Windows() {

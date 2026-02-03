@@ -197,12 +197,16 @@ func (t *toolchainLinuxX8664) Cppflags() string {
 	return ""
 }
 
-func (t *toolchainLinuxX86) Ldflags() string {
-	return "${config.LinuxLdflags} ${config.LinuxX86Ldflags}"
+func (t *toolchainLinuxX86) Ldflags() FlagsWithDeps {
+	return FlagsWithDeps{
+		Flags: "${config.LinuxLdflags} ${config.LinuxX86Ldflags}",
+	}
 }
 
-func (t *toolchainLinuxX8664) Ldflags() string {
-	return "${config.LinuxLdflags} ${config.LinuxX8664Ldflags}"
+func (t *toolchainLinuxX8664) Ldflags() FlagsWithDeps {
+	return FlagsWithDeps{
+		Flags: "${config.LinuxLdflags} ${config.LinuxX8664Ldflags}",
+	}
 }
 
 func (t *toolchainLinuxX86) YasmFlags() string {
@@ -245,8 +249,10 @@ func (toolchainGlibc) Cflags() string {
 	return "${config.LinuxGlibcCflags}"
 }
 
-func (toolchainGlibc) Ldflags() string {
-	return "${config.LinuxGlibcLdflags}"
+func (toolchainGlibc) Ldflags() FlagsWithDeps {
+	return FlagsWithDeps{
+		Flags: "${config.LinuxGlibcLdflags}",
+	}
 }
 
 type toolchainLinuxGlibcX86 struct {
@@ -267,8 +273,8 @@ func (t *toolchainLinuxGlibcX86) Cflags() string {
 	return t.toolchainLinuxX86.Cflags() + " " + t.toolchainGlibc.Cflags()
 }
 
-func (t *toolchainLinuxGlibcX86) Ldflags() string {
-	return t.toolchainLinuxX86.Ldflags() + " " + t.toolchainGlibc.Ldflags()
+func (t *toolchainLinuxGlibcX86) Ldflags() FlagsWithDeps {
+	return t.toolchainLinuxX86.Ldflags().Append(t.toolchainGlibc.Ldflags())
 }
 
 func (t *toolchainLinuxGlibcX8664) ClangTriple() string {
@@ -279,8 +285,8 @@ func (t *toolchainLinuxGlibcX8664) Cflags() string {
 	return t.toolchainLinuxX8664.Cflags() + " " + t.toolchainGlibc.Cflags()
 }
 
-func (t *toolchainLinuxGlibcX8664) Ldflags() string {
-	return t.toolchainLinuxX8664.Ldflags() + " " + t.toolchainGlibc.Ldflags()
+func (t *toolchainLinuxGlibcX8664) Ldflags() FlagsWithDeps {
+	return t.toolchainLinuxX8664.Ldflags().Append(t.toolchainGlibc.Ldflags())
 }
 
 var toolchainLinuxGlibcX86Singleton Toolchain = &toolchainLinuxGlibcX86{}
@@ -315,8 +321,10 @@ func (toolchainMusl) Cflags() string {
 	return "${config.LinuxMuslCflags}"
 }
 
-func (toolchainMusl) Ldflags() string {
-	return "${config.LinuxMuslLdflags}"
+func (toolchainMusl) Ldflags() FlagsWithDeps {
+	return FlagsWithDeps{
+		Flags: "${config.LinuxMuslLdflags}",
+	}
 }
 
 type toolchainLinuxMuslX86 struct {
@@ -337,8 +345,8 @@ func (t *toolchainLinuxMuslX86) Cflags() string {
 	return t.toolchainLinuxX86.Cflags() + " " + t.toolchainMusl.Cflags()
 }
 
-func (t *toolchainLinuxMuslX86) Ldflags() string {
-	return t.toolchainLinuxX86.Ldflags() + " " + t.toolchainMusl.Ldflags()
+func (t *toolchainLinuxMuslX86) Ldflags() FlagsWithDeps {
+	return t.toolchainLinuxX86.Ldflags().Append(t.toolchainMusl.Ldflags())
 }
 
 func (t *toolchainLinuxMuslX8664) ClangTriple() string {
@@ -349,8 +357,8 @@ func (t *toolchainLinuxMuslX8664) Cflags() string {
 	return t.toolchainLinuxX8664.Cflags() + " " + t.toolchainMusl.Cflags()
 }
 
-func (t *toolchainLinuxMuslX8664) Ldflags() string {
-	return t.toolchainLinuxX8664.Ldflags() + " " + t.toolchainMusl.Ldflags()
+func (t *toolchainLinuxMuslX8664) Ldflags() FlagsWithDeps {
+	return t.toolchainLinuxX8664.Ldflags().Append(t.toolchainMusl.Ldflags())
 }
 
 var toolchainLinuxMuslX86Singleton Toolchain = &toolchainLinuxMuslX86{}

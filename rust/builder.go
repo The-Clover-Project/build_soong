@@ -378,6 +378,7 @@ func transformSrctoCrate(ctx android.ModuleContext, main android.Path, deps Path
 	outputFile, checkJsonFile android.WritablePath, t transformProperties) buildOutput {
 
 	var inputs android.Paths
+	var implicits android.Paths
 	var validations android.Paths
 	var orderOnly android.Paths
 	var output buildOutput
@@ -431,7 +432,8 @@ func transformSrctoCrate(ctx android.ModuleContext, main android.Path, deps Path
 		earlyLinkFlags = "-Wl,--as-needed"
 	}
 
-	linkFlags = append(linkFlags, flags.GlobalLinkFlags...)
+	linkFlags = append(linkFlags, flags.GlobalLinkFlags.Flags)
+	implicits = append(implicits, flags.GlobalLinkFlags.Deps...)
 	linkFlags = append(linkFlags, flags.LinkFlags...)
 	linkerScriptFlags = append(linkerScriptFlags, flags.LinkerScriptFlags...)
 
@@ -505,7 +507,6 @@ func transformSrctoCrate(ctx android.ModuleContext, main android.Path, deps Path
 		implicitOutputs = append(implicitOutputs, pdb)
 	}
 
-	var implicits android.Paths
 	implicits = append(implicits, rustLibsToPaths(deps.RLibs)...)
 	implicits = append(implicits, rustLibsToPaths(deps.DyLibs)...)
 	implicits = append(implicits, rustLibsToPaths(deps.ProcMacros)...)

@@ -504,7 +504,9 @@ func CommonLinkerFlags(ctx android.ModuleContext, flags Flags, toolchain config.
 		flags.Global.LdFlags = append(flags.Global.LdFlags, "-Wl,--no-undefined")
 	}
 
-	flags.Global.LdFlags = append(flags.Global.LdFlags, toolchain.Ldflags())
+	ldFlags := toolchain.Ldflags()
+	flags.Global.LdFlags = append(flags.Global.LdFlags, ldFlags.Flags)
+	flags.LdFlagsDeps = append(flags.LdFlagsDeps, ldFlags.Deps...)
 
 	if !toolchain.Bionic() && ctx.Os() != android.LinuxMusl {
 		if !ctx.Windows() {
@@ -527,7 +529,9 @@ func CommonLinkerFlags(ctx android.ModuleContext, flags Flags, toolchain config.
 	if ctx.Device() {
 		flags.Local.LdFlags = append(flags.Local.LdFlags, XomFlags(ctx)...)
 	}
-	flags.Global.LdFlags = append(flags.Global.LdFlags, toolchain.ToolchainLdflags())
+	toolchainLdFlags := toolchain.ToolchainLdflags()
+	flags.Global.LdFlags = append(flags.Global.LdFlags, toolchainLdFlags.Flags)
+	flags.LdFlagsDeps = append(flags.LdFlagsDeps, toolchainLdFlags.Deps...)
 	return flags
 }
 

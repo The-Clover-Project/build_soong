@@ -101,8 +101,10 @@ func (t *toolchainRiscv64) Cppflags() string {
 	return "${config.Riscv64Cppflags}"
 }
 
-func (t *toolchainRiscv64) Ldflags() string {
-	return t.ldflags
+func (t *toolchainRiscv64) Ldflags() FlagsWithDeps {
+	return FlagsWithDeps{
+		Flags: t.ldflags,
+	}
 }
 
 func (t *toolchainRiscv64) ToolchainCflags() string {
