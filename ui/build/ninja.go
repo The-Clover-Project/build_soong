@@ -103,6 +103,8 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 		sisoExperiments = append(sisoExperiments,
 			// b/430486641
 			"ignore-missing-out-in-depfile",
+			// b/479933778
+			"allow-unexpected-rsp-remove",
 		)
 		var sisoConfigs []string
 		switch {
