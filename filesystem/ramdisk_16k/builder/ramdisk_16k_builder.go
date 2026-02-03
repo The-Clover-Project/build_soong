@@ -93,8 +93,8 @@ func mkLz4Bootfs(dir, out string) {
 
 	must(mkbootfsCmd.Start())
 	must(lz4Command.Start())
-	must(mkbootfsCmd.Wait())
 	must(lz4Command.Wait())
+	must(mkbootfsCmd.Wait())
 }
 
 func strip(props *common.Ramdisk16kImgPropertiesJSON, modulesDir string) {
