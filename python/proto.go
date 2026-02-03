@@ -27,8 +27,8 @@ func genProto(ctx android.ModuleContext, protoFile android.Path, flags android.P
 
 	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 
-	rule.Command().Text("rm -rf").Flag(outDir.String())
-	rule.Command().Text("mkdir -p").Flag(outDir.String())
+	rule.Command().BuiltTool("rm").Flag("-rf").Text(outDir.String())
+	rule.Command().BuiltTool("mkdir").Flag("-p").Text(outDir.String())
 
 	android.ProtoRule(rule, protoFile, flags, flags.Deps, outDir, depFile, nil)
 
@@ -40,7 +40,7 @@ func genProto(ctx android.ModuleContext, protoFile android.Path, flags android.P
 	zipCmd.FlagWithArg("-C ", outDir.String()).
 		FlagWithArg("-D ", outDir.String())
 
-	rule.Command().Text("rm -rf").Flag(outDir.String())
+	rule.Command().BuiltTool("rm").Flag("-rf").Text(outDir.String())
 
 	rule.Build("protoc_"+protoFile.Rel(), "protoc "+protoFile.Rel())
 

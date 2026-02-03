@@ -69,8 +69,7 @@ var (
 				chmod, ` +x $out && `,
 				rm, ` -rf $out.main`,
 			),
-			CommandDeps:     []string{"build/soong/python/scripts/main.py"},
-			SandboxDisabled: true,
+			CommandDeps: []string{"build/soong/python/scripts/main.py"},
 		},
 		"main", "srcsZips", "launcher")
 
@@ -80,7 +79,6 @@ var (
 				mergeZips, " -p --prefix $launcher $out $srcsZips && ",
 				chmod, " +x $out",
 			),
-			SandboxDisabled: true,
 		},
 		"srcsZips", "launcher")
 
@@ -93,7 +91,6 @@ var (
 			"$launcher",
 			"build/soong/python/scripts/precompile_python.py",
 		},
-		SandboxDisabled: true,
 	}, "stdlibZip", "stdlibPkg", "launcher", "ldLibraryPath")
 )
 
