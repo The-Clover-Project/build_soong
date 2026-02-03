@@ -692,6 +692,7 @@ func (library *libraryDecorator) compile(ctx ModuleContext, flags Flags, deps Pa
 
 	// Ensure link dirs are not duplicated
 	deps.linkDirs = android.FirstUniqueStrings(deps.linkDirs)
+	deps.linkDirsDeps = android.FirstUniquePaths(deps.linkDirsDeps)
 
 	// Calculate output filename
 	if library.rlib() {
@@ -789,7 +790,7 @@ func (library *libraryDecorator) compile(ctx ModuleContext, flags Flags, deps Pa
 
 	// rlibs and dylibs propagate their shared, whole static, and rustlib dependencies
 	if library.rlib() || library.dylib() {
-		library.exportLinkDirs(deps.linkDirs...)
+		library.exportLinkDirs(deps.linkDirs, deps.linkDirsDeps)
 		library.exportRustLibs(deps.rustLibObjects...)
 		library.exportSharedLibs(deps.sharedLibObjects...)
 		library.exportWholeStaticLibs(deps.wholeStaticLibObjects...)

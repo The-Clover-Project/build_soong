@@ -109,7 +109,7 @@ type LinkableInterface interface {
 	CrateName() string
 
 	// DepFlags returns a slice of Rustc string flags, panics if not a Rust library
-	ExportedCrateLinkDirs() []string
+	ExportedCrateLinkDirs() ([]string, android.Paths)
 
 	// BaseModuleName returns the android.ModuleBase.BaseModuleName() value for this module.
 	BaseModuleName() string

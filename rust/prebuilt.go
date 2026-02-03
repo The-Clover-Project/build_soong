@@ -16,6 +16,7 @@ package rust
 
 import (
 	"android/soong/android"
+
 	"github.com/google/blueprint/proptools"
 )
 
@@ -163,7 +164,13 @@ func (prebuilt *prebuiltLibraryDecorator) compilerProps() []interface{} {
 }
 
 func (prebuilt *prebuiltLibraryDecorator) compile(ctx ModuleContext, flags Flags, deps PathDeps) buildOutput {
-	prebuilt.flagExporter.exportLinkDirs(android.PathsForModuleSrc(ctx, prebuilt.Properties.Link_dirs).Strings()...)
+	linkDirs := android.PathsForModuleSrc(ctx, prebuilt.Properties.Link_dirs).Strings()
+	linkDirs = android.FirstUniqueInPlace(linkDirs)
+	var linkDirsDeps []android.Path
+	for _, linkDir := range linkDirs {
+		linkDirsDeps = append(linkDirsDeps, android.PathsForModuleSrc(ctx, []string{linkDir + "/*.rlib"})...)
+	}
+	prebuilt.flagExporter.exportLinkDirs(linkDirs, linkDirsDeps)
 	prebuilt.flagExporter.setRustProvider(ctx)
 	srcPath := prebuiltPath(ctx, prebuilt)
 	prebuilt.baseCompiler.unstrippedOutputFile = srcPath
@@ -215,7 +222,13 @@ func (prebuilt *prebuiltProcMacroDecorator) compilerProps() []interface{} {
 }
 
 func (prebuilt *prebuiltProcMacroDecorator) compile(ctx ModuleContext, flags Flags, deps PathDeps) buildOutput {
-	prebuilt.flagExporter.exportLinkDirs(android.PathsForModuleSrc(ctx, prebuilt.Properties.Link_dirs).Strings()...)
+	linkDirs := android.PathsForModuleSrc(ctx, prebuilt.Properties.Link_dirs).Strings()
+	linkDirs = android.FirstUniqueInPlace(linkDirs)
+	var linkDirsDeps []android.Path
+	for _, linkDir := range linkDirs {
+		linkDirsDeps = append(linkDirsDeps, android.PathsForModuleSrc(ctx, []string{linkDir + "/*.rlib"})...)
+	}
+	prebuilt.flagExporter.exportLinkDirs(linkDirs, linkDirsDeps)
 	prebuilt.flagExporter.setRustProvider(ctx)
 	srcPath := prebuiltPath(ctx, prebuilt)
 	prebuilt.baseCompiler.unstrippedOutputFile = srcPath

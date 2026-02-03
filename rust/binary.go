@@ -162,6 +162,7 @@ func (binary *binaryDecorator) compile(ctx ModuleContext, flags Flags, deps Path
 
 	// Ensure link dirs are not duplicated
 	deps.linkDirs = android.FirstUniqueStrings(deps.linkDirs)
+	deps.linkDirsDeps = android.FirstUniquePaths(deps.linkDirsDeps)
 
 	flags.RustFlags = append(flags.RustFlags, deps.depFlags...)
 	flags.LinkFlags = append(flags.LinkFlags, deps.depLinkFlags...)
