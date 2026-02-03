@@ -386,6 +386,7 @@ func runMakeProductConfig(ctx Context, config Config) {
 		config.SisoStringVars["nsjail_path"] = config.PrebuiltBuildTool("nsjail")
 	}
 	config.SisoBoolVars = map[string]bool{
+		"use_rbe":      config.UseRBE(),
 		"use_reclient": config.UseRewrapper(),
 	}
 

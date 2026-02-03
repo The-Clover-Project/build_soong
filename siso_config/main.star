@@ -33,7 +33,16 @@ def __step_config(ctx, vars, step_config):
 
 def __generate(ctx, vars, dir_modules):
     step_config = {
-        "platforms": {
+        "platforms": {},
+        "input_deps": {},
+        "inputs_requiring_clang_scandeps": [],
+        "rules": [],
+    }
+    filegroups = {}
+    handlers = {}
+
+    if vars.use_rbe:
+        step_config["platforms"] = {
             "default": {
                 "OSFamily": "Linux",
                 "container-image": vars.RBE_container_image,
@@ -44,13 +53,7 @@ def __generate(ctx, vars, dir_modules):
                 "container-image": vars.RBE_container_image,
                 "Pool": "java16",
             },
-        },
-        "input_deps": {},
-        "inputs_requiring_clang_scandeps": [],
-        "rules": [],
-    }
-    filegroups = {}
-    handlers = {}
+        }
 
     for m in dir_modules:
         step_config = m.step_config(ctx, vars, step_config)
