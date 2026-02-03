@@ -233,6 +233,14 @@ func (c *ComplianceMetadataInfo) AddBuiltFiles(files ...string) {
 	c.SetListValue(ComplianceMetadataProp.BUILT_FILES, builtFiles)
 }
 
+func (c *ComplianceMetadataInfo) SetCipdSrc(ctx ModuleContext, src string) {
+	if module, tag := SrcIsModuleWithTag(src); module != "" {
+		if ctx.OtherModuleType(GetModuleProxyFromPathDep(ctx, module, tag)) == "cipd_package" {
+			c.SetStringValue(ComplianceMetadataProp.CIPD_SRC, module)
+		}
+	}
+}
+
 func (c *ComplianceMetadataInfo) getStringValue(propertyName string) string {
 	if !slices.Contains(COMPLIANCE_METADATA_PROPS, propertyName) {
 		panic(fmt.Errorf("Unknown metadata property: %s.", propertyName))
