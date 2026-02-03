@@ -850,6 +850,12 @@ func XomDisabledByModule(ctx android.BaseModuleContext) bool {
 	if ok && c.Xom() != nil && !*c.Xom() {
 		return true
 	}
+
+	// disable XOM for Apex modules
+	if info, ok := android.ModuleProvider(ctx, android.ApexInfoProvider); ok && !info.IsForPlatform() {
+		return true
+	}
+
 	return false
 }
 
