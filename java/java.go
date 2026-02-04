@@ -1276,13 +1276,13 @@ func (j *Library) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	j.createApiXmlFile(ctx)
 
 	if j.dexer.proguardDictionary.Valid() {
-		android.SetProvider(ctx, ProguardProvider, ProguardInfo{
+		android.SetProvider(ctx, ProguardProvider, ProguardInfos{{
 			ModuleName:         android.ModuleNameWithPossibleOverride(ctx),
 			Class:              "JAVA_LIBRARIES",
 			ProguardDictionary: j.dexer.proguardDictionary.Path(),
 			ProguardUsageZip:   j.dexer.proguardUsageZip.Path(),
 			ClassesJar:         j.implementationAndResourcesJar,
-		})
+		}})
 	}
 
 	if ctx.Os() == android.Windows {

@@ -2497,6 +2497,7 @@ func (r ClasspathFragmentProtoContentInfo) GetTypeId() int16 {
 // begin of dex.go
 func init() {
 	ProguardInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ProguardInfo) })
+	ProguardInfosGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ProguardInfos) })
 }
 
 func (r ProguardInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
@@ -2651,6 +2652,63 @@ var ProguardInfoGobRegId int16
 
 func (r ProguardInfo) GetTypeId() int16 {
 	return ProguardInfoGobRegId
+}
+
+func (r ProguardInfos) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if r == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r)); err != nil {
+			return err
+		}
+		for val1 := 0; val1 < len(r); val1++ {
+			if err = r[val1].Encode(ctx, buf); err != nil {
+				return err
+			}
+		}
+	}
+	return err
+}
+
+func (r ProguardInfos) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":.[]ProguardInfo")
+	hasher.WriteInt(len(r))
+	for val1 := 0; val1 < len(r); val1++ {
+		if err := r[val1].CustomHash(hasher); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (r *ProguardInfos) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	var val2 int
+	err = gobtools.DecodeInt(buf, &val2)
+	if err != nil {
+		return err
+	}
+	if val2 != -1 {
+		(*r) = make([]ProguardInfo, val2)
+		for val3 := 0; val3 < int(val2); val3++ {
+			if err = (*r)[val3].Decode(ctx, buf); err != nil {
+				return err
+			}
+		}
+	}
+
+	return err
+}
+
+var ProguardInfosGobRegId int16
+
+func (r ProguardInfos) GetTypeId() int16 {
+	return ProguardInfosGobRegId
 }
 
 // end of dex.go

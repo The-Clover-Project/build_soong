@@ -99,6 +99,7 @@ func (library *Library) prepareAndroidMKProviderInfo(config android.Config) *and
 		requiredUsesLibs, optionalUsesLibs := library.classLoaderContexts.UsesLibs()
 		info.PrimaryInfo.AddStrings("LOCAL_EXPORT_SDK_LIBRARIES", append(requiredUsesLibs, optionalUsesLibs...)...)
 
+		// TODO(b470068827): Ensure proguard artifact propagation for APEX-only libraries and apps.
 		info.PrimaryInfo.SetOptionalPath("LOCAL_SOONG_PROGUARD_DICT", library.dexer.proguardDictionary)
 		info.PrimaryInfo.SetOptionalPath("LOCAL_SOONG_PROGUARD_USAGE_ZIP", library.dexer.proguardUsageZip)
 		info.PrimaryInfo.SetString("LOCAL_MODULE_STEM", library.Stem())
