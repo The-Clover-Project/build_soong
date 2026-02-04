@@ -203,7 +203,10 @@ func TransformRlibstoStaticlib(ctx android.ModuleContext, mainSrc android.Path, 
 	for _, rlibDep := range deps {
 		rustPathDeps.RLibs = append(rustPathDeps.RLibs, RustLibrary{Path: rlibDep.LibPath, CrateName: rlibDep.CrateName})
 		rustPathDeps.linkDirs = append(rustPathDeps.linkDirs, rlibDep.LinkDirs...)
+		rustPathDeps.linkDirsDeps = append(rustPathDeps.linkDirsDeps, rlibDep.LinkDirsDeps...)
 	}
+	rustPathDeps.linkDirs = android.FirstUniqueStrings(rustPathDeps.linkDirs)
+	rustPathDeps.linkDirsDeps = android.FirstUniquePaths(rustPathDeps.linkDirsDeps)
 
 	mod := ctx.Module().(cc.LinkableInterface)
 	toolchain := config.FindToolchain(ctx.Os(), ctx.Arch())
@@ -281,8 +284,9 @@ func rustLibsToPaths(libs RustLibraries) android.Paths {
 	return paths
 }
 
-func makeLibFlags(deps PathDeps) []string {
+func makeLibFlags(deps PathDeps) ([]string, android.Paths) {
 	var libFlags []string
+	var depFiles []android.Path
 
 	// Collect library/crate flags
 	for _, lib := range deps.RLibs {
@@ -298,8 +302,9 @@ func makeLibFlags(deps PathDeps) []string {
 	for _, path := range deps.linkDirs {
 		libFlags = append(libFlags, "-L "+path)
 	}
+	depFiles = append(depFiles, deps.linkDirsDeps...)
 
-	return libFlags
+	return libFlags, depFiles
 }
 
 func rustStringifyEnvVars(envVars map[string]string) string {
@@ -443,7 +448,7 @@ func transformSrctoCrate(ctx android.ModuleContext, main android.Path, deps Path
 		linkFlags = append(linkFlags, generatedLib.String())
 	}
 
-	libFlags := makeLibFlags(deps)
+	libFlags, libFlagsDeps := makeLibFlags(deps)
 
 	// Collect dependencies
 	orderOnly = append(orderOnly, deps.SharedLibs...)
@@ -509,6 +514,7 @@ func transformSrctoCrate(ctx android.ModuleContext, main android.Path, deps Path
 	implicits = append(implicits, deps.CrtBegin...)
 	implicits = append(implicits, deps.CrtEnd...)
 	implicits = append(implicits, srcInputs...)
+	implicits = append(implicits, libFlagsDeps...)
 
 	if !t.synthetic {
 		// Only worry about clippy for actual Rust modules.
@@ -621,7 +627,8 @@ func Rustdoc(ctx ModuleContext, main android.Path, deps PathDeps,
 	crateName := ctx.RustModule().CrateName()
 	rustdocFlags = append(rustdocFlags, "--crate-name "+crateName)
 
-	rustdocFlags = append(rustdocFlags, makeLibFlags(deps)...)
+	libFlags, libFlagsDeps := makeLibFlags(deps)
+	rustdocFlags = append(rustdocFlags, libFlags...)
 	docTimestampFile := android.PathForModuleOut(ctx, "rustdoc.timestamp")
 
 	// Silence warnings about renamed lints for third-party crates
@@ -641,6 +648,7 @@ func Rustdoc(ctx ModuleContext, main android.Path, deps PathDeps,
 	implicits = append(implicits, rustLibsToPaths(deps.RLibs)...)
 	implicits = append(implicits, rustLibsToPaths(deps.DyLibs)...)
 	implicits = append(implicits, rustLibsToPaths(deps.ProcMacros)...)
+	implicits = append(implicits, libFlagsDeps...)
 	envVars := rustEnvVars(ctx, deps, crateName, ctx.RustModule().compiler.cargoOutDir(ctx))
 	ctx.Build(pctx, android.BuildParams{
 		Rule:        rustdoc,

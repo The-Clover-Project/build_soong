@@ -9,7 +9,6 @@ function extend_mock_top_for_java_or_kotlin_partial_compile_test {
   symlink_directory external/turbine
   symlink_directory external/gson
   symlink_directory external/ow2-asm
-  symlink_directory external/protobuf
   symlink_directory external/auto
   symlink_directory external/icu
   symlink_directory external/zlib

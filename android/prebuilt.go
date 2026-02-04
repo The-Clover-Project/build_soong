@@ -206,6 +206,16 @@ func (p *Prebuilt) SingleSourcePath(ctx ModuleContext) Path {
 	return SingleSourcePathFromSupplier(ctx, p.srcsSupplier, p.srcsPropertyName)
 }
 
+func (p *Prebuilt) SingleSource(ctx ModuleContext) string {
+	if p.srcsSupplier != nil {
+		srcs := p.srcsSupplier(ctx, ctx.Module())
+		if len(srcs) > 0 {
+			return srcs[0]
+		}
+	}
+	return ""
+}
+
 func (p *Prebuilt) UsePrebuilt() bool {
 	return p.properties.UsePrebuilt
 }

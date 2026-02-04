@@ -296,7 +296,7 @@ type UseCoverageDeptag interface {
 
 type coverageTransitionMutator struct{}
 
-func (c coverageTransitionMutator) Split(ctx android.BaseModuleContext) []string {
+func (c coverageTransitionMutator) split(ctx android.BaseModuleContext) []string {
 	if c, ok := ctx.Module().(*Module); ok && c.coverage != nil {
 		if c.coverage.Properties.NeedCoverageVariant {
 			return []string{"", "cov"}
@@ -317,8 +317,22 @@ func (c coverageTransitionMutator) Split(ctx android.BaseModuleContext) []string
 	return []string{""}
 }
 
+func (c coverageTransitionMutator) Split(ctx android.BaseModuleContext) []string {
+	allSplits := c.split(ctx)
+	if ctx.Config().GetBuildFlagBool("RELEASE_SOONG_COV_VARIANT_ON_DEMAND") {
+		return allSplits[0:1]
+	} else {
+		return allSplits
+	}
+}
+
 func (c coverageTransitionMutator) SplitOnDemand(ctx android.BaseModuleContext) []string {
-	return nil
+	allSplits := c.split(ctx)
+	if len(allSplits) <= 1 || !ctx.Config().GetBuildFlagBool("RELEASE_SOONG_COV_VARIANT_ON_DEMAND") {
+		return nil
+	} else {
+		return allSplits[1:]
+	}
 }
 
 func (c coverageTransitionMutator) OutgoingTransition(ctx android.OutgoingTransitionContext, sourceVariation string) string {

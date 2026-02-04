@@ -2591,7 +2591,11 @@ func (j *Module) IDEInfo(ctx android.BaseModuleContext, dpInfo *android.IdeInfo)
 		dpInfo.Jars = append(dpInfo.Jars, j.headerJarFile.String())
 	}
 	dpInfo.Srcs = append(dpInfo.Srcs, j.expandIDEInfoCompiledSrcs...)
-	dpInfo.Aidl_srcs = append(dpInfo.Aidl_srcs, j.aidlSrcs.Strings()...)
+	if len(j.aidlSrcs) > 0 {
+		dpInfo.Aidl = &android.AidlIdeInfo{
+			Srcs: j.aidlSrcs.Strings(),
+		}
+	}
 	if len(j.protoSrcs) > 0 {
 		dpInfo.Proto = &android.ProtoIdeInfo{
 			Srcs:                  j.protoSrcs.Strings(),
@@ -2607,6 +2611,15 @@ func (j *Module) IDEInfo(ctx android.BaseModuleContext, dpInfo *android.IdeInfo)
 	dpInfo.Static_libs = append(dpInfo.Static_libs, j.staticLibs(ctx)...)
 	dpInfo.Libs = append(dpInfo.Libs, j.libs(ctx)...)
 	dpInfo.Associates = append(dpInfo.Associates, j.properties.Associates...)
+	dpInfo.Kotlincflags = append(dpInfo.Kotlincflags, j.properties.Kotlincflags...)
+	dpInfo.Annotation_processor_flags = append(dpInfo.Annotation_processor_flags, j.properties.Annotation_processor_flags...)
+	dpInfo.Plugins = append(dpInfo.Plugins, j.properties.Plugins...)
+
+	for _, props := range j.GetProperties() {
+		if p, ok := props.(android.IdeInfoPopulator); ok {
+			p.PopulateIdeInfo(ctx, dpInfo)
+		}
+	}
 }
 
 func (j *Module) CompilerDeps() []string {

@@ -252,7 +252,8 @@ type Module struct {
 	sourceProvider   SourceProvider
 	subAndroidMkOnce map[SubAndroidMkProvider]bool
 
-	exportedLinkDirs []string
+	exportedLinkDirs     []string
+	exportedLinkDirsDeps []android.Path
 
 	// Output file to be installed, may be stripped or unstripped.
 	outputFile android.OptionalPath
@@ -543,6 +544,7 @@ type PathDeps struct {
 	// linkDirs are link paths passed via -L to rustc. linkObjects are objects passed directly to the linker
 	// Both of these are exported and propagate to dependencies.
 	linkDirs              []string
+	linkDirsDeps          []android.Path
 	rustLibObjects        []string
 	staticLibObjects      []string
 	wholeStaticLibObjects []string
@@ -551,7 +553,8 @@ type PathDeps struct {
 	// exportedLinkDirs are exported linkDirs for direct rlib dependencies to
 	// cc_library_static dependants of rlibs.
 	// Track them separately from linkDirs so superfluous -L flags don't get emitted.
-	exportedLinkDirs []string
+	exportedLinkDirs     []string
+	exportedLinkDirsDeps []android.Path
 
 	// Used by bindgen modules which call clang
 	depClangFlags         []string
@@ -582,7 +585,7 @@ type RustLibrary struct {
 }
 
 type exportedFlagsProducer interface {
-	exportLinkDirs(...string)
+	exportLinkDirs(dirs []string, deps []android.Path)
 	exportRustLibs(...string)
 	exportStaticLibs(...string)
 	exportWholeStaticLibs(...string)
@@ -595,6 +598,7 @@ type xref interface {
 
 type flagExporter struct {
 	linkDirs              []string
+	linkDirsDeps          []android.Path
 	ccLinkDirs            []string
 	rustLibPaths          []string
 	staticLibObjects      []string
@@ -603,8 +607,9 @@ type flagExporter struct {
 	wholeRustRlibDeps     []cc.RustRlibDep
 }
 
-func (flagExporter *flagExporter) exportLinkDirs(dirs ...string) {
+func (flagExporter *flagExporter) exportLinkDirs(dirs []string, deps []android.Path) {
 	flagExporter.linkDirs = android.FirstUniqueStrings(append(flagExporter.linkDirs, dirs...))
+	flagExporter.linkDirsDeps = android.FirstUniquePaths(append(flagExporter.linkDirsDeps, deps...))
 }
 
 func (flagExporter *flagExporter) exportRustLibs(flags ...string) {
@@ -626,6 +631,7 @@ func (flagExporter *flagExporter) exportWholeStaticLibs(flags ...string) {
 func (flagExporter *flagExporter) setRustProvider(ctx ModuleContext) {
 	android.SetProvider(ctx, RustFlagExporterInfoProvider, RustFlagExporterInfo{
 		LinkDirs:              flagExporter.linkDirs,
+		LinkDirsDeps:          flagExporter.linkDirsDeps,
 		RustLibObjects:        flagExporter.rustLibPaths,
 		StaticLibObjects:      flagExporter.staticLibObjects,
 		WholeStaticLibObjects: flagExporter.wholeStaticLibObjects,
@@ -644,6 +650,7 @@ func NewFlagExporter() *flagExporter {
 type RustFlagExporterInfo struct {
 	Flags                 []string
 	LinkDirs              []string
+	LinkDirsDeps          []android.Path
 	RustLibObjects        []string
 	StaticLibObjects      []string
 	WholeStaticLibObjects []string
@@ -663,8 +670,8 @@ func (mod *Module) VndkVersion() string {
 	return mod.Properties.VndkVersion
 }
 
-func (mod *Module) ExportedCrateLinkDirs() []string {
-	return mod.exportedLinkDirs
+func (mod *Module) ExportedCrateLinkDirs() ([]string, android.Paths) {
+	return mod.exportedLinkDirs, mod.exportedLinkDirsDeps
 }
 
 func (mod *Module) PreventInstall() bool {
@@ -1133,6 +1140,8 @@ func (mod *Module) GenerateAndroidBuildActions(actx android.ModuleContext) {
 	// Export linkDirs for CC rust generatedlibs
 	mod.exportedLinkDirs = append(mod.exportedLinkDirs, deps.exportedLinkDirs...)
 	mod.exportedLinkDirs = append(mod.exportedLinkDirs, deps.linkDirs...)
+	mod.exportedLinkDirsDeps = append(mod.exportedLinkDirsDeps, deps.exportedLinkDirsDeps...)
+	mod.exportedLinkDirsDeps = append(mod.exportedLinkDirsDeps, deps.linkDirsDeps...)
 
 	flags := Flags{
 		Toolchain: toolchain,
@@ -1217,7 +1226,7 @@ func (mod *Module) GenerateAndroidBuildActions(actx android.ModuleContext) {
 			}
 			// Export your own directory as a linkDir
 			mod.exportedLinkDirs = append(mod.exportedLinkDirs, linkPathFromFilePath(mod.OutputFile().Path()))
-
+			mod.exportedLinkDirsDeps = append(mod.exportedLinkDirsDeps, mod.OutputFile().Path())
 		}
 
 		android.SetProvider(ctx, cc.ImplementationDepInfoProvider, &cc.ImplementationDepInfo{
@@ -1235,7 +1244,9 @@ func (mod *Module) GenerateAndroidBuildActions(actx android.ModuleContext) {
 	linkableInfo.Shared = mod.Shared()
 	linkableInfo.Rlib = mod.Rlib()
 	linkableInfo.CrateName = mod.CrateName()
-	linkableInfo.ExportedCrateLinkDirs = mod.ExportedCrateLinkDirs()
+	exportedLinkDirs, exportedLinkDirsDeps := mod.ExportedCrateLinkDirs()
+	linkableInfo.ExportedCrateLinkDirs = android.FirstUniqueStrings(exportedLinkDirs)
+	linkableInfo.ExportedCrateLinkDirsDeps = android.FirstUniquePaths(exportedLinkDirsDeps)
 	if lib, ok := mod.compiler.(cc.VersionedInterface); ok {
 		linkableInfo.StubsVersion = lib.StubsVersion()
 	}
@@ -1685,6 +1696,7 @@ func (mod *Module) depsToPaths(ctx android.ModuleContext) (PathDeps, []string) {
 				exportedInfo, _ := android.OtherModuleProvider(ctx, dep, cc.FlagExporterInfoProvider)
 				depPaths.depIncludePaths = append(depPaths.depIncludePaths, exportedInfo.IncludeDirs...)
 				depPaths.exportedLinkDirs = append(depPaths.exportedLinkDirs, linkPathFromFilePath(linkableInfo.OutputFile.Path()))
+				depPaths.exportedLinkDirsDeps = append(depPaths.exportedLinkDirsDeps, linkableInfo.OutputFile.Path())
 
 				// rlibs are not installed, so don't add the output file to apexDirectImplementationDeps. Track them for RBE however.
 				depPaths.directNonApexImplementationDeps = append(depPaths.directNonApexImplementationDeps, android.OutputFileForModule(ctx, dep, ""))
@@ -1718,6 +1730,7 @@ func (mod *Module) depsToPaths(ctx android.ModuleContext) (PathDeps, []string) {
 				mod.Properties.AndroidMkProcMacroLibs = append(mod.Properties.AndroidMkProcMacroLibs, makeLibName)
 				// proc_macro link dirs need to be exported, so collect those here.
 				depPaths.exportedLinkDirs = append(depPaths.exportedLinkDirs, linkPathFromFilePath(linkableInfo.OutputFile.Path()))
+				depPaths.exportedLinkDirsDeps = append(depPaths.exportedLinkDirsDeps, linkableInfo.OutputFile.Path())
 
 				depPaths.directNonApexImplementationDeps = append(depPaths.directNonApexImplementationDeps, android.OutputFileForModule(ctx, dep, ""))
 				if info, ok := android.OtherModuleProvider(ctx, dep, RustImplementationDepInfoProvider); ok {
@@ -1771,6 +1784,7 @@ func (mod *Module) depsToPaths(ctx android.ModuleContext) (PathDeps, []string) {
 				depPaths.staticLibObjects = append(depPaths.staticLibObjects, exportedInfo.StaticLibObjects...)
 				depPaths.wholeStaticLibObjects = append(depPaths.wholeStaticLibObjects, exportedInfo.WholeStaticLibObjects...)
 				depPaths.linkDirs = append(depPaths.linkDirs, exportedInfo.LinkDirs...)
+				depPaths.linkDirsDeps = append(depPaths.linkDirsDeps, exportedInfo.LinkDirsDeps...)
 
 				depPaths.reexportedWholeCcRlibDeps = append(depPaths.reexportedWholeCcRlibDeps, exportedRustInfo.WholeRustRlibDeps...)
 				if !mod.Rlib() {
@@ -1782,7 +1796,7 @@ func (mod *Module) depsToPaths(ctx android.ModuleContext) (PathDeps, []string) {
 				linkFile := linkableInfo.UnstrippedOutputFile
 				linkDir := linkPathFromFilePath(linkFile)
 				if lib, ok := mod.compiler.(exportedFlagsProducer); ok {
-					lib.exportLinkDirs(linkDir)
+					lib.exportLinkDirs([]string{linkDir}, []android.Path{linkFile})
 				}
 			}
 
@@ -1799,11 +1813,13 @@ func (mod *Module) depsToPaths(ctx android.ModuleContext) (PathDeps, []string) {
 			makeLibName := cc.MakeLibName(ccInfo, linkableInfo, commonInfo, depName)
 			if !hasRustInfo {
 				if commonInfo.Target.Os != ctx.Os() {
-					ctx.ModuleErrorf("OS mismatch between %q and %q", ctx.ModuleName(), depName)
+					ctx.ModuleErrorf("OS mismatch between %q (%s) and %q (%s)",
+						ctx.ModuleName(), ctx.Os().Name, depName, commonInfo.Target.Os.Name)
 					return
 				}
 				if commonInfo.Target.Arch.ArchType != ctx.Arch().ArchType {
-					ctx.ModuleErrorf("Arch mismatch between %q and %q", ctx.ModuleName(), depName)
+					ctx.ModuleErrorf("Arch mismatch between %q(%v) and %q(%v)",
+						ctx.ModuleName(), ctx.Arch().ArchType, depName, commonInfo.Target.Arch.ArchType)
 					return
 				}
 			}
@@ -1857,6 +1873,7 @@ func (mod *Module) depsToPaths(ctx android.ModuleContext) (PathDeps, []string) {
 				}
 
 				depPaths.linkDirs = append(depPaths.linkDirs, linkPath)
+				depPaths.linkDirsDeps = append(depPaths.linkDirsDeps, ccLibPath.Path())
 				depPaths.depIncludePaths = append(depPaths.depIncludePaths, exportedInfo.IncludeDirs...)
 				depPaths.depSystemIncludePaths = append(depPaths.depSystemIncludePaths, exportedInfo.SystemIncludeDirs...)
 				depPaths.depClangFlags = append(depPaths.depClangFlags, exportedInfo.Flags...)
@@ -1903,6 +1920,7 @@ func (mod *Module) depsToPaths(ctx android.ModuleContext) (PathDeps, []string) {
 				linkPath = linkPathFromFilePath(ccLibPath.Path())
 
 				depPaths.linkDirs = append(depPaths.linkDirs, linkPath)
+				depPaths.linkDirsDeps = append(depPaths.linkDirsDeps, ccLibPath.Path())
 				depPaths.sharedLibObjects = append(depPaths.sharedLibObjects, ccLibPath.String())
 				depPaths.depIncludePaths = append(depPaths.depIncludePaths, exportedInfo.IncludeDirs...)
 				depPaths.depSystemIncludePaths = append(depPaths.depSystemIncludePaths, exportedInfo.SystemIncludeDirs...)
@@ -1929,7 +1947,7 @@ func (mod *Module) depsToPaths(ctx android.ModuleContext) (PathDeps, []string) {
 
 			// Make sure shared dependencies are propagated
 			if lib, ok := mod.compiler.(exportedFlagsProducer); ok && exportDep {
-				lib.exportLinkDirs(linkPath)
+				lib.exportLinkDirs([]string{linkPath}, []android.Path{ccLibPath.Path()})
 				lib.exportSharedLibs(ccLibPath.String())
 			}
 		} else {
@@ -2023,6 +2041,7 @@ func (mod *Module) depsToPaths(ctx android.ModuleContext) (PathDeps, []string) {
 
 	// Dedup exported flags from dependencies
 	depPaths.linkDirs = android.FirstUniqueStrings(depPaths.linkDirs)
+	depPaths.linkDirsDeps = android.FirstUniquePaths(depPaths.linkDirsDeps)
 	depPaths.rustLibObjects = android.FirstUniqueStrings(depPaths.rustLibObjects)
 	depPaths.staticLibObjects = android.FirstUniqueStrings(depPaths.staticLibObjects)
 	depPaths.wholeStaticLibObjects = android.FirstUniqueStrings(depPaths.wholeStaticLibObjects)

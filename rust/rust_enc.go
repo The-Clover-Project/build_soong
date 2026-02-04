@@ -850,6 +850,21 @@ func (r RustFlagExporterInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer)
 		}
 	}
 
+	if r.LinkDirsDeps == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r.LinkDirsDeps)); err != nil {
+			return err
+		}
+		for val3 := 0; val3 < len(r.LinkDirsDeps); val3++ {
+			if err = gobtools.EncodeInterface(ctx, buf, r.LinkDirsDeps[val3]); err != nil {
+				return err
+			}
+		}
+	}
+
 	if r.RustLibObjects == nil {
 		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
@@ -858,8 +873,8 @@ func (r RustFlagExporterInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer)
 		if err = gobtools.EncodeInt(buf, len(r.RustLibObjects)); err != nil {
 			return err
 		}
-		for val3 := 0; val3 < len(r.RustLibObjects); val3++ {
-			if err = gobtools.EncodeString(buf, r.RustLibObjects[val3]); err != nil {
+		for val4 := 0; val4 < len(r.RustLibObjects); val4++ {
+			if err = gobtools.EncodeString(buf, r.RustLibObjects[val4]); err != nil {
 				return err
 			}
 		}
@@ -873,8 +888,8 @@ func (r RustFlagExporterInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer)
 		if err = gobtools.EncodeInt(buf, len(r.StaticLibObjects)); err != nil {
 			return err
 		}
-		for val4 := 0; val4 < len(r.StaticLibObjects); val4++ {
-			if err = gobtools.EncodeString(buf, r.StaticLibObjects[val4]); err != nil {
+		for val5 := 0; val5 < len(r.StaticLibObjects); val5++ {
+			if err = gobtools.EncodeString(buf, r.StaticLibObjects[val5]); err != nil {
 				return err
 			}
 		}
@@ -888,8 +903,8 @@ func (r RustFlagExporterInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer)
 		if err = gobtools.EncodeInt(buf, len(r.WholeStaticLibObjects)); err != nil {
 			return err
 		}
-		for val5 := 0; val5 < len(r.WholeStaticLibObjects); val5++ {
-			if err = gobtools.EncodeString(buf, r.WholeStaticLibObjects[val5]); err != nil {
+		for val6 := 0; val6 < len(r.WholeStaticLibObjects); val6++ {
+			if err = gobtools.EncodeString(buf, r.WholeStaticLibObjects[val6]); err != nil {
 				return err
 			}
 		}
@@ -903,8 +918,8 @@ func (r RustFlagExporterInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer)
 		if err = gobtools.EncodeInt(buf, len(r.SharedLibPaths)); err != nil {
 			return err
 		}
-		for val6 := 0; val6 < len(r.SharedLibPaths); val6++ {
-			if err = gobtools.EncodeString(buf, r.SharedLibPaths[val6]); err != nil {
+		for val7 := 0; val7 < len(r.SharedLibPaths); val7++ {
+			if err = gobtools.EncodeString(buf, r.SharedLibPaths[val7]); err != nil {
 				return err
 			}
 		}
@@ -918,8 +933,8 @@ func (r RustFlagExporterInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer)
 		if err = gobtools.EncodeInt(buf, len(r.WholeRustRlibDeps)); err != nil {
 			return err
 		}
-		for val7 := 0; val7 < len(r.WholeRustRlibDeps); val7++ {
-			if err = r.WholeRustRlibDeps[val7].Encode(ctx, buf); err != nil {
+		for val8 := 0; val8 < len(r.WholeRustRlibDeps); val8++ {
+			if err = r.WholeRustRlibDeps[val8].Encode(ctx, buf); err != nil {
 				return err
 			}
 		}
@@ -929,7 +944,7 @@ func (r RustFlagExporterInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer)
 
 func (r RustFlagExporterInfo) CustomHash(hasher *proptools.Hasher) error {
 	hasher.WriteString(":rust.RustFlagExporterInfo")
-	hasher.WriteInt(7)
+	hasher.WriteInt(8)
 	hasher.WriteString(":.[]string")
 	hasher.WriteInt(len(r.Flags))
 	for val1 := 0; val1 < len(r.Flags); val1++ {
@@ -942,34 +957,63 @@ func (r RustFlagExporterInfo) CustomHash(hasher *proptools.Hasher) error {
 		hasher.WriteString(":.string")
 		hasher.WriteString(r.LinkDirs[val2])
 	}
+	hasher.WriteString(":.[]android.Path")
+	hasher.WriteInt(len(r.LinkDirsDeps))
+	for val3 := 0; val3 < len(r.LinkDirsDeps); val3++ {
+		hasher.WriteString(":rust.android.Path")
+		val4 := r.LinkDirsDeps[val3] == nil
+		if val4 {
+			hasher.WriteByte(0)
+		} else {
+			if v := reflect.ValueOf(r.LinkDirsDeps[val3]); v.Kind() == reflect.Ptr {
+				if v.IsNil() {
+					panic(fmt.Errorf("nil pointer is not supported in interface"))
+				} else {
+					val5 := r.LinkDirsDeps[val3] == nil
+					if val5 {
+						hasher.WriteByte(0)
+					} else {
+						val6 := func(hasher *proptools.Hasher) error {
+							return r.LinkDirsDeps[val3].(proptools.CustomHash).CustomHash(hasher)
+						}
+						if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val6); err != nil {
+							return err
+						}
+					}
+				}
+			} else {
+				r.LinkDirsDeps[val3].(proptools.CustomHash).CustomHash(hasher)
+			}
+		}
+	}
 	hasher.WriteString(":.[]string")
 	hasher.WriteInt(len(r.RustLibObjects))
-	for val3 := 0; val3 < len(r.RustLibObjects); val3++ {
+	for val7 := 0; val7 < len(r.RustLibObjects); val7++ {
 		hasher.WriteString(":.string")
-		hasher.WriteString(r.RustLibObjects[val3])
+		hasher.WriteString(r.RustLibObjects[val7])
 	}
 	hasher.WriteString(":.[]string")
 	hasher.WriteInt(len(r.StaticLibObjects))
-	for val4 := 0; val4 < len(r.StaticLibObjects); val4++ {
+	for val8 := 0; val8 < len(r.StaticLibObjects); val8++ {
 		hasher.WriteString(":.string")
-		hasher.WriteString(r.StaticLibObjects[val4])
+		hasher.WriteString(r.StaticLibObjects[val8])
 	}
 	hasher.WriteString(":.[]string")
 	hasher.WriteInt(len(r.WholeStaticLibObjects))
-	for val5 := 0; val5 < len(r.WholeStaticLibObjects); val5++ {
+	for val9 := 0; val9 < len(r.WholeStaticLibObjects); val9++ {
 		hasher.WriteString(":.string")
-		hasher.WriteString(r.WholeStaticLibObjects[val5])
+		hasher.WriteString(r.WholeStaticLibObjects[val9])
 	}
 	hasher.WriteString(":.[]string")
 	hasher.WriteInt(len(r.SharedLibPaths))
-	for val6 := 0; val6 < len(r.SharedLibPaths); val6++ {
+	for val10 := 0; val10 < len(r.SharedLibPaths); val10++ {
 		hasher.WriteString(":.string")
-		hasher.WriteString(r.SharedLibPaths[val6])
+		hasher.WriteString(r.SharedLibPaths[val10])
 	}
 	hasher.WriteString(":.[]cc.RustRlibDep")
 	hasher.WriteInt(len(r.WholeRustRlibDeps))
-	for val7 := 0; val7 < len(r.WholeRustRlibDeps); val7++ {
-		if err := r.WholeRustRlibDeps[val7].CustomHash(hasher); err != nil {
+	for val11 := 0; val11 < len(r.WholeRustRlibDeps); val11++ {
+		if err := r.WholeRustRlibDeps[val11].CustomHash(hasher); err != nil {
 			return err
 		}
 	}
@@ -1015,69 +1059,87 @@ func (r *RustFlagExporterInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader
 		return err
 	}
 	if val10 != -1 {
-		r.RustLibObjects = make([]string, val10)
+		r.LinkDirsDeps = make([]android.Path, val10)
 		for val11 := 0; val11 < int(val10); val11++ {
-			err = gobtools.DecodeString(buf, &r.RustLibObjects[val11])
+			if val13, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+				return err
+			} else if val13 == nil {
+				r.LinkDirsDeps[val11] = nil
+			} else {
+				r.LinkDirsDeps[val11] = val13.(android.Path)
+			}
+		}
+	}
+
+	var val15 int
+	err = gobtools.DecodeInt(buf, &val15)
+	if err != nil {
+		return err
+	}
+	if val15 != -1 {
+		r.RustLibObjects = make([]string, val15)
+		for val16 := 0; val16 < int(val15); val16++ {
+			err = gobtools.DecodeString(buf, &r.RustLibObjects[val16])
 			if err != nil {
 				return err
 			}
 		}
 	}
 
-	var val14 int
-	err = gobtools.DecodeInt(buf, &val14)
+	var val19 int
+	err = gobtools.DecodeInt(buf, &val19)
 	if err != nil {
 		return err
 	}
-	if val14 != -1 {
-		r.StaticLibObjects = make([]string, val14)
-		for val15 := 0; val15 < int(val14); val15++ {
-			err = gobtools.DecodeString(buf, &r.StaticLibObjects[val15])
+	if val19 != -1 {
+		r.StaticLibObjects = make([]string, val19)
+		for val20 := 0; val20 < int(val19); val20++ {
+			err = gobtools.DecodeString(buf, &r.StaticLibObjects[val20])
 			if err != nil {
 				return err
 			}
 		}
 	}
 
-	var val18 int
-	err = gobtools.DecodeInt(buf, &val18)
+	var val23 int
+	err = gobtools.DecodeInt(buf, &val23)
 	if err != nil {
 		return err
 	}
-	if val18 != -1 {
-		r.WholeStaticLibObjects = make([]string, val18)
-		for val19 := 0; val19 < int(val18); val19++ {
-			err = gobtools.DecodeString(buf, &r.WholeStaticLibObjects[val19])
+	if val23 != -1 {
+		r.WholeStaticLibObjects = make([]string, val23)
+		for val24 := 0; val24 < int(val23); val24++ {
+			err = gobtools.DecodeString(buf, &r.WholeStaticLibObjects[val24])
 			if err != nil {
 				return err
 			}
 		}
 	}
 
-	var val22 int
-	err = gobtools.DecodeInt(buf, &val22)
+	var val27 int
+	err = gobtools.DecodeInt(buf, &val27)
 	if err != nil {
 		return err
 	}
-	if val22 != -1 {
-		r.SharedLibPaths = make([]string, val22)
-		for val23 := 0; val23 < int(val22); val23++ {
-			err = gobtools.DecodeString(buf, &r.SharedLibPaths[val23])
+	if val27 != -1 {
+		r.SharedLibPaths = make([]string, val27)
+		for val28 := 0; val28 < int(val27); val28++ {
+			err = gobtools.DecodeString(buf, &r.SharedLibPaths[val28])
 			if err != nil {
 				return err
 			}
 		}
 	}
 
-	var val26 int
-	err = gobtools.DecodeInt(buf, &val26)
+	var val31 int
+	err = gobtools.DecodeInt(buf, &val31)
 	if err != nil {
 		return err
 	}
-	if val26 != -1 {
-		r.WholeRustRlibDeps = make([]cc.RustRlibDep, val26)
-		for val27 := 0; val27 < int(val26); val27++ {
-			if err = r.WholeRustRlibDeps[val27].Decode(ctx, buf); err != nil {
+	if val31 != -1 {
+		r.WholeRustRlibDeps = make([]cc.RustRlibDep, val31)
+		for val32 := 0; val32 < int(val31); val32++ {
+			if err = r.WholeRustRlibDeps[val32].Decode(ctx, buf); err != nil {
 				return err
 			}
 		}

@@ -3431,6 +3431,21 @@ func (r LinkableInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		}
 	}
 
+	if r.ExportedCrateLinkDirsDeps == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r.ExportedCrateLinkDirsDeps)); err != nil {
+			return err
+		}
+		for val4 := 0; val4 < len(r.ExportedCrateLinkDirsDeps); val4++ {
+			if err = gobtools.EncodeInterface(ctx, buf, r.ExportedCrateLinkDirsDeps[val4]); err != nil {
+				return err
+			}
+		}
+	}
+
 	if err = gobtools.EncodeBool(buf, r.HasNonSystemVariants); err != nil {
 		return err
 	}
@@ -3479,11 +3494,11 @@ func (r LinkableInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		return err
 	}
 
-	val4 := r.Installable == nil
-	if err = gobtools.EncodeBool(buf, val4); err != nil {
+	val5 := r.Installable == nil
+	if err = gobtools.EncodeBool(buf, val5); err != nil {
 		return err
 	}
-	if !val4 {
+	if !val5 {
 		if err = gobtools.EncodeBool(buf, (*r.Installable)); err != nil {
 			return err
 		}
@@ -3521,8 +3536,8 @@ func (r LinkableInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		if err = gobtools.EncodeInt(buf, len(r.Symlinks)); err != nil {
 			return err
 		}
-		for val5 := 0; val5 < len(r.Symlinks); val5++ {
-			if err = gobtools.EncodeString(buf, r.Symlinks[val5]); err != nil {
+		for val6 := 0; val6 < len(r.Symlinks); val6++ {
+			if err = gobtools.EncodeString(buf, r.Symlinks[val6]); err != nil {
 				return err
 			}
 		}
@@ -3540,8 +3555,8 @@ func (r LinkableInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		if err = gobtools.EncodeInt(buf, len(r.FuzzSharedLibraries)); err != nil {
 			return err
 		}
-		for val6 := 0; val6 < len(r.FuzzSharedLibraries); val6++ {
-			if err = r.FuzzSharedLibraries[val6].Encode(ctx, buf); err != nil {
+		for val7 := 0; val7 < len(r.FuzzSharedLibraries); val7++ {
+			if err = r.FuzzSharedLibraries[val7].Encode(ctx, buf); err != nil {
 				return err
 			}
 		}
@@ -3571,11 +3586,11 @@ func (r LinkableInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		return err
 	}
 
-	val7 := r.Xom == nil
-	if err = gobtools.EncodeBool(buf, val7); err != nil {
+	val8 := r.Xom == nil
+	if err = gobtools.EncodeBool(buf, val8); err != nil {
 		return err
 	}
-	if !val7 {
+	if !val8 {
 		if err = gobtools.EncodeBool(buf, (*r.Xom)); err != nil {
 			return err
 		}
@@ -3589,7 +3604,7 @@ func (r LinkableInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 
 func (r LinkableInfo) CustomHash(hasher *proptools.Hasher) error {
 	hasher.WriteString(":cc.LinkableInfo")
-	hasher.WriteInt(50)
+	hasher.WriteInt(51)
 	hasher.WriteString(":.bool")
 	if r.StaticExecutable {
 		hasher.WriteByte(1)
@@ -3759,6 +3774,35 @@ func (r LinkableInfo) CustomHash(hasher *proptools.Hasher) error {
 		hasher.WriteString(":.string")
 		hasher.WriteString(r.ExportedCrateLinkDirs[val12])
 	}
+	hasher.WriteString(":.[]android.Path")
+	hasher.WriteInt(len(r.ExportedCrateLinkDirsDeps))
+	for val13 := 0; val13 < len(r.ExportedCrateLinkDirsDeps); val13++ {
+		hasher.WriteString(":cc.android.Path")
+		val14 := r.ExportedCrateLinkDirsDeps[val13] == nil
+		if val14 {
+			hasher.WriteByte(0)
+		} else {
+			if v := reflect.ValueOf(r.ExportedCrateLinkDirsDeps[val13]); v.Kind() == reflect.Ptr {
+				if v.IsNil() {
+					panic(fmt.Errorf("nil pointer is not supported in interface"))
+				} else {
+					val15 := r.ExportedCrateLinkDirsDeps[val13] == nil
+					if val15 {
+						hasher.WriteByte(0)
+					} else {
+						val16 := func(hasher *proptools.Hasher) error {
+							return r.ExportedCrateLinkDirsDeps[val13].(proptools.CustomHash).CustomHash(hasher)
+						}
+						if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val16); err != nil {
+							return err
+						}
+					}
+				}
+			} else {
+				r.ExportedCrateLinkDirsDeps[val13].(proptools.CustomHash).CustomHash(hasher)
+			}
+		}
+	}
 	hasher.WriteString(":.bool")
 	if r.HasNonSystemVariants {
 		hasher.WriteByte(1)
@@ -3828,11 +3872,11 @@ func (r LinkableInfo) CustomHash(hasher *proptools.Hasher) error {
 		hasher.WriteByte(0)
 	}
 	hasher.WriteString(":.*bool")
-	val13 := r.Installable == nil
-	if val13 {
+	val17 := r.Installable == nil
+	if val17 {
 		hasher.WriteByte(0)
 	} else {
-		val14 := func(hasher *proptools.Hasher) error {
+		val18 := func(hasher *proptools.Hasher) error {
 			hasher.WriteString(":.bool")
 			if *r.Installable {
 				hasher.WriteByte(1)
@@ -3841,7 +3885,7 @@ func (r LinkableInfo) CustomHash(hasher *proptools.Hasher) error {
 			}
 			return nil
 		}
-		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.Installable)), val14); err != nil {
+		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.Installable)), val18); err != nil {
 			return err
 		}
 	}
@@ -3871,9 +3915,9 @@ func (r LinkableInfo) CustomHash(hasher *proptools.Hasher) error {
 	}
 	hasher.WriteString(":.[]string")
 	hasher.WriteInt(len(r.Symlinks))
-	for val15 := 0; val15 < len(r.Symlinks); val15++ {
+	for val19 := 0; val19 < len(r.Symlinks); val19++ {
 		hasher.WriteString(":.string")
-		hasher.WriteString(r.Symlinks[val15])
+		hasher.WriteString(r.Symlinks[val19])
 	}
 	if err := r.APIListCoverageXMLPath.CustomHash(hasher); err != nil {
 		return err
@@ -3881,18 +3925,18 @@ func (r LinkableInfo) CustomHash(hasher *proptools.Hasher) error {
 	hasher.WriteString(":cc.InstallPairs")
 	hasher.WriteString(":.[]InstallPair")
 	hasher.WriteInt(len(r.FuzzSharedLibraries))
-	for val16 := 0; val16 < len(r.FuzzSharedLibraries); val16++ {
-		if err := r.FuzzSharedLibraries[val16].CustomHash(hasher); err != nil {
+	for val20 := 0; val20 < len(r.FuzzSharedLibraries); val20++ {
+		if err := r.FuzzSharedLibraries[val20].CustomHash(hasher); err != nil {
 			return err
 		}
 	}
-	val18 := func(hasher *proptools.Hasher, val17 FuzzLibraryInstall) error {
-		if err := val17.CustomHash(hasher); err != nil {
+	val22 := func(hasher *proptools.Hasher, val21 FuzzLibraryInstall) error {
+		if err := val21.CustomHash(hasher); err != nil {
 			return err
 		}
 		return nil
 	}
-	if err := r.FuzzDependencies.Hash(hasher, "FuzzLibraryInstall", val18); err != nil {
+	if err := r.FuzzDependencies.Hash(hasher, "FuzzLibraryInstall", val22); err != nil {
 		return err
 	}
 	hasher.WriteString(":.bool")
@@ -3918,11 +3962,11 @@ func (r LinkableInfo) CustomHash(hasher *proptools.Hasher) error {
 	hasher.WriteString(":.string")
 	hasher.WriteString(r.SelectedStl)
 	hasher.WriteString(":.*bool")
-	val19 := r.Xom == nil
-	if val19 {
+	val23 := r.Xom == nil
+	if val23 {
 		hasher.WriteByte(0)
 	} else {
-		val20 := func(hasher *proptools.Hasher) error {
+		val24 := func(hasher *proptools.Hasher) error {
 			hasher.WriteString(":.bool")
 			if *r.Xom {
 				hasher.WriteByte(1)
@@ -3931,7 +3975,7 @@ func (r LinkableInfo) CustomHash(hasher *proptools.Hasher) error {
 			}
 			return nil
 		}
-		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.Xom)), val20); err != nil {
+		if err := proptools.HashReference(hasher, uintptr(unsafe.Pointer(r.Xom)), val24); err != nil {
 			return err
 		}
 	}
@@ -4084,6 +4128,24 @@ func (r *LinkableInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error 
 		}
 	}
 
+	var val36 int
+	err = gobtools.DecodeInt(buf, &val36)
+	if err != nil {
+		return err
+	}
+	if val36 != -1 {
+		r.ExportedCrateLinkDirsDeps = make([]android.Path, val36)
+		for val37 := 0; val37 < int(val36); val37++ {
+			if val39, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+				return err
+			} else if val39 == nil {
+				r.ExportedCrateLinkDirsDeps[val37] = nil
+			} else {
+				r.ExportedCrateLinkDirsDeps[val37] = val39.(android.Path)
+			}
+		}
+	}
+
 	err = gobtools.DecodeBool(buf, &r.HasNonSystemVariants)
 	if err != nil {
 		return err
@@ -4144,17 +4206,17 @@ func (r *LinkableInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error 
 		return err
 	}
 
-	var val48 bool
-	if err = gobtools.DecodeBool(buf, &val48); err != nil {
+	var val53 bool
+	if err = gobtools.DecodeBool(buf, &val53); err != nil {
 		return err
 	}
-	if !val48 {
-		var val47 bool
-		err = gobtools.DecodeBool(buf, &val47)
+	if !val53 {
+		var val52 bool
+		err = gobtools.DecodeBool(buf, &val52)
 		if err != nil {
 			return err
 		}
-		r.Installable = &val47
+		r.Installable = &val52
 	}
 
 	err = gobtools.DecodeString(buf, &r.RelativeInstallPath)
@@ -4187,15 +4249,15 @@ func (r *LinkableInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error 
 		return err
 	}
 
-	var val57 int
-	err = gobtools.DecodeInt(buf, &val57)
+	var val62 int
+	err = gobtools.DecodeInt(buf, &val62)
 	if err != nil {
 		return err
 	}
-	if val57 != -1 {
-		r.Symlinks = make([]string, val57)
-		for val58 := 0; val58 < int(val57); val58++ {
-			err = gobtools.DecodeString(buf, &r.Symlinks[val58])
+	if val62 != -1 {
+		r.Symlinks = make([]string, val62)
+		for val63 := 0; val63 < int(val62); val63++ {
+			err = gobtools.DecodeString(buf, &r.Symlinks[val63])
 			if err != nil {
 				return err
 			}
@@ -4206,15 +4268,15 @@ func (r *LinkableInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error 
 		return err
 	}
 
-	var val63 int
-	err = gobtools.DecodeInt(buf, &val63)
+	var val68 int
+	err = gobtools.DecodeInt(buf, &val68)
 	if err != nil {
 		return err
 	}
-	if val63 != -1 {
-		r.FuzzSharedLibraries = make([]InstallPair, val63)
-		for val64 := 0; val64 < int(val63); val64++ {
-			if err = r.FuzzSharedLibraries[val64].Decode(ctx, buf); err != nil {
+	if val68 != -1 {
+		r.FuzzSharedLibraries = make([]InstallPair, val68)
+		for val69 := 0; val69 < int(val68); val69++ {
+			if err = r.FuzzSharedLibraries[val69].Decode(ctx, buf); err != nil {
 				return err
 			}
 		}
@@ -4249,17 +4311,17 @@ func (r *LinkableInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error 
 		return err
 	}
 
-	var val73 bool
-	if err = gobtools.DecodeBool(buf, &val73); err != nil {
+	var val78 bool
+	if err = gobtools.DecodeBool(buf, &val78); err != nil {
 		return err
 	}
-	if !val73 {
-		var val72 bool
-		err = gobtools.DecodeBool(buf, &val72)
+	if !val78 {
+		var val77 bool
+		err = gobtools.DecodeBool(buf, &val77)
 		if err != nil {
 			return err
 		}
-		r.Xom = &val72
+		r.Xom = &val77
 	}
 
 	err = gobtools.DecodeBool(buf, &r.XomDisabledByPath)
@@ -4367,6 +4429,21 @@ func (r RustRlibDep) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		}
 	}
 
+	if r.LinkDirsDeps == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r.LinkDirsDeps)); err != nil {
+			return err
+		}
+		for val2 := 0; val2 < len(r.LinkDirsDeps); val2++ {
+			if err = gobtools.EncodeInterface(ctx, buf, r.LinkDirsDeps[val2]); err != nil {
+				return err
+			}
+		}
+	}
+
 	if err = gobtools.EncodeString(buf, r.CrateName); err != nil {
 		return err
 	}
@@ -4375,7 +4452,7 @@ func (r RustRlibDep) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 
 func (r RustRlibDep) CustomHash(hasher *proptools.Hasher) error {
 	hasher.WriteString(":cc.RustRlibDep")
-	hasher.WriteInt(3)
+	hasher.WriteInt(4)
 	hasher.WriteString(":cc.android.Path")
 	val1 := r.LibPath == nil
 	if val1 {
@@ -4405,6 +4482,35 @@ func (r RustRlibDep) CustomHash(hasher *proptools.Hasher) error {
 		hasher.WriteString(":.string")
 		hasher.WriteString(r.LinkDirs[val4])
 	}
+	hasher.WriteString(":.[]android.Path")
+	hasher.WriteInt(len(r.LinkDirsDeps))
+	for val5 := 0; val5 < len(r.LinkDirsDeps); val5++ {
+		hasher.WriteString(":cc.android.Path")
+		val6 := r.LinkDirsDeps[val5] == nil
+		if val6 {
+			hasher.WriteByte(0)
+		} else {
+			if v := reflect.ValueOf(r.LinkDirsDeps[val5]); v.Kind() == reflect.Ptr {
+				if v.IsNil() {
+					panic(fmt.Errorf("nil pointer is not supported in interface"))
+				} else {
+					val7 := r.LinkDirsDeps[val5] == nil
+					if val7 {
+						hasher.WriteByte(0)
+					} else {
+						val8 := func(hasher *proptools.Hasher) error {
+							return r.LinkDirsDeps[val5].(proptools.CustomHash).CustomHash(hasher)
+						}
+						if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val8); err != nil {
+							return err
+						}
+					}
+				}
+			} else {
+				r.LinkDirsDeps[val5].(proptools.CustomHash).CustomHash(hasher)
+			}
+		}
+	}
 	hasher.WriteString(":.string")
 	hasher.WriteString(r.CrateName)
 	return nil
@@ -4432,6 +4538,24 @@ func (r *RustRlibDep) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 			err = gobtools.DecodeString(buf, &r.LinkDirs[val5])
 			if err != nil {
 				return err
+			}
+		}
+	}
+
+	var val8 int
+	err = gobtools.DecodeInt(buf, &val8)
+	if err != nil {
+		return err
+	}
+	if val8 != -1 {
+		r.LinkDirsDeps = make([]android.Path, val8)
+		for val9 := 0; val9 < int(val8); val9++ {
+			if val11, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+				return err
+			} else if val11 == nil {
+				r.LinkDirsDeps[val9] = nil
+			} else {
+				r.LinkDirsDeps[val9] = val11.(android.Path)
 			}
 		}
 	}

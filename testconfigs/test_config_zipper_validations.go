@@ -34,7 +34,7 @@ func isValidTestSuite(testSuite string) bool {
 func (zipper *TestConfigZipper) validateTestSuites(ctx android.SingletonContext) {
 	validate := func(plan *TestExecutionPlanProperties, moduleType, name string) {
 		for testModule := range plan.GetTestModules() {
-			if !ctx.Config().AllowMissingDependencies() {
+			if !ctx.Config().AllowMissingDependencies() && !ctx.DeviceConfig().NativeCoverageEnabled() {
 				testSuiteInfo, ok := zipper.testModulesTestSuiteInfo[testModule]
 				if !ok || testSuiteInfo == nil {
 					ctx.Errorf("%s \"%s\": could not find test suite info for module \"%s\"", moduleType, name, testModule)
