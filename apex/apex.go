@@ -111,7 +111,7 @@ type apexBundleProperties struct {
 	Java_libs []string
 
 	// List of sh binaries that are embedded inside this APEX bundle.
-	Sh_binaries []string
+	Sh_binaries proptools.Configurable[[]string]
 
 	// List of platform_compat_config files that are embedded inside this APEX bundle.
 	Compat_configs proptools.Configurable[[]string]
@@ -977,7 +977,7 @@ func (a *apexBundle) DepsMutator(ctx android.BottomUpMutatorContext) {
 			ctx.AddFarVariationDependencies([]blueprint.Variation{
 				{Mutator: "os", Variation: target.OsVariation()},
 				{Mutator: "arch", Variation: target.ArchVariation()},
-			}, shBinaryTag, a.properties.Sh_binaries...)
+			}, shBinaryTag, a.properties.Sh_binaries.GetOrDefault(ctx, nil)...)
 		}
 	}
 
