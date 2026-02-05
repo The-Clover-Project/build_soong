@@ -85,6 +85,7 @@ bootstrap_go_package {
         "namespace.go",
         "neverallow.go",
         "ninja_deps.go",
+        "ninja_phony_manager.go",
         "nothing.go",
         "notices.go",
         "onceper.go",
