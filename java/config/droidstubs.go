@@ -24,10 +24,6 @@ var (
 		"--repeat-errors-max 10",
 		"--hide UnresolvedImport",
 
-		// Force metalava to ignore classes on the classpath when an API file contains missing classes.
-		// See b/285140653 for more information.
-		"--api-class-resolution api",
-
 		// Force metalava to sort overloaded methods by their order in the source code.
 		// See b/285312164 for more information.
 		// And add concrete overrides of abstract methods, see b/299366704 for more
