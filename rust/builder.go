@@ -15,6 +15,7 @@
 package rust
 
 import (
+	"path/filepath"
 	"slices"
 	"strings"
 
@@ -553,6 +554,12 @@ func transformSrctoCrate(ctx android.ModuleContext, main android.Path, deps Path
 		}
 	}
 
+	// If the global rust flags include the LinuxRustFlags , we must
+	// explicitly add the GCC prebuilt libraries to the implicits.
+	if useLinuxRustFlags(flags.GlobalRustFlags) {
+		implicits = append(implicits, getLinuxGccImplicits(ctx)...)
+	}
+
 	soongDepsFile := android.PathForModuleOut(ctx, outputFile.Base()+".soong_deps")
 	android.WriteFileRule(ctx, soongDepsFile, strings.Join(srcInputs.Strings(), "\n"))
 	implicits = append(implicits, soongDepsFile)
@@ -601,6 +608,33 @@ func transformSrctoCrate(ctx android.ModuleContext, main android.Path, deps Path
 	})
 
 	return output
+}
+
+func useLinuxRustFlags(flags []string) bool {
+	for _, flag := range flags {
+		if strings.Contains(flag, "${config.LinuxToolchainRustFlags}") {
+			return true
+		}
+	}
+	return false
+}
+func getLinuxGccImplicits(ctx android.ModuleContext) android.Paths {
+	var gccImplicits android.Paths
+
+	gccRoot := config.LinuxGccRoot()
+	gccTripple := config.LinuxGccTriple()
+	gccVersion := config.LinuxGccVersion()
+	for _, f := range config.LinuxRustFlags {
+		p := strings.TrimPrefix(f, "-L")
+		p = strings.NewReplacer(
+			"${cc_config.LinuxGccRoot}", gccRoot,
+			"${cc_config.LinuxGccTriple}", gccTripple,
+			"{cc_config.LinuxGccVersion}", gccVersion,
+		).Replace(p)
+		pattern := filepath.Join(p, "*")
+		gccImplicits = append(gccImplicits, ctx.GlobFilesOutsideModuleDir(pattern, nil)...)
+	}
+	return gccImplicits
 }
 
 func Rustdoc(ctx ModuleContext, main android.Path, deps PathDeps,
