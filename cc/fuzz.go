@@ -174,10 +174,16 @@ func (fuzzBin *fuzzBinary) linkerDeps(ctx DepsContext, deps Deps) Deps {
 		deps.HeaderLibs = append(deps.HeaderLibs, "libafl_headers")
 	} else {
 		deps.StaticLibs = append(deps.StaticLibs, config.LibFuzzerRuntimeLibrary())
-		// Fuzzers built with HWASAN should use the interceptors for better
-		// mutation based on signals in strcmp, memcpy, etc. This is only needed for
-		// fuzz targets, not generic HWASAN-ified binaries or libraries.
 		if module, ok := ctx.Module().(*Module); ok {
+			// Link libfuzzer_mte_crash_handler for unsanitized fuzzer builds
+			// to chain libFuzzer and debuggerd signal handlers. This is done
+			// to ensure MTE crashes generate both test case and stack trace.
+			if ctx.Device() && !module.IsSanitizerEnabled(Hwasan) && !module.IsSanitizerEnabled(Asan) {
+				deps.WholeStaticLibs = append(deps.WholeStaticLibs, "libFuzzer_mte_crash_handler")
+			}
+			// Fuzzers built with HWASAN should use the interceptors for better
+			// mutation based on signals in strcmp, memcpy, etc. This is only needed for
+			// fuzz targets, not generic HWASAN-ified binaries or libraries.
 			if module.IsSanitizerEnabled(Hwasan) {
 				deps.StaticLibs = append(deps.StaticLibs, config.LibFuzzerRuntimeInterceptors())
 			}
