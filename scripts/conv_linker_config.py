@@ -27,6 +27,14 @@ from google.protobuf.json_format import ParseDict
 from google.protobuf.text_format import MessageToString
 
 
+class UniqueStoreAction(argparse.Action):
+    def __call__(self, parser, namespace, values, option_string=None):
+        # Check duplicate
+        if getattr(namespace, self.dest) is not None:
+            raise argparse.ArgumentError(self, f"argument {option_string} is not allowed multiple times")
+        setattr(namespace, self.dest, values)
+
+
 def LoadJsonMessage(path):
     """
     Loads a message from a .json file with `//` comments strippedfor convenience.
@@ -190,6 +198,7 @@ def GetArgParser():
         '--source',
         nargs='?',
         type=str,
+        action=UniqueStoreAction,
         help='Colon-separated list of linker configuration files in JSON.')
     parser_proto.add_argument(
         '-o',
