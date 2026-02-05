@@ -151,6 +151,7 @@ func (s *SystemServerClasspathModule) GenerateAndroidBuildActions(ctx android.Mo
 	classpathJars = append(classpathJars, standaloneClasspathJars...)
 	classpathProtoOutputPath := s.classpathFragmentBase().generateClasspathProtoBuildActions(ctx, configuredJars, classpathJars)
 	s.setPartitionInfoOfLibraries(ctx)
+	s.setProguardInfoOfLibraries(ctx)
 
 	android.SetProvider(ctx, SystemServerClasspathInfoProvider, SystemServerClasspathInfo{
 		Contents:           s.properties.Contents.GetOrDefault(ctx, nil),
@@ -178,6 +179,18 @@ func (s *SystemServerClasspathModule) setPartitionInfoOfLibraries(ctx android.Mo
 	android.SetProvider(ctx, LibraryNameToPartitionInfoProvider, LibraryNameToPartitionInfo{
 		LibraryNameToPartition: libraryNameToPartition,
 	})
+}
+
+func (s *SystemServerClasspathModule) setProguardInfoOfLibraries(ctx android.ModuleContext) {
+	var proguardInfos ProguardInfos
+	ctx.VisitDirectDepsProxyWithTag(systemServerClasspathFragmentContentDepTag, func(m android.ModuleProxy) {
+		if infos, ok := android.OtherModuleProvider(ctx, m, ProguardProvider); ok {
+			proguardInfos = append(proguardInfos, infos...)
+		}
+	})
+	if len(proguardInfos) > 0 {
+		android.SetProvider(ctx, ProguardProvider, proguardInfos)
+	}
 }
 
 func (s *SystemServerClasspathModule) configuredJars(ctx android.ModuleContext) android.ConfiguredJarList {

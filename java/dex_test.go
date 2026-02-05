@@ -17,6 +17,7 @@ package java
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"testing"
 
 	"android/soong/android"
@@ -910,4 +911,56 @@ func TestTraceReferences(t *testing.T) {
 		libJar.String(), libTraceRefs.Input.String())
 	android.AssertStringDoesContain(t, "expected trace reference proguard flags in lib r8 flags",
 		libR8.Args["r8Flags"], "trace_references.flags")
+}
+
+type testBuildProguardZipsModule struct {
+	android.ModuleBase
+}
+
+func (t *testBuildProguardZipsModule) DepsMutator(ctx android.BottomUpMutatorContext) {
+	ctx.AddDependency(ctx.Module(), nil, "app")
+}
+
+func (t *testBuildProguardZipsModule) GenerateAndroidBuildActions(ctx android.ModuleContext) {
+	var modules []android.ModuleProxy
+	ctx.VisitDirectDepsProxy(func(m android.ModuleProxy) {
+		modules = append(modules, m)
+	})
+	// Manually add duplicates for testing.
+	modules = append(modules, modules...)
+	BuildProguardZips(ctx, modules)
+}
+
+func TestBuildProguardZipsDeduplication(t *testing.T) {
+	t.Parallel()
+	result := android.GroupFixturePreparers(
+		PrepareForTestWithJavaDefaultModules,
+		android.FixtureRegisterWithContext(func(ctx android.RegistrationContext) {
+			ctx.RegisterModuleType("build_proguard_zips_test", func() android.Module {
+				m := &testBuildProguardZipsModule{}
+				android.InitAndroidArchModule(m, android.DeviceSupported, android.MultilibCommon)
+				return m
+			})
+		}),
+	).RunTestWithBp(t, `
+		android_app {
+			name: "app",
+			srcs: ["foo.java"],
+			platform_apis: true,
+			optimize: {
+				enabled: true,
+			},
+		}
+
+		build_proguard_zips_test {
+			name: "test",
+		}
+	`)
+
+	command := result.ModuleForTests(t, "test", "android_common").Rule("proguard_dict_zip").RuleParams.Command
+	dictionaryFakePath := "out/target/common/obj/APPS/app_intermediates/proguard_dictionary"
+
+	if count := strings.Count(command, dictionaryFakePath); count != 1 {
+		t.Errorf("Expected dictionary path %q to appear exactly once in command, but found %d times. Command: %q", dictionaryFakePath, count, command)
+	}
 }

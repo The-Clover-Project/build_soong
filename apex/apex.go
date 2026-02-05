@@ -2318,6 +2318,7 @@ func (a *apexBundle) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 
 	android.SetProvider(ctx, java.ApkCertsInfoProvider, a.apkCerts)
 	a.setSymbolInfosProvider(ctx)
+	a.setProguardInfosProvider(ctx)
 
 	pem, key := a.getCertificateAndPrivateKey(ctx)
 	android.SetProvider(ctx, android.ApexBundleTypeInfoProvider, android.ApexBundleTypeInfo{
@@ -3060,5 +3061,21 @@ func (a *apexBundle) setSymbolInfosProvider(ctx android.ModuleContext) {
 		}
 
 		cc.CopySymbolsAndSetSymbolsInfoProvider(ctx, infos)
+	}
+}
+
+func (a *apexBundle) setProguardInfosProvider(ctx android.ModuleContext) {
+	var proguardInfos java.ProguardInfos
+	ctx.VisitDirectDepsProxy(func(child android.ModuleProxy) {
+		tag := ctx.OtherModuleDependencyTag(child)
+		if tag == androidAppTag || tag == bcpfTag || tag == sscpfTag || tag == javaLibTag {
+			if infos, ok := android.OtherModuleProvider(ctx, child, java.ProguardProvider); ok {
+				proguardInfos = append(proguardInfos, infos...)
+			}
+		}
+	})
+
+	if len(proguardInfos) > 0 {
+		android.SetProvider(ctx, java.ProguardProvider, proguardInfos)
 	}
 }

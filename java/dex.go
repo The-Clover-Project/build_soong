@@ -1197,29 +1197,41 @@ func BuildProguardZips(ctx android.ModuleContext, modules []android.ModuleProxy)
 	usageZipBuilder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	usageZipCmd := usageZipBuilder.Command().BuiltTool("merge_zips").Output(usageZip)
 
+	visitedProguardInfo := make(map[string]bool)
 	for _, mod := range modules {
-		if proguardInfo, ok := android.OtherModuleProvider(ctx, mod, ProguardProvider); ok {
-			// Maintain these out/target/common paths for backwards compatibility. They may be able
-			// to be changed if tools look up file locations from the protobuf, but I'm not
-			// exactly sure how that works.
-			dictionaryFakePath := fmt.Sprintf("out/target/common/obj/%s/%s_intermediates/proguard_dictionary", proguardInfo.Class, proguardInfo.ModuleName)
-			dictZipCmd.FlagWithArg("-e ", dictionaryFakePath)
-			dictZipCmd.FlagWithInput("-f ", proguardInfo.ProguardDictionary)
-			dictZipCmd.Textf("-e out/target/common/obj/%s/%s_intermediates/classes.jar", proguardInfo.Class, proguardInfo.ModuleName)
-			dictZipCmd.FlagWithInput("-f ", proguardInfo.ClassesJar)
+		if proguardInfos, ok := android.OtherModuleProvider(ctx, mod, ProguardProvider); ok {
+			for _, proguardInfo := range proguardInfos {
+				// Maintain these out/target/common paths for backwards compatibility. They may be able
+				// to be changed if tools look up file locations from the protobuf, but I'm not
+				// exactly sure how that works.
+				dictionaryFakePath := fmt.Sprintf("out/target/common/obj/%s/%s_intermediates/proguard_dictionary", proguardInfo.Class, proguardInfo.ModuleName)
 
-			protoFile := protosDir.Join(ctx, filepath.Dir(dictionaryFakePath), "proguard_dictionary.textproto")
-			ctx.Build(pctx, android.BuildParams{
-				Rule:   proguardDictToProto,
-				Input:  proguardInfo.ProguardDictionary,
-				Output: protoFile,
-				Args: map[string]string{
-					"location": dictionaryFakePath,
-				},
-			})
-			dictMappingCmd.Input(protoFile)
+				// It's technically possible for some aggregate module types (e.g., apex modules) to bundle
+				// targets that are directly included in the installed image. Since they point to the same
+				// proguard information, de-duplicate them here to avoid any collisions.
+				if visitedProguardInfo[dictionaryFakePath] {
+					continue
+				}
+				visitedProguardInfo[dictionaryFakePath] = true
 
-			usageZipCmd.Input(proguardInfo.ProguardUsageZip)
+				dictZipCmd.FlagWithArg("-e ", dictionaryFakePath)
+				dictZipCmd.FlagWithInput("-f ", proguardInfo.ProguardDictionary)
+				dictZipCmd.Textf("-e out/target/common/obj/%s/%s_intermediates/classes.jar", proguardInfo.Class, proguardInfo.ModuleName)
+				dictZipCmd.FlagWithInput("-f ", proguardInfo.ClassesJar)
+
+				protoFile := protosDir.Join(ctx, filepath.Dir(dictionaryFakePath), "proguard_dictionary.textproto")
+				ctx.Build(pctx, android.BuildParams{
+					Rule:   proguardDictToProto,
+					Input:  proguardInfo.ProguardDictionary,
+					Output: protoFile,
+					Args: map[string]string{
+						"location": dictionaryFakePath,
+					},
+				})
+				dictMappingCmd.Input(protoFile)
+
+				usageZipCmd.Input(proguardInfo.ProguardUsageZip)
+			}
 		}
 	}
 
@@ -1243,4 +1255,7 @@ type ProguardInfo struct {
 	ClassesJar         android.Path
 }
 
-var ProguardProvider = blueprint.NewProvider[ProguardInfo]()
+// @auto-generate: gob
+type ProguardInfos []ProguardInfo
+
+var ProguardProvider = blueprint.NewProvider[ProguardInfos]()
