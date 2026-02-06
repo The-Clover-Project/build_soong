@@ -1648,14 +1648,11 @@ func (f *filesystem) getAvbAddHashtreeFooterArgs(ctx android.ModuleContext) (str
 		avb_add_hashtree_footer_args += " --rollback_index " + strconv.Itoa(rollbackIndex)
 	}
 	avb_add_hashtree_footer_args += fmt.Sprintf(" --prop com.android.build.%s.os_version:%s", f.partitionName(), ctx.Config().PlatformVersionLastStable())
-	// We're not going to add BuildFingerPrintFile as a dep. If it changed, it's likely because
-	// the build number changed, and we don't want to trigger rebuilds solely based on the build
-	// number.
-	if f.partitionName() == "system" {
-		// The system partition has product-agnostic fingerprint.
-		avb_add_hashtree_footer_args += fmt.Sprintf(" --prop com.android.build.%s.fingerprint:{CONTENTS_OF:%s}", f.partitionName(), ctx.Config().BuildSystemFingerprintFile(ctx))
-		deps = append(deps, ctx.Config().BuildSystemFingerprintFile(ctx))
-	} else if ctx.Module().UseGenericConfig() {
+	// TODO(b/437803910): The system partition must have product-agnostic fingerprint that is
+	// defined in ctx.Config().BuildSystemFingerprintFile(ctx), but we need to wait for some
+	// tools to be fixed to read the correct product fingerprint instead of the system
+	// fingerprint.
+	if ctx.Module().UseGenericConfig() && f.partitionName() != "system" {
 		// If non-system partition wants to use generic config, use thumbprint instead.
 		avb_add_hashtree_footer_args += fmt.Sprintf(" --prop com.android.build.%s.fingerprint:{CONTENTS_OF:%s}", f.partitionName(), ctx.Config().BuildThumbprintFile(ctx))
 		deps = append(deps, ctx.Config().BuildThumbprintFile(ctx))
