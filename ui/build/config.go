@@ -1640,8 +1640,9 @@ func (c *configImpl) UseRewrapper() bool {
 	case v == "false":
 		return false
 	case !ok, v == "":
-		// SISO defaults to false, others default to true.
-		return c.ninjaCommand != NINJA_SISO
+		// TODO(b/450248289): Siso defaults to false, others default to true.
+		// Until the native reapi implementation is the default, use rewrapper.
+		return true
 	default:
 		return true
 	}

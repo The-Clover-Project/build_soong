@@ -20,14 +20,14 @@ import (
 	"strings"
 
 	"android/soong/android"
-	_ "android/soong/cc/config"
+	cc_config "android/soong/cc/config"
 	"android/soong/remoteexec"
 )
 
 var (
 	pctx = android.NewPackageContext("android/soong/rust/config")
 
-	RustDefaultVersion = "1.91.1"
+	RustDefaultVersion = "1.92.0"
 	RustDefaultBase    = "prebuilts/rust-toolchain/"
 	DefaultEdition     = "2021"
 	Stdlibs            = []string{
@@ -204,4 +204,16 @@ func GetRustVersion(ctx android.PathContext) string {
 		return matches[1]
 	}
 	panic("Invalid GetRustPrebuiltsVersion: " + ver)
+}
+
+func LinuxGccRoot() string {
+	return cc_config.LinuxGccRoot()
+}
+
+func LinuxGccVersion() string {
+	return cc_config.LinuxGccVersion()
+}
+
+func LinuxGccTriple() string {
+	return cc_config.LinuxGccTriple()
 }

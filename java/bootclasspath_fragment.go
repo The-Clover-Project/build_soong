@@ -591,8 +591,12 @@ func (b *BootclasspathFragmentModule) GenerateAndroidBuildActions(ctx android.Mo
 		b.profilePath = ctx.Module().(*PrebuiltBootclasspathFragmentModule).produceBootImageProfile(ctx)
 	} else {
 		b.profilePath = b.produceBootImageProfileFromSource(ctx, contents, hiddenAPIOutput.EncodedBootDexFilesByModule)
+
 		// Provide the apex content info. A prebuilt fragment cannot contribute to an apex.
 		b.provideApexContentInfo(ctx, hiddenAPIOutput, b.profilePath)
+
+		// Neither can the prebuilt fragment provide associated proguard info.
+		b.provideApexProguardInfo(ctx, contents)
 	}
 
 	// In order for information about bootclasspath_fragment modules to be added to module-info.json
@@ -667,6 +671,18 @@ func (b *BootclasspathFragmentModule) provideApexContentInfo(ctx android.ModuleC
 
 	// Make the apex content info available for other modules.
 	android.SetProvider(ctx, BootclasspathFragmentApexContentInfoProvider, info)
+}
+
+func (b *BootclasspathFragmentModule) provideApexProguardInfo(ctx android.ModuleContext, contents []android.ModuleProxy) {
+	var proguardInfos ProguardInfos
+	for _, module := range contents {
+		if infos, ok := android.OtherModuleProvider(ctx, module, ProguardProvider); ok {
+			proguardInfos = append(proguardInfos, infos...)
+		}
+	}
+	if len(proguardInfos) > 0 {
+		android.SetProvider(ctx, ProguardProvider, proguardInfos)
+	}
 }
 
 // generateClasspathProtoBuildActions generates all required build actions for classpath.proto config
