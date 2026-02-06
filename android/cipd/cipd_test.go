@@ -18,6 +18,8 @@ import (
 	"android/soong/android"
 	"slices"
 	"testing"
+
+	"github.com/google/blueprint/proptools"
 )
 
 func TestCipdPackage(t *testing.T) {
@@ -222,5 +224,64 @@ func TestVersionIsUnset(t *testing.T) {
 	ensureFile := module.Output("ensure.txt")
 	if !android.IsErrorRule(ensureFile.Rule) {
 		t.Errorf("Expected ErrorRule, got %q", ensureFile.Rule)
+	}
+}
+
+func TestCipdPackage_FilesSelect(t *testing.T) {
+	// Test that select() can be used in the files property.
+	bp := `
+	cipd_package {
+		name: "cipd_package1",
+		package: "android/prebuilts/package1",
+		version: "version1",
+		files: select(product_variable("debuggable"), {
+			true: ["file1-debug"],
+			default: ["file1"],
+		}),
+		resolved_versions_file: "cipd.versions",
+	}
+	`
+
+	result := android.GroupFixturePreparers(
+		android.PrepareForTestWithAndroidBuildComponents,
+		android.FixtureModifyProductVariables(func(variables android.FixtureProductVariables) {
+			variables.Debuggable = proptools.BoolPtr(true)
+		}),
+		android.FixtureRegisterWithContext(RegisterCipdComponents),
+	).RunTestWithBp(t, bp)
+	module := result.ModuleForTests(t, "cipd_package1", "")
+	export := module.Rule("cipd_export")
+	intermediateDir := "out/soong/.intermediates/cipd_package1"
+	wantEnsureFile := intermediateDir + "/ensure.txt"
+	if export.Input.String() != wantEnsureFile {
+		t.Errorf("export.Input.String() = %v, want %v", export.Input.String(), wantEnsureFile)
+	}
+	if len(export.Inputs) != 0 {
+		t.Errorf("len(export.Inputs) = %v, want 0", len(export.Inputs))
+	}
+	wantRoot := intermediateDir + "/package"
+	wantExportOutputs := []string{
+		wantRoot + "/file1-debug",
+	}
+	wantPackage := "android/prebuilts/package1"
+	wantVersion := "version1"
+	var gotExportOutputs []string
+	for _, output := range export.Outputs {
+		gotExportOutputs = append(gotExportOutputs, output.String())
+	}
+	if !slices.Equal(wantExportOutputs, gotExportOutputs) {
+		t.Errorf("export.Outputs = %v, want %v", gotExportOutputs, wantExportOutputs)
+	}
+	if export.Output != nil {
+		t.Errorf("export.Output = %v, want nil", export.Output)
+	}
+	if export.Args["root"] != wantRoot {
+		t.Errorf("export.Args[\"root\"] = %v, want %v", export.Args["root"], wantRoot)
+	}
+	if export.Args["package"] != wantPackage {
+		t.Errorf("export.Args[\"package\"] = %v, want %v", export.Args["package"], wantPackage)
+	}
+	if export.Args["version"] != wantVersion {
+		t.Errorf("export.Args[\"version\"] = %v, want %v", export.Args["version"], wantVersion)
 	}
 }
