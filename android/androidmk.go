@@ -42,6 +42,7 @@ import (
 
 func init() {
 	RegisterAndroidMkBuildComponents(InitRegistrationContext)
+	RegisterParallelSingletonType("soong_only_module_info", soongOnlyModuleInfoSingletonFactory)
 }
 
 func RegisterAndroidMkBuildComponents(ctx RegistrationContext) {
@@ -598,55 +599,30 @@ func (c *androidMkSingleton) GenerateBuildActions(ctx SingletonContext) {
 	})
 }
 
-type soongOnlyAndroidMkSingleton struct {
+type soongOnlyModuleInfoSingleton struct {
 	Singleton
 }
 
-func soongOnlyAndroidMkSingletonFactory() Singleton {
-	return &soongOnlyAndroidMkSingleton{}
+func soongOnlyModuleInfoSingletonFactory() Singleton {
+	return &soongOnlyModuleInfoSingleton{}
 }
 
-func (so *soongOnlyAndroidMkSingleton) GenerateBuildActions(ctx SingletonContext) {
-	if !ctx.Config().KatiEnabled() {
-		so.soongOnlyBuildActions(ctx, allModulesSorted(ctx))
-	}
-}
-
-func (p *soongOnlyAndroidMkSingleton) IncrementalSupported() bool {
+func (p *soongOnlyModuleInfoSingleton) IncrementalSupported() bool {
 	return true
 }
 
-// In soong-only mode, we don't do most of the androidmk stuff. But disted files are still largely
-// defined through the androidmk mechanisms, so this function is an alternate implementation of
-// the androidmk singleton that just focuses on getting the dist contributions
 // TODO(b/397766191): Change the signature to take ModuleProxy
 // Please only access the module's internal data through providers.
-func (so *soongOnlyAndroidMkSingleton) soongOnlyBuildActions(ctx SingletonContext, mods []ModuleOrProxy) {
-	moduleInfoJSONs := getSoongOnlyDataFromMods(ctx, mods)
-
-	// Build module-info.json. Only in builds with HasDeviceProduct(), as we need a named
-	// device to have a TARGET_OUT folder.
-	if ctx.Config().HasDeviceProduct() {
-		preMergePath := PathForOutput(ctx, "module_info_pre_merging.json")
-		moduleInfoJSONPath := pathForInstall(ctx, Android, X86_64, "", "module-info.json")
-		if err := writeModuleInfoJSON(ctx, moduleInfoJSONs, preMergePath); err != nil {
-			ctx.Errorf("%s", err)
-		}
-		builder := NewRuleBuilder(pctx, ctx)
-		builder.Command().
-			BuiltTool("merge_module_info_json").
-			FlagWithOutput("-o ", moduleInfoJSONPath).
-			Input(preMergePath)
-		builder.Build("merge_module_info_json", "merge module info json")
-		ctx.Phony("module-info", moduleInfoJSONPath)
-		ctx.Phony("droidcore-unbundled", moduleInfoJSONPath)
-		ctx.DistForGoals([]string{"general-tests", "droidcore-unbundled", "haiku", "module-info"}, moduleInfoJSONPath)
+func (so *soongOnlyModuleInfoSingleton) GenerateBuildActions(ctx SingletonContext) {
+	if ctx.Config().KatiEnabled() {
+		return
 	}
-}
+	// We need a named device to have a TARGET_OUT folder.
+	if !ctx.Config().HasDeviceProduct() {
+		return
+	}
+	mods := allModulesSorted(ctx)
 
-// getSoongOnlyDataFromMods gathers data from the given modules needed in soong-only builds.
-// Currently, this is the module-info.json contents.
-func getSoongOnlyDataFromMods(ctx fillInEntriesContext, mods []ModuleOrProxy) []*ModuleInfoJSON {
 	var moduleInfoJSONs []*ModuleInfoJSON
 	for _, mod := range mods {
 		commonInfo := OtherModulePointerProviderOrDefault(ctx, mod, CommonModuleInfoProvider)
@@ -657,7 +633,21 @@ func getSoongOnlyDataFromMods(ctx fillInEntriesContext, mods []ModuleOrProxy) []
 			moduleInfoJSONs = append(moduleInfoJSONs, moduleInfoJSON.Data...)
 		}
 	}
-	return moduleInfoJSONs
+
+	preMergePath := PathForOutput(ctx, "module_info_pre_merging.json")
+	moduleInfoJSONPath := pathForInstall(ctx, Android, X86_64, "", "module-info.json")
+	if err := writeModuleInfoJSON(ctx, moduleInfoJSONs, preMergePath); err != nil {
+		ctx.Errorf("%s", err)
+	}
+	builder := NewRuleBuilder(pctx, ctx)
+	builder.Command().
+		BuiltTool("merge_module_info_json").
+		FlagWithOutput("-o ", moduleInfoJSONPath).
+		Input(preMergePath)
+	builder.Build("merge_module_info_json", "merge module info json")
+	ctx.Phony("module-info", moduleInfoJSONPath)
+	ctx.Phony("droidcore-unbundled", moduleInfoJSONPath)
+	ctx.DistForGoals([]string{"general-tests", "droidcore-unbundled", "haiku", "module-info"}, moduleInfoJSONPath)
 }
 
 func translateAndroidMk(ctx SingletonContext, absMkFile string, moduleInfoJSONPath WritablePath, mods []ModuleOrProxy) error {
