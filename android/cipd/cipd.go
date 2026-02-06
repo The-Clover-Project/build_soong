@@ -16,6 +16,7 @@ package cipd
 
 import (
 	"fmt"
+	"strings"
 
 	"android/soong/android"
 
@@ -104,12 +105,32 @@ func (p *cipdPackageModule) GenerateAndroidBuildActions(ctx android.ModuleContex
 		resolvedVersionsFile.OutputPath)
 
 	ensureContents := fmt.Sprintf("$ResolvedVersions %s\n", resolvedVersionsTxt)
-	versionProp := p.properties.Version.Get(ctx)
-	version := versionProp.Get()
-	packageProp := p.properties.Package.Get(ctx)
-	packageVal := packageProp.Get()
-	ensureContents += fmt.Sprintf("%s %s\n", packageVal, version)
-	android.WriteFileRule(ctx, ensureFile, ensureContents)
+	var errors []string
+	var packageVal, version string
+	packageProp, err := p.properties.Package.GetOrErr(ctx)
+	if err == nil {
+		packageVal = packageProp.GetOrDefault("")
+		if len(packageVal) == 0 {
+			errors = append(errors, "package property is empty")
+		}
+	} else {
+		errors = append(errors, err.Error())
+	}
+	versionProp, err := p.properties.Version.GetOrErr(ctx)
+	if err == nil {
+		version = versionProp.GetOrDefault("")
+		if len(version) == 0 {
+			errors = append(errors, "version property is empty")
+		}
+	} else {
+		errors = append(errors, err.Error())
+	}
+	if len(errors) > 0 {
+		android.ErrorRule(ctx, ensureFile, p.Name()+": "+strings.Join(errors, ","))
+	} else {
+		ensureContents += fmt.Sprintf("%s %s\n", packageVal, version)
+		android.WriteFileRule(ctx, ensureFile, ensureContents)
+	}
 
 	if len(p.properties.Files) > 0 {
 		outFiles := make(android.WritablePaths, len(p.properties.Files))

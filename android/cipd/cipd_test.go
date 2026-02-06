@@ -107,3 +107,120 @@ func TestCipdPackage(t *testing.T) {
 		t.Errorf("module.OutputFiles(..., \".zip\")[0] = %q, want %q", val, wantZipFile)
 	}
 }
+
+func TestNoMatchedSelectCase_Package(t *testing.T) {
+	// Test that the bp is evaluated successfully even if there is no
+	// matching select case for the "package" property.
+	// It should yield an ErrorRule.
+	bp := `
+	cipd_package {
+		name: "cipd_package1",
+		package: select(release_flag("PACKAGE_FLAG"), {
+			"unused": "android/prebuilts/package1",
+		}),
+		version: "version1",
+		files: [
+			"package1_file1",
+			"package1_file2",
+		],
+		resolved_versions_file: "cipd.versions",
+	}
+	`
+
+	result := android.GroupFixturePreparers(
+		android.PrepareForTestWithAndroidBuildComponents,
+		android.FixtureRegisterWithContext(RegisterCipdComponents),
+	).RunTestWithBp(t, bp)
+	module := result.ModuleForTests(t, "cipd_package1", "")
+	ensureFile := module.Output("ensure.txt")
+	if !android.IsErrorRule(ensureFile.Rule) {
+		t.Errorf("Expected ErrorRule, got %q", ensureFile.Rule)
+	}
+}
+
+func TestNoMatchedSelectCase_Version(t *testing.T) {
+	// Test that the bp is evaluated successfully even if there is no
+	// matching select case for the "version" property.
+	bp := `
+	cipd_package {
+		name: "cipd_package1",
+		package: "android/prebuilts/package1",
+		version: select(release_flag("VERSION"), {
+			"unused": "version1",
+		}),
+		files: [
+			"package1_file1",
+			"package1_file2",
+		],
+		resolved_versions_file: "cipd.versions",
+	}
+	`
+
+	result := android.GroupFixturePreparers(
+		android.PrepareForTestWithAndroidBuildComponents,
+		android.FixtureRegisterWithContext(RegisterCipdComponents),
+	).RunTestWithBp(t, bp)
+	module := result.ModuleForTests(t, "cipd_package1", "")
+	ensureFile := module.Output("ensure.txt")
+	if !android.IsErrorRule(ensureFile.Rule) {
+		t.Errorf("Expected ErrorRule, got %q", ensureFile.Rule)
+	}
+}
+
+func TestPackageIsUnset(t *testing.T) {
+	// Don't panic if the package property is unset.
+	bp := `
+	cipd_package {
+		name: "cipd_package1",
+		package: select(release_flag("PACKAGE_FLAG"), {
+			"unused": "android/prebuilts/package1",
+			default: unset,
+		}),
+		version: "version1",
+		files: [
+			"package1_file1",
+			"package1_file2",
+		],
+		resolved_versions_file: "cipd.versions",
+	}
+	`
+
+	result := android.GroupFixturePreparers(
+		android.PrepareForTestWithAndroidBuildComponents,
+		android.FixtureRegisterWithContext(RegisterCipdComponents),
+	).RunTestWithBp(t, bp)
+	module := result.ModuleForTests(t, "cipd_package1", "")
+	ensureFile := module.Output("ensure.txt")
+	if !android.IsErrorRule(ensureFile.Rule) {
+		t.Errorf("Expected ErrorRule, got %q", ensureFile.Rule)
+	}
+}
+
+func TestVersionIsUnset(t *testing.T) {
+	// Don't panic if the version property is unset.
+	bp := `
+	cipd_package {
+		name: "cipd_package1",
+		package: "android/prebuilts/package1",
+		version: select(release_flag("VERSION"), {
+			"unused": "version1",
+			default: unset,
+		}),
+		files: [
+			"package1_file1",
+			"package1_file2",
+		],
+		resolved_versions_file: "cipd.versions",
+	}
+	`
+
+	result := android.GroupFixturePreparers(
+		android.PrepareForTestWithAndroidBuildComponents,
+		android.FixtureRegisterWithContext(RegisterCipdComponents),
+	).RunTestWithBp(t, bp)
+	module := result.ModuleForTests(t, "cipd_package1", "")
+	ensureFile := module.Output("ensure.txt")
+	if !android.IsErrorRule(ensureFile.Rule) {
+		t.Errorf("Expected ErrorRule, got %q", ensureFile.Rule)
+	}
+}
