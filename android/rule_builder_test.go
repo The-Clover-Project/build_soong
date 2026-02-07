@@ -129,8 +129,8 @@ func ExampleRuleBuilder_DeleteTemporaryFiles() {
 	fmt.Printf("outputs: %q\n", rule.Outputs())
 
 	// Output:
-	// commands: "cp a out/soong/b && cp out/soong/b out/soong/c && rm -f out/soong/b"
-	// tools: ["cp"]
+	// commands: "cp a out/soong/b && cp out/soong/b out/soong/c && prebuilts/build-tools/path/linux-x86/rm -f out/soong/b"
+	// tools: ["cp" "prebuilts/build-tools/linux-x86/bin/toybox" "prebuilts/build-tools/path/linux-x86/rm"]
 	// inputs: ["a"]
 	// outputs: ["out/soong/c"]
 }

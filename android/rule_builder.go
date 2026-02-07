@@ -281,7 +281,7 @@ func (r *RuleBuilder) DeleteTemporaryFiles() {
 		return temporariesList[i].String() < temporariesList[j].String()
 	})
 
-	r.Command().Text("rm").Flag("-f").Outputs(temporariesList)
+	r.Command().BuiltTool("rm").Flag("-f").Outputs(temporariesList)
 }
 
 // Inputs returns the list of paths that were passed to the RuleBuilderCommand methods that take

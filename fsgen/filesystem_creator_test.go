@@ -806,6 +806,7 @@ func TestCrossPartitionRequiredModules(t *testing.T) {
 		android.PrepareForTestWithNamespace,
 		phony.PrepareForTestWithPhony,
 		etc.PrepareForTestWithPrebuiltEtc,
+		android.PrepareForTestWithHostTools("conv_linker_config"),
 		android.FixtureMergeMockFs(android.MockFS{
 			"external/avb/test/data/testkey_rsa4096.pem": nil,
 			"mynamespace/default-permissions.xml":        nil,
@@ -882,6 +883,7 @@ func TestOverriddenDepsAreAddedToFilesystemModuleOverriddenDeps(t *testing.T) {
 		java.PrepareForTestWithJavaBuildComponents,
 		prepareMockRamdiksNodeList,
 		prepareForTestWithDefaultSystemDeps,
+		android.PrepareForTestWithHostTools("conv_linker_config"),
 		android.FixtureMergeMockFs(android.MockFS{
 			"external/avb/test/data/testkey_rsa4096.pem": nil,
 			"build/soong/fsgen/Android.bp": []byte(`

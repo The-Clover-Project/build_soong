@@ -22,6 +22,7 @@ import (
 func setUp(t *testing.T) android.FixturePreparer {
 	return android.GroupFixturePreparers(
 		PrepareForTestWithAndroidDeviceComponents,
+		android.PrepareForTestWithHostTools("conv_linker_config"),
 		android.FixtureRegisterWithContext(func(ctx android.RegistrationContext) {
 			ctx.RegisterModuleType("android_filesystem", FilesystemFactory)
 		}),
