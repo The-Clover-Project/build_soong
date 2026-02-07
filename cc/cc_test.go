@@ -2259,6 +2259,7 @@ func TestAidlFlagsWithMinSdkVersion(t *testing.T) {
 					name: "libfoo",
 					stl: "none",
 					srcs: ["a/Foo.aidl"],
+					split_all_variants: true,
 					`+tc.sdkVersion+`
 				}
 			`)
@@ -2849,6 +2850,7 @@ func TestIncludeDirectoryOrdering(t *testing.T) {
 			},
 			stl: "libc++",
 			sdk_version: "minimum",
+			split_all_variants: true,
 		}
 
 		cc_library_headers {

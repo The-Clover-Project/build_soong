@@ -26,7 +26,7 @@ import (
 // variants that enforce backwards compatibility.
 type sdkTransitionMutator struct{}
 
-func (sdkTransitionMutator) Split(ctx android.BaseModuleContext) []string {
+func (sdkTransitionMutator) split(ctx android.BaseModuleContext) []string {
 	if ctx.Os() != android.Android {
 		return []string{""}
 	}
@@ -56,9 +56,24 @@ func (sdkTransitionMutator) Split(ctx android.BaseModuleContext) []string {
 	return []string{""}
 }
 
-func (sdkTransitionMutator) SplitOnDemand(ctx android.BaseModuleContext) []string {
-	return nil
+func (s sdkTransitionMutator) Split(ctx android.BaseModuleContext) []string {
+	allSplits := s.split(ctx)
+	if ctx.Config().GetBuildFlagBool("RELEASE_SOONG_SDK_VARIANT_ON_DEMAND") {
+		return allSplits[0:1]
+	} else {
+		return allSplits
+	}
 }
+
+func (s sdkTransitionMutator) SplitOnDemand(ctx android.BaseModuleContext) []string {
+	allSplits := s.split(ctx)
+	if len(allSplits) <= 1 || !ctx.Config().GetBuildFlagBool("RELEASE_SOONG_SDK_VARIANT_ON_DEMAND") {
+		return nil
+	} else {
+		return allSplits[1:]
+	}
+}
+
 func (sdkTransitionMutator) OutgoingTransition(ctx android.OutgoingTransitionContext, sourceVariation string) string {
 	if _, ok := ctx.DepTag().(android.UsesUnbundledVariantDepTag); ok {
 		return "sdk"

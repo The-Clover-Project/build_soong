@@ -51,11 +51,13 @@ var (
 
 	stripRule = pctx.AndroidStaticRule("stripRule",
 		blueprint.RuleParams{
-			Command:         `$stripCmd -g $in -o $out`,
-			CommandDeps:     []string{"$stripCmd"},
-			SandboxDisabled: true,
-		},
-		"stripCmd")
+			Command: `${config.ClangBin}/llvm-strip -g $in -o $out`,
+			CommandDeps: []string{
+				"${config.ClangBin}/llvm-strip",
+				// llvm-strip is a symlink to llvm-objcopy
+				"${config.ClangBin}/llvm-objcopy",
+			},
+		})
 )
 
 func registerBpfBuildComponents(ctx android.RegistrationContext) {
@@ -222,9 +224,6 @@ func (bpf *bpf) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 				Rule:   stripRule,
 				Input:  obj,
 				Output: objStripped,
-				Args: map[string]string{
-					"stripCmd": "${config.ClangBin}/llvm-strip",
-				},
 			})
 			bpf.objs = append(bpf.objs, objStripped.WithoutRel())
 		} else {

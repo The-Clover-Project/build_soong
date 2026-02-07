@@ -234,7 +234,7 @@ func (p *PythonLibraryModule) DepsMutator(ctx android.BottomUpMutatorContext) {
 
 	p.AddDepsOnPythonLauncherAndStdlib(ctx, hostStdLibTag, hostLauncherTag, hostlauncherSharedLibTag, false, ctx.Config().BuildOSTarget)
 
-	ctx.AddHostToolDependencies("aprotoc", "dep_fixer", "soong_zip")
+	ctx.AddHostToolDependencies("aprotoc", "soong_zip")
 }
 
 // AddDepsOnPythonLauncherAndStdlib will make the current module depend on the python stdlib,
@@ -492,6 +492,9 @@ func (p *PythonLibraryModule) createSrcsZip(ctx android.ModuleContext, pkgPath s
 			rule.Build("stage_protos_for_pkg_path", "Stage protos for pkg_path")
 			protoSrcs = stagedProtoSrcs
 		}
+
+		// Srcs are compiled independently, and may depend on each other.
+		protoFlags.Deps = append(protoFlags.Deps, protoSrcs...)
 
 		for _, srcFile := range protoSrcs {
 			zip := genProto(ctx, srcFile, protoFlags)

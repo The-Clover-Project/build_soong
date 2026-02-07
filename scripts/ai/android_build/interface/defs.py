@@ -1,0 +1,120 @@
+# Copyright (C) 2026 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import dataclasses
+import json
+from dataclasses import field
+from typing import Callable, Optional
+from api.env import BuildContext
+from api import build, ninja, config, module
+from .schema import ToolArgs
+from .registry import register_tool
+
+# ... (Args definitions remain same) ...
+@dataclasses.dataclass(frozen=True)
+class CommonArgs(ToolArgs):
+    product: str = field(metadata={"description": "Target product configuration (e.g., 'aosp_cf_x86_64_only_phone'). This is NOT a Ninja target."})
+    release: str = field(metadata={"description": "Target release configuration (e.g., 'trunk_staging')"})
+    variant: str = field(metadata={"description": "Target build variant (e.g., 'userdebug')"})
+
+@dataclasses.dataclass(frozen=True)
+class BuildArgs(CommonArgs):
+    targets: list[str]
+    clean: bool = False
+
+@dataclasses.dataclass(frozen=True)
+class NinjaQueryArgs(CommonArgs):
+    target: str
+
+@dataclasses.dataclass(frozen=True)
+class CheckDependencyArgs(CommonArgs):
+    source: str
+    target: str
+
+@dataclasses.dataclass(frozen=True)
+class GetCommandArgs(CommonArgs):
+    target: str
+    last_n: int = 1
+
+@dataclasses.dataclass(frozen=True)
+class AconfigArgs(CommonArgs):
+    package: str
+    flag: str
+
+@dataclasses.dataclass(frozen=True)
+class ModuleInfoArgs(CommonArgs):
+    module_name: str
+    force_refresh: bool = False
+
+@dataclasses.dataclass(frozen=True)
+class BuildVarsArgs(CommonArgs):
+    vars: list[str]
+
+@register_tool("build", BuildArgs, wrapped_func=build.build_targets)
+def run_build(ctx: BuildContext, args: BuildArgs, progress_callback: Optional[Callable[[float, Optional[float]], None]] = None) -> None:
+    """Wrapper for build.build_targets."""
+    result = build.build_targets(ctx, args.targets, args.clean, progress_callback=progress_callback)
+    print(json.dumps(dataclasses.asdict(result), indent=2))
+
+@register_tool("ninja_query", NinjaQueryArgs, wrapped_func=ninja.query_ninja_target)
+def run_ninja_query(ctx: BuildContext, args: NinjaQueryArgs, progress_callback: Optional[Callable[[float, Optional[float]], None]] = None) -> None:
+    """Wrapper for ninja.query_ninja_target."""
+    result = ninja.query_ninja_target(ctx, args.target)
+    output = {
+        "rule_name": result.rule_name,
+        "explicit_deps": result.explicit_deps,
+        "implicit_deps": result.implicit_deps,
+        "outputs": result.outputs
+    }
+    print(json.dumps(output, indent=2))
+
+@register_tool("check_dependency", CheckDependencyArgs, wrapped_func=ninja.depends_on)
+def run_check_dependency(ctx: BuildContext, args: CheckDependencyArgs, progress_callback: Optional[Callable[[float, Optional[float]], None]] = None) -> None:
+    """Wrapper for ninja.depends_on."""
+    is_dep, chain = ninja.depends_on(ctx, args.source, args.target)
+    output = {
+        "is_dependency": is_dep,
+        "dependency_chain": chain
+    }
+    print(json.dumps(output, indent=2))
+
+@register_tool("get_command", GetCommandArgs, wrapped_func=ninja.get_command)
+def run_get_command(ctx: BuildContext, args: GetCommandArgs, progress_callback: Optional[Callable[[float, Optional[float]], None]] = None) -> None:
+    """Wrapper for ninja.get_command."""
+    commands = ninja.get_command(ctx, args.target, args.last_n)
+    output = {
+        "target": args.target,
+        "commands": commands
+    }
+    print(json.dumps(output, indent=2))
+
+@register_tool("aconfig", AconfigArgs, wrapped_func=config.get_aconfig_flag)
+def run_aconfig(ctx: BuildContext, args: AconfigArgs, progress_callback: Optional[Callable[[float, Optional[float]], None]] = None) -> None:
+    """Wrapper for config.get_aconfig_flag."""
+    flag_info = config.get_aconfig_flag(ctx, args.package, args.flag)
+    print(json.dumps(flag_info.to_dict(), indent=2))
+
+@register_tool("module_info", ModuleInfoArgs, wrapped_func=module.get_module_info)
+def run_module_info(ctx: BuildContext, args: ModuleInfoArgs, progress_callback: Optional[Callable[[float, Optional[float]], None]] = None) -> None:
+    """Wrapper for module.get_module_info."""
+    info = module.get_module_info(ctx, args.module_name, args.force_refresh)
+    # Convert ModuleInfo dataclass to dict for JSON serialization
+    info_dict = dataclasses.asdict(info)
+    print(json.dumps(info_dict, indent=2))
+
+@register_tool("build_vars", BuildVarsArgs, wrapped_func=config.get_build_vars)
+def run_build_vars(ctx: BuildContext, args: BuildVarsArgs, progress_callback: Optional[Callable[[float, Optional[float]], None]] = None) -> None:
+    """Wrapper for config.get_build_vars."""
+    vars_dict = config.get_build_vars(ctx, *args.vars)
+    print(json.dumps(vars_dict, indent=2))

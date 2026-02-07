@@ -83,7 +83,7 @@ type cipdPackageProperties struct {
 	Resolved_versions_file string `android:"path"`
 
 	// The files expected to exist in the CIPD package.
-	Files []string
+	Files proptools.Configurable[[]string]
 }
 
 type cipdPackageModule struct {
@@ -132,9 +132,10 @@ func (p *cipdPackageModule) GenerateAndroidBuildActions(ctx android.ModuleContex
 		android.WriteFileRule(ctx, ensureFile, ensureContents)
 	}
 
-	if len(p.properties.Files) > 0 {
-		outFiles := make(android.WritablePaths, len(p.properties.Files))
-		for i, f := range p.properties.Files {
+	files := p.properties.Files.GetOrDefault(ctx, nil)
+	if len(files) > 0 {
+		outFiles := make(android.WritablePaths, len(files))
+		for i, f := range files {
 			outFiles[i] = outPath.Join(ctx, f)
 		}
 

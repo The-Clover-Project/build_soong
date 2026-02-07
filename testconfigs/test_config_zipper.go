@@ -27,7 +27,7 @@ type TestConfigZipper struct {
 	testSchedulingPlans      map[string]*TestSchedulingPlanProperties
 	testWorkflows            map[string]*TestWorkflowProperties
 	testTriggers             map[string]*TestTriggerInfo
-	disabledModules          map[string]bool
+	enabledModules           map[string]bool
 }
 
 func TestConfigZipperFactory() android.Singleton {
@@ -37,7 +37,7 @@ func TestConfigZipperFactory() android.Singleton {
 		testSchedulingPlans:      make(map[string]*TestSchedulingPlanProperties),
 		testWorkflows:            make(map[string]*TestWorkflowProperties),
 		testTriggers:             make(map[string]*TestTriggerInfo),
-		disabledModules:          make(map[string]bool),
+		enabledModules:           make(map[string]bool),
 	}
 	return singleton
 }
@@ -57,13 +57,14 @@ func (zipper *TestConfigZipper) GenerateBuildActions(ctx android.SingletonContex
 	zipper.writeZip(ctx)
 }
 
-// Function that removes all the disabled modules from test execution in post-processing.
+// Function that removes skips any disabled modules from test execution in post-processing.
 func (zipper *TestConfigZipper) removeDisabledModules(ctx android.SingletonContext) {
 	for _, plan := range zipper.testExecutionPlans {
 		var activeTests []ModuleProperties
 
 		for _, moduleDef := range plan.Tests {
-			if !zipper.disabledModules[moduleDef.Module] {
+			// Disabled modules will be missing in the zipper.enabledModules registry.
+			if zipper.enabledModules[moduleDef.Module] {
 				activeTests = append(activeTests, moduleDef)
 			}
 		}
@@ -75,8 +76,9 @@ func (zipper *TestConfigZipper) removeDisabledModules(ctx android.SingletonConte
 func (zipper *TestConfigZipper) gatherRelatedModuleInfos(ctx android.SingletonContext) {
 	ctx.VisitAllModuleProxies(func(proxy android.ModuleProxy) {
 		if commonModuleInfo, ok := android.OtherModuleProvider(ctx, proxy, android.CommonModuleInfoProvider); ok {
-			if !commonModuleInfo.Enabled {
-				zipper.disabledModules[commonModuleInfo.BaseModuleName] = true
+			// If any variation for base module is enabled, mark module as "enabled".
+			if commonModuleInfo.Enabled {
+				zipper.enabledModules[commonModuleInfo.BaseModuleName] = true
 			}
 		}
 

@@ -1,0 +1,266 @@
+# Copyright (C) 2026 The Android Open Source Project
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+import sys
+import json
+import logging
+import traceback
+import io
+import contextlib
+import inspect
+import dataclasses
+from typing import Any, Optional, Union
+from api.env import BuildContext
+from interface.registry import TOOLS
+from interface.schema import get_docstring_summary
+import interface.defs
+
+# Configure logging to stderr to avoid corrupting stdout
+logging.basicConfig(stream=sys.stderr, level=logging.INFO, format='[MCPServer] %(message)s')
+
+@dataclasses.dataclass(frozen=True)
+class JsonRpcResponse:
+    id: Any
+    result: Any
+    jsonrpc: str = "2.0"
+
+@dataclasses.dataclass(frozen=True)
+class JsonRpcErrorData:
+    code: int
+    message: str
+
+@dataclasses.dataclass(frozen=True)
+class JsonRpcErrorResponse:
+    id: Any
+    error: JsonRpcErrorData
+    jsonrpc: str = "2.0"
+
+@dataclasses.dataclass(frozen=True)
+class JsonRpcNotification:
+    method: str
+    params: dict[str, Any]
+    jsonrpc: str = "2.0"
+
+class MCPServer:
+    def __init__(self) -> None:
+        self._shutdown_received = False
+        # Keep reference to original stdout for protocol messages,
+        # bypassing redirection during tool execution
+        self.stdout = sys.stdout
+
+    def run(self) -> None:
+        """Starts the JSON-RPC 2.0 server loop."""
+        logging.info("Starting MCP Server loop...")
+
+        while True:
+            try:
+                line = sys.stdin.readline()
+                if not line:
+                    break # EOF
+
+                request_data = json.loads(line)
+
+                # Handle Batch Request (list) or Single Request (dict)
+                if isinstance(request_data, list):
+                    batch_responses = []
+                    for req in request_data:
+                        response = self.process_request(req)
+                        if response:
+                            batch_responses.append(response)
+
+                    if batch_responses:
+                        self._write_json(batch_responses)
+
+                elif isinstance(request_data, dict):
+                    response = self.process_request(request_data)
+                    if response:
+                        self._write_json(response)
+                else:
+                    logging.error("Invalid JSON-RPC request: must be object or array")
+
+            except json.JSONDecodeError:
+                logging.error("Invalid JSON received.")
+                # We can't reply if we can't parse
+                continue
+            except Exception:
+                logging.error(f"Unexpected error in main loop:\n{traceback.format_exc()}")
+
+    def process_request(self, request: dict[str, Any]) -> Optional[Union[JsonRpcResponse, JsonRpcErrorResponse]]:
+        """
+        Processes a single JSON-RPC request and returns the response object (or None for notifications).
+        """
+        request_id = request.get("id")
+        method = request.get("method")
+        params = request.get("params", {})
+
+        try:
+            if method == "initialize":
+                return self.create_response(request_id, {
+                    "capabilities": {"tools": {}},
+                    "protocolVersion": "2024-11-05",
+                    "serverInfo": {"name": "android_build", "version": "0.1.0"}
+                })
+
+            elif method == "notifications/initialized":
+                return None
+
+            elif method == "ping":
+                return self.create_response(request_id, {})
+
+            elif method == "shutdown":
+                self._shutdown_received = True
+                return self.create_response(request_id, None)
+
+            elif method == "exit":
+                if self._shutdown_received:
+                    sys.exit(0)
+                else:
+                    sys.exit(1)
+
+            elif method == "tools/list":
+                tools_list = []
+                for tool_name, tool_def in TOOLS.items():
+                    # Use the wrapped API function for docs if available, otherwise the wrapper
+                    doc_func = tool_def.wrapped_func or tool_def.implementation
+
+                    schema = tool_def.args_model.get_json_schema(doc_func)
+                    doc = inspect.getdoc(doc_func)
+                    # Use only the summary (pre-Args) for the high-level tool description
+                    summary = get_docstring_summary(doc)
+                    # Replace newlines with spaces and collapse multiple spaces
+                    description = " ".join(summary.split())
+
+                    tools_list.append({
+                        "name": tool_name,
+                        "description": description,
+                        "inputSchema": schema
+                    })
+                return self.create_response(request_id, {"tools": tools_list})
+
+            elif method == "tools/call":
+                return self.handle_tool_call(request_id, params)
+
+            else:
+                if request_id is not None:
+                     return self.create_error(request_id, -32601, f"Method not found: {method}")
+                return None
+
+        except Exception as e:
+            logging.error(f"Error handling request {method}: {e}\n{traceback.format_exc()}")
+            if request_id is not None:
+                return self.create_error(request_id, -32000, str(e))
+            return None
+
+    def handle_tool_call(self, request_id: Any, params: dict[str, Any]) -> Union[JsonRpcResponse, JsonRpcErrorResponse]:
+        tool_name = params.get("name")
+        arguments = params.get("arguments", {})
+        # Spec: "To request progress notifications, the client MUST include a progressToken property in the params of the request."
+        progress_token = params.get("progressToken")
+
+        if tool_name not in TOOLS:
+            raise ValueError(f"Tool not found: {tool_name}")
+
+        tool_def = TOOLS[tool_name]
+
+        try:
+            # Hydrate arguments
+            tool_args_obj = tool_def.args_model.from_dict(arguments)
+
+            # Hydrate Context
+            if hasattr(tool_args_obj, 'product') and hasattr(tool_args_obj, 'release') and hasattr(tool_args_obj, 'variant'):
+                 ctx = BuildContext(tool_args_obj.product, tool_args_obj.release, tool_args_obj.variant)
+            else:
+                 raise ValueError("Tool arguments must contain product, release, and variant.")
+
+            # Prepare Progress Callback
+            progress_callback = None
+            if progress_token is not None:
+                def progress_callback(current: float, total: Optional[float] = None) -> None:
+                    self.send_progress(progress_token, current, total)
+
+            # Capture Output
+            f_out = io.StringIO()
+            f_err = io.StringIO()
+
+            with contextlib.redirect_stdout(f_out), contextlib.redirect_stderr(f_err):
+                tool_def.implementation(ctx, tool_args_obj, progress_callback=progress_callback)
+
+            output_text = f_out.getvalue()
+            error_text = f_err.getvalue()
+
+            result_text = output_text
+            if error_text:
+                result_text += f"\n--- Stderr ---\n{error_text}"
+
+            return self.create_response(request_id, {
+                "content": [{"type": "text", "text": result_text}]
+            })
+
+        except TypeError as e:
+            if "unexpected keyword argument 'progress_callback'" in str(e):
+                try:
+                    f_out = io.StringIO()
+                    f_err = io.StringIO()
+                    with contextlib.redirect_stdout(f_out), contextlib.redirect_stderr(f_err):
+                        tool_def.implementation(ctx, tool_args_obj)
+
+                    output_text = f_out.getvalue()
+                    error_text = f_err.getvalue()
+                    result_text = output_text
+                    if error_text: result_text += f"\n--- Stderr ---\n{error_text}"
+                    return self.create_response(request_id, {"content": [{"type": "text", "text": result_text}]})
+                except Exception as inner_e:
+                     tb = traceback.format_exc()
+                     return self.create_error(request_id, -32603, f"Tool execution failed (fallback): {inner_e}\n{tb}")
+
+            tb = traceback.format_exc()
+            return self.create_error(request_id, -32603, f"Tool execution failed: {e}\n{tb}")
+
+        except Exception:
+            # Internal Error
+            tb = traceback.format_exc()
+            return self.create_error(request_id, -32603, f"Tool execution failed:\n{tb}")
+
+    def send_progress(self, progress_token: Any, progress: float, total: Optional[float] = None) -> None:
+        params = {
+            "progressToken": progress_token,
+            "progress": progress
+        }
+        if total is not None:
+            params["total"] = total
+
+        notification = JsonRpcNotification(
+            method="notifications/progress",
+            params=params
+        )
+        self._write_json(notification)
+
+    def create_response(self, request_id: Any, result: Any) -> JsonRpcResponse:
+        return JsonRpcResponse(id=request_id, result=result)
+
+    def create_error(self, request_id: Any, code: int, message: str) -> JsonRpcErrorResponse:
+        return JsonRpcErrorResponse(
+            id=request_id,
+            error=JsonRpcErrorData(code=code, message=message)
+        )
+
+    def _write_json(self, data: Any) -> None:
+        def default_encoder(obj: Any) -> dict[str, Any]:
+            if dataclasses.is_dataclass(obj) and not isinstance(obj, type):
+                return dataclasses.asdict(obj)
+            raise TypeError(f"Object of type {type(obj).__name__} is not JSON serializable")
+
+        json.dump(data, self.stdout, default=default_encoder)
+        self.stdout.write("\n")
+        self.stdout.flush()
