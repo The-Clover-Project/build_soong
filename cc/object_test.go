@@ -30,6 +30,7 @@ func TestMinSdkVersionsOfCrtObjects(t *testing.T) {
 			stl: "none",
 			min_sdk_version: "28",
 			vendor_available: true,
+			split_all_variants: true,
 		}
 	`
 	variants := []struct {
@@ -64,6 +65,7 @@ func TestUseCrtObjectOfCorrectVersion(t *testing.T) {
 			stl: "none",
 			min_sdk_version: "29",
 			sdk_version: "current",
+			split_all_variants: true,
 		}
 		`)
 
