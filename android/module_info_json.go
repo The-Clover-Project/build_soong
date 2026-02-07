@@ -4,7 +4,13 @@ import (
 	"encoding/json"
 	"io"
 	"slices"
+	"strconv"
+	"strings"
 )
+
+func init() {
+	RegisterParallelSingletonType("soong_only_module_info", soongOnlyModuleInfoSingletonFactory)
+}
 
 //go:generate go run ../../blueprint/gobtools/codegen
 
@@ -125,7 +131,79 @@ func (m *ModuleInfoJSON) GetClass() []string {
 	return m.Class
 }
 
+func writeModuleInfoJSON(ctx SingletonContext, moduleInfoJSONs []*ModuleInfoJSON, moduleInfoJSONPath WritablePath) error {
+	moduleInfoJSONBuf := &strings.Builder{}
+	moduleInfoJSONBuf.WriteString("[")
+	for i, moduleInfoJSON := range moduleInfoJSONs {
+		if i != 0 {
+			moduleInfoJSONBuf.WriteString(",\n")
+		}
+		moduleInfoJSONBuf.WriteString("{")
+		moduleInfoJSONBuf.WriteString(strconv.Quote(moduleInfoJSON.core.RegisterName))
+		moduleInfoJSONBuf.WriteString(":")
+		err := encodeModuleInfoJSON(moduleInfoJSONBuf, moduleInfoJSON)
+		moduleInfoJSONBuf.WriteString("}")
+		if err != nil {
+			return err
+		}
+	}
+	moduleInfoJSONBuf.WriteString("]")
+	WriteFileRule(ctx, moduleInfoJSONPath, moduleInfoJSONBuf.String())
+	return nil
+}
+
 // @auto-generate: gob
 type ModuleInfoJSONInfo struct {
 	Data []*ModuleInfoJSON
+}
+
+type soongOnlyModuleInfoSingleton struct {
+	Singleton
+}
+
+func soongOnlyModuleInfoSingletonFactory() Singleton {
+	return &soongOnlyModuleInfoSingleton{}
+}
+
+func (p *soongOnlyModuleInfoSingleton) IncrementalSupported() bool {
+	return true
+}
+
+// TODO(b/397766191): Change the signature to take ModuleProxy
+// Please only access the module's internal data through providers.
+func (so *soongOnlyModuleInfoSingleton) GenerateBuildActions(ctx SingletonContext) {
+	if ctx.Config().KatiEnabled() {
+		return
+	}
+	// We need a named device to have a TARGET_OUT folder.
+	if !ctx.Config().HasDeviceProduct() {
+		return
+	}
+	mods := allModulesSorted(ctx)
+
+	var moduleInfoJSONs []*ModuleInfoJSON
+	for _, mod := range mods {
+		commonInfo := OtherModulePointerProviderOrDefault(ctx, mod, CommonModuleInfoProvider)
+		if commonInfo.SkipAndroidMkProcessing {
+			continue
+		}
+		if moduleInfoJSON := commonInfo.ModuleInfoJSON; moduleInfoJSON != nil {
+			moduleInfoJSONs = append(moduleInfoJSONs, moduleInfoJSON.Data...)
+		}
+	}
+
+	preMergePath := PathForOutput(ctx, "module_info_pre_merging.json")
+	moduleInfoJSONPath := pathForInstall(ctx, Android, X86_64, "", "module-info.json")
+	if err := writeModuleInfoJSON(ctx, moduleInfoJSONs, preMergePath); err != nil {
+		ctx.Errorf("%s", err)
+	}
+	builder := NewRuleBuilder(pctx, ctx)
+	builder.Command().
+		BuiltTool("merge_module_info_json").
+		FlagWithOutput("-o ", moduleInfoJSONPath).
+		Input(preMergePath)
+	builder.Build("merge_module_info_json", "merge module info json")
+	ctx.Phony("module-info", moduleInfoJSONPath)
+	ctx.Phony("droidcore-unbundled", moduleInfoJSONPath)
+	ctx.DistForGoals([]string{"general-tests", "droidcore-unbundled", "haiku", "module-info"}, moduleInfoJSONPath)
 }
