@@ -1044,22 +1044,34 @@ func partitionSpecificFsProps(ctx android.EarlyModuleContext, partitions allGene
 		}
 		fsProps.Stem = proptools.StringPtr("vendor_ramdisk.img")
 	case "vendor_ramdisk-debug":
-		if recoveryName := partitions.nameForType("recovery"); recoveryName != "" {
-			fsProps.Include_files_of = []string{recoveryName}
-		}
 		fsProps.Include_files_of = append(
 			fsProps.Include_files_of,
 			generatedModuleNameForPartition(ctx.Config(), "vendor_ramdisk"),
+		)
+		if recoveryName := partitions.nameForType("recovery"); recoveryName != "" {
+			fsProps.Include_files_of = append(
+				fsProps.Include_files_of,
+				recoveryName,
+			)
+		}
+		fsProps.Include_files_of = append(
+			fsProps.Include_files_of,
 			generatedModuleNameForPartition(ctx.Config(), "debug_ramdisk"),
 		)
 		fsProps.Stem = proptools.StringPtr("vendor_ramdisk-debug.img")
 	case "vendor_ramdisk-test-harness":
-		if recoveryName := partitions.nameForType("recovery"); recoveryName != "" {
-			fsProps.Include_files_of = []string{recoveryName}
-		}
 		fsProps.Include_files_of = append(
 			fsProps.Include_files_of,
 			generatedModuleNameForPartition(ctx.Config(), "vendor_ramdisk"),
+		)
+		if recoveryName := partitions.nameForType("recovery"); recoveryName != "" {
+			fsProps.Include_files_of = append(
+				fsProps.Include_files_of,
+				recoveryName,
+			)
+		}
+		fsProps.Include_files_of = append(
+			fsProps.Include_files_of,
 			generatedModuleNameForPartition(ctx.Config(), "debug_ramdisk"),
 			generatedModuleNameForPartition(ctx.Config(), "test_harness_ramdisk"),
 		)
