@@ -26,40 +26,49 @@ var prepareForTestWithXom = android.GroupFixturePreparers(
 		rootBp := `
 		cc_library {
 			name: "libxom_disabled_by_static_dep",
-			static_libs: ["libxom_explicit_disabled"]
+			static_libs: ["libxom_explicit_disabled"],
+			split_all_variants: true,
 		}
 		cc_library {
 			name: "libxom_override_static_deps",
 			static_libs: ["libxom_explicit_disabled", "libxom_path_disabled"],
 			xom: true,
+			split_all_variants: true,
 		}
 		cc_library {
 			name: "libxom_disabled_by_static_dep_path",
 			static_libs: ["libxom_path_disabled"],
+			split_all_variants: true,
 		}
 		cc_library {
 			name: "libxom_static_dep_path_override",
 			static_libs: ["libxom_path_override"],
+			split_all_variants: true,
 		}
 		cc_library {
 			name: "libxom_explicit_enable",
 			xom: true,
+			split_all_variants: true,
 		}
 		cc_library {
 			name: "libxom_explicit_disabled",
 			xom: false,
+			split_all_variants: true,
 		}
 		cc_library {
 			name: "libxom_implicit",
+			split_all_variants: true,
 		}
 		`
 		disabledPathBp := `
 		cc_library {
 			name: "libxom_path_disabled",
+			split_all_variants: true,
 		}
 		cc_library {
 			name: "libxom_path_override",
 			xom: true,
+			split_all_variants: true,
 		}
 		`
 

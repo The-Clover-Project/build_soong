@@ -28,6 +28,7 @@ func TestLibraryReuse(t *testing.T) {
 		cc_library {
 			name: "libfoo",
 			srcs: ["foo.c", "baz.o"],
+			split_all_variants: true,
 		}`)
 
 		libfooShared := ctx.ModuleForTests(t, "libfoo", "android_arm_armv7-a-neon_shared").Rule("ld")
@@ -57,6 +58,7 @@ func TestLibraryReuse(t *testing.T) {
 			static: {
 				srcs: ["bar.c"]
 			},
+			split_all_variants: true,
 		}`)
 
 		libfooShared := ctx.ModuleForTests(t, "libfoo", "android_arm_armv7-a-neon_shared").Rule("ld")
@@ -83,6 +85,7 @@ func TestLibraryReuse(t *testing.T) {
 			shared: {
 				srcs: ["bar.c"]
 			},
+			split_all_variants: true,
 		}`)
 
 		libfooShared := ctx.ModuleForTests(t, "libfoo", "android_arm_armv7-a-neon_shared").Rule("ld")
@@ -109,6 +112,7 @@ func TestLibraryReuse(t *testing.T) {
 			static: {
 				cflags: ["-DFOO"],
 			},
+			split_all_variants: true,
 		}`)
 
 		libfooShared := ctx.ModuleForTests(t, "libfoo", "android_arm_armv7-a-neon_shared").Rule("ld")
@@ -135,6 +139,7 @@ func TestLibraryReuse(t *testing.T) {
 			shared: {
 				cflags: ["-DFOO"],
 			},
+			split_all_variants: true,
 		}`)
 
 		libfooShared := ctx.ModuleForTests(t, "libfoo", "android_arm_armv7-a-neon_shared").Rule("ld")
@@ -166,6 +171,7 @@ func TestLibraryReuse(t *testing.T) {
 					"bar.c",
 				],
 			},
+			split_all_variants: true,
 		}`)
 
 		libfooShared := ctx.ModuleForTests(t, "libfoo", "android_arm_armv7-a-neon_shared").Rule("ld")
@@ -252,6 +258,7 @@ func TestLibraryVersionScript(t *testing.T) {
 			name: "libfoo",
 			srcs: ["foo.c"],
 			version_script: "foo.map.txt",
+			split_all_variants: true,
 		}`)
 
 	libfoo := result.ModuleForTests(t, "libfoo", "android_arm64_armv8-a_shared").Rule("ld")
@@ -270,6 +277,7 @@ func TestLibraryDynamicList(t *testing.T) {
 			name: "libfoo",
 			srcs: ["foo.c"],
 			dynamic_list: "foo.dynamic.txt",
+			split_all_variants: true,
 		}`)
 
 	libfoo := result.ModuleForTests(t, "libfoo", "android_arm64_armv8-a_shared").Rule("ld")
