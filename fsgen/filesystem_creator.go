@@ -304,20 +304,22 @@ func (f *filesystemCreator) createInternalModules(ctx android.LoadHookContext) {
 			f.properties.Unsupported_partition_types = append(f.properties.Unsupported_partition_types, "boot")
 		}
 	}
+	var vendorRamdiskFragmentModules []string
 	if buildingVendorBootImage(partitionVars) {
-		if createVendorBootImage(ctx, dtbImg) {
+		if exists, fragments := createVendorBootImage(ctx, dtbImg); exists {
 			f.properties.Vendor_boot_image = ":" + generatedModuleNameForPartition(ctx.Config(), "vendor_boot")
+			vendorRamdiskFragmentModules = fragments
 		} else {
 			f.properties.Unsupported_partition_types = append(f.properties.Unsupported_partition_types, "vendor_boot")
 		}
 	}
 	if buildingDebugVendorBootImage(partitionVars) {
-		if createVendorBootDebugImage(ctx, dtbImg) {
+		if createVendorBootDebugImage(ctx, dtbImg, vendorRamdiskFragmentModules) {
 			f.properties.Vendor_boot_debug_image = ":" + generatedModuleNameForPartition(ctx.Config(), "vendor_boot-debug")
 		} else {
 			f.properties.Unsupported_partition_types = append(f.properties.Unsupported_partition_types, "vendor_boot-debug")
 		}
-		if createVendorBootTestHarnessImage(ctx, dtbImg) {
+		if createVendorBootTestHarnessImage(ctx, dtbImg, vendorRamdiskFragmentModules) {
 			f.properties.Vendor_boot_test_harness_image = ":" + generatedModuleNameForPartition(ctx.Config(), "vendor_boot-test-harness")
 		} else {
 			f.properties.Unsupported_partition_types = append(f.properties.Unsupported_partition_types, "vendor_boot-test-harness")
