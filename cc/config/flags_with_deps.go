@@ -17,6 +17,7 @@ package config
 import (
 	"android/soong/android"
 	"slices"
+	"strings"
 )
 
 type FlagsWithDeps struct {
@@ -28,5 +29,12 @@ func (f FlagsWithDeps) Append(other FlagsWithDeps) FlagsWithDeps {
 	return FlagsWithDeps{
 		Flags: f.Flags + " " + other.Flags,
 		Deps:  slices.Concat(f.Deps, other.Deps),
+	}
+}
+
+func (f FlagsWithDeps) AppendNoDeps(flags ...string) FlagsWithDeps {
+	return FlagsWithDeps{
+		Flags: f.Flags + " " + strings.Join(flags, " "),
+		Deps:  f.Deps,
 	}
 }

@@ -228,13 +228,13 @@ func (t *toolchainWindowsX8664) Cppflags() string {
 	return "${config.WindowsCppflags} ${config.WindowsX8664Cppflags}"
 }
 
-func (t *toolchainWindowsX86) Ldflags() FlagsWithDeps {
+func (t *toolchainWindowsX86) Ldflags(ctx android.PathGlobContext) FlagsWithDeps {
 	return FlagsWithDeps{
 		Flags: "${config.WindowsLdflags} ${config.WindowsX86Ldflags}",
 	}
 }
 
-func (t *toolchainWindowsX8664) Ldflags() FlagsWithDeps {
+func (t *toolchainWindowsX8664) Ldflags(ctx android.PathGlobContext) FlagsWithDeps {
 	return FlagsWithDeps{
 		Flags: "${config.WindowsLdflags} ${config.WindowsX8664Ldflags}",
 	}

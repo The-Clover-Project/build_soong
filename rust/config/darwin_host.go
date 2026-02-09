@@ -103,7 +103,7 @@ func (t *toolchainDarwin) ProcMacroSuffix() string {
 	return ".dylib"
 }
 
-func (t *toolchainDarwinArm64) ToolchainLinkFlags() cc_config.FlagsWithDeps {
+func (t *toolchainDarwinArm64) ToolchainLinkFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
 	// Prepend the lld flags from cc_config so we stay in sync with cc
 	return cc_config.FlagsWithDeps{
 		Flags: "${cc_config.DarwinLdflags} ${config.DarwinToolchainLinkFlags} ${config.DarwinToolchainArm64LinkFlags}",
@@ -114,7 +114,7 @@ func (t *toolchainDarwinArm64) ToolchainRustFlags() string {
 	return "${config.DarwinToolchainRustFlags} ${config.DarwinToolchainArm64RustFlags}"
 }
 
-func (t *toolchainDarwinX8664) ToolchainLinkFlags() cc_config.FlagsWithDeps {
+func (t *toolchainDarwinX8664) ToolchainLinkFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
 	// Prepend the lld flags from cc_config so we stay in sync with cc
 	return cc_config.FlagsWithDeps{
 		Flags: "${cc_config.DarwinLdflags} ${config.DarwinToolchainLinkFlags} ${config.DarwinToolchainX8664LinkFlags}",

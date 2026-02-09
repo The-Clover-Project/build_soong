@@ -504,7 +504,7 @@ func CommonLinkerFlags(ctx android.ModuleContext, flags Flags, toolchain config.
 		flags.Global.LdFlags = append(flags.Global.LdFlags, "-Wl,--no-undefined")
 	}
 
-	ldFlags := toolchain.Ldflags()
+	ldFlags := toolchain.Ldflags(ctx)
 	flags.Global.LdFlags = append(flags.Global.LdFlags, ldFlags.Flags)
 	flags.LdFlagsDeps = append(flags.LdFlagsDeps, ldFlags.Deps...)
 

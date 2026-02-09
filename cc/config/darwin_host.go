@@ -208,7 +208,7 @@ func (t *toolchainDarwin) Cppflags() string {
 	return ""
 }
 
-func (t *toolchainDarwin) Ldflags() FlagsWithDeps {
+func (t *toolchainDarwin) Ldflags(ctx android.PathGlobContext) FlagsWithDeps {
 	return FlagsWithDeps{
 		Flags: "${config.DarwinLdflags}",
 	}

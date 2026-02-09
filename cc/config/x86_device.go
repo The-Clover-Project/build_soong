@@ -165,7 +165,7 @@ func (t *toolchainX86) Cppflags() string {
 	return "${config.X86Cppflags}"
 }
 
-func (t *toolchainX86) Ldflags() FlagsWithDeps {
+func (t *toolchainX86) Ldflags(ctx android.PathGlobContext) FlagsWithDeps {
 	return FlagsWithDeps{
 		Flags: "${config.X86Ldflags}",
 	}

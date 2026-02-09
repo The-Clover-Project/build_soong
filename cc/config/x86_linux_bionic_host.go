@@ -109,7 +109,7 @@ func (t *toolchainLinuxBionic) Cppflags() string {
 	return ""
 }
 
-func (t *toolchainLinuxBionic) Ldflags() FlagsWithDeps {
+func (t *toolchainLinuxBionic) Ldflags(ctx android.PathGlobContext) FlagsWithDeps {
 	return FlagsWithDeps{
 		Flags: "${config.LinuxBionicLdflags}",
 	}

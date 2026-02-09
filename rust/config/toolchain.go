@@ -22,7 +22,7 @@ import (
 type Toolchain interface {
 	RustTriple() string
 	ToolchainRustFlags() string
-	ToolchainLinkFlags() cc_config.FlagsWithDeps
+	ToolchainLinkFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps
 
 	SharedLibSuffix() string
 	StaticLibSuffix() string
@@ -52,7 +52,7 @@ func (toolchainBase) ToolchainRustFlags() string {
 	panic("toolchainBase does not provide rust flags.")
 }
 
-func (toolchainBase) ToolchainLinkFlags() cc_config.FlagsWithDeps {
+func (toolchainBase) ToolchainLinkFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
 	panic("toolchainBase does not provide link flags.")
 }
 

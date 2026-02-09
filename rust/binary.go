@@ -96,14 +96,14 @@ func (binary *binaryDecorator) compilerFlags(ctx ModuleContext, flags Flags) Fla
 	if ctx.toolchain().Bionic() {
 		// no-undefined-version breaks dylib compilation since __rust_*alloc* functions aren't defined,
 		// but we can apply this to binaries.
-		flags.LinkFlags = append(flags.LinkFlags,
+		flags.LinkFlags = flags.LinkFlags.AppendNoDeps(
 			"-Wl,--gc-sections",
 			"-Wl,-z,nocopyreloc",
 			"-Wl,--no-undefined-version")
 	}
 
 	if Bool(binary.Properties.Static_executable) {
-		flags.LinkFlags = append(flags.LinkFlags, "-static")
+		flags.LinkFlags = flags.LinkFlags.AppendNoDeps("-static")
 		flags.RustFlags = append(flags.RustFlags, "-C relocation-model=static")
 	}
 
@@ -165,20 +165,20 @@ func (binary *binaryDecorator) compile(ctx ModuleContext, flags Flags, deps Path
 	deps.linkDirsDeps = android.FirstUniquePaths(deps.linkDirsDeps)
 
 	flags.RustFlags = append(flags.RustFlags, deps.depFlags...)
-	flags.LinkFlags = append(flags.LinkFlags, deps.depLinkFlags...)
-	flags.LinkFlags = append(flags.LinkFlags, deps.rustLibObjects...)
-	flags.LinkFlags = append(flags.LinkFlags, deps.staticLibObjects...)
-	flags.LinkFlags = append(flags.LinkFlags, deps.wholeStaticLibObjects...)
+	flags.LinkFlags = flags.LinkFlags.AppendNoDeps(deps.depLinkFlags...)
+	flags.LinkFlags = flags.LinkFlags.AppendNoDeps(deps.rustLibObjects...)
+	flags.LinkFlags = flags.LinkFlags.AppendNoDeps(deps.staticLibObjects...)
+	flags.LinkFlags = flags.LinkFlags.AppendNoDeps(deps.wholeStaticLibObjects...)
 
 	if ctx.Windows() {
 		for _, lib := range deps.sharedLibObjects {
 			// Windows uses the .lib import library at link-time and at runtime
 			// uses the .dll library, so we need to make sure we're passing the
 			// import library to the linker.
-			flags.LinkFlags = append(flags.LinkFlags, pathtools.ReplaceExtension(lib, "lib"))
+			flags.LinkFlags = flags.LinkFlags.AppendNoDeps(pathtools.ReplaceExtension(lib, "lib"))
 		}
 	} else {
-		flags.LinkFlags = append(flags.LinkFlags, deps.sharedLibObjects...)
+		flags.LinkFlags = flags.LinkFlags.AppendNoDeps(deps.sharedLibObjects...)
 	}
 
 	if binary.stripper.NeedsStrip(ctx) {

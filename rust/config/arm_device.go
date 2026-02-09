@@ -52,14 +52,14 @@ func init() {
 type toolchainArm struct {
 	toolchain32Bit
 	toolchainRustFlags string
-	ldflags            cc_config.FlagsWithDeps
+	cc_toolchain       cc_config.Toolchain
 }
 
 func (t *toolchainArm) RustTriple() string {
 	return "armv7-linux-androideabi"
 }
 
-func (t *toolchainArm) ToolchainLinkFlags() cc_config.FlagsWithDeps {
+func (t *toolchainArm) ToolchainLinkFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
 	// Prepend the lld flags from cc_config so we stay in sync with cc
 	globalFlags := cc_config.FlagsWithDeps{
 		Flags: "${config.DeviceGlobalLinkFlags}",
@@ -67,7 +67,9 @@ func (t *toolchainArm) ToolchainLinkFlags() cc_config.FlagsWithDeps {
 	armToolchainFlags := cc_config.FlagsWithDeps{
 		Flags: "${config.ArmToolchainLinkFlags}",
 	}
-	return globalFlags.Append(t.ldflags).Append(armToolchainFlags)
+	ccFlags := t.cc_toolchain.Ldflags(ctx)
+	ccFlags.Flags = strings.ReplaceAll(ccFlags.Flags, "${config.", "${cc_config.")
+	return globalFlags.Append(ccFlags).Append(armToolchainFlags)
 }
 
 func (t *toolchainArm) ToolchainRustFlags() string {
@@ -99,11 +101,8 @@ func ArmToolchainFactory(arch android.Arch) Toolchain {
 	}
 
 	cc_toolchain := cc_config.FindToolchain(android.Android, arch)
-
-	cc_ldFlags := cc_toolchain.Ldflags()
-	cc_ldFlags.Flags = strings.ReplaceAll(cc_ldFlags.Flags, "${config.", "${cc_config.")
 	return &toolchainArm{
 		toolchainRustFlags: strings.Join(toolchainRustFlags, " "),
-		ldflags:            cc_ldFlags,
+		cc_toolchain:       cc_toolchain,
 	}
 }

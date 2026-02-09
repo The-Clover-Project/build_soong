@@ -78,7 +78,7 @@ type Toolchain interface {
 	Asflags() string
 	Cflags() string
 	Cppflags() string
-	Ldflags() FlagsWithDeps
+	Ldflags(ctx android.PathGlobContext) FlagsWithDeps
 	InstructionSetFlags(string) (string, error)
 
 	ndkTriple() string

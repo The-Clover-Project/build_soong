@@ -78,7 +78,7 @@ func (t *toolchainWindowsX86) Name() string {
 	return "x86"
 }
 
-func (t *toolchainWindowsX86) ToolchainLinkFlags() cc_config.FlagsWithDeps {
+func (t *toolchainWindowsX86) ToolchainLinkFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
 	// Prepend the lld flags from cc_config so we stay in sync with cc
 	return cc_config.FlagsWithDeps{
 		Flags: "${cc_config.WindowsLdflags} ${cc_config.WindowsX86Ldflags} ${cc_config.WindowsAvailableLibraries} " +
@@ -147,7 +147,7 @@ func (t *toolchainWindowsX8664) Name() string {
 	return "x86_64"
 }
 
-func (t *toolchainWindowsX8664) ToolchainLinkFlags() cc_config.FlagsWithDeps {
+func (t *toolchainWindowsX8664) ToolchainLinkFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
 	// Prepend the lld flags from cc_config so we stay in sync with cc
 	return cc_config.FlagsWithDeps{
 		Flags: "${cc_config.WindowsLdflags} ${cc_config.WindowsX8664Ldflags} ${cc_config.WindowsAvailableLibraries} " +

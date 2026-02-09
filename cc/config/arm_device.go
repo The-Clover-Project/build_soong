@@ -281,7 +281,7 @@ func (t *toolchainArm) Cppflags() string {
 	return "${config.ArmCppflags}"
 }
 
-func (t *toolchainArm) Ldflags() FlagsWithDeps {
+func (t *toolchainArm) Ldflags(ctx android.PathGlobContext) FlagsWithDeps {
 	return FlagsWithDeps{
 		Flags: t.ldflags, // TODO: handle V8 cases
 	}

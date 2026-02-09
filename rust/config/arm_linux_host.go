@@ -55,7 +55,7 @@ func (t *toolchainLinuxArm64) Name() string {
 	return "arm64"
 }
 
-func (t *toolchainLinuxArm64) ToolchainLinkFlags() cc_config.FlagsWithDeps {
+func (t *toolchainLinuxArm64) ToolchainLinkFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
 	// Prepend the lld flags from cc_config so we stay in sync with cc
 	return cc_config.FlagsWithDeps{
 		Flags: "${cc_config.LinuxLdflags} ${cc_config.LinuxArm64Ldflags} " +
@@ -77,11 +77,11 @@ func (t *toolchainLinuxMuslArm64) RustTriple() string {
 	return "aarch64-unknown-linux-musl"
 }
 
-func (t *toolchainLinuxMuslArm64) ToolchainLinkFlags() cc_config.FlagsWithDeps {
+func (t *toolchainLinuxMuslArm64) ToolchainLinkFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
 	linuxMusl := cc_config.FlagsWithDeps{
 		Flags: "${config.LinuxMuslToolchainLinkFlags}",
 	}
-	return t.toolchainLinuxArm64.ToolchainLinkFlags().Append(linuxMusl)
+	return t.toolchainLinuxArm64.ToolchainLinkFlags(ctx).Append(linuxMusl)
 }
 
 func (t *toolchainLinuxMuslArm64) ToolchainRustFlags() string {
@@ -117,7 +117,7 @@ func (toolchainLinuxArm64) LibclangRuntimeLibraryArch() string {
 	return "arm64"
 }
 
-func (t *toolchainLinuxArm) ToolchainLinkFlags() cc_config.FlagsWithDeps {
+func (t *toolchainLinuxArm) ToolchainLinkFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
 	// Prepend the lld flags from cc_config so we stay in sync with cc
 	return cc_config.FlagsWithDeps{
 		Flags: "${cc_config.LinuxLdflags} ${cc_config.LinuxArmLdflags} " +
@@ -139,11 +139,11 @@ func (t *toolchainLinuxMuslArm) RustTriple() string {
 	return "arm-unknown-linux-musleabihf"
 }
 
-func (t *toolchainLinuxMuslArm) ToolchainLinkFlags() cc_config.FlagsWithDeps {
+func (t *toolchainLinuxMuslArm) ToolchainLinkFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
 	linuxMusl := cc_config.FlagsWithDeps{
 		Flags: "${config.LinuxMuslToolchainLinkFlags}",
 	}
-	return t.toolchainLinuxArm.ToolchainLinkFlags().Append(linuxMusl)
+	return t.toolchainLinuxArm.ToolchainLinkFlags(ctx).Append(linuxMusl)
 }
 
 func (t *toolchainLinuxMuslArm) ToolchainRustFlags() string {
