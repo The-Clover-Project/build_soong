@@ -405,7 +405,7 @@ func newConfig(ctx Context, isDumpVar bool, args ...string) Config {
 	// If we are using Siso, force USE_REWRAPPER=false when USE_RBE is not "true".
 	// These are separate only for Siso.
 	rbeValue, ok := ret.environ.Get("USE_RBE")
-	rewrapperValue, _ := ret.environ.Get("USE_REWRAPPER")
+	rewrapperValue, rewrapperOk := ret.environ.Get("USE_REWRAPPER")
 	if ret.ninjaCommand != NINJA_SISO {
 		if rbeValue != rewrapperValue {
 			if ok {
@@ -417,6 +417,11 @@ func newConfig(ctx Context, isDumpVar bool, args ...string) Config {
 	} else {
 		if rbeValue != "true" && rewrapperValue == "true" {
 			ret.environ.Set("USE_REWRAPPER", "false")
+		}
+		if rbeValue == "true" && !rewrapperOk {
+			// For now, use rewrapper by default.
+			// TODO: switch false to switch Siso native RBE by default.
+			ret.environ.Set("USE_REWRAPPER", "true")
 		}
 		if value, ok := ret.environ.Get("SISO_CONFIG_DIR"); ok {
 			ret.sisoConfigDir = value
