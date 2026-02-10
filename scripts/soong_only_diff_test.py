@@ -401,9 +401,9 @@ def main():
         print(f"Diff test for {product.product} completed.")
 
     for p in soong_plus_make_build_failed_products:
-        print(f"{p.product}: soong+make build failed", file=sys.stderr)
+        print(f"{p.product}: soong+make build failed. Please check out/soong.1.log and out/verbose.log.1.gz", file=sys.stderr)
     for p in soong_only_build_failed_products:
-        print(f"{p.product}: soong-only build failed", file=sys.stderr)
+        print(f"{p.product}: soong-only build failed. Please check out/soong.log and out/verbose.log.gz", file=sys.stderr)
     for p in target_files_differ_products:
         print(f"{p.product}: target-file.zip and/or $ANDROID_PRODUCT_OUT differs", file=sys.stderr)
 
