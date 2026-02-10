@@ -21,7 +21,10 @@ import (
 	"android/soong/phony"
 )
 
-var PrepareForTestWithFilesystemBuildComponents = android.FixtureRegisterWithContext(registerBuildComponents)
+var PrepareForTestWithFilesystemBuildComponents = android.GroupFixturePreparers(
+	android.FixtureRegisterWithContext(registerBuildComponents),
+	android.PrepareForTestWithHostTools("conv_linker_config"),
+)
 var PrepareForTestWithAndroidDeviceComponents = android.GroupFixturePreparers(
 	android.FixtureRegisterWithContext(func(ctx android.RegistrationContext) {
 		ctx.RegisterModuleType("android_device", AndroidDeviceFactory)

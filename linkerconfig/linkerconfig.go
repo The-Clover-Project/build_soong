@@ -72,6 +72,10 @@ func (l *linkerConfig) OutputFile() android.OutputPath {
 	return l.outputFilePath
 }
 
+func (l *linkerConfig) DepsMutator(ctx android.BottomUpMutatorContext) {
+	ctx.AddHostToolDependencies("conv_linker_config")
+}
+
 func (l *linkerConfig) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	input := android.PathForModuleSrc(ctx, android.String(l.properties.Src))
 	output := android.PathForModuleOut(ctx, "linker.config.pb").OutputPath
@@ -98,7 +102,7 @@ func BuildLinkerConfig(
 	output android.WritablePath,
 ) {
 	// First, convert the input json to protobuf format
-	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
+	builder := android.NewRuleBuilder(pctx, ctx)
 	interimOutput := android.PathForModuleOut(ctx, "temp.pb")
 	builder.Command().
 		BuiltTool("conv_linker_config").
@@ -170,7 +174,7 @@ func BuildLinkerConfig(
 	}
 
 	// cp to the final output
-	builder.Command().Text("cp").Input(interimOutput).Output(output)
+	builder.Command().BuiltTool("cp").Input(interimOutput).Output(output)
 
 	builder.Temporary(interimOutput)
 	builder.DeleteTemporaryFiles()

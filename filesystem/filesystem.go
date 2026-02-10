@@ -468,6 +468,7 @@ func (f *filesystem) DepsMutator(ctx android.BottomUpMutatorContext) {
 		ctx.AddDependency(ctx.Module(), android.PrebuiltDepTag, proptools.String(f.properties.Prebuilt_module_name))
 	}
 
+	ctx.AddHostToolDependencies("conv_linker_config")
 }
 
 type fsType int
