@@ -283,6 +283,7 @@ _INSTALLED_IMG_FILES = [
     "pvmfw.img",
     "ramdisk.img",
     "super.img",
+    # TODO (spandandas): Add the dist'd super.img to diff test.
     "system_dlkm.img",
     "system_ext.img",
     "system_other.img",
