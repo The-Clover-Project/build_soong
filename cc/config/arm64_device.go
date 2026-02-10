@@ -179,8 +179,10 @@ func (t *toolchainArm64) Cppflags() string {
 	return "${config.Arm64Cppflags}"
 }
 
-func (t *toolchainArm64) Ldflags() string {
-	return t.ldflags
+func (t *toolchainArm64) Ldflags(ctx android.PathGlobContext) FlagsWithDeps {
+	return FlagsWithDeps{
+		Flags: t.ldflags,
+	}
 }
 
 func (t *toolchainArm64) ToolchainCflags() string {

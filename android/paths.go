@@ -92,10 +92,17 @@ func GlobFiles(ctx EarlyModulePathContext, globPattern string, excludes []string
 // Unlike GlobFiles(), this function allows globbing files from anywhere in the source tree,
 // not just in the current module's directory. Prefer GlobFiles() over this, it was added to handle
 // legacy include_dirs use cases, which should be switched to local_include_dirs.
-func GlobFilesOutsideModuleDir(ctx EarlyModulePathContext, globPattern string, excludes []string) Paths {
+func GlobFilesOutsideModuleDir(ctx PathGlobContext, globPattern string, excludes []string) Paths {
 	globResults, err := ctx.GlobWithDeps(globPattern, excludes)
 	if err != nil {
-		ctx.ModuleErrorf("glob: %s", err.Error())
+		switch c := ctx.(type) {
+		case EarlyModulePathContext:
+			c.ModuleErrorf("glob: %s", err.Error())
+		case MakeVarsContext:
+			c.Errorf("glob: %s", err.Error())
+		default:
+			panic(fmt.Sprintf("glob: %s", err.Error()))
+		}
 	}
 
 	ret := make(Paths, 0, len(globResults))

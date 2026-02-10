@@ -85,12 +85,12 @@ func (fuzzer *fuzzDecorator) compilerFlags(ctx ModuleContext, flags Flags) Flags
 	flags = fuzzer.binaryDecorator.compilerFlags(ctx, flags)
 
 	// `../lib` for installed fuzz targets (both host and device), and `./lib` for fuzz target packages.
-	flags.LinkFlags = append(flags.LinkFlags, `-Wl,-rpath,\$$ORIGIN/lib`)
+	flags.LinkFlags = flags.LinkFlags.AppendNoDeps(`-Wl,-rpath,\$$ORIGIN/lib`)
 
 	if ctx.InstallInVendor() {
-		flags.LinkFlags = append(flags.LinkFlags, `-Wl,-rpath,\$$ORIGIN/../../lib`)
+		flags.LinkFlags = flags.LinkFlags.AppendNoDeps(`-Wl,-rpath,\$$ORIGIN/../../lib`)
 	} else {
-		flags.LinkFlags = append(flags.LinkFlags, `-Wl,-rpath,\$$ORIGIN/../lib`)
+		flags.LinkFlags = flags.LinkFlags.AppendNoDeps(`-Wl,-rpath,\$$ORIGIN/../lib`)
 
 	}
 	return flags

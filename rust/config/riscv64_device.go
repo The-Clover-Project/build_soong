@@ -52,16 +52,24 @@ func init() {
 type toolchainRiscv64 struct {
 	toolchain64Bit
 	toolchainRustFlags string
-	ldflags            string
+	cc_toolchain       cc_config.Toolchain
 }
 
 func (t *toolchainRiscv64) RustTriple() string {
 	return "riscv64-linux-android"
 }
 
-func (t *toolchainRiscv64) ToolchainLinkFlags() string {
+func (t *toolchainRiscv64) ToolchainLinkFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
 	// Prepend the lld flags from cc_config so we stay in sync with cc
-	return "${config.DeviceGlobalLinkFlags} " + t.ldflags + " ${config.Riscv64ToolchainLinkFlags}"
+	deviceGlobalLinkFlags := cc_config.FlagsWithDeps{
+		Flags: "${config.DeviceGlobalLinkFlags}",
+	}
+	riscv64ToolchainLinkFlags := cc_config.FlagsWithDeps{
+		Flags: "${config.Riscv64ToolchainLinkFlags}",
+	}
+	ccFlags := t.cc_toolchain.Ldflags(ctx)
+	ccFlags.Flags = strings.ReplaceAll(ccFlags.Flags, "${config.", "${cc_config.")
+	return deviceGlobalLinkFlags.Append(ccFlags).Append(riscv64ToolchainLinkFlags)
 }
 
 func (t *toolchainRiscv64) ToolchainRustFlags() string {
@@ -95,9 +103,8 @@ func Riscv64ToolchainFactory(arch android.Arch) Toolchain {
 	}
 
 	cc_toolchain := cc_config.FindToolchain(android.Android, arch)
-
 	return &toolchainRiscv64{
 		toolchainRustFlags: strings.Join(toolchainRustFlags, " "),
-		ldflags:            strings.ReplaceAll(cc_toolchain.Ldflags(), "${config.", "${cc_config."),
+		cc_toolchain:       cc_toolchain,
 	}
 }

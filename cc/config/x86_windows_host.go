@@ -194,8 +194,10 @@ func (t *toolchainWindows) ToolchainCflags() string {
 	return "-B" + filepath.Join("${config.WindowsGccRoot}", "${config.WindowsGccTriple}", "bin")
 }
 
-func (t *toolchainWindows) ToolchainLdflags() string {
-	return "-B" + filepath.Join("${config.WindowsGccRoot}", "${config.WindowsGccTriple}", "bin")
+func (t *toolchainWindows) ToolchainLdflags() FlagsWithDeps {
+	return FlagsWithDeps{
+		Flags: "-B" + filepath.Join("${config.WindowsGccRoot}", "${config.WindowsGccTriple}", "bin"),
+	}
 }
 
 func (t *toolchainWindows) IncludeFlags() string {
@@ -226,12 +228,16 @@ func (t *toolchainWindowsX8664) Cppflags() string {
 	return "${config.WindowsCppflags} ${config.WindowsX8664Cppflags}"
 }
 
-func (t *toolchainWindowsX86) Ldflags() string {
-	return "${config.WindowsLdflags} ${config.WindowsX86Ldflags}"
+func (t *toolchainWindowsX86) Ldflags(ctx android.PathGlobContext) FlagsWithDeps {
+	return FlagsWithDeps{
+		Flags: "${config.WindowsLdflags} ${config.WindowsX86Ldflags}",
+	}
 }
 
-func (t *toolchainWindowsX8664) Ldflags() string {
-	return "${config.WindowsLdflags} ${config.WindowsX8664Ldflags}"
+func (t *toolchainWindowsX8664) Ldflags(ctx android.PathGlobContext) FlagsWithDeps {
+	return FlagsWithDeps{
+		Flags: "${config.WindowsLdflags} ${config.WindowsX8664Ldflags}",
+	}
 }
 
 func (t *toolchainWindowsX86) YasmFlags() string {

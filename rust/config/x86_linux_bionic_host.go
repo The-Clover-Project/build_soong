@@ -18,6 +18,7 @@ import (
 	"strings"
 
 	"android/soong/android"
+	cc_config "android/soong/cc/config"
 )
 
 var (
@@ -59,9 +60,11 @@ func (t *toolchainLinuxBionicX8664) RustTriple() string {
 	return "x86_64-linux-android"
 }
 
-func (t *toolchainLinuxBionicX8664) ToolchainLinkFlags() string {
+func (t *toolchainLinuxBionicX8664) ToolchainLinkFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
 	// Prepend the lld flags from cc_config so we stay in sync with cc
-	return "${cc_config.LinuxBionicLdflags} ${config.LinuxBionicToolchainLinkFlags}"
+	return cc_config.FlagsWithDeps{
+		Flags: "${cc_config.LinuxBionicLdflags} ${config.LinuxBionicToolchainLinkFlags}",
+	}
 }
 
 func (t *toolchainLinuxBionicX8664) ToolchainRustFlags() string {

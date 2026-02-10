@@ -18,6 +18,7 @@ import (
 	"strings"
 
 	"android/soong/android"
+	cc_config "android/soong/cc/config"
 )
 
 var (
@@ -77,6 +78,7 @@ func init() {
 // Base 64-bit linux rust toolchain
 type toolchainLinuxX8664 struct {
 	toolchain64Bit
+	cc_toolchain cc_config.Toolchain
 }
 
 func (toolchainLinuxX8664) Supported() bool {
@@ -91,10 +93,17 @@ func (t *toolchainLinuxX8664) Name() string {
 	return "x86_64"
 }
 
-func (t *toolchainLinuxX8664) ToolchainLinkFlags() string {
+func (t *toolchainLinuxX8664) ToolchainLinkFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
 	// Prepend the lld flags from cc_config so we stay in sync with cc
-	return "${cc_config.LinuxLdflags} ${cc_config.LinuxX8664Ldflags} " +
-		"${config.LinuxToolchainLinkFlags} ${config.LinuxToolchainX8664LinkFlags}"
+	preFlags := cc_config.FlagsWithDeps{
+		Flags: "${cc_config.LinuxLdflags}",
+	}
+	postFlags := cc_config.FlagsWithDeps{
+		Flags: "${config.LinuxToolchainLinkFlags} ${config.LinuxToolchainX8664LinkFlags}",
+	}
+	ccFlags := cc_config.LinuxX8664Ldflags(ctx)
+	ccFlags.Flags = strings.ReplaceAll(ccFlags.Flags, "${config.", "${cc_config.")
+	return preFlags.Append(ccFlags).Append(postFlags)
 }
 
 func (t *toolchainLinuxX8664) ToolchainRustFlags() string {
@@ -115,12 +124,19 @@ func (t *toolchainLinuxGlibcX8664) Glibc() bool {
 	return true
 }
 
-func (t *toolchainLinuxGlibcX8664) ToolchainLinkFlags() string {
-	return t.toolchainLinuxX8664.ToolchainLinkFlags() + " " + "${config.LinuxGlibcToolchainLinkFlags}"
+func (t *toolchainLinuxGlibcX8664) ToolchainLinkFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+	extraFlags := cc_config.FlagsWithDeps{
+		Flags: "${config.LinuxGlibcToolchainLinkFlags}",
+	}
+	return t.toolchainLinuxX8664.ToolchainLinkFlags(ctx).Append(extraFlags)
 }
 
 func linuxGlibcX8664ToolchainFactory(arch android.Arch) Toolchain {
-	return toolchainLinuxGlibcX8664Singleton
+	return &toolchainLinuxGlibcX8664{
+		toolchainLinuxX8664{
+			cc_toolchain: cc_config.FindToolchain(android.Linux, arch),
+		},
+	}
 }
 
 // Specialization of the 64-bit linux rust toolchain for musl.  Adds the musl rust triple and
@@ -133,8 +149,11 @@ func (t *toolchainLinuxMuslX8664) RustTriple() string {
 	return "x86_64-unknown-linux-musl"
 }
 
-func (t *toolchainLinuxMuslX8664) ToolchainLinkFlags() string {
-	return t.toolchainLinuxX8664.ToolchainLinkFlags() + " " + "${config.LinuxMuslToolchainLinkFlags}"
+func (t *toolchainLinuxMuslX8664) ToolchainLinkFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+	extraFlags := cc_config.FlagsWithDeps{
+		Flags: "${config.LinuxMuslToolchainLinkFlags}",
+	}
+	return t.toolchainLinuxX8664.ToolchainLinkFlags(ctx).Append(extraFlags)
 }
 
 func (t *toolchainLinuxMuslX8664) ToolchainRustFlags() string {
@@ -142,7 +161,11 @@ func (t *toolchainLinuxMuslX8664) ToolchainRustFlags() string {
 }
 
 func linuxMuslX8664ToolchainFactory(arch android.Arch) Toolchain {
-	return toolchainLinuxMuslX8664Singleton
+	return &toolchainLinuxMuslX8664{
+		toolchainLinuxX8664{
+			cc_toolchain: cc_config.FindToolchain(android.LinuxMusl, arch),
+		},
+	}
 }
 
 func (t *toolchainLinuxMuslX8664) Musl() bool {
@@ -152,6 +175,7 @@ func (t *toolchainLinuxMuslX8664) Musl() bool {
 // Base 32-bit linux rust toolchain
 type toolchainLinuxX86 struct {
 	toolchain32Bit
+	cc_toolchain cc_config.Toolchain
 }
 
 func (toolchainLinuxX86) Supported() bool {
@@ -174,10 +198,17 @@ func (toolchainLinuxX8664) LibclangRuntimeLibraryArch() string {
 	return "x86_64"
 }
 
-func (t *toolchainLinuxX86) ToolchainLinkFlags() string {
+func (t *toolchainLinuxX86) ToolchainLinkFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
 	// Prepend the lld flags from cc_config so we stay in sync with cc
-	return "${cc_config.LinuxLdflags} ${cc_config.LinuxX86Ldflags} " +
-		"${config.LinuxToolchainLinkFlags} ${config.LinuxToolchainX86LinkFlags}"
+	preFlags := cc_config.FlagsWithDeps{
+		Flags: "${cc_config.LinuxLdflags}",
+	}
+	postFlags := cc_config.FlagsWithDeps{
+		Flags: "${config.LinuxToolchainLinkFlags} ${config.LinuxToolchainX86LinkFlags}",
+	}
+	ccFlags := cc_config.LinuxX86Ldflags(ctx)
+	ccFlags.Flags = strings.ReplaceAll(ccFlags.Flags, "${config.", "${cc_config.")
+	return preFlags.Append(ccFlags).Append(postFlags)
 }
 
 func (t *toolchainLinuxX86) ToolchainRustFlags() string {
@@ -198,12 +229,19 @@ func (t *toolchainLinuxGlibcX86) Glibc() bool {
 	return true
 }
 
-func (t *toolchainLinuxGlibcX86) ToolchainLinkFlags() string {
-	return t.toolchainLinuxX86.ToolchainLinkFlags() + " " + "${config.LinuxGlibcToolchainLinkFlags}"
+func (t *toolchainLinuxGlibcX86) ToolchainLinkFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+	extraFlags := cc_config.FlagsWithDeps{
+		Flags: "${config.LinuxGlibcToolchainLinkFlags}",
+	}
+	return t.toolchainLinuxX86.ToolchainLinkFlags(ctx).Append(extraFlags)
 }
 
 func linuxGlibcX86ToolchainFactory(arch android.Arch) Toolchain {
-	return toolchainLinuxGlibcX86Singleton
+	return &toolchainLinuxGlibcX86{
+		toolchainLinuxX86{
+			cc_toolchain: cc_config.FindToolchain(android.Linux, arch),
+		},
+	}
 }
 
 // Specialization of the 32-bit linux rust toolchain for musl.  Adds the musl rust triple and
@@ -216,8 +254,11 @@ func (t *toolchainLinuxMuslX86) RustTriple() string {
 	return "i686-unknown-linux-musl"
 }
 
-func (t *toolchainLinuxMuslX86) ToolchainLinkFlags() string {
-	return t.toolchainLinuxX86.ToolchainLinkFlags() + " " + "${config.LinuxMuslToolchainLinkFlags}"
+func (t *toolchainLinuxMuslX86) ToolchainLinkFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+	extraFlags := cc_config.FlagsWithDeps{
+		Flags: "${config.LinuxMuslToolchainLinkFlags}",
+	}
+	return t.toolchainLinuxX86.ToolchainLinkFlags(ctx).Append(extraFlags)
 }
 
 func (t *toolchainLinuxMuslX86) ToolchainRustFlags() string {
@@ -229,10 +270,9 @@ func (t *toolchainLinuxMuslX86) Musl() bool {
 }
 
 func linuxMuslX86ToolchainFactory(arch android.Arch) Toolchain {
-	return toolchainLinuxMuslX86Singleton
+	return &toolchainLinuxMuslX86{
+		toolchainLinuxX86{
+			cc_toolchain: cc_config.FindToolchain(android.LinuxMusl, arch),
+		},
+	}
 }
-
-var toolchainLinuxGlibcX8664Singleton Toolchain = &toolchainLinuxGlibcX8664{}
-var toolchainLinuxGlibcX86Singleton Toolchain = &toolchainLinuxGlibcX86{}
-var toolchainLinuxMuslX8664Singleton Toolchain = &toolchainLinuxMuslX8664{}
-var toolchainLinuxMuslX86Singleton Toolchain = &toolchainLinuxMuslX86{}

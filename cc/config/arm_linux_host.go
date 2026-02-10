@@ -83,12 +83,16 @@ func (t *toolchainLinuxArm64) Cppflags() string {
 	return ""
 }
 
-func (t *toolchainLinuxArm) Ldflags() string {
-	return "${config.LinuxLdflags} ${config.LinuxArmLdflags}"
+func (t *toolchainLinuxArm) Ldflags(ctx android.PathGlobContext) FlagsWithDeps {
+	return FlagsWithDeps{
+		Flags: "${config.LinuxLdflags} ${config.LinuxArmLdflags}",
+	}
 }
 
-func (t *toolchainLinuxArm64) Ldflags() string {
-	return "${config.LinuxLdflags} ${config.LinuxArm64Ldflags}"
+func (t *toolchainLinuxArm64) Ldflags(ctx android.PathGlobContext) FlagsWithDeps {
+	return FlagsWithDeps{
+		Flags: "${config.LinuxLdflags} ${config.LinuxArm64Ldflags}",
+	}
 }
 
 func (t *toolchainLinuxArm) YasmFlags() string {
@@ -130,8 +134,8 @@ func (t *toolchainLinuxMuslArm) Cflags() string {
 	return t.toolchainLinuxArm.Cflags() + " " + t.toolchainMusl.Cflags()
 }
 
-func (t *toolchainLinuxMuslArm) Ldflags() string {
-	return t.toolchainLinuxArm.Ldflags() + " " + t.toolchainMusl.Ldflags()
+func (t *toolchainLinuxMuslArm) Ldflags(ctx android.PathGlobContext) FlagsWithDeps {
+	return t.toolchainLinuxArm.Ldflags(ctx).Append(t.toolchainMusl.Ldflags(ctx))
 }
 
 func (t *toolchainLinuxMuslArm64) ClangTriple() string {
@@ -142,8 +146,8 @@ func (t *toolchainLinuxMuslArm64) Cflags() string {
 	return t.toolchainLinuxArm64.Cflags() + " " + t.toolchainMusl.Cflags()
 }
 
-func (t *toolchainLinuxMuslArm64) Ldflags() string {
-	return t.toolchainLinuxArm64.Ldflags() + " " + t.toolchainMusl.Ldflags()
+func (t *toolchainLinuxMuslArm64) Ldflags(ctx android.PathGlobContext) FlagsWithDeps {
+	return t.toolchainLinuxArm64.Ldflags(ctx).Append(t.toolchainMusl.Ldflags(ctx))
 }
 
 var toolchainLinuxMuslArmSingleton Toolchain = &toolchainLinuxMuslArm{}

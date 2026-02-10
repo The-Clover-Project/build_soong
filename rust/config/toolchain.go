@@ -16,12 +16,13 @@ package config
 
 import (
 	"android/soong/android"
+	cc_config "android/soong/cc/config"
 )
 
 type Toolchain interface {
 	RustTriple() string
 	ToolchainRustFlags() string
-	ToolchainLinkFlags() string
+	ToolchainLinkFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps
 
 	SharedLibSuffix() string
 	StaticLibSuffix() string
@@ -51,7 +52,7 @@ func (toolchainBase) ToolchainRustFlags() string {
 	panic("toolchainBase does not provide rust flags.")
 }
 
-func (toolchainBase) ToolchainLinkFlags() string {
+func (toolchainBase) ToolchainLinkFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
 	panic("toolchainBase does not provide link flags.")
 }
 
