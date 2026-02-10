@@ -161,10 +161,15 @@ def generate_common_build_props(args):
   # Allow optional assignments for ARC forward-declarations (b/249168657)
   # TODO: Remove any tag-related inconsistencies once the goals from
   # go/arc-android-sigprop-changes have been achieved.
-  if partition == "system":
-    print(f"ro.{partition}.build.fingerprint?={config['BuildSystemFingerprint']}")
-  else:
-    print(f"ro.{partition}.build.fingerprint?={config['BuildFingerprint']}")
+  #####
+  # TODO (b/437803910): Enable the system fingerprint again.
+  # The system's generic fingerprint is disabled because of the compatibility
+  # problem with tools that still read the system fingerprint for the device
+  # identity.
+  # if partition == "system":
+  #   print(f"ro.{partition}.build.fingerprint?={config['BuildSystemFingerprint']}")
+  # else:
+  print(f"ro.{partition}.build.fingerprint?={config['BuildFingerprint']}")
   print(f"ro.{partition}.build.id?={config['BuildId']}")
   print(f"ro.{partition}.build.uuid?={config['BuildUUID']}")
   print(f"ro.{partition}.build.tags?={config['BuildVersionTags']}")
