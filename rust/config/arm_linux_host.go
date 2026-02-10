@@ -63,8 +63,8 @@ func (t *toolchainLinuxArm64) ToolchainLinkFlags(ctx android.PathGlobContext) cc
 	}
 }
 
-func (t *toolchainLinuxArm64) ToolchainRustFlags() string {
-	return "${config.LinuxToolchainRustFlags} ${config.LinuxToolchainArm64RustFlags}"
+func (t *toolchainLinuxArm64) ToolchainRustFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+	return LinuxToolchainRustFlags(ctx).AppendNoDeps("${config.LinuxToolchainArm64RustFlags}")
 }
 
 // Specialization of the 64-bit linux rust toolchain for musl.  Adds the musl rust triple and
@@ -84,8 +84,8 @@ func (t *toolchainLinuxMuslArm64) ToolchainLinkFlags(ctx android.PathGlobContext
 	return t.toolchainLinuxArm64.ToolchainLinkFlags(ctx).Append(linuxMusl)
 }
 
-func (t *toolchainLinuxMuslArm64) ToolchainRustFlags() string {
-	return t.toolchainLinuxArm64.ToolchainRustFlags() + " " + "${config.LinuxMuslToolchainRustFlags}"
+func (t *toolchainLinuxMuslArm64) ToolchainRustFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+	return t.toolchainLinuxArm64.ToolchainRustFlags(ctx).AppendNoDeps("${config.LinuxMuslToolchainRustFlags}")
 }
 
 func linuxMuslArm64ToolchainFactory(arch android.Arch) Toolchain {
@@ -125,8 +125,8 @@ func (t *toolchainLinuxArm) ToolchainLinkFlags(ctx android.PathGlobContext) cc_c
 	}
 }
 
-func (t *toolchainLinuxArm) ToolchainRustFlags() string {
-	return "${config.LinuxToolchainRustFlags} ${config.LinuxToolchainArmRustFlags}"
+func (t *toolchainLinuxArm) ToolchainRustFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+	return LinuxToolchainRustFlags(ctx).AppendNoDeps("${config.LinuxToolchainArmRustFlags}")
 }
 
 // Specialization of the 32-bit linux rust toolchain for musl.  Adds the musl rust triple and
@@ -146,8 +146,8 @@ func (t *toolchainLinuxMuslArm) ToolchainLinkFlags(ctx android.PathGlobContext) 
 	return t.toolchainLinuxArm.ToolchainLinkFlags(ctx).Append(linuxMusl)
 }
 
-func (t *toolchainLinuxMuslArm) ToolchainRustFlags() string {
-	return t.toolchainLinuxArm.ToolchainRustFlags() + " " + "${config.LinuxMuslToolchainRustFlags}"
+func (t *toolchainLinuxMuslArm) ToolchainRustFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+	return t.toolchainLinuxArm.ToolchainRustFlags(ctx).AppendNoDeps("${config.LinuxMuslToolchainRustFlags}")
 }
 
 func linuxMuslArmToolchainFactory(arch android.Arch) Toolchain {

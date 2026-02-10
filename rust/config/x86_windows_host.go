@@ -86,8 +86,10 @@ func (t *toolchainWindowsX86) ToolchainLinkFlags(ctx android.PathGlobContext) cc
 	}
 }
 
-func (t *toolchainWindowsX86) ToolchainRustFlags() string {
-	return "${config.WindowsToolchainRustFlags} ${config.WindowsX86ToolchainRustFlags}"
+func (t *toolchainWindowsX86) ToolchainRustFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+	return cc_config.FlagsWithDeps{
+		Flags: "${config.WindowsToolchainRustFlags} ${config.WindowsX86ToolchainRustFlags}",
+	}
 }
 
 func (t *toolchainWindowsX86) RustTriple() string {
@@ -155,8 +157,10 @@ func (t *toolchainWindowsX8664) ToolchainLinkFlags(ctx android.PathGlobContext) 
 	}
 }
 
-func (t *toolchainWindowsX8664) ToolchainRustFlags() string {
-	return "${config.WindowsToolchainRustFlags} ${config.WindowsX8664ToolchainRustFlags}"
+func (t *toolchainWindowsX8664) ToolchainRustFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+	return cc_config.FlagsWithDeps{
+		Flags: "${config.WindowsToolchainRustFlags} ${config.WindowsX8664ToolchainRustFlags}",
+	}
 }
 
 func (t *toolchainWindowsX8664) RustTriple() string {

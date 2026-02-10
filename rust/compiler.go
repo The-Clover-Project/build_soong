@@ -462,8 +462,8 @@ func (compiler *baseCompiler) cfgFlags(ctx ModuleContext, flags Flags) Flags {
 var gccSOnceKey = android.NewOnceKey("gcc_s_once")
 
 func CommonDefaultFlags(ctx android.ModuleContext, toolchain config.Toolchain, flags Flags) Flags {
-	flags.GlobalRustFlags = append(flags.GlobalRustFlags, config.GlobalRustFlags...)
-	flags.GlobalRustFlags = append(flags.GlobalRustFlags, toolchain.ToolchainRustFlags())
+	flags.GlobalRustFlags = flags.GlobalRustFlags.AppendNoDeps(config.GlobalRustFlags...)
+	flags.GlobalRustFlags = flags.GlobalRustFlags.Append(toolchain.ToolchainRustFlags(ctx))
 	flags.GlobalLinkFlags = flags.GlobalLinkFlags.Append(toolchain.ToolchainLinkFlags(ctx))
 	flags.EmitXrefs = ctx.Config().EmitXrefRules()
 
