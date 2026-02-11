@@ -18,8 +18,6 @@ import (
 	"android/soong/android"
 	"slices"
 	"testing"
-
-	"github.com/google/blueprint/proptools"
 )
 
 func TestCipdPackage(t *testing.T) {
@@ -234,8 +232,8 @@ func TestCipdPackage_FilesSelect(t *testing.T) {
 		name: "cipd_package1",
 		package: "android/prebuilts/package1",
 		version: "version1",
-		files: select(product_variable("debuggable"), {
-			true: ["file1-debug"],
+		files: select(soong_config_variable("test", "var"), {
+			any @ v: ["file1-" + v],
 			default: ["file1"],
 		}),
 		resolved_versions_file: "cipd.versions",
@@ -245,7 +243,11 @@ func TestCipdPackage_FilesSelect(t *testing.T) {
 	result := android.GroupFixturePreparers(
 		android.PrepareForTestWithAndroidBuildComponents,
 		android.FixtureModifyProductVariables(func(variables android.FixtureProductVariables) {
-			variables.Debuggable = proptools.BoolPtr(true)
+			variables.VendorVars = map[string]map[string]string{
+				"test": {
+					"var": "debug",
+				},
+			}
 		}),
 		android.FixtureRegisterWithContext(RegisterCipdComponents),
 	).RunTestWithBp(t, bp)
