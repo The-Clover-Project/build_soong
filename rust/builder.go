@@ -28,7 +28,8 @@ import (
 )
 
 var (
-	_ = pctx.SourcePathVariable("rustcCmd", "${config.RustBin}/rustc")
+	_            = pctx.SourcePathVariable("rustcCmd", "${config.RustBin}/rustc")
+	rustcWrapper = pctx.HostTool("rustc_wrapper")
 
 	rustc, rustcRbe = pctx.RemoteStaticRules("rustc",
 		blueprint.RuleParams{
@@ -77,17 +78,16 @@ var (
 	generateClippyRule = func(ruleName string, extraFlags string) blueprint.Rule {
 		return pctx.AndroidStaticRule(ruleName,
 			blueprint.RuleParams{
-				Command: "$envVars ${RustcWrapper} $clippyCmd " +
+				Command2: blueprint.NewCommand(
+					"$envVars ", rustcWrapper, " ${clippyCmd} ",
 					// Because clippy-driver uses rustc as backend, we need to have some output even during the linting.
 					// Use the metadata output as it has the smallest footprint.
-					"--emit metadata -o $out --emit dep-info=$out.d.raw $in ${libFlags} " +
-					"$rustcFlags $clippyFlags " + extraFlags,
-				CommandDeps:     []string{"$clippyCmd", "${RustcWrapper}"},
-				Deps:            blueprint.DepsGCC,
-				Depfile:         "$out.d",
-				SandboxDisabled: true,
+					"--emit metadata -o $out --emit dep-info=$out.d.raw $in ${libFlags} ",
+					"$rustcFlags $clippyFlags ", extraFlags, " && ",
+					android.DepfileVerifier, " --check-suffix-only $out.d ${soongSrcsFile}"),
+				CommandDeps: []string{"$clippyCmd"},
 			},
-			"rustcFlags", "libFlags", "clippyFlags", "envVars")
+			"rustcFlags", "libFlags", "clippyFlags", "envVars", "soongSrcsFile")
 	}
 	clippyDriver = generateClippyRule("clippy", "")
 
@@ -96,21 +96,12 @@ var (
 	// errors and warnings to rust-analyzer.
 	clippyJsonDriver = generateClippyRule("clippyJson", "--error-format=json 2> $out.error")
 
-	zip = pctx.AndroidStaticRule("zip",
-		blueprint.RuleParams{
-			Command:         "cat $out.rsp | tr ' ' '\\n' | tr -d \\' | sort -u > ${out}.tmp && ${SoongZipCmd} -o ${out} -C $$OUT_DIR -l ${out}.tmp",
-			CommandDeps:     []string{"${SoongZipCmd}"},
-			Rspfile:         "$out.rsp",
-			RspfileContent:  "$in",
-			SandboxDisabled: true,
-		})
-
 	cp = pctx.AndroidStaticRule("cp",
 		blueprint.RuleParams{
-			Command:         "cp `cat $outDir.rsp` $outDir",
-			Rspfile:         "${outDir}.rsp",
-			RspfileContent:  "$in",
-			SandboxDisabled: true,
+			Command2: blueprint.NewCommand(
+				android.Cp, " `", android.Cat, " $outDir.rsp` $outDir"),
+			Rspfile:        "${outDir}.rsp",
+			RspfileContent: "$in",
 		},
 		"outDir")
 )
@@ -533,14 +524,19 @@ func transformSrctoCrate(ctx android.ModuleContext, main android.Path, deps Path
 	// 	implicits = append(implicits, toolchainImplicitsPhony)
 	// }
 
+	soongDepsFile := android.PathForModuleOut(ctx, outputFile.Base()+".soong_deps")
+	android.WriteFileRule(ctx, soongDepsFile, strings.Join(srcInputs.Strings(), "\n"))
+	implicits = append(implicits, soongDepsFile)
+
 	if !t.synthetic {
 		// Only worry about clippy for actual Rust modules.
 		// Libraries built from cc use generated source, and don't need to run clippy.
 		args := map[string]string{
-			"rustcFlags":  strings.Join(rustcFlags, " "),
-			"libFlags":    strings.Join(libFlags, " "),
-			"clippyFlags": strings.Join(flags.ClippyFlags, " "),
-			"envVars":     rustStringifyEnvVars(envVars),
+			"rustcFlags":    strings.Join(rustcFlags, " "),
+			"libFlags":      strings.Join(libFlags, " "),
+			"clippyFlags":   strings.Join(flags.ClippyFlags, " "),
+			"envVars":       rustStringifyEnvVars(envVars),
+			"soongSrcsFile": soongDepsFile.String(),
 		}
 		if flags.Clippy {
 			ctx.Build(pctx, android.BuildParams{
@@ -569,10 +565,6 @@ func transformSrctoCrate(ctx android.ModuleContext, main android.Path, deps Path
 			validations = append(validations, clippyFile)
 		}
 	}
-
-	soongDepsFile := android.PathForModuleOut(ctx, outputFile.Base()+".soong_deps")
-	android.WriteFileRule(ctx, soongDepsFile, strings.Join(srcInputs.Strings(), "\n"))
-	implicits = append(implicits, soongDepsFile)
 
 	rule := rustc
 	args := map[string]string{
