@@ -105,6 +105,8 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 			"ignore-missing-out-in-depfile",
 			// b/479933778
 			"allow-unexpected-rsp-remove",
+			// set oom-score-adj=1000 on local action.
+			"oom-score-adj",
 		)
 		var sisoConfigs []string
 		switch {
