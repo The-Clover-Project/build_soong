@@ -20,4 +20,6 @@ build/soong/soong_ui.bash --make-mode dist test-configs-zip reduce-test-configs 
 host_out=$(build/soong/soong_ui.bash --dumpvar-mode HOST_OUT)
 top=$(build/soong/soong_ui.bash --dumpvar-mode --abs TOP)
 
+set -f # Disable glob expansion to allow pass through.
 $host_out/bin/reduce-test-configs -top $top $@ || exit $?
+set +f # Re-enable.
