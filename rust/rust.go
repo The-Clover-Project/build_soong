@@ -109,7 +109,7 @@ func registerPostDepsMutators(ctx android.RegisterMutatorsContext) {
 }
 
 type Flags struct {
-	GlobalRustFlags   []string                // Flags that apply globally to rust
+	GlobalRustFlags   cc_config.FlagsWithDeps // Flags that apply globally to rust
 	GlobalLinkFlags   cc_config.FlagsWithDeps // Flags that apply globally to linker
 	RustFlags         []string                // Flags that apply to rust
 	LinkFlags         cc_config.FlagsWithDeps // Flags that apply to linker

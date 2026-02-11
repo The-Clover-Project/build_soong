@@ -15,6 +15,8 @@
 package config
 
 import (
+	"path/filepath"
+	"slices"
 	"strings"
 
 	"android/soong/android"
@@ -22,13 +24,6 @@ import (
 )
 
 var (
-	LinuxRustFlags = []string{
-		// These flags are no strictly necessary but included so RBE can discover dependencies.
-		"-L${cc_config.LinuxGccRoot}/${cc_config.LinuxGccTriple}/lib32",
-		"-L${cc_config.LinuxGccRoot}/${cc_config.LinuxGccTriple}/lib64",
-		"-L${cc_config.LinuxGccRoot}/lib/gcc/${cc_config.LinuxGccTriple}/${cc_config.LinuxGccVersion}",
-		"-L${cc_config.LinuxGccRoot}/sysroot/usr/lib",
-	}
 	LinuxMuslRustFlags = []string{
 		// disable rustc's builtin fallbacks for crt objects
 		"-C link_self_contained=no",
@@ -56,6 +51,35 @@ var (
 	linuxX8664Linkflags = []string{}
 )
 
+var linuxToolchainRustFlagsOnceKey = android.NewOnceKey("linux_toolchain_rust_flags")
+
+func LinuxToolchainRustFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+	return ctx.Config().Once(linuxToolchainRustFlagsOnceKey, func() interface{} {
+		depsPhony := android.CreateNinjaPhonyOnce(ctx, "linuxToolchainRustDeps", func() android.Paths {
+			return slices.Concat(
+				android.GlobFilesOutsideModuleDir(ctx, filepath.Join(LinuxGccRoot(), LinuxGccTriple(), "lib32", "*"), nil),
+				android.GlobFilesOutsideModuleDir(ctx, filepath.Join(LinuxGccRoot(), LinuxGccTriple(), "lib64", "*"), nil),
+				android.GlobFilesOutsideModuleDir(ctx, filepath.Join(LinuxGccRoot(), "lib/gcc", LinuxGccTriple(), LinuxGccVersion(), "*"), nil),
+				android.GlobFilesOutsideModuleDir(ctx, filepath.Join(LinuxGccRoot(), "sysroot/usr/lib/**/*"), nil),
+			)
+		})
+		var deps android.Paths
+		if depsPhony != nil {
+			deps = append(deps, depsPhony)
+		}
+		return cc_config.FlagsWithDeps{
+			Flags: strings.Join([]string{
+				// These flags are no strictly necessary but included so RBE can discover dependencies.
+				"-L${cc_config.LinuxGccRoot}/${cc_config.LinuxGccTriple}/lib32",
+				"-L${cc_config.LinuxGccRoot}/${cc_config.LinuxGccTriple}/lib64",
+				"-L${cc_config.LinuxGccRoot}/lib/gcc/${cc_config.LinuxGccTriple}/${cc_config.LinuxGccVersion}",
+				"-L${cc_config.LinuxGccRoot}/sysroot/usr/lib",
+			}, " "),
+			Deps: deps,
+		}
+	}).(cc_config.FlagsWithDeps)
+}
+
 func init() {
 	registerToolchainFactory(android.Linux, android.X86_64, linuxGlibcX8664ToolchainFactory)
 	registerToolchainFactory(android.Linux, android.X86, linuxGlibcX86ToolchainFactory)
@@ -63,7 +87,6 @@ func init() {
 	registerToolchainFactory(android.LinuxMusl, android.X86_64, linuxMuslX8664ToolchainFactory)
 	registerToolchainFactory(android.LinuxMusl, android.X86, linuxMuslX86ToolchainFactory)
 
-	pctx.StaticVariable("LinuxToolchainRustFlags", strings.Join(LinuxRustFlags, " "))
 	pctx.StaticVariable("LinuxMuslToolchainRustFlags", strings.Join(LinuxMuslRustFlags, " "))
 	pctx.StaticVariable("LinuxToolchainLinkFlags", strings.Join(LinuxRustLinkFlags, " "))
 	pctx.StaticVariable("LinuxGlibcToolchainLinkFlags", strings.Join(LinuxRustGlibcLinkFlags, " "))
@@ -106,8 +129,8 @@ func (t *toolchainLinuxX8664) ToolchainLinkFlags(ctx android.PathGlobContext) cc
 	return preFlags.Append(ccFlags).Append(postFlags)
 }
 
-func (t *toolchainLinuxX8664) ToolchainRustFlags() string {
-	return "${config.LinuxToolchainRustFlags} ${config.LinuxToolchainX8664RustFlags}"
+func (t *toolchainLinuxX8664) ToolchainRustFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+	return LinuxToolchainRustFlags(ctx).AppendNoDeps("${config.LinuxToolchainX8664RustFlags}")
 }
 
 // Specialization of the 64-bit linux rust toolchain for glibc.  Adds the gnu rust triple and
@@ -156,8 +179,8 @@ func (t *toolchainLinuxMuslX8664) ToolchainLinkFlags(ctx android.PathGlobContext
 	return t.toolchainLinuxX8664.ToolchainLinkFlags(ctx).Append(extraFlags)
 }
 
-func (t *toolchainLinuxMuslX8664) ToolchainRustFlags() string {
-	return t.toolchainLinuxX8664.ToolchainRustFlags() + " " + "${config.LinuxMuslToolchainRustFlags}"
+func (t *toolchainLinuxMuslX8664) ToolchainRustFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+	return t.toolchainLinuxX8664.ToolchainRustFlags(ctx).AppendNoDeps("${config.LinuxMuslToolchainRustFlags}")
 }
 
 func linuxMuslX8664ToolchainFactory(arch android.Arch) Toolchain {
@@ -211,8 +234,8 @@ func (t *toolchainLinuxX86) ToolchainLinkFlags(ctx android.PathGlobContext) cc_c
 	return preFlags.Append(ccFlags).Append(postFlags)
 }
 
-func (t *toolchainLinuxX86) ToolchainRustFlags() string {
-	return "${config.LinuxToolchainRustFlags} ${config.LinuxToolchainX86RustFlags}"
+func (t *toolchainLinuxX86) ToolchainRustFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+	return LinuxToolchainRustFlags(ctx).AppendNoDeps("${config.LinuxToolchainX86RustFlags}")
 }
 
 // Specialization of the 32-bit linux rust toolchain for glibc.  Adds the gnu rust triple and
@@ -261,8 +284,8 @@ func (t *toolchainLinuxMuslX86) ToolchainLinkFlags(ctx android.PathGlobContext) 
 	return t.toolchainLinuxX86.ToolchainLinkFlags(ctx).Append(extraFlags)
 }
 
-func (t *toolchainLinuxMuslX86) ToolchainRustFlags() string {
-	return t.toolchainLinuxX86.ToolchainRustFlags() + " " + "${config.LinuxMuslToolchainRustFlags}"
+func (t *toolchainLinuxMuslX86) ToolchainRustFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+	return t.toolchainLinuxX86.ToolchainRustFlags(ctx).AppendNoDeps("${config.LinuxMuslToolchainRustFlags}")
 }
 
 func (t *toolchainLinuxMuslX86) Musl() bool {

@@ -110,8 +110,10 @@ func (t *toolchainDarwinArm64) ToolchainLinkFlags(ctx android.PathGlobContext) c
 	}
 }
 
-func (t *toolchainDarwinArm64) ToolchainRustFlags() string {
-	return "${config.DarwinToolchainRustFlags} ${config.DarwinToolchainArm64RustFlags}"
+func (t *toolchainDarwinArm64) ToolchainRustFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+	return cc_config.FlagsWithDeps{
+		Flags: "${config.DarwinToolchainRustFlags} ${config.DarwinToolchainArm64RustFlags}",
+	}
 }
 
 func (t *toolchainDarwinX8664) ToolchainLinkFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
@@ -121,8 +123,10 @@ func (t *toolchainDarwinX8664) ToolchainLinkFlags(ctx android.PathGlobContext) c
 	}
 }
 
-func (t *toolchainDarwinX8664) ToolchainRustFlags() string {
-	return "${config.DarwinToolchainRustFlags} ${config.DarwinToolchainX8664RustFlags}"
+func (t *toolchainDarwinX8664) ToolchainRustFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+	return cc_config.FlagsWithDeps{
+		Flags: "${config.DarwinToolchainRustFlags} ${config.DarwinToolchainX8664RustFlags}",
+	}
 }
 
 func darwinArm64ToolchainFactory(arch android.Arch) Toolchain {

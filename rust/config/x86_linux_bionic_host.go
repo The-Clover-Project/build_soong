@@ -67,8 +67,10 @@ func (t *toolchainLinuxBionicX8664) ToolchainLinkFlags(ctx android.PathGlobConte
 	}
 }
 
-func (t *toolchainLinuxBionicX8664) ToolchainRustFlags() string {
-	return "${config.LinuxBionicToolchainRustFlags}"
+func (t *toolchainLinuxBionicX8664) ToolchainRustFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+	return cc_config.FlagsWithDeps{
+		Flags: "${config.LinuxBionicToolchainRustFlags}",
+	}
 }
 
 func linuxBionicX8664ToolchainFactory(arch android.Arch) Toolchain {

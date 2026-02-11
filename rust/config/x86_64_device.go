@@ -84,8 +84,10 @@ func (t *toolchainX86_64) ToolchainLinkFlags(ctx android.PathGlobContext) cc_con
 	return deviceGlobalLinkFlags.Append(ccFlags).Append(x8664ToolchainLinkFlags)
 }
 
-func (t *toolchainX86_64) ToolchainRustFlags() string {
-	return t.toolchainRustFlags
+func (t *toolchainX86_64) ToolchainRustFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+	return cc_config.FlagsWithDeps{
+		Flags: t.toolchainRustFlags,
+	}
 }
 
 func (t *toolchainX86_64) RustFlags() string {

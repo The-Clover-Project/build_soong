@@ -173,7 +173,7 @@ func getTransformProperties(ctx ModuleContext, crateType string) transformProper
 func TransformSrcToBinary(ctx ModuleContext, mainSrc android.Path, deps PathDeps, flags Flags,
 	outputFile, checkJsonFile android.WritablePath) buildOutput {
 	if ctx.RustModule().compiler.Thinlto() {
-		flags.GlobalRustFlags = append(flags.GlobalRustFlags, "-C lto=thin")
+		flags.GlobalRustFlags = flags.GlobalRustFlags.AppendNoDeps("-C lto=thin")
 	}
 
 	return transformSrctoCrate(ctx, mainSrc, deps, flags, outputFile, checkJsonFile, getTransformProperties(ctx, "bin"))
@@ -237,7 +237,7 @@ func TransformRlibstoStaticlib(ctx android.ModuleContext, mainSrc android.Path, 
 
 	rustFlags = CommonDefaultFlags(ctx, toolchain, rustFlags)
 	rustFlags = CommonLibraryCompilerFlags(ctx, rustFlags)
-	rustFlags.GlobalRustFlags = append(rustFlags.GlobalRustFlags, "-C lto=thin")
+	rustFlags.GlobalRustFlags = rustFlags.GlobalRustFlags.AppendNoDeps("-C lto=thin")
 
 	rustFlags.EmitXrefs = false
 
@@ -247,7 +247,7 @@ func TransformRlibstoStaticlib(ctx android.ModuleContext, mainSrc android.Path, 
 func TransformSrctoDylib(ctx ModuleContext, mainSrc android.Path, deps PathDeps, flags Flags,
 	outputFile, checkJsonFile android.WritablePath) buildOutput {
 	if ctx.RustModule().compiler.Thinlto() {
-		flags.GlobalRustFlags = append(flags.GlobalRustFlags, "-C lto=thin")
+		flags.GlobalRustFlags = flags.GlobalRustFlags.AppendNoDeps("-C lto=thin")
 	}
 
 	return transformSrctoCrate(ctx, mainSrc, deps, flags, outputFile, checkJsonFile, getTransformProperties(ctx, "dylib"))
@@ -256,7 +256,7 @@ func TransformSrctoDylib(ctx ModuleContext, mainSrc android.Path, deps PathDeps,
 func TransformSrctoStatic(ctx ModuleContext, mainSrc android.Path, deps PathDeps, flags Flags,
 	outputFile, checkJsonFile android.WritablePath) buildOutput {
 	if ctx.RustModule().compiler.Thinlto() {
-		flags.GlobalRustFlags = append(flags.GlobalRustFlags, "-C lto=thin")
+		flags.GlobalRustFlags = flags.GlobalRustFlags.AppendNoDeps("-C lto=thin")
 	}
 
 	return transformSrctoCrate(ctx, mainSrc, deps, flags, outputFile, checkJsonFile, getTransformProperties(ctx, "staticlib"))
@@ -265,7 +265,7 @@ func TransformSrctoStatic(ctx ModuleContext, mainSrc android.Path, deps PathDeps
 func TransformSrctoShared(ctx ModuleContext, mainSrc android.Path, deps PathDeps, flags Flags,
 	outputFile, checkJsonFile android.WritablePath) buildOutput {
 	if ctx.RustModule().compiler.Thinlto() {
-		flags.GlobalRustFlags = append(flags.GlobalRustFlags, "-C lto=thin")
+		flags.GlobalRustFlags = flags.GlobalRustFlags.AppendNoDeps("-C lto=thin")
 	}
 
 	return transformSrctoCrate(ctx, mainSrc, deps, flags, outputFile, checkJsonFile, getTransformProperties(ctx, "cdylib"))
@@ -391,7 +391,8 @@ func transformSrctoCrate(ctx android.ModuleContext, main android.Path, deps Path
 	inputs = append(inputs, main)
 
 	// Collect rustc flags
-	rustcFlags = append(rustcFlags, flags.GlobalRustFlags...)
+	rustcFlags = append(rustcFlags, flags.GlobalRustFlags.Flags)
+	implicits = append(implicits, flags.GlobalRustFlags.Deps...)
 	rustcFlags = append(rustcFlags, flags.RustFlags...)
 	if t.crateType != "" {
 		rustcFlags = append(rustcFlags, "--crate-type="+t.crateType)
@@ -608,8 +609,11 @@ func transformSrctoCrate(ctx android.ModuleContext, main android.Path, deps Path
 func Rustdoc(ctx ModuleContext, main android.Path, deps PathDeps,
 	flags Flags) android.ModuleOutPath {
 
+	var implicits android.Paths
+
 	rustdocFlags := slices.Clone(flags.RustdocFlags)
-	rustdocFlags = append(rustdocFlags, flags.GlobalRustFlags...)
+	rustdocFlags = append(rustdocFlags, flags.GlobalRustFlags.Flags)
+	implicits = append(implicits, flags.GlobalRustFlags.Deps...)
 	rustdocFlags = append(rustdocFlags, "--sysroot=/dev/null")
 
 	// Build an index for all our crates. -Z unstable options is required to use
@@ -646,7 +650,6 @@ func Rustdoc(ctx ModuleContext, main android.Path, deps PathDeps,
 	// https://github.com/rust-lang/rust/blob/master/src/librustdoc/html/render/write_shared.rs#L144-L146
 	docDir := android.PathForOutput(ctx, "rustdoc")
 
-	var implicits android.Paths
 	implicits = append(implicits, rustLibsToPaths(deps.RLibs)...)
 	implicits = append(implicits, rustLibsToPaths(deps.DyLibs)...)
 	implicits = append(implicits, rustLibsToPaths(deps.ProcMacros)...)

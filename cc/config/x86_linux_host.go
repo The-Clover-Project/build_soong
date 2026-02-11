@@ -29,19 +29,6 @@ const (
 )
 
 var (
-	// Most places use the full GCC version. A few only use up to the first two numbers.
-	shortLinuxGccVersion = func() string {
-		if p := strings.Split(linuxGccVersion, "."); len(p) > 2 {
-			return strings.Join(p[:2], ".")
-		} else {
-			return linuxGccVersion
-		}
-	}()
-
-	linuxGccRoot = fmt.Sprintf("prebuilts/gcc/linux-x86/host/x86_64-linux-glibc%s-%s", linuxGlibcVersion, shortLinuxGccVersion)
-)
-
-var (
 	linuxCflags = []string{
 		"-Wa,--noexecstack",
 
@@ -126,6 +113,7 @@ var linuxX86LdflagsOnceKey = android.NewOnceKey("LinuxX86Ldflags")
 
 func LinuxX86Ldflags(ctx android.PathGlobContext) FlagsWithDeps {
 	return ctx.Config().Once(linuxX86LdflagsOnceKey, func() interface{} {
+		linuxGccRoot := LinuxGccRoot()
 		depsPhony := android.CreateNinjaPhonyOnce(ctx, "linuxX86LdFlagsDeps", func() android.Paths {
 			deps := android.GlobFilesOutsideModuleDir(ctx, filepath.Join(linuxGccRoot, "lib/gcc", linuxGccTriple, linuxGccVersion, "32", "*"), nil)
 			deps = append(deps, android.GlobFilesOutsideModuleDir(ctx, filepath.Join(linuxGccRoot, linuxGccTriple, "lib32", "*"), nil)...)
@@ -151,6 +139,7 @@ var linuxX8664LdflagsOnceKey = android.NewOnceKey("LinuxX86Ldflags")
 
 func LinuxX8664Ldflags(ctx android.PathGlobContext) FlagsWithDeps {
 	return ctx.Config().Once(linuxX8664LdflagsOnceKey, func() interface{} {
+		linuxGccRoot := LinuxGccRoot()
 		depsPhony := android.CreateNinjaPhonyOnce(ctx, "linuxX8664LdFlagsDeps", func() android.Paths {
 			deps := android.GlobFilesOutsideModuleDir(ctx, filepath.Join(linuxGccRoot, "lib/gcc", linuxGccTriple, linuxGccVersion, "*"), nil)
 			deps = append(deps, android.GlobFilesOutsideModuleDir(ctx, filepath.Join(linuxGccRoot, linuxGccTriple, "lib64", "*"), nil)...)
@@ -176,8 +165,7 @@ func init() {
 	pctx.StaticVariable("LinuxGccVersion", linuxGccVersion)
 	pctx.StaticVariable("LinuxGlibcVersion", linuxGlibcVersion)
 
-	pctx.StaticVariable("ShortLinuxGccVersion", shortLinuxGccVersion)
-	pctx.SourcePathVariable("LinuxGccRoot", linuxGccRoot)
+	pctx.SourcePathVariable("LinuxGccRoot", LinuxGccRoot())
 
 	pctx.StaticVariable("LinuxGccTriple", linuxGccTriple)
 

@@ -72,8 +72,10 @@ func (t *toolchainArm) ToolchainLinkFlags(ctx android.PathGlobContext) cc_config
 	return globalFlags.Append(ccFlags).Append(armToolchainFlags)
 }
 
-func (t *toolchainArm) ToolchainRustFlags() string {
-	return t.toolchainRustFlags
+func (t *toolchainArm) ToolchainRustFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+	return cc_config.FlagsWithDeps{
+		Flags: t.toolchainRustFlags,
+	}
 }
 
 func (t *toolchainArm) RustFlags() string {
