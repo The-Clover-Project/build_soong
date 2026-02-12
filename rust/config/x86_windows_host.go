@@ -80,10 +80,16 @@ func (t *toolchainWindowsX86) Name() string {
 
 func (t *toolchainWindowsX86) ToolchainLinkFlags(ctx ToolchainFlagsContext) cc_config.FlagsWithDeps {
 	// Prepend the lld flags from cc_config so we stay in sync with cc
-	return cc_config.FlagsWithDeps{
-		Flags: "${cc_config.WindowsLdflags} ${cc_config.WindowsX86Ldflags} ${cc_config.WindowsAvailableLibraries} " +
-			"${config.WindowsToolchainRustLinkFlags} ${config.WindowsX86ToolchainRustLinkFlags}",
+	preflags := cc_config.FlagsWithDeps{
+		Flags: "${cc_config.WindowsLdflags}",
 	}
+	windowsX86LdFlags := cc_config.WindowsX86Ldflags(ctx)
+	windowsX86LdFlags.Flags = strings.ReplaceAll(windowsX86LdFlags.Flags, "${config.", "${cc_config.")
+	postflags := cc_config.FlagsWithDeps{
+		Flags: "${cc_config.WindowsAvailableLibraries} ${config.WindowsToolchainRustLinkFlags} " +
+			"${config.WindowsX86ToolchainRustLinkFlags}",
+	}
+	return preflags.Append(windowsX86LdFlags).Append(postflags)
 }
 
 func (t *toolchainWindowsX86) ToolchainRustFlags(ctx ToolchainFlagsContext) cc_config.FlagsWithDeps {
@@ -151,10 +157,16 @@ func (t *toolchainWindowsX8664) Name() string {
 
 func (t *toolchainWindowsX8664) ToolchainLinkFlags(ctx ToolchainFlagsContext) cc_config.FlagsWithDeps {
 	// Prepend the lld flags from cc_config so we stay in sync with cc
-	return cc_config.FlagsWithDeps{
-		Flags: "${cc_config.WindowsLdflags} ${cc_config.WindowsX8664Ldflags} ${cc_config.WindowsAvailableLibraries} " +
-			"${config.WindowsToolchainRustLinkFlags} ${config.WindowsX8664ToolchainRustLinkFlags}",
+	preflags := cc_config.FlagsWithDeps{
+		Flags: "${cc_config.WindowsLdflags}",
 	}
+	windowsX8664LdFlags := cc_config.WindowsX8664Ldflags(ctx)
+	windowsX8664LdFlags.Flags = strings.ReplaceAll(windowsX8664LdFlags.Flags, "${config.", "${cc_config.")
+	postflags := cc_config.FlagsWithDeps{
+		Flags: "${cc_config.WindowsAvailableLibraries} ${config.WindowsToolchainRustLinkFlags} " +
+			"${config.WindowsX8664ToolchainRustLinkFlags}",
+	}
+	return preflags.Append(windowsX8664LdFlags).Append(postflags)
 }
 
 func (t *toolchainWindowsX8664) ToolchainRustFlags(ctx ToolchainFlagsContext) cc_config.FlagsWithDeps {
