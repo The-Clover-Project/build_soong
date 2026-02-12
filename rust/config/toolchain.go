@@ -19,10 +19,14 @@ import (
 	cc_config "android/soong/cc/config"
 )
 
+type ToolchainFlagsContext interface {
+	cc_config.ToolchainFlagsContext
+}
+
 type Toolchain interface {
 	RustTriple() string
-	ToolchainRustFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps
-	ToolchainLinkFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps
+	ToolchainRustFlags(ctx ToolchainFlagsContext) cc_config.FlagsWithDeps
+	ToolchainLinkFlags(ctx ToolchainFlagsContext) cc_config.FlagsWithDeps
 
 	SharedLibSuffix() string
 	StaticLibSuffix() string
@@ -48,11 +52,11 @@ func (toolchainBase) RustTriple() string {
 	panic("toolchainBase does not define a triple.")
 }
 
-func (toolchainBase) ToolchainRustFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+func (toolchainBase) ToolchainRustFlags(ctx ToolchainFlagsContext) cc_config.FlagsWithDeps {
 	panic("toolchainBase does not provide rust flags.")
 }
 
-func (toolchainBase) ToolchainLinkFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+func (toolchainBase) ToolchainLinkFlags(ctx ToolchainFlagsContext) cc_config.FlagsWithDeps {
 	panic("toolchainBase does not provide link flags.")
 }
 

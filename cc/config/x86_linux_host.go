@@ -17,6 +17,7 @@ package config
 import (
 	"fmt"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"android/soong/android"
@@ -109,56 +110,46 @@ var (
 	MuslDefaultSharedLibraries = []string{"libc_musl"}
 )
 
-var linuxX86LdflagsOnceKey = android.NewOnceKey("LinuxX86Ldflags")
-
-func LinuxX86Ldflags(ctx android.PathGlobContext) FlagsWithDeps {
-	return ctx.Config().Once(linuxX86LdflagsOnceKey, func() interface{} {
-		linuxGccRoot := LinuxGccRoot()
-		depsPhony := android.CreateNinjaPhonyOnce(ctx, "linuxX86LdFlagsDeps", func() android.Paths {
-			deps := android.GlobFilesOutsideModuleDir(ctx, filepath.Join(linuxGccRoot, "lib/gcc", linuxGccTriple, linuxGccVersion, "32", "*"), nil)
-			deps = append(deps, android.GlobFilesOutsideModuleDir(ctx, filepath.Join(linuxGccRoot, linuxGccTriple, "lib32", "*"), nil)...)
-			return deps
-		})
-		var deps android.Paths
-		if depsPhony != nil {
-			deps = append(deps, depsPhony)
-		}
-		return FlagsWithDeps{
-			Flags: strings.Join([]string{
-				"-m32",
-				"-B" + linuxGccRoot + "/lib/gcc/" + linuxGccTriple + "/" + linuxGccVersion + "/32",
-				"-L" + linuxGccRoot + "/lib/gcc/" + linuxGccTriple + "/" + linuxGccVersion + "/32",
-				"-L" + linuxGccRoot + "/" + linuxGccTriple + "/lib32",
-			}, " "),
-			Deps: deps,
-		}
-	}).(FlagsWithDeps)
+func LinuxX86Ldflags(ctx ToolchainFlagsContext) FlagsWithDeps {
+	linuxGccRoot := LinuxGccRoot()
+	depsPhony := ctx.CreateNinjaPhonyOnce("linuxX86LdFlagsDeps", slices.Concat(
+		android.GlobFilesOutsideModuleDir(ctx, filepath.Join(linuxGccRoot, "lib/gcc", linuxGccTriple, linuxGccVersion, "32", "*"), nil),
+		android.GlobFilesOutsideModuleDir(ctx, filepath.Join(linuxGccRoot, linuxGccTriple, "lib32", "*"), nil),
+	))
+	var deps android.Paths
+	if depsPhony != nil {
+		deps = append(deps, depsPhony)
+	}
+	return FlagsWithDeps{
+		Flags: strings.Join([]string{
+			"-m32",
+			"-B" + linuxGccRoot + "/lib/gcc/" + linuxGccTriple + "/" + linuxGccVersion + "/32",
+			"-L" + linuxGccRoot + "/lib/gcc/" + linuxGccTriple + "/" + linuxGccVersion + "/32",
+			"-L" + linuxGccRoot + "/" + linuxGccTriple + "/lib32",
+		}, " "),
+		Deps: deps,
+	}
 }
 
-var linuxX8664LdflagsOnceKey = android.NewOnceKey("LinuxX86Ldflags")
-
-func LinuxX8664Ldflags(ctx android.PathGlobContext) FlagsWithDeps {
-	return ctx.Config().Once(linuxX8664LdflagsOnceKey, func() interface{} {
-		linuxGccRoot := LinuxGccRoot()
-		depsPhony := android.CreateNinjaPhonyOnce(ctx, "linuxX8664LdFlagsDeps", func() android.Paths {
-			deps := android.GlobFilesOutsideModuleDir(ctx, filepath.Join(linuxGccRoot, "lib/gcc", linuxGccTriple, linuxGccVersion, "*"), nil)
-			deps = append(deps, android.GlobFilesOutsideModuleDir(ctx, filepath.Join(linuxGccRoot, linuxGccTriple, "lib64", "*"), nil)...)
-			return deps
-		})
-		var deps android.Paths
-		if depsPhony != nil {
-			deps = append(deps, depsPhony)
-		}
-		return FlagsWithDeps{
-			Flags: strings.Join([]string{
-				"-m64",
-				"-B" + linuxGccRoot + "/lib/gcc/" + linuxGccTriple + "/" + linuxGccVersion,
-				"-L" + linuxGccRoot + "/lib/gcc/" + linuxGccTriple + "/" + linuxGccVersion,
-				"-L" + linuxGccRoot + "/" + linuxGccTriple + "/lib64",
-			}, " "),
-			Deps: deps,
-		}
-	}).(FlagsWithDeps)
+func LinuxX8664Ldflags(ctx ToolchainFlagsContext) FlagsWithDeps {
+	linuxGccRoot := LinuxGccRoot()
+	depsPhony := ctx.CreateNinjaPhonyOnce("linuxX8664LdFlagsDeps", slices.Concat(
+		android.GlobFilesOutsideModuleDir(ctx, filepath.Join(linuxGccRoot, "lib/gcc", linuxGccTriple, linuxGccVersion, "*"), nil),
+		android.GlobFilesOutsideModuleDir(ctx, filepath.Join(linuxGccRoot, linuxGccTriple, "lib64", "*"), nil),
+	))
+	var deps android.Paths
+	if depsPhony != nil {
+		deps = append(deps, depsPhony)
+	}
+	return FlagsWithDeps{
+		Flags: strings.Join([]string{
+			"-m64",
+			"-B" + linuxGccRoot + "/lib/gcc/" + linuxGccTriple + "/" + linuxGccVersion,
+			"-L" + linuxGccRoot + "/lib/gcc/" + linuxGccTriple + "/" + linuxGccVersion,
+			"-L" + linuxGccRoot + "/" + linuxGccTriple + "/lib64",
+		}, " "),
+		Deps: deps,
+	}
 }
 
 func init() {
@@ -226,13 +217,13 @@ func (t *toolchainLinuxX8664) Cppflags() string {
 	return ""
 }
 
-func (t *toolchainLinuxX86) Ldflags(ctx android.PathGlobContext) FlagsWithDeps {
+func (t *toolchainLinuxX86) Ldflags(ctx ToolchainFlagsContext) FlagsWithDeps {
 	return FlagsWithDeps{
 		Flags: "${config.LinuxLdflags}",
 	}.Append(LinuxX86Ldflags(ctx))
 }
 
-func (t *toolchainLinuxX8664) Ldflags(ctx android.PathGlobContext) FlagsWithDeps {
+func (t *toolchainLinuxX8664) Ldflags(ctx ToolchainFlagsContext) FlagsWithDeps {
 	preflags := FlagsWithDeps{
 		Flags: "${config.LinuxLdflags}",
 	}
@@ -279,7 +270,7 @@ func (toolchainGlibc) Cflags() string {
 	return "${config.LinuxGlibcCflags}"
 }
 
-func (toolchainGlibc) Ldflags(ctx android.PathGlobContext) FlagsWithDeps {
+func (toolchainGlibc) Ldflags(ctx ToolchainFlagsContext) FlagsWithDeps {
 	return FlagsWithDeps{
 		Flags: "${config.LinuxGlibcLdflags}",
 	}
@@ -303,7 +294,7 @@ func (t *toolchainLinuxGlibcX86) Cflags() string {
 	return t.toolchainLinuxX86.Cflags() + " " + t.toolchainGlibc.Cflags()
 }
 
-func (t *toolchainLinuxGlibcX86) Ldflags(ctx android.PathGlobContext) FlagsWithDeps {
+func (t *toolchainLinuxGlibcX86) Ldflags(ctx ToolchainFlagsContext) FlagsWithDeps {
 	return t.toolchainLinuxX86.Ldflags(ctx).Append(t.toolchainGlibc.Ldflags(ctx))
 }
 
@@ -315,7 +306,7 @@ func (t *toolchainLinuxGlibcX8664) Cflags() string {
 	return t.toolchainLinuxX8664.Cflags() + " " + t.toolchainGlibc.Cflags()
 }
 
-func (t *toolchainLinuxGlibcX8664) Ldflags(ctx android.PathGlobContext) FlagsWithDeps {
+func (t *toolchainLinuxGlibcX8664) Ldflags(ctx ToolchainFlagsContext) FlagsWithDeps {
 	return t.toolchainLinuxX8664.Ldflags(ctx).Append(t.toolchainGlibc.Ldflags(ctx))
 }
 
@@ -351,7 +342,7 @@ func (toolchainMusl) Cflags() string {
 	return "${config.LinuxMuslCflags}"
 }
 
-func (toolchainMusl) Ldflags(ctx android.PathGlobContext) FlagsWithDeps {
+func (toolchainMusl) Ldflags(ctx ToolchainFlagsContext) FlagsWithDeps {
 	return FlagsWithDeps{
 		Flags: "${config.LinuxMuslLdflags}",
 	}
@@ -375,7 +366,7 @@ func (t *toolchainLinuxMuslX86) Cflags() string {
 	return t.toolchainLinuxX86.Cflags() + " " + t.toolchainMusl.Cflags()
 }
 
-func (t *toolchainLinuxMuslX86) Ldflags(ctx android.PathGlobContext) FlagsWithDeps {
+func (t *toolchainLinuxMuslX86) Ldflags(ctx ToolchainFlagsContext) FlagsWithDeps {
 	return t.toolchainLinuxX86.Ldflags(ctx).Append(t.toolchainMusl.Ldflags(ctx))
 }
 
@@ -387,7 +378,7 @@ func (t *toolchainLinuxMuslX8664) Cflags() string {
 	return t.toolchainLinuxX8664.Cflags() + " " + t.toolchainMusl.Cflags()
 }
 
-func (t *toolchainLinuxMuslX8664) Ldflags(ctx android.PathGlobContext) FlagsWithDeps {
+func (t *toolchainLinuxMuslX8664) Ldflags(ctx ToolchainFlagsContext) FlagsWithDeps {
 	return t.toolchainLinuxX8664.Ldflags(ctx).Append(t.toolchainMusl.Ldflags(ctx))
 }
 

@@ -83,13 +83,13 @@ func (t *toolchainLinuxArm64) Cppflags() string {
 	return ""
 }
 
-func (t *toolchainLinuxArm) Ldflags(ctx android.PathGlobContext) FlagsWithDeps {
+func (t *toolchainLinuxArm) Ldflags(ctx ToolchainFlagsContext) FlagsWithDeps {
 	return FlagsWithDeps{
 		Flags: "${config.LinuxLdflags} ${config.LinuxArmLdflags}",
 	}
 }
 
-func (t *toolchainLinuxArm64) Ldflags(ctx android.PathGlobContext) FlagsWithDeps {
+func (t *toolchainLinuxArm64) Ldflags(ctx ToolchainFlagsContext) FlagsWithDeps {
 	return FlagsWithDeps{
 		Flags: "${config.LinuxLdflags} ${config.LinuxArm64Ldflags}",
 	}
@@ -134,7 +134,7 @@ func (t *toolchainLinuxMuslArm) Cflags() string {
 	return t.toolchainLinuxArm.Cflags() + " " + t.toolchainMusl.Cflags()
 }
 
-func (t *toolchainLinuxMuslArm) Ldflags(ctx android.PathGlobContext) FlagsWithDeps {
+func (t *toolchainLinuxMuslArm) Ldflags(ctx ToolchainFlagsContext) FlagsWithDeps {
 	return t.toolchainLinuxArm.Ldflags(ctx).Append(t.toolchainMusl.Ldflags(ctx))
 }
 
@@ -146,7 +146,7 @@ func (t *toolchainLinuxMuslArm64) Cflags() string {
 	return t.toolchainLinuxArm64.Cflags() + " " + t.toolchainMusl.Cflags()
 }
 
-func (t *toolchainLinuxMuslArm64) Ldflags(ctx android.PathGlobContext) FlagsWithDeps {
+func (t *toolchainLinuxMuslArm64) Ldflags(ctx ToolchainFlagsContext) FlagsWithDeps {
 	return t.toolchainLinuxArm64.Ldflags(ctx).Append(t.toolchainMusl.Ldflags(ctx))
 }
 

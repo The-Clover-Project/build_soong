@@ -2140,6 +2140,7 @@ type CommonModuleInfo struct {
 	AndroidMkData                  *AndroidMkDataInfo
 	BaseJarJarProviderData         *BaseJarJarProviderData
 	InstallFiles                   *InstallFilesInfo
+	NinjaPhonies                   map[string]Paths
 }
 
 // @auto-generate: gob
@@ -2553,6 +2554,7 @@ func (m *ModuleBase) GenerateBuildActions(blueprintCtx blueprint.ModuleContext) 
 		SourceFiles:                                  sourceFiles,
 		Containers:                                   ctx.containersInfo,
 		BaseJarJarProviderData:                       ctx.baseJarJarProviderData,
+		NinjaPhonies:                                 ctx.ninjaPhonies,
 	}
 	outputFiles := ctx.GetOutputFiles()
 	if outputFiles.DefaultOutputFiles != nil || outputFiles.TaggedOutputFiles != nil {
