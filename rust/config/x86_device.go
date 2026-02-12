@@ -66,20 +66,30 @@ func init() {
 type toolchainX86 struct {
 	toolchain32Bit
 	toolchainRustFlags string
-	ldflags            string
+	cc_toolchain       cc_config.Toolchain
 }
 
 func (t *toolchainX86) RustTriple() string {
 	return "i686-linux-android"
 }
 
-func (t *toolchainX86) ToolchainLinkFlags() string {
+func (t *toolchainX86) ToolchainLinkFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
 	// Prepend the lld flags from cc_config so we stay in sync with cc
-	return "${config.DeviceGlobalLinkFlags} " + t.ldflags + " ${config.X86ToolchainLinkFlags}"
+	deviceGlobalLinkFlags := cc_config.FlagsWithDeps{
+		Flags: "${config.DeviceGlobalLinkFlags}",
+	}
+	x86ToolchainLinkFlags := cc_config.FlagsWithDeps{
+		Flags: "${config.X86ToolchainLinkFlags}",
+	}
+	ccFlags := t.cc_toolchain.Ldflags(ctx)
+	ccFlags.Flags = strings.ReplaceAll(ccFlags.Flags, "${config.", "${cc_config.")
+	return deviceGlobalLinkFlags.Append(ccFlags).Append(x86ToolchainLinkFlags)
 }
 
-func (t *toolchainX86) ToolchainRustFlags() string {
-	return t.toolchainRustFlags
+func (t *toolchainX86) ToolchainRustFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+	return cc_config.FlagsWithDeps{
+		Flags: t.toolchainRustFlags,
+	}
 }
 
 func (t *toolchainX86) RustFlags() string {
@@ -107,9 +117,8 @@ func x86ToolchainFactory(arch android.Arch) Toolchain {
 	}
 
 	cc_toolchain := cc_config.FindToolchain(android.Android, arch)
-
 	return &toolchainX86{
 		toolchainRustFlags: strings.Join(toolchainRustFlags, " "),
-		ldflags:            strings.ReplaceAll(cc_toolchain.Ldflags(), "${config.", "${cc_config."),
+		cc_toolchain:       cc_toolchain,
 	}
 }

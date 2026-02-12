@@ -74,11 +74,11 @@ type Toolchain interface {
 
 	ClangTriple() string
 	ToolchainCflags() string
-	ToolchainLdflags() string
+	ToolchainLdflags() FlagsWithDeps
 	Asflags() string
 	Cflags() string
 	Cppflags() string
-	Ldflags() string
+	Ldflags(ctx android.PathGlobContext) FlagsWithDeps
 	InstructionSetFlags(string) (string, error)
 
 	ndkTriple() string
@@ -138,8 +138,8 @@ func (toolchainBase) ToolchainCflags() string {
 	return ""
 }
 
-func (toolchainBase) ToolchainLdflags() string {
-	return ""
+func (toolchainBase) ToolchainLdflags() FlagsWithDeps {
+	return FlagsWithDeps{}
 }
 
 func (toolchainBase) Asflags() string {

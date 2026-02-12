@@ -459,25 +459,27 @@ func (compiler *baseCompiler) cfgFlags(ctx ModuleContext, flags Flags) Flags {
 	return flags
 }
 
+var gccSOnceKey = android.NewOnceKey("gcc_s_once")
+
 func CommonDefaultFlags(ctx android.ModuleContext, toolchain config.Toolchain, flags Flags) Flags {
-	flags.GlobalRustFlags = append(flags.GlobalRustFlags, config.GlobalRustFlags...)
-	flags.GlobalRustFlags = append(flags.GlobalRustFlags, toolchain.ToolchainRustFlags())
-	flags.GlobalLinkFlags = append(flags.GlobalLinkFlags, toolchain.ToolchainLinkFlags())
+	flags.GlobalRustFlags = flags.GlobalRustFlags.AppendNoDeps(config.GlobalRustFlags...)
+	flags.GlobalRustFlags = flags.GlobalRustFlags.Append(toolchain.ToolchainRustFlags(ctx))
+	flags.GlobalLinkFlags = flags.GlobalLinkFlags.Append(toolchain.ToolchainLinkFlags(ctx))
 	flags.EmitXrefs = ctx.Config().EmitXrefRules()
 
 	if ctx.Host() && !ctx.Windows() {
-		flags.LinkFlags = append(flags.LinkFlags, cc.RpathFlags(ctx)...)
+		flags.LinkFlags = flags.LinkFlags.AppendNoDeps(cc.RpathFlags(ctx)...)
 	}
 
 	if ctx.Os() == android.Linux {
 		// Add -lc, -lrt, -ldl, -lpthread, -lm and -lgcc_s to glibc builds to match
 		// the default behavior of device builds.
 		flags.RustFlags = append(flags.RustFlags, config.LinuxHostGlobalRustFlags...)
-		flags.LinkFlags = append(flags.LinkFlags, config.LinuxHostGlobalLinkFlags...)
+		flags.LinkFlags = flags.LinkFlags.AppendNoDeps(config.LinuxHostGlobalLinkFlags...)
 	} else if ctx.Os() == android.Darwin {
 		// Add -lc, -ldl, -lpthread and -lm to glibc darwin builds to match the default
 		// behavior of device builds.
-		flags.LinkFlags = append(flags.LinkFlags,
+		flags.LinkFlags = flags.LinkFlags.AppendNoDeps(
 			"-lc",
 			"-ldl",
 			"-lpthread",
@@ -485,8 +487,7 @@ func CommonDefaultFlags(ctx android.ModuleContext, toolchain config.Toolchain, f
 		)
 	}
 	if ctx.Device() {
-		flags.LinkFlags = append(flags.LinkFlags, cc.XomFlags(ctx)...)
-
+		flags.LinkFlags = flags.LinkFlags.AppendNoDeps(cc.XomFlags(ctx)...)
 	}
 	return flags
 }
@@ -524,7 +525,7 @@ func (compiler *baseCompiler) compilerFlags(ctx ModuleContext, flags Flags) Flag
 	flags.RustFlags = append(flags.RustFlags, compiler.Properties.Flags...)
 	flags.RustFlags = append(flags.RustFlags, "--edition="+compiler.edition())
 	flags.RustdocFlags = append(flags.RustdocFlags, "--edition="+compiler.edition())
-	flags.LinkFlags = append(flags.LinkFlags, compiler.Properties.Ld_flags...)
+	flags.LinkFlags = flags.LinkFlags.AppendNoDeps(compiler.Properties.Ld_flags...)
 
 	return flags
 }

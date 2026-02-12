@@ -18,6 +18,7 @@ import (
 	"strings"
 
 	"android/soong/android"
+	cc_config "android/soong/cc/config"
 )
 
 var (
@@ -77,14 +78,18 @@ func (t *toolchainWindowsX86) Name() string {
 	return "x86"
 }
 
-func (t *toolchainWindowsX86) ToolchainLinkFlags() string {
+func (t *toolchainWindowsX86) ToolchainLinkFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
 	// Prepend the lld flags from cc_config so we stay in sync with cc
-	return "${cc_config.WindowsLdflags} ${cc_config.WindowsX86Ldflags} ${cc_config.WindowsAvailableLibraries} " +
-		"${config.WindowsToolchainRustLinkFlags} ${config.WindowsX86ToolchainRustLinkFlags}"
+	return cc_config.FlagsWithDeps{
+		Flags: "${cc_config.WindowsLdflags} ${cc_config.WindowsX86Ldflags} ${cc_config.WindowsAvailableLibraries} " +
+			"${config.WindowsToolchainRustLinkFlags} ${config.WindowsX86ToolchainRustLinkFlags}",
+	}
 }
 
-func (t *toolchainWindowsX86) ToolchainRustFlags() string {
-	return "${config.WindowsToolchainRustFlags} ${config.WindowsX86ToolchainRustFlags}"
+func (t *toolchainWindowsX86) ToolchainRustFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+	return cc_config.FlagsWithDeps{
+		Flags: "${config.WindowsToolchainRustFlags} ${config.WindowsX86ToolchainRustFlags}",
+	}
 }
 
 func (t *toolchainWindowsX86) RustTriple() string {
@@ -144,14 +149,18 @@ func (t *toolchainWindowsX8664) Name() string {
 	return "x86_64"
 }
 
-func (t *toolchainWindowsX8664) ToolchainLinkFlags() string {
+func (t *toolchainWindowsX8664) ToolchainLinkFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
 	// Prepend the lld flags from cc_config so we stay in sync with cc
-	return "${cc_config.WindowsLdflags} ${cc_config.WindowsX8664Ldflags} ${cc_config.WindowsAvailableLibraries} " +
-		"${config.WindowsToolchainRustLinkFlags} ${config.WindowsX8664ToolchainRustLinkFlags}"
+	return cc_config.FlagsWithDeps{
+		Flags: "${cc_config.WindowsLdflags} ${cc_config.WindowsX8664Ldflags} ${cc_config.WindowsAvailableLibraries} " +
+			"${config.WindowsToolchainRustLinkFlags} ${config.WindowsX8664ToolchainRustLinkFlags}",
+	}
 }
 
-func (t *toolchainWindowsX8664) ToolchainRustFlags() string {
-	return "${config.WindowsToolchainRustFlags} ${config.WindowsX8664ToolchainRustFlags}"
+func (t *toolchainWindowsX8664) ToolchainRustFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+	return cc_config.FlagsWithDeps{
+		Flags: "${config.WindowsToolchainRustFlags} ${config.WindowsX8664ToolchainRustFlags}",
+	}
 }
 
 func (t *toolchainWindowsX8664) RustTriple() string {

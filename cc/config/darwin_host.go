@@ -208,8 +208,10 @@ func (t *toolchainDarwin) Cppflags() string {
 	return ""
 }
 
-func (t *toolchainDarwin) Ldflags() string {
-	return "${config.DarwinLdflags}"
+func (t *toolchainDarwin) Ldflags(ctx android.PathGlobContext) FlagsWithDeps {
+	return FlagsWithDeps{
+		Flags: "${config.DarwinLdflags}",
+	}
 }
 
 func (t *toolchainDarwin) YasmFlags() string {
@@ -232,8 +234,10 @@ func (t *toolchainDarwin) ToolchainCflags() string {
 	return "-B${config.MacToolPath}"
 }
 
-func (t *toolchainDarwin) ToolchainLdflags() string {
-	return "-B${config.MacToolPath}"
+func (t *toolchainDarwin) ToolchainLdflags() FlagsWithDeps {
+	return FlagsWithDeps{
+		Flags: "-B${config.MacToolPath}",
+	}
 }
 
 var toolchainDarwinArmSingleton Toolchain = &toolchainDarwinArm{}

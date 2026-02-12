@@ -107,7 +107,7 @@ func ExampleRuleBuilder_Temporary() {
 	// outputs: ["out/soong/c"]
 }
 
-func ExampleRuleBuilder_DeleteTemporaryFiles() {
+func TestRuleBuilder_DeleteTemporaryFiles(t *testing.T) {
 	ctx := builderContext()
 
 	rule := NewRuleBuilder(pctx, ctx)
@@ -123,16 +123,12 @@ func ExampleRuleBuilder_DeleteTemporaryFiles() {
 	rule.Temporary(PathForOutput(ctx, "b"))
 	rule.DeleteTemporaryFiles()
 
-	fmt.Printf("commands: %q\n", strings.Join(rule.Commands(), " && "))
-	fmt.Printf("tools: %q\n", rule.Tools())
-	fmt.Printf("inputs: %q\n", rule.Inputs())
-	fmt.Printf("outputs: %q\n", rule.Outputs())
+	os := ctx.Config().PrebuiltOS()
 
-	// Output:
-	// commands: "cp a out/soong/b && cp out/soong/b out/soong/c && rm -f out/soong/b"
-	// tools: ["cp"]
-	// inputs: ["a"]
-	// outputs: ["out/soong/c"]
+	assertStringEquals(t, "cp a out/soong/b && cp out/soong/b out/soong/c && prebuilts/build-tools/path/"+os+"/rm -f out/soong/b", strings.Join(rule.Commands(), " && "))
+	assertStringEquals(t, "cp, prebuilts/build-tools/"+os+"/bin/toybox, prebuilts/build-tools/path/"+os+"/rm", strings.Join(rule.Tools().Strings(), ", "))
+	assertStringEquals(t, "a", strings.Join(rule.Inputs().Strings(), ", "))
+	assertStringEquals(t, "out/soong/c", strings.Join(rule.Outputs().Strings(), ", "))
 }
 
 func ExampleRuleBuilder_Installs() {

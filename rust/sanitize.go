@@ -249,7 +249,7 @@ func (sanitize *sanitize) flags(ctx ModuleContext, flags Flags, deps PathDeps) (
 		if ctx.Host() {
 			// -nodefaultlibs (provided with libc++) prevents the driver from linking
 			// libraries needed with -fsanitize=address. http://b/18650275 (WAI)
-			flags.LinkFlags = append(flags.LinkFlags, []string{"-Wl,--no-as-needed"}...)
+			flags.LinkFlags = flags.LinkFlags.AppendNoDeps("-Wl,--no-as-needed")
 		}
 	}
 	return flags, deps

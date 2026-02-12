@@ -30,6 +30,7 @@ var prepareForLinkerConfigTest = android.GroupFixturePreparers(
 	android.PrepareForTestWithAndroidBuildComponents,
 	android.FixtureRegisterWithContext(registerLinkerConfigBuildComponent),
 	android.FixtureAddFile("linker.config.json", nil),
+	android.PrepareForTestWithHostTools("conv_linker_config"),
 )
 
 func TestBaseLinkerConfig(t *testing.T) {

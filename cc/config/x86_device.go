@@ -147,8 +147,10 @@ func (t *toolchainX86) ClangTriple() string {
 	return "i686-linux-android"
 }
 
-func (t *toolchainX86) ToolchainLdflags() string {
-	return "${config.X86ToolchainLdflags}"
+func (t *toolchainX86) ToolchainLdflags() FlagsWithDeps {
+	return FlagsWithDeps{
+		Flags: "${config.X86ToolchainLdflags}",
+	}
 }
 
 func (t *toolchainX86) ToolchainCflags() string {
@@ -163,8 +165,10 @@ func (t *toolchainX86) Cppflags() string {
 	return "${config.X86Cppflags}"
 }
 
-func (t *toolchainX86) Ldflags() string {
-	return "${config.X86Ldflags}"
+func (t *toolchainX86) Ldflags(ctx android.PathGlobContext) FlagsWithDeps {
+	return FlagsWithDeps{
+		Flags: "${config.X86Ldflags}",
+	}
 }
 
 func (t *toolchainX86) YasmFlags() string {

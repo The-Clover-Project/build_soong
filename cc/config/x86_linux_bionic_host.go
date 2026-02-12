@@ -109,8 +109,10 @@ func (t *toolchainLinuxBionic) Cppflags() string {
 	return ""
 }
 
-func (t *toolchainLinuxBionic) Ldflags() string {
-	return "${config.LinuxBionicLdflags}"
+func (t *toolchainLinuxBionic) Ldflags(ctx android.PathGlobContext) FlagsWithDeps {
+	return FlagsWithDeps{
+		Flags: "${config.LinuxBionicLdflags}",
+	}
 }
 
 func (t *toolchainLinuxBionic) ToolchainCflags() string {
@@ -119,8 +121,10 @@ func (t *toolchainLinuxBionic) ToolchainCflags() string {
 		" -U__ANDROID__"
 }
 
-func (t *toolchainLinuxBionic) ToolchainLdflags() string {
-	return "-m64"
+func (t *toolchainLinuxBionic) ToolchainLdflags() FlagsWithDeps {
+	return FlagsWithDeps{
+		Flags: "-m64",
+	}
 }
 
 func (t *toolchainLinuxBionic) AvailableLibraries() []string {
