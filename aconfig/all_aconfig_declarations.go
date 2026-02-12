@@ -192,13 +192,11 @@ func (this *allAconfigDeclarationsModule) GenerateAndroidBuildActions(ctx androi
 	ctx.DistForGoalWithFilename("sdk", finalizedFlags, "finalized-flags.txt")
 
 	depsFiles := android.Paths{finalizedFlags}
-	if checkExportedFlag, ok := ctx.Config().GetBuildFlag("RELEASE_EXPORTED_FLAG_CHECK"); ok {
-		if checkExportedFlag == "true" {
-			invalidExportedFlags := android.PathForIntermediates(ctx, "invalid_exported_flags.txt")
-			GenerateExportedFlagCheck(ctx, invalidExportedFlags, parsedFlagsFile, this.properties)
-			depsFiles = append(depsFiles, invalidExportedFlags)
-			ctx.Phony("droidcore", invalidExportedFlags)
-		}
+	if ctx.Config().GetBuildFlagBool("RELEASE_EXPORTED_FLAG_CHECK") {
+		invalidExportedFlags := android.PathForIntermediates(ctx, "invalid_exported_flags.txt")
+		GenerateExportedFlagCheck(ctx, invalidExportedFlags, parsedFlagsFile, this.properties)
+		depsFiles = append(depsFiles, invalidExportedFlags)
+		ctx.Phony("droidcore", invalidExportedFlags)
 	}
 
 	ctx.Phony("all_aconfig_declarations", depsFiles...)
