@@ -22,19 +22,21 @@ import (
 )
 
 type simpleStatusOutput struct {
-	writer    io.Writer
-	formatter formatter
-	keepANSI  bool
+	writer             io.Writer
+	formatter          formatter
+	keepANSI           bool
+	skipActionProgress bool
 }
 
 // NewSimpleStatusOutput returns a StatusOutput that represents the
 // current build status similarly to Ninja's built-in terminal
 // output.
-func NewSimpleStatusOutput(w io.Writer, formatter formatter, keepANSI bool) status.StatusOutput {
+func NewSimpleStatusOutput(w io.Writer, formatter formatter, keepANSI bool, skipActionProgress bool) status.StatusOutput {
 	return &simpleStatusOutput{
-		writer:    w,
-		formatter: formatter,
-		keepANSI:  keepANSI,
+		writer:             w,
+		formatter:          formatter,
+		keepANSI:           keepANSI,
+		skipActionProgress: skipActionProgress,
 	}
 }
 
@@ -57,7 +59,10 @@ func (s *simpleStatusOutput) FinishAction(result status.ActionResult, counts sta
 		str = result.Command
 	}
 
-	progress := s.formatter.progress(counts) + str
+	progress := ""
+    if !s.skipActionProgress {
+        progress = s.formatter.progress(counts)
+    }
 
 	output := s.formatter.result(result)
 	if !s.keepANSI {
@@ -65,9 +70,9 @@ func (s *simpleStatusOutput) FinishAction(result status.ActionResult, counts sta
 	}
 
 	if output != "" {
-		fmt.Fprint(s.writer, progress, "\n", output)
-	} else {
-		fmt.Fprintln(s.writer, progress)
+		fmt.Fprint(s.writer, progress + str, "\n", output)
+	} else if !s.skipActionProgress {
+		fmt.Fprintln(s.writer, progress + str)
 	}
 }
 
