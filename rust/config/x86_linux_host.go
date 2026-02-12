@@ -51,33 +51,27 @@ var (
 	linuxX8664Linkflags = []string{}
 )
 
-var linuxToolchainRustFlagsOnceKey = android.NewOnceKey("linux_toolchain_rust_flags")
-
-func LinuxToolchainRustFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
-	return ctx.Config().Once(linuxToolchainRustFlagsOnceKey, func() interface{} {
-		depsPhony := android.CreateNinjaPhonyOnce(ctx, "linuxToolchainRustDeps", func() android.Paths {
-			return slices.Concat(
-				android.GlobFilesOutsideModuleDir(ctx, filepath.Join(LinuxGccRoot(), LinuxGccTriple(), "lib32", "*"), nil),
-				android.GlobFilesOutsideModuleDir(ctx, filepath.Join(LinuxGccRoot(), LinuxGccTriple(), "lib64", "*"), nil),
-				android.GlobFilesOutsideModuleDir(ctx, filepath.Join(LinuxGccRoot(), "lib/gcc", LinuxGccTriple(), LinuxGccVersion(), "*"), nil),
-				android.GlobFilesOutsideModuleDir(ctx, filepath.Join(LinuxGccRoot(), "sysroot/usr/lib/**/*"), nil),
-			)
-		})
-		var deps android.Paths
-		if depsPhony != nil {
-			deps = append(deps, depsPhony)
-		}
-		return cc_config.FlagsWithDeps{
-			Flags: strings.Join([]string{
-				// These flags are no strictly necessary but included so RBE can discover dependencies.
-				"-L${cc_config.LinuxGccRoot}/${cc_config.LinuxGccTriple}/lib32",
-				"-L${cc_config.LinuxGccRoot}/${cc_config.LinuxGccTriple}/lib64",
-				"-L${cc_config.LinuxGccRoot}/lib/gcc/${cc_config.LinuxGccTriple}/${cc_config.LinuxGccVersion}",
-				"-L${cc_config.LinuxGccRoot}/sysroot/usr/lib",
-			}, " "),
-			Deps: deps,
-		}
-	}).(cc_config.FlagsWithDeps)
+func LinuxToolchainRustFlags(ctx ToolchainFlagsContext) cc_config.FlagsWithDeps {
+	depsPhony := ctx.CreateNinjaPhonyOnce("linuxToolchainRustDeps", slices.Concat(
+		android.GlobFilesOutsideModuleDir(ctx, filepath.Join(LinuxGccRoot(), LinuxGccTriple(), "lib32", "*"), nil),
+		android.GlobFilesOutsideModuleDir(ctx, filepath.Join(LinuxGccRoot(), LinuxGccTriple(), "lib64", "*"), nil),
+		android.GlobFilesOutsideModuleDir(ctx, filepath.Join(LinuxGccRoot(), "lib/gcc", LinuxGccTriple(), LinuxGccVersion(), "*"), nil),
+		android.GlobFilesOutsideModuleDir(ctx, filepath.Join(LinuxGccRoot(), "sysroot/usr/lib/**/*"), nil),
+	))
+	var deps android.Paths
+	if depsPhony != nil {
+		deps = append(deps, depsPhony)
+	}
+	return cc_config.FlagsWithDeps{
+		Flags: strings.Join([]string{
+			// These flags are no strictly necessary but included so RBE can discover dependencies.
+			"-L${cc_config.LinuxGccRoot}/${cc_config.LinuxGccTriple}/lib32",
+			"-L${cc_config.LinuxGccRoot}/${cc_config.LinuxGccTriple}/lib64",
+			"-L${cc_config.LinuxGccRoot}/lib/gcc/${cc_config.LinuxGccTriple}/${cc_config.LinuxGccVersion}",
+			"-L${cc_config.LinuxGccRoot}/sysroot/usr/lib",
+		}, " "),
+		Deps: deps,
+	}
 }
 
 func init() {
@@ -116,7 +110,7 @@ func (t *toolchainLinuxX8664) Name() string {
 	return "x86_64"
 }
 
-func (t *toolchainLinuxX8664) ToolchainLinkFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+func (t *toolchainLinuxX8664) ToolchainLinkFlags(ctx ToolchainFlagsContext) cc_config.FlagsWithDeps {
 	// Prepend the lld flags from cc_config so we stay in sync with cc
 	preFlags := cc_config.FlagsWithDeps{
 		Flags: "${cc_config.LinuxLdflags}",
@@ -129,7 +123,7 @@ func (t *toolchainLinuxX8664) ToolchainLinkFlags(ctx android.PathGlobContext) cc
 	return preFlags.Append(ccFlags).Append(postFlags)
 }
 
-func (t *toolchainLinuxX8664) ToolchainRustFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+func (t *toolchainLinuxX8664) ToolchainRustFlags(ctx ToolchainFlagsContext) cc_config.FlagsWithDeps {
 	return LinuxToolchainRustFlags(ctx).AppendNoDeps("${config.LinuxToolchainX8664RustFlags}")
 }
 
@@ -147,7 +141,7 @@ func (t *toolchainLinuxGlibcX8664) Glibc() bool {
 	return true
 }
 
-func (t *toolchainLinuxGlibcX8664) ToolchainLinkFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+func (t *toolchainLinuxGlibcX8664) ToolchainLinkFlags(ctx ToolchainFlagsContext) cc_config.FlagsWithDeps {
 	extraFlags := cc_config.FlagsWithDeps{
 		Flags: "${config.LinuxGlibcToolchainLinkFlags}",
 	}
@@ -172,14 +166,14 @@ func (t *toolchainLinuxMuslX8664) RustTriple() string {
 	return "x86_64-unknown-linux-musl"
 }
 
-func (t *toolchainLinuxMuslX8664) ToolchainLinkFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+func (t *toolchainLinuxMuslX8664) ToolchainLinkFlags(ctx ToolchainFlagsContext) cc_config.FlagsWithDeps {
 	extraFlags := cc_config.FlagsWithDeps{
 		Flags: "${config.LinuxMuslToolchainLinkFlags}",
 	}
 	return t.toolchainLinuxX8664.ToolchainLinkFlags(ctx).Append(extraFlags)
 }
 
-func (t *toolchainLinuxMuslX8664) ToolchainRustFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+func (t *toolchainLinuxMuslX8664) ToolchainRustFlags(ctx ToolchainFlagsContext) cc_config.FlagsWithDeps {
 	return t.toolchainLinuxX8664.ToolchainRustFlags(ctx).AppendNoDeps("${config.LinuxMuslToolchainRustFlags}")
 }
 
@@ -221,7 +215,7 @@ func (toolchainLinuxX8664) LibclangRuntimeLibraryArch() string {
 	return "x86_64"
 }
 
-func (t *toolchainLinuxX86) ToolchainLinkFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+func (t *toolchainLinuxX86) ToolchainLinkFlags(ctx ToolchainFlagsContext) cc_config.FlagsWithDeps {
 	// Prepend the lld flags from cc_config so we stay in sync with cc
 	preFlags := cc_config.FlagsWithDeps{
 		Flags: "${cc_config.LinuxLdflags}",
@@ -234,7 +228,7 @@ func (t *toolchainLinuxX86) ToolchainLinkFlags(ctx android.PathGlobContext) cc_c
 	return preFlags.Append(ccFlags).Append(postFlags)
 }
 
-func (t *toolchainLinuxX86) ToolchainRustFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+func (t *toolchainLinuxX86) ToolchainRustFlags(ctx ToolchainFlagsContext) cc_config.FlagsWithDeps {
 	return LinuxToolchainRustFlags(ctx).AppendNoDeps("${config.LinuxToolchainX86RustFlags}")
 }
 
@@ -252,7 +246,7 @@ func (t *toolchainLinuxGlibcX86) Glibc() bool {
 	return true
 }
 
-func (t *toolchainLinuxGlibcX86) ToolchainLinkFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+func (t *toolchainLinuxGlibcX86) ToolchainLinkFlags(ctx ToolchainFlagsContext) cc_config.FlagsWithDeps {
 	extraFlags := cc_config.FlagsWithDeps{
 		Flags: "${config.LinuxGlibcToolchainLinkFlags}",
 	}
@@ -277,14 +271,14 @@ func (t *toolchainLinuxMuslX86) RustTriple() string {
 	return "i686-unknown-linux-musl"
 }
 
-func (t *toolchainLinuxMuslX86) ToolchainLinkFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+func (t *toolchainLinuxMuslX86) ToolchainLinkFlags(ctx ToolchainFlagsContext) cc_config.FlagsWithDeps {
 	extraFlags := cc_config.FlagsWithDeps{
 		Flags: "${config.LinuxMuslToolchainLinkFlags}",
 	}
 	return t.toolchainLinuxX86.ToolchainLinkFlags(ctx).Append(extraFlags)
 }
 
-func (t *toolchainLinuxMuslX86) ToolchainRustFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+func (t *toolchainLinuxMuslX86) ToolchainRustFlags(ctx ToolchainFlagsContext) cc_config.FlagsWithDeps {
 	return t.toolchainLinuxX86.ToolchainRustFlags(ctx).AppendNoDeps("${config.LinuxMuslToolchainRustFlags}")
 }
 

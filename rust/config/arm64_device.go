@@ -124,7 +124,7 @@ func (t *toolchainArm64) RustTriple() string {
 	return "aarch64-linux-android"
 }
 
-func (t *toolchainArm64) ToolchainLinkFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+func (t *toolchainArm64) ToolchainLinkFlags(ctx ToolchainFlagsContext) cc_config.FlagsWithDeps {
 	deviceGlobalLinkFlags := cc_config.FlagsWithDeps{
 		Flags: "${config.DeviceGlobalLinkFlags}",
 	}
@@ -137,7 +137,7 @@ func (t *toolchainArm64) ToolchainLinkFlags(ctx android.PathGlobContext) cc_conf
 	return deviceGlobalLinkFlags.Append(ccFlags).Append(arm64ToolchainLinkFlags)
 }
 
-func (t *toolchainArm64) ToolchainRustFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+func (t *toolchainArm64) ToolchainRustFlags(ctx ToolchainFlagsContext) cc_config.FlagsWithDeps {
 	return cc_config.FlagsWithDeps{
 		Flags: t.toolchainRustFlags,
 	}

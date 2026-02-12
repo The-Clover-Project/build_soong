@@ -59,7 +59,7 @@ func (t *toolchainArm) RustTriple() string {
 	return "armv7-linux-androideabi"
 }
 
-func (t *toolchainArm) ToolchainLinkFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+func (t *toolchainArm) ToolchainLinkFlags(ctx ToolchainFlagsContext) cc_config.FlagsWithDeps {
 	// Prepend the lld flags from cc_config so we stay in sync with cc
 	globalFlags := cc_config.FlagsWithDeps{
 		Flags: "${config.DeviceGlobalLinkFlags}",
@@ -72,7 +72,7 @@ func (t *toolchainArm) ToolchainLinkFlags(ctx android.PathGlobContext) cc_config
 	return globalFlags.Append(ccFlags).Append(armToolchainFlags)
 }
 
-func (t *toolchainArm) ToolchainRustFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+func (t *toolchainArm) ToolchainRustFlags(ctx ToolchainFlagsContext) cc_config.FlagsWithDeps {
 	return cc_config.FlagsWithDeps{
 		Flags: t.toolchainRustFlags,
 	}

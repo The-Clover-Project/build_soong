@@ -101,7 +101,7 @@ func (t *toolchainRiscv64) Cppflags() string {
 	return "${config.Riscv64Cppflags}"
 }
 
-func (t *toolchainRiscv64) Ldflags(ctx android.PathGlobContext) FlagsWithDeps {
+func (t *toolchainRiscv64) Ldflags(ctx ToolchainFlagsContext) FlagsWithDeps {
 	return FlagsWithDeps{
 		Flags: t.ldflags,
 	}

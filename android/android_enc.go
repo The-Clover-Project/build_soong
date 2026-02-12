@@ -7153,12 +7153,41 @@ func (r CommonModuleInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) err
 			return err
 		}
 	}
+
+	if r.NinjaPhonies == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r.NinjaPhonies)); err != nil {
+			return err
+		}
+		for val32, val33 := range r.NinjaPhonies {
+			if err = gobtools.EncodeString(buf, val32); err != nil {
+				return err
+			}
+			if val33 == nil {
+				if err = gobtools.EncodeInt(buf, -1); err != nil {
+					return err
+				}
+			} else {
+				if err = gobtools.EncodeInt(buf, len(val33)); err != nil {
+					return err
+				}
+				for val34 := 0; val34 < len(val33); val34++ {
+					if err = gobtools.EncodeInterface(ctx, buf, val33[val34]); err != nil {
+						return err
+					}
+				}
+			}
+		}
+	}
 	return err
 }
 
 func (r CommonModuleInfo) CustomHash(hasher *proptools.Hasher) error {
 	hasher.WriteString(":android.CommonModuleInfo")
-	hasher.WriteInt(62)
+	hasher.WriteInt(63)
 	hasher.WriteString(":.bool")
 	if r.Enabled {
 		hasher.WriteByte(1)
@@ -7715,6 +7744,47 @@ func (r CommonModuleInfo) CustomHash(hasher *proptools.Hasher) error {
 			return err
 		}
 	}
+	hasher.WriteString(":.map[string]Paths")
+	hasher.WriteInt(len(r.NinjaPhonies))
+	val55 := make([]string, 0, len(r.NinjaPhonies))
+	for val57 := range r.NinjaPhonies {
+		val55 = append(val55, val57)
+	}
+	proptools.SortOrdered(val55)
+	for _, val56 := range val55 {
+		hasher.WriteString(":.string")
+		hasher.WriteString(val56)
+		hasher.WriteString(":android.Paths")
+		hasher.WriteString(":.[]Path")
+		hasher.WriteInt(len(r.NinjaPhonies[val56]))
+		for val58 := 0; val58 < len(r.NinjaPhonies[val56]); val58++ {
+			hasher.WriteString(":android.Path")
+			val59 := r.NinjaPhonies[val56][val58] == nil
+			if val59 {
+				hasher.WriteByte(0)
+			} else {
+				if v := reflect.ValueOf(r.NinjaPhonies[val56][val58]); v.Kind() == reflect.Ptr {
+					if v.IsNil() {
+						panic(fmt.Errorf("nil pointer is not supported in interface"))
+					} else {
+						val60 := r.NinjaPhonies[val56][val58] == nil
+						if val60 {
+							hasher.WriteByte(0)
+						} else {
+							val61 := func(hasher *proptools.Hasher) error {
+								return r.NinjaPhonies[val56][val58].(proptools.CustomHash).CustomHash(hasher)
+							}
+							if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val61); err != nil {
+								return err
+							}
+						}
+					}
+				} else {
+					r.NinjaPhonies[val56][val58].(proptools.CustomHash).CustomHash(hasher)
+				}
+			}
+		}
+	}
 	return nil
 }
 
@@ -8266,6 +8336,41 @@ func (r *CommonModuleInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) er
 			return err
 		}
 		r.InstallFiles = &val131
+	}
+
+	var val134 int
+	err = gobtools.DecodeInt(buf, &val134)
+	if err != nil {
+		return err
+	}
+	if val134 != -1 {
+		r.NinjaPhonies = make(map[string]Paths, val134)
+		for val135 := 0; val135 < int(val134); val135++ {
+			var val136 string
+			var val137 Paths
+			err = gobtools.DecodeString(buf, &val136)
+			if err != nil {
+				return err
+			}
+			var val141 int
+			err = gobtools.DecodeInt(buf, &val141)
+			if err != nil {
+				return err
+			}
+			if val141 != -1 {
+				val137 = make([]Path, val141)
+				for val142 := 0; val142 < int(val141); val142++ {
+					if val144, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+						return err
+					} else if val144 == nil {
+						val137[val142] = nil
+					} else {
+						val137[val142] = val144.(Path)
+					}
+				}
+			}
+			r.NinjaPhonies[val136] = val137
+		}
 	}
 
 	return err

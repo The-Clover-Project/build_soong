@@ -87,6 +87,7 @@ type BuildParams struct {
 
 type ModuleContext interface {
 	BaseModuleContext
+	CreateNinjaPhonyOnceContext
 
 	// BlueprintModuleContext returns the blueprint.ModuleContext that the ModuleContext wraps.  It may only be
 	// used by the golang module types that need to call into the bootstrap module types.
@@ -364,6 +365,8 @@ type moduleContext struct {
 	makeNamesSet              bool
 	baseJarJarProviderData    *BaseJarJarProviderData
 	baseJarJarProviderDataSet bool
+
+	ninjaPhonies map[string]Paths
 }
 
 var _ ModuleContext = &moduleContext{}
