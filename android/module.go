@@ -130,7 +130,7 @@ type Module interface {
 
 	// The usage of this method is experimental and should not be used outside of fsgen package.
 	// This will be removed once product packaging migration to Soong is complete.
-	DecodeMultilib(ctx ConfigContext) (string, string)
+	DecodeMultilib(ctx ConfigurableEvaluatorContext) (string, string)
 
 	// WARNING: This should not be used outside build/soong/fsgen
 	// Overrides returns the list of modules which should not be installed if this module is installed.
@@ -357,14 +357,14 @@ type commonProperties struct {
 	// are "32" (compile for 32-bit only), "64" (compile for 64-bit only), "both" (compile for both
 	// architectures), or "first" (compile for 64-bit on a 64-bit platform, and 32-bit on a 32-bit
 	// platform).
-	Compile_multilib *string `android:"arch_variant"`
+	Compile_multilib proptools.Configurable[string] `android:"arch_variant,replace_instead_of_append"`
 
 	Target struct {
 		Host struct {
-			Compile_multilib *string
+			Compile_multilib proptools.Configurable[string] `android:"replace_instead_of_append"`
 		}
 		Android struct {
-			Compile_multilib *string
+			Compile_multilib proptools.Configurable[string] `android:"replace_instead_of_append"`
 			Enabled          *bool
 		}
 	}
@@ -3051,7 +3051,7 @@ func (m *ModuleBase) IsLFISupported() bool {
 	return proptools.Bool(m.commonProperties.Lfi_supported)
 }
 
-func (m *ModuleBase) DecodeMultilib(ctx ConfigContext) (string, string) {
+func (m *ModuleBase) DecodeMultilib(ctx ConfigurableEvaluatorContext) (string, string) {
 	return decodeMultilib(ctx, m)
 }
 
