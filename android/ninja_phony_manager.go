@@ -29,14 +29,14 @@ type CreateNinjaPhonyOnceContext interface {
 }
 
 // CreateNinjaPhonyOnce creates a ninja phony with the given name and the dependencies
-// returned from getDeps. It will only create the phony once, and getDeps will only be called
-// once, even if this function is called multiple times. Thus you have to ensure that the mapping
+// returned from getDeps. It will only create the phony once even if this function is called
+// multiple times. Thus you have to ensure that the mapping
 // from name -> deps remains consistent.
 //
 // This can be used to make the ninja file smaller, by creating aliases for many dependency files.
 // Then many different modules can reuse the same alias.
 //
-// This function returns the PathForPhony(name). However, if getDeps() returns nothing, this
+// This function returns the PathForPhony(name). However, if deps is empty, this
 // function will return nil instead, and you should not add the nil to any deps. This is because
 // ninja phonies must have at least one dependency.
 func (m *moduleContext) CreateNinjaPhonyOnce(name string, deps Paths) Path {
