@@ -830,7 +830,14 @@ func (s *sanitize) flags(ctx ModuleContext, flags Flags) Flags {
 			}
 		} else {
 			flags.Local.CFlags = append(flags.Local.CFlags, "-mllvm", "-asan-globals=0")
-			if ctx.bootstrap() {
+
+			// Check if this module needs to use the bootstrap linker
+			useBootstrap := ctx.bootstrap()
+			if ctx.Config().GetBuildFlagBool("RELEASE_DEPRECATE_RUNTIME_APEX") {
+				useBootstrap = false
+			}
+
+			if useBootstrap {
 				flags.DynamicLinker = "/system/bin/bootstrap/linker_asan"
 			} else {
 				flags.DynamicLinker = "/system/bin/linker_asan"
@@ -855,7 +862,14 @@ func (s *sanitize) flags(ctx ModuleContext, flags Flags) Flags {
 			flags.Local.CFlags = append(flags.Local.CFlags, "-mllvm", "-hwasan-instrument-reads=0")
 		}
 		if !ctx.staticBinary() && !ctx.Host() {
-			if ctx.bootstrap() {
+
+			// Check if this module needs to use the bootstrap linker
+			useBootstrap := ctx.bootstrap()
+			if ctx.Config().GetBuildFlagBool("RELEASE_DEPRECATE_RUNTIME_APEX") {
+				useBootstrap = false
+			}
+
+			if useBootstrap {
 				flags.DynamicLinker = "/system/bin/bootstrap/linker_hwasan64"
 			} else {
 				flags.DynamicLinker = "/system/bin/linker_hwasan64"
