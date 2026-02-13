@@ -2411,6 +2411,10 @@ func (c *deviceConfig) BuildDebugfsRestrictionsEnabled() bool {
 	return c.config.productVariables.BuildDebugfsRestrictionsEnabled
 }
 
+func (c *deviceConfig) RestrictsAshmemUsage() bool {
+	return c.config.productVariables.RestrictsAshmemUsage
+}
+
 func (c *deviceConfig) BuildBrokenVendorPropertyNamespace() bool {
 	return c.config.productVariables.BuildBrokenVendorPropertyNamespace
 }
