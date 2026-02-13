@@ -31,7 +31,7 @@ import (
 // called.  This singleton is enabled only if SOONG_GEN_RUST_PROJECT is set.
 // For example,
 //
-//   $ SOONG_GEN_RUST_PROJECT=1 SOONG_LINK_RUST_PROJECT_TO=${ANDROID_BUILD_TOP} m nothing
+//   $ SOONG_GEN_RUST_PROJECT=1 m nothing
 
 const (
 	// Environment variables used to control the behavior of this singleton.
