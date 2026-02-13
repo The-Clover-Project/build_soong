@@ -18,6 +18,7 @@ import (
 	"slices"
 
 	"github.com/google/blueprint"
+	"github.com/google/blueprint/depset"
 )
 
 func init() {
@@ -43,15 +44,17 @@ func (m *moduleContext) CreateNinjaPhonyOnce(name string, deps Paths) Path {
 	if len(deps) == 0 {
 		return nil
 	}
+	depsUnique := depset.New(depset.POSTORDER, deps, nil)
 	if m.ninjaPhonies == nil {
-		m.ninjaPhonies = make(map[string]Paths)
+		m.ninjaPhonies = make(map[string]NinjaPhoniesDepsInfo)
 	} else if oldDeps, ok := m.ninjaPhonies[name]; ok {
-		if !slices.Equal(oldDeps.Strings(), deps.Strings()) {
-			m.ModuleErrorf("CreateNinjaPhonyOnce called twice with a different list of deps for phony %q:\n  %s\nand:\n  %s\n", name, oldDeps.Strings(), deps.Strings())
+		if !slices.Equal(Paths(oldDeps.Deps.ToList()).Strings(), deps.Strings()) {
+			m.ModuleErrorf("CreateNinjaPhonyOnce called twice with a different list of deps for phony %q:\n  %s\nand:\n  %s\n",
+				name, Paths(oldDeps.Deps.ToList()).Strings(), deps.Strings())
 		}
 		return PathForPhony(m, name)
 	}
-	m.ninjaPhonies[name] = deps
+	m.ninjaPhonies[name] = NinjaPhoniesDepsInfo{depsUnique}
 	return PathForPhony(m, name)
 }
 
@@ -67,7 +70,7 @@ type ninjaPhonyManager struct{}
 // and then a module without missing dependencies tries to use it if we create the phonies
 // directly in CreateNinjaPhonyOnce().
 func (n *ninjaPhonyManager) GenerateBuildActions(ctx SingletonContext) {
-	phonies := make(map[string]Paths)
+	phonies := make(map[string]depset.DepSet[Path])
 
 	ctx.VisitAllModuleProxies(func(proxy ModuleProxy) {
 		commoninfo, ok := OtherModuleProvider(ctx, proxy, CommonModuleInfoProvider)
@@ -76,17 +79,18 @@ func (n *ninjaPhonyManager) GenerateBuildActions(ctx SingletonContext) {
 		}
 		for name, deps := range commoninfo.NinjaPhonies {
 			if oldDeps, ok := phonies[name]; ok {
-				if !slices.Equal(oldDeps.Strings(), deps.Strings()) {
-					ctx.Errorf("CreateNinjaPhonyOnce called twice with a different list of deps for phony %q:\n  %s\nand:\n  %s\n", name, oldDeps.Strings(), deps.Strings())
+				if !slices.Equal(Paths(oldDeps.ToList()).Strings(), Paths(deps.Deps.ToList()).Strings()) {
+					ctx.Errorf("CreateNinjaPhonyOnce called twice with a different list of deps for phony %q:\n  %s\nand:\n  %s\n",
+						name, Paths(oldDeps.ToList()).Strings(), Paths(deps.Deps.ToList()).Strings())
 				}
 				continue
 			}
-			phonies[name] = deps
+			phonies[name] = deps.Deps
 		}
 	})
 
 	for _, phonyName := range SortedKeys(phonies) {
-		deps := phonies[phonyName]
+		deps := phonies[phonyName].ToList()
 		if len(deps) > 0 {
 			ctx.Build(pctx, BuildParams{
 				Rule:   blueprint.Phony,

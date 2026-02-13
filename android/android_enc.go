@@ -5045,6 +5045,7 @@ func init() {
 	JarJarRenameGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(JarJarRename) })
 	BaseJarJarProviderDataGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(BaseJarJarProviderData) })
 	CommonModuleInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(CommonModuleInfo) })
+	NinjaPhoniesDepsInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(NinjaPhoniesDepsInfo) })
 	ApiLevelOrPlatformGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(ApiLevelOrPlatform) })
 	HostToolInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(HostToolInfo) })
 	DistInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(DistInfo) })
@@ -7166,19 +7167,8 @@ func (r CommonModuleInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) err
 			if err = gobtools.EncodeString(buf, val32); err != nil {
 				return err
 			}
-			if val33 == nil {
-				if err = gobtools.EncodeInt(buf, -1); err != nil {
-					return err
-				}
-			} else {
-				if err = gobtools.EncodeInt(buf, len(val33)); err != nil {
-					return err
-				}
-				for val34 := 0; val34 < len(val33); val34++ {
-					if err = gobtools.EncodeInterface(ctx, buf, val33[val34]); err != nil {
-						return err
-					}
-				}
+			if err = val33.Encode(ctx, buf); err != nil {
+				return err
 			}
 		}
 	}
@@ -7744,7 +7734,7 @@ func (r CommonModuleInfo) CustomHash(hasher *proptools.Hasher) error {
 			return err
 		}
 	}
-	hasher.WriteString(":.map[string]Paths")
+	hasher.WriteString(":.map[string]NinjaPhoniesDepsInfo")
 	hasher.WriteInt(len(r.NinjaPhonies))
 	val55 := make([]string, 0, len(r.NinjaPhonies))
 	for val57 := range r.NinjaPhonies {
@@ -7754,35 +7744,8 @@ func (r CommonModuleInfo) CustomHash(hasher *proptools.Hasher) error {
 	for _, val56 := range val55 {
 		hasher.WriteString(":.string")
 		hasher.WriteString(val56)
-		hasher.WriteString(":android.Paths")
-		hasher.WriteString(":.[]Path")
-		hasher.WriteInt(len(r.NinjaPhonies[val56]))
-		for val58 := 0; val58 < len(r.NinjaPhonies[val56]); val58++ {
-			hasher.WriteString(":android.Path")
-			val59 := r.NinjaPhonies[val56][val58] == nil
-			if val59 {
-				hasher.WriteByte(0)
-			} else {
-				if v := reflect.ValueOf(r.NinjaPhonies[val56][val58]); v.Kind() == reflect.Ptr {
-					if v.IsNil() {
-						panic(fmt.Errorf("nil pointer is not supported in interface"))
-					} else {
-						val60 := r.NinjaPhonies[val56][val58] == nil
-						if val60 {
-							hasher.WriteByte(0)
-						} else {
-							val61 := func(hasher *proptools.Hasher) error {
-								return r.NinjaPhonies[val56][val58].(proptools.CustomHash).CustomHash(hasher)
-							}
-							if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val61); err != nil {
-								return err
-							}
-						}
-					}
-				} else {
-					r.NinjaPhonies[val56][val58].(proptools.CustomHash).CustomHash(hasher)
-				}
-			}
+		if err := r.NinjaPhonies[val56].CustomHash(hasher); err != nil {
+			return err
 		}
 	}
 	return nil
@@ -8344,30 +8307,16 @@ func (r *CommonModuleInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) er
 		return err
 	}
 	if val134 != -1 {
-		r.NinjaPhonies = make(map[string]Paths, val134)
+		r.NinjaPhonies = make(map[string]NinjaPhoniesDepsInfo, val134)
 		for val135 := 0; val135 < int(val134); val135++ {
 			var val136 string
-			var val137 Paths
+			var val137 NinjaPhoniesDepsInfo
 			err = gobtools.DecodeString(buf, &val136)
 			if err != nil {
 				return err
 			}
-			var val141 int
-			err = gobtools.DecodeInt(buf, &val141)
-			if err != nil {
+			if err = val137.Decode(ctx, buf); err != nil {
 				return err
-			}
-			if val141 != -1 {
-				val137 = make([]Path, val141)
-				for val142 := 0; val142 < int(val141); val142++ {
-					if val144, err := gobtools.DecodeInterface(ctx, buf); err != nil {
-						return err
-					} else if val144 == nil {
-						val137[val142] = nil
-					} else {
-						val137[val142] = val144.(Path)
-					}
-				}
 			}
 			r.NinjaPhonies[val136] = val137
 		}
@@ -8380,6 +8329,66 @@ var CommonModuleInfoGobRegId int16
 
 func (r CommonModuleInfo) GetTypeId() int16 {
 	return CommonModuleInfoGobRegId
+}
+
+func (r NinjaPhoniesDepsInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = r.Deps.EncodeInterface(ctx, buf); err != nil {
+		return err
+	}
+	return err
+}
+
+func (r NinjaPhoniesDepsInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":android.NinjaPhoniesDepsInfo")
+	hasher.WriteInt(1)
+	val5 := func(hasher *proptools.Hasher, val1 Path) error {
+		hasher.WriteString(":android.Path")
+		val2 := val1 == nil
+		if val2 {
+			hasher.WriteByte(0)
+		} else {
+			if v := reflect.ValueOf(val1); v.Kind() == reflect.Ptr {
+				if v.IsNil() {
+					panic(fmt.Errorf("nil pointer is not supported in interface"))
+				} else {
+					val3 := val1 == nil
+					if val3 {
+						hasher.WriteByte(0)
+					} else {
+						val4 := func(hasher *proptools.Hasher) error { return val1.(proptools.CustomHash).CustomHash(hasher) }
+						if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val4); err != nil {
+							return err
+						}
+					}
+				}
+			} else {
+				val1.(proptools.CustomHash).CustomHash(hasher)
+			}
+		}
+		return nil
+	}
+	if err := r.Deps.Hash(hasher, "Path", val5); err != nil {
+		return err
+	}
+	return nil
+}
+
+func (r *NinjaPhoniesDepsInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	if err = r.Deps.DecodeInterface(ctx, buf); err != nil {
+		return err
+	}
+
+	return err
+}
+
+var NinjaPhoniesDepsInfoGobRegId int16
+
+func (r NinjaPhoniesDepsInfo) GetTypeId() int16 {
+	return NinjaPhoniesDepsInfoGobRegId
 }
 
 func (r ApiLevelOrPlatform) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
