@@ -20,6 +20,7 @@ bootstrap_go_package {
     name: "test_configs_common",
     pkgPath: "android/soong/testconfigs/common",
     deps: [
+        "blueprint-pathtools",
         "test_configs_proto",
         "golang-protobuf-proto",
     ],

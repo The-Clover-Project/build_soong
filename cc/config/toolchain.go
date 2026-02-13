@@ -67,6 +67,11 @@ func findToolchain(os android.OsType, arch android.Arch) (Toolchain, error) {
 	return factory(arch), nil
 }
 
+type ToolchainFlagsContext interface {
+	android.CreateNinjaPhonyOnceContext
+	android.PathGlobContext
+}
+
 type Toolchain interface {
 	Name() string
 
@@ -78,7 +83,7 @@ type Toolchain interface {
 	Asflags() string
 	Cflags() string
 	Cppflags() string
-	Ldflags(ctx android.PathGlobContext) FlagsWithDeps
+	Ldflags(ctx ToolchainFlagsContext) FlagsWithDeps
 	InstructionSetFlags(string) (string, error)
 
 	ndkTriple() string

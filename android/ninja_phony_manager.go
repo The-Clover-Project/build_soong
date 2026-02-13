@@ -15,7 +15,7 @@
 package android
 
 import (
-	"sync"
+	"slices"
 
 	"github.com/google/blueprint"
 )
@@ -24,73 +24,35 @@ func init() {
 	RegisterParallelSingletonType("ninja_phony_manager", ninjaPhonyManagerFactory)
 }
 
-var ninjaPhonyManagerOnceKey = NewOnceKey("ninja_phony_manager")
-
-func getNinjaPhonyData(config Config) *ninjaPhonyData {
-	return config.Once(ninjaPhonyManagerOnceKey, func() interface{} {
-		return &ninjaPhonyData{
-			m:        make(map[string]Paths),
-			finished: false,
-		}
-	}).(*ninjaPhonyData)
+type CreateNinjaPhonyOnceContext interface {
+	CreateNinjaPhonyOnce(name string, deps Paths) Path
 }
 
 // CreateNinjaPhonyOnce creates a ninja phony with the given name and the dependencies
-// returned from getDeps. It will only create the phony once, and getDeps will only be called
-// once, even if this function is called multiple times. Thus you have to ensure that the mapping
+// returned from getDeps. It will only create the phony once even if this function is called
+// multiple times. Thus you have to ensure that the mapping
 // from name -> deps remains consistent.
 //
 // This can be used to make the ninja file smaller, by creating aliases for many dependency files.
 // Then many different modules can reuse the same alias.
 //
-// This function returns the PathForPhony(name). However, if getDeps() returns nothing, this
+// This function returns the PathForPhony(name). However, if deps is empty, this
 // function will return nil instead, and you should not add the nil to any deps. This is because
 // ninja phonies must have at least one dependency.
-func CreateNinjaPhonyOnce(ctx PathContext, name string, getDeps func() Paths) Path {
-	data := getNinjaPhonyData(ctx.Config())
-
-	phonyPath := PathForPhony(ctx, name)
-
-	data.mLock.RLock()
-
-	if toReturn, shouldReturn := func() (Path, bool) {
-		defer data.mLock.RUnlock()
-
-		if data.finished {
-			panic("Cannot use CreateNinjaPhonyOnce after the phonies have been written out")
-		}
-
-		if deps, ok := data.m[name]; ok {
-			if len(deps) > 0 {
-				return phonyPath, true
-			} else {
-				return nil, true
-			}
-		}
-		return nil, false
-	}(); shouldReturn {
-		return toReturn
-	}
-
-	data.mLock.Lock()
-	defer data.mLock.Unlock()
-
-	if deps, ok := data.m[name]; ok {
-		if len(deps) > 0 {
-			return phonyPath
-		} else {
-			return nil
-		}
-	}
-
-	deps := getDeps()
-	data.m[name] = deps
-
-	if len(deps) > 0 {
-		return phonyPath
-	} else {
+func (m *moduleContext) CreateNinjaPhonyOnce(name string, deps Paths) Path {
+	if len(deps) == 0 {
 		return nil
 	}
+	if m.ninjaPhonies == nil {
+		m.ninjaPhonies = make(map[string]Paths)
+	} else if oldDeps, ok := m.ninjaPhonies[name]; ok {
+		if !slices.Equal(oldDeps.Strings(), deps.Strings()) {
+			m.ModuleErrorf("CreateNinjaPhonyOnce called twice with a different list of deps for phony %q:\n  %s\nand:\n  %s\n", name, oldDeps.Strings(), deps.Strings())
+		}
+		return PathForPhony(m, name)
+	}
+	m.ninjaPhonies[name] = deps
+	return PathForPhony(m, name)
 }
 
 func ninjaPhonyManagerFactory() Singleton {
@@ -99,26 +61,32 @@ func ninjaPhonyManagerFactory() Singleton {
 
 type ninjaPhonyManager struct{}
 
-type ninjaPhonyData struct {
-	mLock    sync.RWMutex
-	m        map[string]Paths
-	finished bool
-}
-
 // We use a singleton to actually create the phonies, because in builds with
 // AllowMissingDependencies enabled, a module missing dependencies will have all its ctx.Build()
 // calls replaced with error rules. So a module with missing dependencies may create a phony,
 // and then a module without missing dependencies tries to use it if we create the phonies
 // directly in CreateNinjaPhonyOnce().
 func (n *ninjaPhonyManager) GenerateBuildActions(ctx SingletonContext) {
-	data := getNinjaPhonyData(ctx.Config())
+	phonies := make(map[string]Paths)
 
-	data.mLock.Lock()
-	defer data.mLock.Unlock()
-	data.finished = true
+	ctx.VisitAllModuleProxies(func(proxy ModuleProxy) {
+		commoninfo, ok := OtherModuleProvider(ctx, proxy, CommonModuleInfoProvider)
+		if !ok {
+			return
+		}
+		for name, deps := range commoninfo.NinjaPhonies {
+			if oldDeps, ok := phonies[name]; ok {
+				if !slices.Equal(oldDeps.Strings(), deps.Strings()) {
+					ctx.Errorf("CreateNinjaPhonyOnce called twice with a different list of deps for phony %q:\n  %s\nand:\n  %s\n", name, oldDeps.Strings(), deps.Strings())
+				}
+				continue
+			}
+			phonies[name] = deps
+		}
+	})
 
-	for _, phonyName := range SortedKeys(data.m) {
-		deps := data.m[phonyName]
+	for _, phonyName := range SortedKeys(phonies) {
+		deps := phonies[phonyName]
 		if len(deps) > 0 {
 			ctx.Build(pctx, BuildParams{
 				Rule:   blueprint.Phony,

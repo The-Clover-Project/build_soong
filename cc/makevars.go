@@ -173,6 +173,17 @@ func makeVarsProvider(ctx android.MakeVarsContext) {
 	}
 }
 
+type FakeToolchainFlagsContext struct {
+	android.MakeVarsContext
+}
+
+func (f *FakeToolchainFlagsContext) CreateNinjaPhonyOnce(name string, deps android.Paths) android.Path {
+	// Don't do this. Makevars won't read the deps of the flags so it's not needed.
+	return nil
+}
+
+var _ config.ToolchainFlagsContext = &FakeToolchainFlagsContext{}
+
 func makeVarsToolchain(ctx android.MakeVarsContext, secondPrefix string,
 	target android.Target) {
 	var typePrefix string
@@ -235,7 +246,7 @@ func makeVarsToolchain(ctx android.MakeVarsContext, secondPrefix string,
 		fmt.Sprintf("${config.%sGlobalCppflags}", hod),
 		toolchain.Cppflags(),
 	}, " "))
-	ldFlags := toolchain.Ldflags(ctx)
+	ldFlags := toolchain.Ldflags(&FakeToolchainFlagsContext{ctx})
 	toolchainLdFlags := toolchain.ToolchainLdflags()
 	ctx.Strict(clangPrefix+"GLOBAL_LDFLAGS", strings.Join([]string{
 		fmt.Sprintf("${config.%sGlobalLdflags}", hod),

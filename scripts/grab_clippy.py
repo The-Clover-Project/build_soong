@@ -25,7 +25,7 @@ def source_to_targets(  ANDROID_BUILD_TOP: Path, source_file: Path):
   except FileNotFoundError:
     raise Exception(
         'The mapping file is not here, please run "SOONG_GEN_RUST_PROJECT=1'
-        f' SOONG_LINK_RUST_PROJECT_TO={ANDROID_BUILD_TOP} m nothing"'
+        f' m nothing"'
     )
 
 

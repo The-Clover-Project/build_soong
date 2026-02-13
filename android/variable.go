@@ -95,16 +95,6 @@ type variableProperties struct {
 			Cflags []string
 		}
 
-		// treble_linker_namespaces is true when the system/vendor linker namespace separation is
-		// enabled.
-		Treble_linker_namespaces struct {
-			Cflags []string
-		}
-		// enforce_vintf_manifest is true when a device is required to have a vintf manifest.
-		Enforce_vintf_manifest struct {
-			Cflags []string
-		}
-
 		Build_from_text_stub struct {
 			Static_libs         []string
 			Exclude_static_libs []string
@@ -310,8 +300,6 @@ type ProductVariables struct {
 	RBEContainerImage            *string  `json:",omitempty"`
 	Debuggable                   *bool    `json:",omitempty"`
 	Eng                          *bool    `json:",omitempty"`
-	Treble_linker_namespaces     *bool    `json:",omitempty"`
-	Enforce_vintf_manifest       *bool    `json:",omitempty"`
 	Uml                          *bool    `json:",omitempty"`
 	Arc                          *bool    `json:",omitempty"`
 	MinimizeJavaDebugInfo        *bool    `json:",omitempty"`

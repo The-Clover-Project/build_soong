@@ -26,6 +26,8 @@ import (
 	"slices"
 	"strings"
 
+	"github.com/google/blueprint/pathtools"
+
 	"android/soong/testconfigs/common"
 	"android/soong/testconfigs/protos"
 )
@@ -118,7 +120,11 @@ func (reducer *TestConfigReducer) load() error {
 
 func (reducer *TestConfigReducer) loadModifiedFiles() error {
 	if reducer.Filepaths != "" {
-		reducer.ModifiedFiles = strings.Split(reducer.Filepaths, ",")
+		var err error
+		reducer.ModifiedFiles, err = reducer.loadModifiedFilesFromFilepaths()
+		if err != nil {
+			return err
+		}
 	} else if changeInfoPath := os.Getenv("CHANGE_INFO"); changeInfoPath != "" {
 		var err error
 		reducer.ModifiedFiles, err = reducer.loadModifiedFilesFromChangeInfo(changeInfoPath)
@@ -139,6 +145,22 @@ func (reducer *TestConfigReducer) loadModifiedFiles() error {
 	}
 
 	return nil
+}
+
+func (reducer *TestConfigReducer) loadModifiedFilesFromFilepaths() ([]string, error) {
+	modifiedFiles := []string{}
+	for _, fp := range strings.Split(reducer.Filepaths, ",") {
+		if pathtools.IsGlob(fp) {
+			globResults, err := pathtools.OsFs.Glob(fp, nil, true)
+			if err != nil {
+				return nil, fmt.Errorf("file pattern error %s: %s", fp, err.Error())
+			}
+			modifiedFiles = append(modifiedFiles, globResults.Matches...)
+		} else {
+			modifiedFiles = append(modifiedFiles, fp)
+		}
+	}
+	return modifiedFiles, nil
 }
 
 func (reducer *TestConfigReducer) loadModifiedFilesFromRepoDiff() ([]string, error) {

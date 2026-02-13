@@ -606,20 +606,32 @@ func ClangPath(ctx android.PathContext, file string) android.SourcePath {
 	})
 }
 
+// ClangPathNoOnce is the same as ClangPath, but will recalculate the path every time instead
+// of caching it via a config.Once(). This is needed because in incremental soong, the Getenv
+// calls need to be tracked per-module, and also the PathForSource() may add missing dependencies
+// to a module and we don't want it to be nondeterministically whichever module calls this first.
+func ClangPathNoOnce(ctx android.PathContext, file string) android.SourcePath {
+	return clangPathNoOnce(ctx).Join(ctx, file)
+}
+
 var clangPathKey = android.NewOnceKey("clangPath")
 
 func clangPath(ctx android.PathContext) android.SourcePath {
 	return ctx.Config().OnceSourcePath(clangPathKey, func() android.SourcePath {
-		clangBase := ClangDefaultBase
-		if override := ctx.Config().Getenv("LLVM_PREBUILTS_BASE"); override != "" {
-			clangBase = override
-		}
-		clangVersion := ctx.Config().ReleaseBuildClangVersion(ClangDefaultVersion)
-		if override := ctx.Config().Getenv("LLVM_PREBUILTS_VERSION"); override != "" {
-			clangVersion = override
-		}
-		return android.PathForSource(ctx, clangBase, ctx.Config().PrebuiltOS(), clangVersion)
+		return clangPathNoOnce(ctx)
 	})
+}
+
+func clangPathNoOnce(ctx android.PathContext) android.SourcePath {
+	clangBase := ClangDefaultBase
+	if override := ctx.Config().Getenv("LLVM_PREBUILTS_BASE"); override != "" {
+		clangBase = override
+	}
+	clangVersion := ctx.Config().ReleaseBuildClangVersion(ClangDefaultVersion)
+	if override := ctx.Config().Getenv("LLVM_PREBUILTS_VERSION"); override != "" {
+		clangVersion = override
+	}
+	return android.PathForSource(ctx, clangBase, ctx.Config().PrebuiltOS(), clangVersion)
 }
 
 func ClangVersion(ctx android.PathContext) string {

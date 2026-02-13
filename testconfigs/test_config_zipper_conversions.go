@@ -23,6 +23,12 @@ import (
 	"android/soong/testconfigs/protos"
 )
 
+const (
+	annotationPrefixChar    = "@"
+	includeAnnotationPrefix = "includes-annotation"
+	excludeAnnotationPrefix = "excludes-annotation"
+)
+
 // mapToListDeterministic ensures a deterministic list is formed
 // from a list provided to it.
 func mapToListDeterministic[K cmp.Ordered, V any, T any](m map[K]V, convert func(K, V) T) []T {
@@ -46,16 +52,40 @@ func (zipper *TestConfigZipper) getTestConfigs() *protos.TestConfigs {
 	}
 }
 
+// separateAnnotations separates annotations from filters, converting annotations
+// to module arguments.
+func separateAnnotations(filters []string, annotationPrefix string) ([]string, []string) {
+	remainingFilters := []string{}
+	annotationArgs := []string{}
+	for _, filter := range filters {
+		if strings.HasPrefix(filter, annotationPrefixChar) {
+			annotationArgs = append(annotationArgs, annotationPrefix+"="+strings.TrimPrefix(filter, annotationPrefixChar))
+		} else {
+			remainingFilters = append(remainingFilters, filter)
+		}
+	}
+	return remainingFilters, annotationArgs
+}
+
 // convertTestExecutionPlan takes the properties of a test_execution_plan module and
 // converts it into its protobuf counterpart.
 func (zipper *TestConfigZipper) convertTestExecutionPlan(name string, plan *TestExecutionPlanProperties) *protos.TestExecutionPlan {
 	tests := []*protos.ModulePlan{}
 	for _, module := range plan.Tests {
+		moduleArgs := []string{}
+		moduleArgs = append(moduleArgs, module.Module_args...)
+
+		includes, includeAnnotations := separateAnnotations(module.Include, includeAnnotationPrefix)
+		moduleArgs = append(moduleArgs, includeAnnotations...)
+
+		excludes, excludeAnnotations := separateAnnotations(module.Exclude, excludeAnnotationPrefix)
+		moduleArgs = append(moduleArgs, excludeAnnotations...)
+
 		tests = append(tests, &protos.ModulePlan{
 			Module:     module.Module,
-			Include:    module.Include,
-			Exclude:    module.Exclude,
-			ModuleArgs: convertArgsToKeyValue(module.Module_args),
+			Include:    includes,
+			Exclude:    excludes,
+			ModuleArgs: convertArgsToKeyValue(moduleArgs),
 		})
 	}
 

@@ -161,15 +161,10 @@ def generate_common_build_props(args):
   # Allow optional assignments for ARC forward-declarations (b/249168657)
   # TODO: Remove any tag-related inconsistencies once the goals from
   # go/arc-android-sigprop-changes have been achieved.
-  #####
-  # TODO (b/437803910): Enable the system fingerprint again.
-  # The system's generic fingerprint is disabled because of the compatibility
-  # problem with tools that still read the system fingerprint for the device
-  # identity.
-  # if partition == "system":
-  #   print(f"ro.{partition}.build.fingerprint?={config['BuildSystemFingerprint']}")
-  # else:
-  print(f"ro.{partition}.build.fingerprint?={config['BuildFingerprint']}")
+  if partition == "system":
+    print(f"ro.{partition}.build.fingerprint?={config['BuildSystemFingerprint']}")
+  else:
+    print(f"ro.{partition}.build.fingerprint?={config['BuildFingerprint']}")
   print(f"ro.{partition}.build.id?={config['BuildId']}")
   print(f"ro.{partition}.build.uuid?={config['BuildUUID']}")
   print(f"ro.{partition}.build.tags?={config['BuildVersionTags']}")
@@ -299,7 +294,10 @@ def append_additional_system_props(args):
     if "PRODUCT_PROPERTY_OVERRIDES" in config:
       props += config["PRODUCT_PROPERTY_OVERRIDES"]
 
-  props.append(f"ro.treble.enabled={'true' if config['FullTreble'] else 'false'}")
+  # We may be able to remove this property now and update all clients to assume
+  # that treble is enabled.
+  props.append(f"ro.treble.enabled=true")
+
   # Set ro.llndk.api_level to show the maximum vendor API level that the LLNDK
   # in the system partition supports.
   if config["VendorApiLevel"]:

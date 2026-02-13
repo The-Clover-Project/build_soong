@@ -60,14 +60,14 @@ func (t *toolchainLinuxBionicX8664) RustTriple() string {
 	return "x86_64-linux-android"
 }
 
-func (t *toolchainLinuxBionicX8664) ToolchainLinkFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+func (t *toolchainLinuxBionicX8664) ToolchainLinkFlags(ctx ToolchainFlagsContext) cc_config.FlagsWithDeps {
 	// Prepend the lld flags from cc_config so we stay in sync with cc
 	return cc_config.FlagsWithDeps{
 		Flags: "${cc_config.LinuxBionicLdflags} ${config.LinuxBionicToolchainLinkFlags}",
 	}
 }
 
-func (t *toolchainLinuxBionicX8664) ToolchainRustFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+func (t *toolchainLinuxBionicX8664) ToolchainRustFlags(ctx ToolchainFlagsContext) cc_config.FlagsWithDeps {
 	return cc_config.FlagsWithDeps{
 		Flags: "${config.LinuxBionicToolchainRustFlags}",
 	}

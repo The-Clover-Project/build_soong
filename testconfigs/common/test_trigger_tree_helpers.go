@@ -21,6 +21,8 @@ import (
 	"strings"
 
 	"android/soong/testconfigs/protos"
+
+	"github.com/google/blueprint/pathtools"
 )
 
 // AddTestTrigger steps through the tree to the test_trigger's module directory,
@@ -69,7 +71,7 @@ func extractPathTriggeredConfigs(configs []*protos.TestTrigger, paths ...string)
 		// Trigger if a file pattern matches a provided path.
 		for _, filePattern := range config.GetFilePatterns() {
 			if matched := slices.ContainsFunc(paths, func(path string) bool {
-				matched, _ := filepath.Match(filePattern, path)
+				matched, _ := pathtools.Match(filePattern, path)
 				return matched
 			}); matched {
 				triggeredConfigs = append(triggeredConfigs, config)

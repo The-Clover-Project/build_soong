@@ -122,7 +122,8 @@ func TestFileSystemCreatorSystemImageProps(t *testing.T) {
 		}),
 	).RunTest(t)
 
-	fooSystem := result.ModuleForTests(t, "test_product_generated_system_image", "android_common").Module().(interface {
+	module := result.ModuleForTests(t, "test_product_generated_system_image", "android_common").Module()
+	fooSystem := module.(interface {
 		FsProps() filesystem.FilesystemProperties
 	})
 	android.AssertBoolEquals(
@@ -149,11 +150,13 @@ func TestFileSystemCreatorSystemImageProps(t *testing.T) {
 		0,
 		proptools.Int(fooSystem.FsProps().Rollback_index),
 	)
+	evaluator := module.(android.Module).ConfigurableEvaluator(android.PanickingConfigAndErrorContext(result.TestContext))
+	fsProps := fooSystem.FsProps()
 	android.AssertStringEquals(
 		t,
 		"Property expected to match the product variable 'BOARD_SYSTEMIMAGE_FILE_SYSTEM_TYPE'",
 		"ext4",
-		proptools.String(fooSystem.FsProps().Type),
+		fsProps.Type.GetOrDefault(evaluator, ""),
 	)
 }
 

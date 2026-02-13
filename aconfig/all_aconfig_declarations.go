@@ -125,8 +125,11 @@ func GenerateFinalizedFlagsForApiSurface(ctx android.ModuleContext, outputPath a
 	}
 	finalizedFlagsFile := android.PathForModuleSrc(ctx, apiSurface.Finalized_flags_file)
 
+	finalizeNonApiFlags := ctx.Config().GetBuildFlagBool("RELEASE_ACONFIG_FINALIZE_NON_API_FLAGS")
+
 	intermediateMetalavaFlagsConfig := android.PathForModuleOut(ctx, "metalava-flags.config")
 	intermediateFlagReport := android.PathForModuleOut(ctx, "metalava-flag-report.csv")
+	intermediateNonApiFinalizedFlags := android.PathForModuleOut(ctx, "intermediate-non-api-finalized-flags.txt")
 	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	builder.Command().
 		BuiltTool("aconfig-to-metalava-flags").
@@ -138,11 +141,24 @@ func GenerateFinalizedFlagsForApiSurface(ctx android.ModuleContext, outputPath a
 		FlagWithInput("--config-file ", intermediateMetalavaFlagsConfig).
 		FlagWithOutput("--output-file ", intermediateFlagReport).
 		Inputs(apiSignatureFiles)
-	builder.Command().
-		BuiltTool("record-finalized-flags").
-		FlagWithInput("--finalized-flags ", finalizedFlagsFile).
-		FlagWithInput("--flag-report ", intermediateFlagReport).
-		FlagWithOutput("> ", outputPath)
+	if finalizeNonApiFlags {
+		builder.Command().
+			BuiltTool("finalize-non-api-flags").
+			FlagWithInput("--cache ", parsedFlagsFile).
+			FlagWithOutput("> ", intermediateNonApiFinalizedFlags)
+		builder.Command().
+			BuiltTool("record-finalized-flags").
+			FlagWithInput("--finalized-flags ", finalizedFlagsFile).
+			FlagWithInput("--flag-report ", intermediateFlagReport).
+			FlagWithInput("--non-api-finalized-flags ", intermediateNonApiFinalizedFlags).
+			FlagWithOutput("> ", outputPath)
+	} else {
+		builder.Command().
+			BuiltTool("record-finalized-flags").
+			FlagWithInput("--finalized-flags ", finalizedFlagsFile).
+			FlagWithInput("--flag-report ", intermediateFlagReport).
+			FlagWithOutput("> ", outputPath)
+	}
 	builder.Build("finalized-flags", "Record all aconfig flags used with finalized @FlaggedApi APIs")
 }
 
@@ -176,13 +192,11 @@ func (this *allAconfigDeclarationsModule) GenerateAndroidBuildActions(ctx androi
 	ctx.DistForGoalWithFilename("sdk", finalizedFlags, "finalized-flags.txt")
 
 	depsFiles := android.Paths{finalizedFlags}
-	if checkExportedFlag, ok := ctx.Config().GetBuildFlag("RELEASE_EXPORTED_FLAG_CHECK"); ok {
-		if checkExportedFlag == "true" {
-			invalidExportedFlags := android.PathForIntermediates(ctx, "invalid_exported_flags.txt")
-			GenerateExportedFlagCheck(ctx, invalidExportedFlags, parsedFlagsFile, this.properties)
-			depsFiles = append(depsFiles, invalidExportedFlags)
-			ctx.Phony("droidcore", invalidExportedFlags)
-		}
+	if ctx.Config().GetBuildFlagBool("RELEASE_EXPORTED_FLAG_CHECK") {
+		invalidExportedFlags := android.PathForIntermediates(ctx, "invalid_exported_flags.txt")
+		GenerateExportedFlagCheck(ctx, invalidExportedFlags, parsedFlagsFile, this.properties)
+		depsFiles = append(depsFiles, invalidExportedFlags)
+		ctx.Phony("droidcore", invalidExportedFlags)
 	}
 
 	ctx.Phony("all_aconfig_declarations", depsFiles...)

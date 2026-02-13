@@ -59,7 +59,7 @@ func (t *toolchainRiscv64) RustTriple() string {
 	return "riscv64-linux-android"
 }
 
-func (t *toolchainRiscv64) ToolchainLinkFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+func (t *toolchainRiscv64) ToolchainLinkFlags(ctx ToolchainFlagsContext) cc_config.FlagsWithDeps {
 	// Prepend the lld flags from cc_config so we stay in sync with cc
 	deviceGlobalLinkFlags := cc_config.FlagsWithDeps{
 		Flags: "${config.DeviceGlobalLinkFlags}",
@@ -72,7 +72,7 @@ func (t *toolchainRiscv64) ToolchainLinkFlags(ctx android.PathGlobContext) cc_co
 	return deviceGlobalLinkFlags.Append(ccFlags).Append(riscv64ToolchainLinkFlags)
 }
 
-func (t *toolchainRiscv64) ToolchainRustFlags(ctx android.PathGlobContext) cc_config.FlagsWithDeps {
+func (t *toolchainRiscv64) ToolchainRustFlags(ctx ToolchainFlagsContext) cc_config.FlagsWithDeps {
 	return cc_config.FlagsWithDeps{
 		Flags: t.toolchainRustFlags,
 	}

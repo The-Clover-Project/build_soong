@@ -16,9 +16,15 @@ package config
 
 import (
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"android/soong/android"
+)
+
+const (
+	windowsGccTriple  = "x86_64-w64-mingw32"
+	windowsGccVersion = "4.8"
 )
 
 var (
@@ -90,30 +96,6 @@ var (
 		"-m64",
 	}
 
-	windowsX86Ldflags = []string{
-		"-m32",
-		"-Wl,--large-address-aware",
-		"-L${WindowsGccRoot}/${WindowsGccTriple}/lib32",
-		"-static-libgcc",
-
-		"-B${WindowsGccRoot}/${WindowsGccTriple}/bin",
-		"-B${WindowsGccRoot}/lib/gcc/${WindowsGccTriple}/4.8.3/32",
-		"-L${WindowsGccRoot}/lib/gcc/${WindowsGccTriple}/4.8.3/32",
-		"-B${WindowsGccRoot}/${WindowsGccTriple}/lib32",
-	}
-
-	windowsX8664Ldflags = []string{
-		"-m64",
-		"-L${WindowsGccRoot}/${WindowsGccTriple}/lib64",
-		"-Wl,--high-entropy-va",
-		"-static-libgcc",
-
-		"-B${WindowsGccRoot}/${WindowsGccTriple}/bin",
-		"-B${WindowsGccRoot}/lib/gcc/${WindowsGccTriple}/4.8.3",
-		"-L${WindowsGccRoot}/lib/gcc/${WindowsGccTriple}/4.8.3",
-		"-B${WindowsGccRoot}/${WindowsGccTriple}/lib64",
-	}
-
 	windowsAvailableLibraries = addPrefix([]string{
 		"bcrypt",
 		"dbghelp",
@@ -137,9 +119,59 @@ var (
 	}, "-l")
 )
 
-const (
-	windowsGccVersion = "4.8"
-)
+func WindowsX86Ldflags(ctx ToolchainFlagsContext) FlagsWithDeps {
+	windowsGccRoot := WindowsGccRoot(ctx.Config())
+	depsPhony := ctx.CreateNinjaPhonyOnce("windowsX86LdFlagsDeps", slices.Concat(
+		android.GlobFilesOutsideModuleDir(ctx, filepath.Join(windowsGccRoot, windowsGccTriple, "bin", "*"), nil),
+		android.GlobFilesOutsideModuleDir(ctx, filepath.Join(windowsGccRoot, "lib/gcc", windowsGccTriple, "4.8.3", "32", "*"), nil),
+		android.GlobFilesOutsideModuleDir(ctx, filepath.Join(windowsGccRoot, windowsGccTriple, "lib32", "*"), nil),
+	))
+	var deps android.Paths
+	if depsPhony != nil {
+		deps = append(deps, depsPhony)
+	}
+	return FlagsWithDeps{
+		Flags: strings.Join([]string{
+			"-m32",
+			"-Wl,--large-address-aware",
+			"-L${config.WindowsGccRoot}/${config.WindowsGccTriple}/lib32",
+			"-static-libgcc",
+
+			"-B${config.WindowsGccRoot}/${config.WindowsGccTriple}/bin",
+			"-B${config.WindowsGccRoot}/lib/gcc/${config.WindowsGccTriple}/4.8.3/32",
+			"-L${config.WindowsGccRoot}/lib/gcc/${config.WindowsGccTriple}/4.8.3/32",
+			"-B${config.WindowsGccRoot}/${config.WindowsGccTriple}/lib32",
+		}, " "),
+		Deps: deps,
+	}
+}
+
+func WindowsX8664Ldflags(ctx ToolchainFlagsContext) FlagsWithDeps {
+	windowsGccRoot := WindowsGccRoot(ctx.Config())
+	depsPhony := ctx.CreateNinjaPhonyOnce("windowsX8664LdFlagsDeps", slices.Concat(
+		android.GlobFilesOutsideModuleDir(ctx, filepath.Join(windowsGccRoot, windowsGccTriple, "bin", "*"), nil),
+		android.GlobFilesOutsideModuleDir(ctx, filepath.Join(windowsGccRoot, "lib/gcc", windowsGccTriple, "4.8.3", "*"), nil),
+		android.GlobFilesOutsideModuleDir(ctx, filepath.Join(windowsGccRoot, windowsGccTriple, "lib64", "*"), nil),
+	))
+	var deps android.Paths
+	if depsPhony != nil {
+		deps = append(deps, depsPhony)
+	}
+	return FlagsWithDeps{
+		Flags: strings.Join([]string{
+			"-m64",
+			"-L${config.WindowsGccRoot}/${config.WindowsGccTriple}/lib64",
+			"-Wl,--high-entropy-va",
+			"-static-libgcc",
+
+			"-B${config.WindowsGccRoot}/${config.WindowsGccTriple}/bin",
+			"-B${config.WindowsGccRoot}/lib/gcc/${config.WindowsGccTriple}/4.8.3",
+			"-L${config.WindowsGccRoot}/lib/gcc/${config.WindowsGccTriple}/4.8.3",
+			"-B${config.WindowsGccRoot}/${config.WindowsGccTriple}/lib64",
+		}, " "),
+		Deps: deps,
+	}
+}
 
 func init() {
 	pctx.StaticVariable("WindowsGccVersion", windowsGccVersion)
@@ -155,8 +187,6 @@ func init() {
 
 	pctx.StaticVariable("WindowsX86Cflags", strings.Join(windowsX86Cflags, " "))
 	pctx.StaticVariable("WindowsX8664Cflags", strings.Join(windowsX8664Cflags, " "))
-	pctx.StaticVariable("WindowsX86Ldflags", strings.Join(windowsX86Ldflags, " "))
-	pctx.StaticVariable("WindowsX8664Ldflags", strings.Join(windowsX8664Ldflags, " "))
 	pctx.StaticVariable("WindowsX86Cppflags", strings.Join(windowsX86Cppflags, " "))
 	pctx.StaticVariable("WindowsX8664Cppflags", strings.Join(windowsX8664Cppflags, " "))
 
@@ -228,16 +258,18 @@ func (t *toolchainWindowsX8664) Cppflags() string {
 	return "${config.WindowsCppflags} ${config.WindowsX8664Cppflags}"
 }
 
-func (t *toolchainWindowsX86) Ldflags(ctx android.PathGlobContext) FlagsWithDeps {
-	return FlagsWithDeps{
-		Flags: "${config.WindowsLdflags} ${config.WindowsX86Ldflags}",
+func (t *toolchainWindowsX86) Ldflags(ctx ToolchainFlagsContext) FlagsWithDeps {
+	preflags := FlagsWithDeps{
+		Flags: "${config.WindowsLdflags}",
 	}
+	return preflags.Append(WindowsX86Ldflags(ctx))
 }
 
-func (t *toolchainWindowsX8664) Ldflags(ctx android.PathGlobContext) FlagsWithDeps {
-	return FlagsWithDeps{
-		Flags: "${config.WindowsLdflags} ${config.WindowsX8664Ldflags}",
+func (t *toolchainWindowsX8664) Ldflags(ctx ToolchainFlagsContext) FlagsWithDeps {
+	preflags := FlagsWithDeps{
+		Flags: "${config.WindowsLdflags}",
 	}
+	return preflags.Append(WindowsX8664Ldflags(ctx))
 }
 
 func (t *toolchainWindowsX86) YasmFlags() string {
@@ -278,4 +310,8 @@ func windowsX8664ToolchainFactory(arch android.Arch) Toolchain {
 func init() {
 	registerToolchainFactory(android.Windows, android.X86, windowsX86ToolchainFactory)
 	registerToolchainFactory(android.Windows, android.X86_64, windowsX8664ToolchainFactory)
+}
+
+func WindowsGccRoot(config android.Config) string {
+	return "prebuilts/gcc/" + config.PrebuiltOS() + "/host/x86_64-w64-mingw32-" + windowsGccVersion
 }

@@ -1607,19 +1607,19 @@ func generateFsProps(ctx android.EarlyModuleContext, partitions allGeneratedPart
 		}
 	}
 
-	fsProps.Type = proptools.StringPtr(fsType)
-	if filesystem.GetFsTypeFromString(ctx, *fsProps.Type).IsUnknown() {
+	fsProps.Type = proptools.NewSimpleConfigurable(fsType)
+	if filesystem.GetFsTypeFromString(ctx, fsType).IsUnknown() {
 		// Currently the android_filesystem module type only supports a handful of FS types like ext4, erofs
 		return nil, false
 	}
 
-	switch *fsProps.Type {
+	switch fsType {
 	case "erofs":
 		if partitionVars.BoardErofsCompressor != "" {
-			fsProps.Erofs.Compressor = proptools.StringPtr(partitionVars.BoardErofsCompressor)
+			fsProps.Erofs.Compressor = proptools.NewSimpleConfigurable(partitionVars.BoardErofsCompressor)
 		}
 		if partitionVars.BoardErofsCompressorHints != "" {
-			fsProps.Erofs.Compress_hints = proptools.StringPtr(":soong_generated_board_erofs_compress_hints_filegroup")
+			fsProps.Erofs.Compress_hints = proptools.NewSimpleConfigurable(":soong_generated_board_erofs_compress_hints_filegroup")
 		}
 		if s, err := strconv.ParseBool(partitionVars.BoardErofsShareDupBlocks); err == nil {
 			fsProps.Share_dup_blocks = proptools.BoolPtr(s)
