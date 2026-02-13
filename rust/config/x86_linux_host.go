@@ -36,9 +36,6 @@ var (
 		"-fuse-ld=lld",
 		"-Wl,--undefined-version",
 	}
-	LinuxRustGlibcLinkFlags = []string{
-		"--sysroot ${cc_config.LinuxGccRoot}/sysroot",
-	}
 	LinuxRustMuslLinkFlags = []string{
 		"--sysroot /dev/null",
 		"-nodefaultlibs",
@@ -74,6 +71,19 @@ func LinuxToolchainRustFlags(ctx ToolchainFlagsContext) cc_config.FlagsWithDeps 
 	}
 }
 
+func LinuxRustGlibcLinkFlags(ctx ToolchainFlagsContext) cc_config.FlagsWithDeps {
+	depsPhony := ctx.CreateNinjaPhonyOnce("linuxRustGlibcLinkDeps",
+		android.GlobFilesOutsideModuleDir(ctx, filepath.Join(LinuxGccRoot(), "sysroot/**/*"), nil))
+	var deps android.Paths
+	if depsPhony != nil {
+		deps = append(deps, depsPhony)
+	}
+	return cc_config.FlagsWithDeps{
+		Flags: "--sysroot ${cc_config.LinuxGccRoot}/sysroot",
+		Deps:  deps,
+	}
+}
+
 func init() {
 	registerToolchainFactory(android.Linux, android.X86_64, linuxGlibcX8664ToolchainFactory)
 	registerToolchainFactory(android.Linux, android.X86, linuxGlibcX86ToolchainFactory)
@@ -83,7 +93,6 @@ func init() {
 
 	pctx.StaticVariable("LinuxMuslToolchainRustFlags", strings.Join(LinuxMuslRustFlags, " "))
 	pctx.StaticVariable("LinuxToolchainLinkFlags", strings.Join(LinuxRustLinkFlags, " "))
-	pctx.StaticVariable("LinuxGlibcToolchainLinkFlags", strings.Join(LinuxRustGlibcLinkFlags, " "))
 	pctx.StaticVariable("LinuxMuslToolchainLinkFlags", strings.Join(LinuxRustMuslLinkFlags, " "))
 	pctx.StaticVariable("LinuxToolchainX86RustFlags", strings.Join(linuxX86Rustflags, " "))
 	pctx.StaticVariable("LinuxToolchainX86LinkFlags", strings.Join(linuxX86Linkflags, " "))
@@ -142,10 +151,7 @@ func (t *toolchainLinuxGlibcX8664) Glibc() bool {
 }
 
 func (t *toolchainLinuxGlibcX8664) ToolchainLinkFlags(ctx ToolchainFlagsContext) cc_config.FlagsWithDeps {
-	extraFlags := cc_config.FlagsWithDeps{
-		Flags: "${config.LinuxGlibcToolchainLinkFlags}",
-	}
-	return t.toolchainLinuxX8664.ToolchainLinkFlags(ctx).Append(extraFlags)
+	return t.toolchainLinuxX8664.ToolchainLinkFlags(ctx).Append(LinuxRustGlibcLinkFlags(ctx))
 }
 
 func linuxGlibcX8664ToolchainFactory(arch android.Arch) Toolchain {
@@ -247,10 +253,7 @@ func (t *toolchainLinuxGlibcX86) Glibc() bool {
 }
 
 func (t *toolchainLinuxGlibcX86) ToolchainLinkFlags(ctx ToolchainFlagsContext) cc_config.FlagsWithDeps {
-	extraFlags := cc_config.FlagsWithDeps{
-		Flags: "${config.LinuxGlibcToolchainLinkFlags}",
-	}
-	return t.toolchainLinuxX86.ToolchainLinkFlags(ctx).Append(extraFlags)
+	return t.toolchainLinuxX86.ToolchainLinkFlags(ctx).Append(LinuxRustGlibcLinkFlags(ctx))
 }
 
 func linuxGlibcX86ToolchainFactory(arch android.Arch) Toolchain {
