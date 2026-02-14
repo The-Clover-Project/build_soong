@@ -598,23 +598,6 @@ func (m *ApexModuleBase) checkApexAvailableProperty(mctx BaseModuleContext) {
 	}
 }
 
-// AvailableToSameApexes returns true if the two modules are apex_available to
-// exactly the same set of APEXes (and platform), i.e. if their apex_available
-// properties have the same elements.
-func AvailableToSameApexes(mod1, mod2 ApexModule) bool {
-	mod1ApexAvail := SortedUniqueStrings(mod1.apexModuleBase().ApexProperties.Apex_available)
-	mod2ApexAvail := SortedUniqueStrings(mod2.apexModuleBase().ApexProperties.Apex_available)
-	if len(mod1ApexAvail) != len(mod2ApexAvail) {
-		return false
-	}
-	for i, v := range mod1ApexAvail {
-		if v != mod2ApexAvail[i] {
-			return false
-		}
-	}
-	return true
-}
-
 // UpdateUniqueApexVariationsForDeps sets UniqueApexVariationsForDeps if any dependencies that are
 // in the same APEX have unique APEX variations so that the module can link against the right
 // variant.
