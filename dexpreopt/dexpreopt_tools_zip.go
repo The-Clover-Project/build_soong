@@ -54,7 +54,7 @@ func (s *dexpreoptToolsZipSingleton) GenerateBuildActions(ctx android.SingletonC
 
 	// This reads through a symlink to include the file it points to. This isn't great for
 	// build reproducibility, will need to be revisited later.
-	cmd.Textf("-f $(realpath %s)", config.Dex2oat)
+	cmd.Text("-f $(").BuiltTool("symlink_resolver").Input(config.Dex2oat).Text(")")
 
 	builder.Build("dexpreopt_tools_zip", "building dexpreopt_tools.zip")
 
