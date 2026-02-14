@@ -2140,7 +2140,14 @@ type CommonModuleInfo struct {
 	AndroidMkData                  *AndroidMkDataInfo
 	BaseJarJarProviderData         *BaseJarJarProviderData
 	InstallFiles                   *InstallFilesInfo
-	NinjaPhonies                   map[string]Paths
+	NinjaPhonies                   map[string]NinjaPhoniesDepsInfo
+}
+
+// NinjaPhoniesDepsInfo is only necessary because the gob code doesn't support serializing
+// a map[string]DepSet[Path] directly.
+// @auto-generate: gob
+type NinjaPhoniesDepsInfo struct {
+	Deps depset.DepSet[Path]
 }
 
 // @auto-generate: gob
