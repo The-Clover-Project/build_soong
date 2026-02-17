@@ -77,6 +77,7 @@ def run_build_target_files_zip(product: Product, soong_only: bool) -> bool:
                 f'TARGET_RELEASE={product.release}',
                 f'TARGET_BUILD_VARIANT={product.variant}',
                 'target-files-package',
+                'target-files-package-soong-diff-test',
                 'droid',
                 'superimage',
                 soong_only_arg,
@@ -99,6 +100,7 @@ def run_build_target_files_zip(product: Product, soong_only: bool) -> bool:
                 f'TARGET_RELEASE={product.release}',
                 f'TARGET_BUILD_VARIANT={product.variant}',
                 'target-files-package',
+                'target-files-package-soong-diff-test',
                 'dist',
                 soong_only_arg,
             ], stdout=f, stderr=subprocess.STDOUT, env=os.environ)
@@ -283,7 +285,6 @@ _INSTALLED_IMG_FILES = [
     "pvmfw.img",
     "ramdisk.img",
     "super.img",
-    # TODO (spandandas): Add the dist'd super.img to diff test.
     "system_dlkm.img",
     "system_ext.img",
     "system_other.img",
@@ -348,6 +349,45 @@ def compare_installed_img_sha_maps(product: Product, soong_only_map: dict[str, s
 
     return all_identical
 
+_DIST_FILES = [
+    "super.img",
+]
+
+_DIST_FILES_ALLOWLIST = [
+]
+
+def get_dist_img_sha_map(product: Product) -> dict[str, str]:
+    """Returns the map of dist file its SHA256 value."""
+    out_dir = os.getenv('OUT_DIR', 'out')
+    dist_dir = os.getenv('DIST_DIR', os.path.join(out_dir, 'dist'))
+    zip_sha_map = {}
+    for file in _DIST_FILES:
+        file_path = os.path.join(dist_dir, file)
+        zip_sha_map[file] = get_installed_img_sha(file_path)
+
+    return zip_sha_map
+
+def compare_dist_file_sha_maps(product: Product, soong_only_map: dict[str, str], soong_plus_make_map: dict[str, str]) -> bool:
+    """Compares two sha maps of dist files and reports any missing or different entries."""
+    all_keys = sorted(list(soong_only_map.keys() | soong_plus_make_map.keys()))
+    all_identical = True
+    # Append diffs to report.
+    with open(get_comparison_report_path(product), 'at') as file:
+        for key in all_keys:
+            allowlisted = key in _DIST_FILES_ALLOWLIST
+            allowlisted_str = "ALLOWLISTED" if allowlisted else "NOT ALLOWLISTED"
+            if key not in soong_only_map:
+                print(f'$out/dist/{key} not found in soong only droid builds ({allowlisted_str})', file=file)
+                all_identical = all_identical and allowlisted
+            elif key not in soong_plus_make_map:
+                print(f'$out/dist/{key} not found in soong plus make droid builds ({allowlisted_str})', file=file)
+                all_identical = all_identical and allowlisted
+            elif soong_only_map[key] != soong_plus_make_map[key]:
+                print(f'$out/dist/{key} sha value differ between soong only build and soong plus make build ({allowlisted_str})', file=file)
+                all_identical = all_identical and allowlisted
+
+    return all_identical
+
 def parse_args():
     parser = argparse.ArgumentParser()
     parser.add_argument("products", nargs='+', help="one or more target product names")
@@ -375,9 +415,11 @@ def main():
         soong_only_success = run_build_target_files_zip(product, soong_only)
         soong_only_zip_sha_map = None
         soong_only_installed_img_sha_map = None
+        soong_only_dist_file_sha_map = None
         if soong_only_success:
             soong_only_zip_sha_map = get_zip_sha_map(product, soong_only)
             soong_only_installed_img_sha_map = get_installed_img_sha_map(product)
+            soong_only_dist_file_sha_map = get_dist_img_sha_map(product)
         else:
             soong_only_build_failed_products.append(product)
 
@@ -385,9 +427,11 @@ def main():
         soong_plus_make_success = run_build_target_files_zip(product, soong_only)
         soong_plus_make_zip_sha_map = None
         soong_plus_make_installed_img_sha_map = None
+        soong_plus_make_dist_file_sha_map = None
         if soong_plus_make_success:
             soong_plus_make_zip_sha_map = get_zip_sha_map(product, soong_only)
             soong_plus_make_installed_img_sha_map = get_installed_img_sha_map(product)
+            soong_plus_make_dist_file_sha_map = get_dist_img_sha_map(product)
         else:
             soong_plus_make_build_failed_products.append(product)
 
@@ -398,6 +442,11 @@ def main():
         if soong_only_installed_img_sha_map and soong_plus_make_installed_img_sha_map:
             if not compare_installed_img_sha_maps(product, soong_only_installed_img_sha_map, soong_plus_make_installed_img_sha_map):
                 target_files_differ_products.append(product)
+
+        if soong_only_dist_file_sha_map and soong_plus_make_dist_file_sha_map:
+            if not compare_dist_file_sha_maps(product, soong_only_dist_file_sha_map, soong_plus_make_dist_file_sha_map):
+                target_files_differ_products.append(product)
+
 
         print(f"Diff test for {product.product} completed.")
 

@@ -738,6 +738,7 @@ func (a *androidDevice) distFiles(ctx android.ModuleContext) {
 	if !ctx.Config().KatiEnabled() && proptools.Bool(a.deviceProps.Main_device) {
 		if a.superImageInfo.SuperImage != nil && !a.superImageInfo.SuperImageInUpdatePackage {
 			ctx.DistForGoal("dist_files", a.superImgFromTargetFilesZip)
+			ctx.DistForGoal("target-files-package-soong-diff-test", a.superImgFromTargetFilesZip)
 		}
 		if a.superImageInfo.SuperEmptyImage != nil {
 			ctx.DistForGoal("dist_files", a.superImageInfo.SuperEmptyImage)
