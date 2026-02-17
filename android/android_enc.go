@@ -12192,19 +12192,30 @@ func (r PackagingSpec) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error 
 		return err
 	}
 
-	val1 := r.effectiveLicenseFiles.ToSlice()
-	if val1 == nil {
-		if err = gobtools.EncodeInt(buf, -1); err != nil {
-			return err
-		}
-	} else {
-		if err = gobtools.EncodeInt(buf, len(val1)); err != nil {
-			return err
-		}
-		for val2 := 0; val2 < len(val1); val2++ {
-			if err = gobtools.EncodeInterface(ctx, buf, val1[val2]); err != nil {
-				return err
+	val1 := r.effectiveLicenseFiles.Len() == 0
+	if err = gobtools.EncodeBool(buf, val1); err != nil {
+		return err
+	}
+	if !val1 {
+		if err = gobtools.EncodeReference(ctx, r.effectiveLicenseFiles, buf, func(v uniquelist.UniqueList[Path], buf *bytes.Buffer) error {
+			val2 := v.ToSlice()
+			if val2 == nil {
+				if err = gobtools.EncodeInt(buf, -1); err != nil {
+					return err
+				}
+			} else {
+				if err = gobtools.EncodeInt(buf, len(val2)); err != nil {
+					return err
+				}
+				for val3 := 0; val3 < len(val2); val3++ {
+					if err = gobtools.EncodeInterface(ctx, buf, val2[val3]); err != nil {
+						return err
+					}
+				}
 			}
+			return nil
+		}); err != nil {
+			return err
 		}
 	}
 
@@ -12216,19 +12227,30 @@ func (r PackagingSpec) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error 
 		return err
 	}
 
-	val3 := r.aconfigPaths.ToSlice()
-	if val3 == nil {
-		if err = gobtools.EncodeInt(buf, -1); err != nil {
-			return err
-		}
-	} else {
-		if err = gobtools.EncodeInt(buf, len(val3)); err != nil {
-			return err
-		}
-		for val4 := 0; val4 < len(val3); val4++ {
-			if err = gobtools.EncodeInterface(ctx, buf, val3[val4]); err != nil {
-				return err
+	val4 := r.aconfigPaths.Len() == 0
+	if err = gobtools.EncodeBool(buf, val4); err != nil {
+		return err
+	}
+	if !val4 {
+		if err = gobtools.EncodeReference(ctx, r.aconfigPaths, buf, func(v uniquelist.UniqueList[Path], buf *bytes.Buffer) error {
+			val5 := v.ToSlice()
+			if val5 == nil {
+				if err = gobtools.EncodeInt(buf, -1); err != nil {
+					return err
+				}
+			} else {
+				if err = gobtools.EncodeInt(buf, len(val5)); err != nil {
+					return err
+				}
+				for val6 := 0; val6 < len(val5); val6++ {
+					if err = gobtools.EncodeInterface(ctx, buf, val5[val6]); err != nil {
+						return err
+					}
+				}
 			}
+			return nil
+		}); err != nil {
+			return err
 		}
 	}
 
@@ -12236,19 +12258,30 @@ func (r PackagingSpec) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error 
 		return err
 	}
 
-	val5 := r.overrides.ToSlice()
-	if val5 == nil {
-		if err = gobtools.EncodeInt(buf, -1); err != nil {
-			return err
-		}
-	} else {
-		if err = gobtools.EncodeInt(buf, len(val5)); err != nil {
-			return err
-		}
-		for val6 := 0; val6 < len(val5); val6++ {
-			if err = gobtools.EncodeString(buf, val5[val6]); err != nil {
-				return err
+	val7 := r.overrides.Len() == 0
+	if err = gobtools.EncodeBool(buf, val7); err != nil {
+		return err
+	}
+	if !val7 {
+		if err = gobtools.EncodeReference(ctx, r.overrides, buf, func(v uniquelist.UniqueList[string], buf *bytes.Buffer) error {
+			val8 := v.ToSlice()
+			if val8 == nil {
+				if err = gobtools.EncodeInt(buf, -1); err != nil {
+					return err
+				}
+			} else {
+				if err = gobtools.EncodeInt(buf, len(val8)); err != nil {
+					return err
+				}
+				for val9 := 0; val9 < len(val8); val9++ {
+					if err = gobtools.EncodeString(buf, val8[val9]); err != nil {
+						return err
+					}
+				}
 			}
+			return nil
+		}); err != nil {
+			return err
 		}
 	}
 
@@ -12455,25 +12488,38 @@ func (r *PackagingSpec) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error
 		return err
 	}
 
-	var val7 []Path
-	var val8 int
-	err = gobtools.DecodeInt(buf, &val8)
-	if err != nil {
+	var val7 bool
+	if err = gobtools.DecodeBool(buf, &val7); err != nil {
 		return err
 	}
-	if val8 != -1 {
-		val7 = make([]Path, val8)
-		for val9 := 0; val9 < int(val8); val9++ {
-			if val11, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+	if !val7 {
+		tmp, err := gobtools.DecodeReference(ctx, &r.effectiveLicenseFiles, buf, func(value *uniquelist.UniqueList[Path], buf *bytes.Reader) error {
+			var val8 []Path
+			var val9 int
+			err = gobtools.DecodeInt(buf, &val9)
+			if err != nil {
 				return err
-			} else if val11 == nil {
-				val7[val9] = nil
-			} else {
-				val7[val9] = val11.(Path)
 			}
+			if val9 != -1 {
+				val8 = make([]Path, val9)
+				for val10 := 0; val10 < int(val9); val10++ {
+					if val12, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+						return err
+					} else if val12 == nil {
+						val8[val10] = nil
+					} else {
+						val8[val10] = val12.(Path)
+					}
+				}
+			}
+			*value = uniquelist.Make(val8)
+			return nil
+		})
+		if err != nil {
+			return err
 		}
+		r.effectiveLicenseFiles = *tmp
 	}
-	r.effectiveLicenseFiles = uniquelist.Make(val7)
 
 	err = gobtools.DecodeString(buf, &r.partition)
 	if err != nil {
@@ -12485,46 +12531,72 @@ func (r *PackagingSpec) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error
 		return err
 	}
 
-	var val15 []Path
-	var val16 int
-	err = gobtools.DecodeInt(buf, &val16)
-	if err != nil {
+	var val16 bool
+	if err = gobtools.DecodeBool(buf, &val16); err != nil {
 		return err
 	}
-	if val16 != -1 {
-		val15 = make([]Path, val16)
-		for val17 := 0; val17 < int(val16); val17++ {
-			if val19, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+	if !val16 {
+		tmp, err := gobtools.DecodeReference(ctx, &r.aconfigPaths, buf, func(value *uniquelist.UniqueList[Path], buf *bytes.Reader) error {
+			var val17 []Path
+			var val18 int
+			err = gobtools.DecodeInt(buf, &val18)
+			if err != nil {
 				return err
-			} else if val19 == nil {
-				val15[val17] = nil
-			} else {
-				val15[val17] = val19.(Path)
 			}
+			if val18 != -1 {
+				val17 = make([]Path, val18)
+				for val19 := 0; val19 < int(val18); val19++ {
+					if val21, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+						return err
+					} else if val21 == nil {
+						val17[val19] = nil
+					} else {
+						val17[val19] = val21.(Path)
+					}
+				}
+			}
+			*value = uniquelist.Make(val17)
+			return nil
+		})
+		if err != nil {
+			return err
 		}
+		r.aconfigPaths = *tmp
 	}
-	r.aconfigPaths = uniquelist.Make(val15)
 
 	if err = r.archType.Decode(ctx, buf); err != nil {
 		return err
 	}
 
-	var val22 []string
-	var val23 int
-	err = gobtools.DecodeInt(buf, &val23)
-	if err != nil {
+	var val24 bool
+	if err = gobtools.DecodeBool(buf, &val24); err != nil {
 		return err
 	}
-	if val23 != -1 {
-		val22 = make([]string, val23)
-		for val24 := 0; val24 < int(val23); val24++ {
-			err = gobtools.DecodeString(buf, &val22[val24])
+	if !val24 {
+		tmp, err := gobtools.DecodeReference(ctx, &r.overrides, buf, func(value *uniquelist.UniqueList[string], buf *bytes.Reader) error {
+			var val25 []string
+			var val26 int
+			err = gobtools.DecodeInt(buf, &val26)
 			if err != nil {
 				return err
 			}
+			if val26 != -1 {
+				val25 = make([]string, val26)
+				for val27 := 0; val27 < int(val26); val27++ {
+					err = gobtools.DecodeString(buf, &val25[val27])
+					if err != nil {
+						return err
+					}
+				}
+			}
+			*value = uniquelist.Make(val25)
+			return nil
+		})
+		if err != nil {
+			return err
 		}
+		r.overrides = *tmp
 	}
-	r.overrides = uniquelist.Make(val22)
 
 	err = gobtools.DecodeString(buf, &r.owner)
 	if err != nil {
