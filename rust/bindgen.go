@@ -146,7 +146,7 @@ func (b *bindgenDecorator) getStdVersion(ctx ModuleContext, src android.Path) (s
 		if String(b.ClangProperties.Cpp_std) == "experimental" {
 			stdVersion = cc_config.ExperimentalCppStdVersion
 		} else if String(b.ClangProperties.Cpp_std) == "default" || String(b.ClangProperties.Cpp_std) == "" {
-			stdVersion = cc_config.CppStdVersion
+			stdVersion = cc_config.CppStdVersion(ctx)
 		} else {
 			stdVersion = String(b.ClangProperties.Cpp_std)
 		}
@@ -160,7 +160,7 @@ func (b *bindgenDecorator) getStdVersion(ctx ModuleContext, src android.Path) (s
 			stdVersion = String(b.ClangProperties.C_std)
 		}
 	} else if isCpp {
-		stdVersion = cc_config.CppStdVersion
+		stdVersion = cc_config.CppStdVersion(ctx)
 	} else {
 		stdVersion = cc_config.CStdVersion
 	}
