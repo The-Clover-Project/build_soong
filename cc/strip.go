@@ -59,7 +59,7 @@ func (stripper *Stripper) NeedsStrip(actx android.ModuleContext) bool {
 	return !forceDisable && (forceEnable || defaultEnable)
 }
 
-func (stripper *Stripper) strip(actx android.ModuleContext, in android.Path, out android.ModuleOutPath,
+func (stripper *Stripper) strip(actx android.ModuleContext, in android.Path, out android.WritablePath,
 	flags StripFlags, isStaticLib bool) {
 	if actx.Darwin() {
 		transformDarwinStrip(actx, in, out)
@@ -84,7 +84,7 @@ func (stripper *Stripper) strip(actx android.ModuleContext, in android.Path, out
 // symbols and other debugging information. The helper function
 // flagsToStripFlags may be used to generate the flags argument.
 func (stripper *Stripper) StripExecutableOrSharedLib(actx android.ModuleContext, in android.Path,
-	out android.ModuleOutPath, flags StripFlags) {
+	out android.WritablePath, flags StripFlags) {
 	stripper.strip(actx, in, out, flags, false)
 }
 

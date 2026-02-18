@@ -27,7 +27,7 @@ import (
 func dexpreoptTargets(ctx android.PathContext) []android.Target {
 	var targets []android.Target
 	for _, target := range ctx.Config().Targets[android.Android] {
-		if target.NativeBridge == android.NativeBridgeDisabled {
+		if target.NativeBridge == android.NativeBridgeDisabled && !target.LFI {
 			targets = append(targets, target)
 		}
 	}

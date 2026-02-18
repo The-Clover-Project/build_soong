@@ -174,7 +174,7 @@ func Arm64ToolchainFactory(arch android.Arch) Toolchain {
 		toolchainRustFlags = append(toolchainRustFlags, Arm64ArchFeatureRustFlags[feature]...)
 	}
 
-	cc_toolchain := cc_config.FindToolchain(android.Android, arch)
+	cc_toolchain := cc_config.FindToolchain(android.Android, arch, false)
 	return &toolchainArm64{
 		toolchainRustFlags: strings.Join(toolchainRustFlags, " "),
 		cc_toolchain:       cc_toolchain,

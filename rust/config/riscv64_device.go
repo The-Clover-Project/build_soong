@@ -104,7 +104,7 @@ func Riscv64ToolchainFactory(arch android.Arch) Toolchain {
 		toolchainRustFlags = append(toolchainRustFlags, Riscv64ArchFeatureRustFlags[feature]...)
 	}
 
-	cc_toolchain := cc_config.FindToolchain(android.Android, arch)
+	cc_toolchain := cc_config.FindToolchain(android.Android, arch, false)
 	return &toolchainRiscv64{
 		toolchainRustFlags: strings.Join(toolchainRustFlags, " "),
 		cc_toolchain:       cc_toolchain,

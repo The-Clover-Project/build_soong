@@ -2205,6 +2205,8 @@ func (a *apexBundle) depVisitor(vctx *visitorContext, ctx android.ModuleContext,
 		// nothing
 	} else if depTag == android.RequiredDepTag {
 		// nothing
+	} else if depTag == cc.LFIDepTag {
+		// nothing
 	} else if commonInfo.IsInstallableToApex {
 		ctx.ModuleErrorf("unexpected tag %s for indirect dependency %q", android.PrettyPrintTag(depTag), depName)
 	} else if android.IsVintfDepTag(depTag) {

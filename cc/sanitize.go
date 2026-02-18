@@ -680,8 +680,8 @@ func (sanitize *sanitize) begin(ctx BaseModuleContext) {
 		s.Diag.Cfi = nil
 	}
 
-	// TODO(b/280478629): runtimes don't exist for musl arm64 yet.
-	if ctx.toolchain().Musl() && ctx.Arch().ArchType == android.Arm64 {
+	// TODO(b/280478629): runtimes don't exist for musl arm64 or LFI yet.
+	if (ctx.toolchain().Musl() && ctx.Arch().ArchType == android.Arm64) || ctx.Target().LFI {
 		s.Address = nil
 		s.Hwaddress = nil
 		s.Thread = nil
