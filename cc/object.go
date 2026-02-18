@@ -85,7 +85,6 @@ func newObject(hod android.HostOrDeviceSupported) *Module {
 	module := newBaseModule(hod, android.MultilibBoth)
 	module.sanitize = &sanitize{}
 	module.stl = &stl{}
-	module.lfi = &Lfi{}
 	return module
 }
 

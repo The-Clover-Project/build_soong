@@ -2683,10 +2683,6 @@ func (r Target) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		return err
 	}
 
-	if err = gobtools.EncodeBool(buf, r.LFI); err != nil {
-		return err
-	}
-
 	if err = gobtools.EncodeBool(buf, r.HostCross); err != nil {
 		return err
 	}
@@ -2695,7 +2691,7 @@ func (r Target) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 
 func (r Target) CustomHash(hasher *proptools.Hasher) error {
 	hasher.WriteString(":android.Target")
-	hasher.WriteInt(7)
+	hasher.WriteInt(6)
 	if err := r.Os.CustomHash(hasher); err != nil {
 		return err
 	}
@@ -2713,12 +2709,6 @@ func (r Target) CustomHash(hasher *proptools.Hasher) error {
 	hasher.WriteString(r.NativeBridgeHostArchName)
 	hasher.WriteString(":.string")
 	hasher.WriteString(r.NativeBridgeRelativePath)
-	hasher.WriteString(":.bool")
-	if r.LFI {
-		hasher.WriteByte(1)
-	} else {
-		hasher.WriteByte(0)
-	}
 	hasher.WriteString(":.bool")
 	if r.HostCross {
 		hasher.WriteByte(1)
@@ -2752,11 +2742,6 @@ func (r *Target) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	}
 
 	err = gobtools.DecodeString(buf, &r.NativeBridgeRelativePath)
-	if err != nil {
-		return err
-	}
-
-	err = gobtools.DecodeBool(buf, &r.LFI)
 	if err != nil {
 		return err
 	}

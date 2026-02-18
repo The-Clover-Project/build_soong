@@ -155,8 +155,8 @@ type toolchainArm64 struct {
 	toolchainBionic
 	toolchain64Bit
 
-	toolchainLdflags string
-	toolchainCflags  string
+	ldflags         string
+	toolchainCflags string
 }
 
 func (t *toolchainArm64) Name() string {
@@ -181,7 +181,7 @@ func (t *toolchainArm64) Cppflags() string {
 
 func (t *toolchainArm64) Ldflags(ctx ToolchainFlagsContext) FlagsWithDeps {
 	return FlagsWithDeps{
-		Flags: "${config.Arm64Ldflags}",
+		Flags: t.ldflags,
 	}
 }
 
@@ -189,25 +189,11 @@ func (t *toolchainArm64) ToolchainCflags() string {
 	return t.toolchainCflags
 }
 
-func (t *toolchainArm64) ToolchainLdflags() FlagsWithDeps {
-	return FlagsWithDeps{
-		Flags: t.toolchainLdflags,
-	}
-}
-
 func (toolchainArm64) LibclangRuntimeLibraryArch() string {
 	return "aarch64"
 }
 
 func arm64ToolchainFactory(arch android.Arch) Toolchain {
-	toolchainCflags, toolchainLdflags := arm64ToolchainFlags(arch)
-	return &toolchainArm64{
-		toolchainCflags:  toolchainCflags,
-		toolchainLdflags: toolchainLdflags,
-	}
-}
-
-func arm64ToolchainFlags(arch android.Arch) (string, string) {
 	// Error now rather than having a confusing Ninja error
 	if _, ok := arm64ArchVariantCflags[arch.ArchVariant]; !ok {
 		panic(fmt.Sprintf("Unknown ARM64 architecture version: %q", arch.ArchVariant))
@@ -221,7 +207,13 @@ func arm64ToolchainFlags(arch android.Arch) (string, string) {
 	}
 
 	extraLdflags := variantOrDefault(arm64CpuVariantLdflags, arch.CpuVariant)
-	return strings.Join(toolchainCflags, " "), extraLdflags
+	return &toolchainArm64{
+		ldflags: strings.Join([]string{
+			"${config.Arm64Ldflags}",
+			extraLdflags,
+		}, " "),
+		toolchainCflags: strings.Join(toolchainCflags, " "),
+	}
 }
 
 func init() {

@@ -29,56 +29,40 @@ func init() {
 
 type toolchainFactory func(arch android.Arch) Toolchain
 
-var toolchainFactories = make(map[android.OsType]map[android.ArchType]map[bool]toolchainFactory)
-
-func makeToolchainMap(os android.OsType, arch android.ArchType) {
-	if toolchainFactories[os] == nil {
-		toolchainFactories[os] = make(map[android.ArchType]map[bool]toolchainFactory)
-	}
-	if toolchainFactories[os][arch] == nil {
-		toolchainFactories[os][arch] = make(map[bool]toolchainFactory)
-	}
-}
+var toolchainFactories = make(map[android.OsType]map[android.ArchType]toolchainFactory)
 
 func registerToolchainFactory(os android.OsType, arch android.ArchType, factory toolchainFactory) {
-	makeToolchainMap(os, arch)
-	toolchainFactories[os][arch][false] = factory
-}
-
-func registerLFIToolchainFactory(os android.OsType, arch android.ArchType, factory toolchainFactory) {
-	makeToolchainMap(os, arch)
-	toolchainFactories[os][arch][true] = factory
+	if toolchainFactories[os] == nil {
+		toolchainFactories[os] = make(map[android.ArchType]toolchainFactory)
+	}
+	toolchainFactories[os][arch] = factory
 }
 
 type toolchainContext interface {
-	Target() android.Target
+	Os() android.OsType
+	Arch() android.Arch
 }
 
 func FindToolchainWithContext(ctx toolchainContext) Toolchain {
-	t, err := findToolchain(ctx.Target().Os, ctx.Target().Arch, ctx.Target().LFI)
+	t, err := findToolchain(ctx.Os(), ctx.Arch())
 	if err != nil {
 		panic(err)
 	}
 	return t
 }
 
-func FindToolchain(os android.OsType, arch android.Arch, lfi bool) Toolchain {
-	t, err := findToolchain(os, arch, lfi)
+func FindToolchain(os android.OsType, arch android.Arch) Toolchain {
+	t, err := findToolchain(os, arch)
 	if err != nil {
 		panic(err)
 	}
 	return t
 }
 
-func HasToolchainWithContext(ctx toolchainContext) bool {
-	_, err := findToolchain(ctx.Target().Os, ctx.Target().Arch, ctx.Target().LFI)
-	return err == nil
-}
-
-func findToolchain(os android.OsType, arch android.Arch, lfi bool) (Toolchain, error) {
-	factory := toolchainFactories[os][arch.ArchType][lfi]
+func findToolchain(os android.OsType, arch android.Arch) (Toolchain, error) {
+	factory := toolchainFactories[os][arch.ArchType]
 	if factory == nil {
-		return nil, fmt.Errorf("Toolchain not found for os: %q, arch %q, lfi: %t", os.String(), arch.String(), lfi)
+		return nil, fmt.Errorf("Toolchain not found for %s arch %q", os.String(), arch.String())
 	}
 	return factory(arch), nil
 }
@@ -130,7 +114,6 @@ type Toolchain interface {
 	Bionic() bool
 	Glibc() bool
 	Musl() bool
-	Lfi() bool
 }
 
 type toolchainBase struct {
@@ -199,10 +182,6 @@ func (toolchainBase) Glibc() bool {
 }
 
 func (toolchainBase) Musl() bool {
-	return false
-}
-
-func (toolchainBase) Lfi() bool {
 	return false
 }
 
