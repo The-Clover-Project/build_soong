@@ -356,7 +356,7 @@ func (d *dexpreopter) dexpreopt(ctx android.ModuleContext, libName string, dexJa
 	if len(targets) == 0 {
 		// assume this is a java library, dexpreopt for all arches for now
 		for _, target := range ctx.Config().Targets[android.Android] {
-			if target.NativeBridge == android.NativeBridgeDisabled {
+			if target.NativeBridge == android.NativeBridgeDisabled && !target.LFI {
 				targets = append(targets, target)
 			}
 		}

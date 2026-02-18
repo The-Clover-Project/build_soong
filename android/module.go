@@ -3045,6 +3045,11 @@ func (m *ModuleBase) IsNativeBridgeSupported() bool {
 	return proptools.Bool(m.commonProperties.Native_bridge_supported)
 }
 
+// IsLFISupported returns true if "lfi_supported" is explicitly set as "true"
+func (m *ModuleBase) IsLFISupported() bool {
+	return proptools.Bool(m.commonProperties.Lfi_supported)
+}
+
 func (m *ModuleBase) DecodeMultilib(ctx ConfigContext) (string, string) {
 	return decodeMultilib(ctx, m)
 }

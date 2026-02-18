@@ -20,6 +20,7 @@ import (
 	"android/soong/android"
 
 	"github.com/google/blueprint"
+	"github.com/google/blueprint/proptools"
 )
 
 type BinaryLinkerProperties struct {
@@ -317,7 +318,23 @@ func (binary *binaryDecorator) linkerFlags(ctx ModuleContext, flags Flags) Flags
 				"-Wl,-z,nocopyreloc",
 			)
 		}
-	} else { // not bionic
+	} else if ctx.isLFIVariation() {
+		if !binary.static() {
+			// Could be supported but android's requirements are only for static lfi libraries.
+			ctx.ModuleErrorf("Dynamic lfi binaries not supported, add static_executable: true")
+		}
+		if proptools.String(binary.baseLinker.Properties.Version_script) == "" {
+			ctx.ModuleErrorf("version_script property required to use LFI")
+		}
+		flags.Global.LdFlags = append(flags.Global.LdFlags, "-static-pie")
+		// --export-dynamic is needed so that --symbols-all in the lfi-bind command can find symbols
+		// specified by the linker script.
+		// instead of --export-dynamic, we could also try these flags to remove more dead code:
+		// -Wl,--export-dynamic-symbol-list=path/to/symbols.map.txt -Wl,--gc-sections
+		flags.Global.LdFlags = append(flags.Global.LdFlags, "-Wl,--export-dynamic")
+		flags.Global.LdFlags = append(flags.Global.LdFlags, "-nostdlib")
+		flags.Global.LdFlags = append(flags.Global.LdFlags, "-Wl,--dynamic-linker=PLACEHOLDER_TO_WORK_AROUND_CLANG_BUG")
+	} else { // not bionic or LFI
 		if binary.static() {
 			flags.Global.LdFlags = append(flags.Global.LdFlags, "-static")
 		}
@@ -338,6 +355,10 @@ func (binary *binaryDecorator) link(ctx ModuleContext,
 	fileName := binary.getStem(ctx) + flags.Toolchain.ExecutableSuffix()
 	outputFile := android.PathForModuleOut(ctx, fileName)
 	ret := outputFile
+
+	// Need to determine symlinks early since some targets (ie APEX) need this
+	// information but will not call 'install'
+	binary.setSymlinkList(ctx)
 
 	var linkerDeps android.Paths
 
@@ -365,6 +386,11 @@ func (binary *binaryDecorator) link(ctx ModuleContext,
 	}
 
 	binary.unstrippedOutputFile = outputFile
+
+	if ctx.isLFIEnabled() && ctx.isLFIVariation() {
+		lfiInfo := transformToLFISandboxedSources(ctx, outputFile)
+		android.SetProvider(ctx, lfiInfoProvider, lfiInfo)
+	}
 
 	if String(binary.Properties.Prefix_symbols) != "" {
 		afterPrefixSymbols := outputFile
@@ -438,10 +464,6 @@ func (binary *binaryDecorator) link(ctx ModuleContext,
 	objs.coverageFiles = append(objs.coverageFiles, deps.StaticLibObjs.coverageFiles...)
 	objs.coverageFiles = append(objs.coverageFiles, deps.WholeStaticLibObjs.coverageFiles...)
 	binary.coverageOutputFile = transformCoverageFilesToZip(ctx, objs, binary.getStem(ctx))
-
-	// Need to determine symlinks early since some targets (ie APEX) need this
-	// information but will not call 'install'
-	binary.setSymlinkList(ctx)
 
 	return ret
 }
