@@ -145,36 +145,14 @@ def __step_config(ctx, vars, step_config):
             "device/google/cuttlefish/host/libs/confui/Shield.ttf",
         ],
     })
+    step_config["clang_scandeps"] = "unsupported-macro"
     step_config["inputs_requiring_clang_scandeps"].extend([
-        # #include LIB_INCLUDE(SYM_LIB, Sym)
-        "external/ms-tpm-20-ref/TPMCmd/tpm/include/Tpm.h",
-
-        # #include RELOC_TYPESE
+        # #define RELOC_TYPES STRINGIFIED_PASTE (BACKEND, reloc.def)
+        # #include RELOC_TYPES
         "external/elfutils/backends/common-reloc.c",
 
         # #if __has_include(<android/binder_ibinder.h>)
         "frameworks/native/libs/binder/ndk/include_cpp/android/binder_to_string.h",
-
-        # #include PATH(android/hardware/audio/common/COMMON_TYPES_FILE_VERSION/types.h)
-        "hardware/interfaces/audio/common/all-versions/default/HidlUtils.h",
-
-        # #include PATH(android/hardware/audio/common/COMMON_TYPES_FILE_VERSION/types.h)
-        "hardware/interfaces/audio/common/all-versions/default/UuidUtils.h",
-
-        # #include PATH(APM_XSD_ENUMS_H_FILENAME)
-        "hardware/interfaces/audio/common/all-versions/default/7.0/HidlUtils.cpp",
-
-        # #include PREFIX(android/media/audio/common/AudioAttributes.h)
-        "frameworks/av/media/audioaidlconversion/include/media/AidlConversionCppNdk-impl.h",
-
-        # #include PATH(android/hardware/audio/CORE_TYPES_FILE_VERSION/types.h)
-        "frameworks/av/media/libaudiohal/impl/CoreConversionHelperHidl.h",
-
-        # #include PATH(android/hardware/audio/effect/COMMON_TYPES_FILE_VERSION/types.h)
-        "frameworks/av/media/libaudiohal/impl/EffectConversionHelperHidl.h",
-
-        # #include PATH(android/hardware/audio/effect/FILE_VERSION/types.h)
-        "frameworks/av/media/libaudiohal/impl/EffectBufferHalHidl.h",
     ])
     return step_config
 
