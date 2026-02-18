@@ -107,8 +107,7 @@ def Append(args):
     with open(args.source, 'rb') as f:
         pb.ParseFromString(f.read())
 
-    if getattr(type(pb),
-               args.key).DESCRIPTOR.label == FieldDescriptor.LABEL_REPEATED:
+    if getattr(type(pb), args.key).DESCRIPTOR.is_repeated:
         for value in args.value.split():
             getattr(pb, args.key).append(value)
     else:
