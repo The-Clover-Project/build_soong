@@ -150,7 +150,7 @@ func main() {
 		build.OsEnvironment().IsEnvTrue("ANDROID_QUIET_BUILD"),
 		build.OsEnvironment().IsEnvTrue("SOONG_UI_ANSI_OUTPUT"),
 		build.OsEnvironment().IsEnvTrue("SOONG_UI_SKIP_ACTION_PROGRESS"),
-    )
+	)
 
 	// Create and start a new metric record.
 	met := metrics.New()

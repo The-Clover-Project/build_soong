@@ -60,9 +60,9 @@ func (s *simpleStatusOutput) FinishAction(result status.ActionResult, counts sta
 	}
 
 	progress := ""
-    if !s.skipActionProgress {
-        progress = s.formatter.progress(counts)
-    }
+	if !s.skipActionProgress {
+		progress = s.formatter.progress(counts)
+	}
 
 	output := s.formatter.result(result)
 	if !s.keepANSI {
@@ -70,9 +70,9 @@ func (s *simpleStatusOutput) FinishAction(result status.ActionResult, counts sta
 	}
 
 	if output != "" {
-		fmt.Fprint(s.writer, progress + str, "\n", output)
+		fmt.Fprint(s.writer, progress+str, "\n", output)
 	} else if !s.skipActionProgress {
-		fmt.Fprintln(s.writer, progress + str)
+		fmt.Fprintln(s.writer, progress+str)
 	}
 }
 

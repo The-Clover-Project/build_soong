@@ -626,9 +626,9 @@ type PartitionVariables struct {
 	TargetUserimagesUseExt3     bool `json:",omitempty"`
 	TargetUserimagesUseExt4     bool `json:",omitempty"`
 
-	TargetUserimagesSparseExtDisabled      bool `json:",omitempty"`
-	TargetUserimagesSparseErofsDisabled    bool `json:",omitempty"`
-	TargetUserimagesSparseF2fsDisabled     bool `json:",omitempty"`
+	TargetUserimagesSparseExtDisabled   bool `json:",omitempty"`
+	TargetUserimagesSparseErofsDisabled bool `json:",omitempty"`
+	TargetUserimagesSparseF2fsDisabled  bool `json:",omitempty"`
 
 	BoardErofsCompressor           string `json:",omitempty"`
 	BoardErofsCompressorHints      string `json:",omitempty"`
