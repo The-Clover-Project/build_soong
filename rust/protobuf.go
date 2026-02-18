@@ -80,14 +80,14 @@ func (proto *protobufDecorator) GenerateSource(ctx ModuleContext, deps PathDeps)
 	protoFiles := android.PathsForModuleSrc(ctx, proto.Properties.Protos)
 	grpcFiles := android.PathsForModuleSrc(ctx, proto.Properties.Grpc_protos)
 
-	protoPluginPath := ctx.Config().HostToolPath(ctx, "protoc-gen-rust")
+	protoPluginPath := ctx.Config().HostToolPath(ctx, "protoc-gen-rs")
 
 	commonProtoFlags = append(commonProtoFlags, defaultProtobufFlags...)
 	commonProtoFlags = append(commonProtoFlags, proto.Properties.Proto_flags...)
-	commonProtoFlags = append(commonProtoFlags, "--plugin=protoc-gen-rust="+protoPluginPath.String())
+	commonProtoFlags = append(commonProtoFlags, "--plugin=protoc-gen-rs="+protoPluginPath.String())
 
 	if len(protoFiles) > 0 {
-		protoFlags.OutTypeFlag = "--rust_out"
+		protoFlags.OutTypeFlag = "--rs_out"
 		protoFlags.Flags = append(protoFlags.Flags, commonProtoFlags...)
 
 		protoFlags.Deps = append(protoFlags.Deps, protoPluginPath)
@@ -96,7 +96,7 @@ func (proto *protobufDecorator) GenerateSource(ctx ModuleContext, deps PathDeps)
 	if len(grpcFiles) > 0 {
 		grpcPath := ctx.Config().HostToolPath(ctx, "grpc_rust_plugin")
 
-		grpcProtoFlags.OutTypeFlag = "--rust_out"
+		grpcProtoFlags.OutTypeFlag = "--rs_out"
 		grpcProtoFlags.Flags = append(grpcProtoFlags.Flags, "--grpc_out="+outDir.String())
 		grpcProtoFlags.Flags = append(grpcProtoFlags.Flags, "--plugin=protoc-gen-grpc="+grpcPath.String())
 		grpcProtoFlags.Flags = append(grpcProtoFlags.Flags, commonProtoFlags...)
@@ -253,7 +253,7 @@ func (proto *protobufDecorator) SourceProviderDeps(ctx DepsContext, deps Deps) D
 	return deps
 }
 
-// rust_protobuf generates protobuf rust code from the provided proto file. This uses the protoc-gen-rust plugin for
+// rust_protobuf generates protobuf rust code from the provided proto file. This uses the protoc-gen-rs plugin for
 // protoc. Additional flags to the protoc command can be passed via the proto_flags property. This module type will
 // create library variants that can be used as a crate dependency by adding it to the rlibs and rustlibs
 // properties of other modules.
