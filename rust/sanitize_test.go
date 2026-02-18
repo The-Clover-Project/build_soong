@@ -140,7 +140,7 @@ var prepareForTestWithMemtagHeap = android.GroupFixturePreparers(
 		variables.MemtagHeapExcludePaths = []string{"subdir_override_default_disable"}
 		// "subdir_override_default_disable" is covered by both include and override_default_disable paths. override_default_disable wins.
 		variables.MemtagHeapSyncIncludePaths = []string{"subdir_sync", "subdir_override_default_disable"}
-		variables.MemtagHeapAsyncIncludePaths = []string{"subdir_async", "subdir_override_default_disable"}
+		variables.MemtagHeapAsyncExcludePaths = []string{"subdir_no_override", "subdir_override_default_disable"}
 	}),
 )
 

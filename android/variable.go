@@ -327,7 +327,7 @@ type ProductVariables struct {
 	DisableScudo *bool `json:",omitempty"`
 
 	MemtagHeapExcludePaths      []string `json:",omitempty"`
-	MemtagHeapAsyncIncludePaths []string `json:",omitempty"`
+	MemtagHeapAsyncExcludePaths []string `json:",omitempty"`
 	MemtagHeapSyncIncludePaths  []string `json:",omitempty"`
 
 	HWASanIncludePaths []string `json:",omitempty"`
