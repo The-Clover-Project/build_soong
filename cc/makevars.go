@@ -195,7 +195,7 @@ func makeVarsToolchain(ctx android.MakeVarsContext, secondPrefix string,
 	}
 	makePrefix := secondPrefix + typePrefix
 
-	toolchain := config.FindToolchain(target.Os, target.Arch, false)
+	toolchain := config.FindToolchain(target.Os, target.Arch)
 
 	var productExtraCflags string
 	var productExtraLdflags string

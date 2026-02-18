@@ -157,7 +157,7 @@ func (t *toolchainLinuxGlibcX8664) ToolchainLinkFlags(ctx ToolchainFlagsContext)
 func linuxGlibcX8664ToolchainFactory(arch android.Arch) Toolchain {
 	return &toolchainLinuxGlibcX8664{
 		toolchainLinuxX8664{
-			cc_toolchain: cc_config.FindToolchain(android.Linux, arch, false),
+			cc_toolchain: cc_config.FindToolchain(android.Linux, arch),
 		},
 	}
 }
@@ -186,7 +186,7 @@ func (t *toolchainLinuxMuslX8664) ToolchainRustFlags(ctx ToolchainFlagsContext) 
 func linuxMuslX8664ToolchainFactory(arch android.Arch) Toolchain {
 	return &toolchainLinuxMuslX8664{
 		toolchainLinuxX8664{
-			cc_toolchain: cc_config.FindToolchain(android.LinuxMusl, arch, false),
+			cc_toolchain: cc_config.FindToolchain(android.LinuxMusl, arch),
 		},
 	}
 }
@@ -259,7 +259,7 @@ func (t *toolchainLinuxGlibcX86) ToolchainLinkFlags(ctx ToolchainFlagsContext) c
 func linuxGlibcX86ToolchainFactory(arch android.Arch) Toolchain {
 	return &toolchainLinuxGlibcX86{
 		toolchainLinuxX86{
-			cc_toolchain: cc_config.FindToolchain(android.Linux, arch, false),
+			cc_toolchain: cc_config.FindToolchain(android.Linux, arch),
 		},
 	}
 }
@@ -292,7 +292,7 @@ func (t *toolchainLinuxMuslX86) Musl() bool {
 func linuxMuslX86ToolchainFactory(arch android.Arch) Toolchain {
 	return &toolchainLinuxMuslX86{
 		toolchainLinuxX86{
-			cc_toolchain: cc_config.FindToolchain(android.LinuxMusl, arch, false),
+			cc_toolchain: cc_config.FindToolchain(android.LinuxMusl, arch),
 		},
 	}
 }

@@ -79,12 +79,7 @@ var prepareForSdkTest = android.GroupFixturePreparers(
 		// Add windows as a default disable OS to test behavior when some OS variants
 		// are disabled.
 		config.Targets[android.Windows] = []android.Target{
-			{
-				Os:           android.Windows,
-				Arch:         android.Arch{ArchType: android.X86_64},
-				NativeBridge: android.NativeBridgeDisabled,
-				HostCross:    true,
-			},
+			{android.Windows, android.Arch{ArchType: android.X86_64}, android.NativeBridgeDisabled, "", "", true},
 		}
 	}),
 

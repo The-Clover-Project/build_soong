@@ -31,10 +31,6 @@ func (sdkTransitionMutator) split(ctx android.BaseModuleContext) []string {
 		return []string{""}
 	}
 
-	if ctx.Target().LFI {
-		return []string{""}
-	}
-
 	switch m := ctx.Module().(type) {
 	case LinkableInterface:
 		if m.AlwaysSdk() {
