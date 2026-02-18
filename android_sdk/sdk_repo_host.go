@@ -123,6 +123,17 @@ func (s *sdkRepoHost) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	// Always create the dir not rely on BuildNoticeTextOutputFromLicenseMetadata because the notice text may not be generated if there's not other deps.
 	builder.Command().Textf("mkdir -p %s", dir)
 
+	// Handle `merge_zips` by extracting their contents into our tmpdir.  Do this first in case their
+	// files (like NOTICE.txt) need to be overwritten.
+	for _, zip := range android.PathsForModuleSrc(ctx, s.properties.Merge_zips) {
+		builder.Command().
+			Text("unzip").
+			Flag("-DD").
+			Flag("-q").
+			FlagWithArg("-d ", dir.String()).
+			Input(zip)
+	}
+
 	// Get files from modules listed in `deps`
 	packageSpecs := s.GatherPackagingSpecs(ctx)
 
@@ -148,16 +159,6 @@ func (s *sdkRepoHost) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		builder.Command().Text("cp").
 			Input(noticeFile).
 			Text(filepath.Join(dir.String(), "NOTICE.txt"))
-	}
-
-	// Handle `merge_zips` by extracting their contents into our tmpdir
-	for _, zip := range android.PathsForModuleSrc(ctx, s.properties.Merge_zips) {
-		builder.Command().
-			Text("unzip").
-			Flag("-DD").
-			Flag("-q").
-			FlagWithArg("-d ", dir.String()).
-			Input(zip)
 	}
 
 	// Copy files from `srcs` into our tmpdir
@@ -247,6 +248,8 @@ func (s *sdkRepoHost) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 
 	builder.Build("build_sdk_repo", "Creating sdk-repo-"+s.BaseModuleName())
 
+	ctx.SetOutputFiles(android.Paths{outputZipFile}, "")
+
 	osName := ctx.Os().String()
 	if osName == "linux_glibc" {
 		osName = "linux"
@@ -265,8 +268,13 @@ func (s *sdkRepoHost) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 }
 
 func remapPackageSpecs(specs map[string]android.PackagingSpec, remaps []remapProperties) error {
+	remapped := make(map[string]bool)
 	for _, remap := range remaps {
-		for path, spec := range specs {
+		paths := android.SortedKeys(specs)
+		for _, path := range paths {
+			if _, alreadyRemapped := remapped[path]; alreadyRemapped {
+				continue
+			}
 			if match, err := pathtools.Match(remap.From, path); err != nil {
 				return fmt.Errorf("Error parsing %q: %v", remap.From, err)
 			} else if match {
@@ -278,9 +286,11 @@ func remapPackageSpecs(specs map[string]android.PackagingSpec, remaps []remapPro
 					}
 					newPath = filepath.Join(remap.To, rel)
 				}
+				spec := specs[path]
 				delete(specs, path)
 				spec.SetRelPathInPackage(newPath)
 				specs[newPath] = spec
+				remapped[newPath] = true
 			}
 		}
 	}
