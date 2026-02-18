@@ -739,6 +739,9 @@ func (a *androidDevice) distFiles(ctx android.ModuleContext) {
 		if a.superImageInfo.SuperImage != nil && !a.superImageInfo.SuperImageInUpdatePackage {
 			ctx.DistForGoal("dist_files", a.superImgFromTargetFilesZip)
 			ctx.DistForGoal("target-files-package-soong-diff-test", a.superImgFromTargetFilesZip)
+		} else {
+			// Create an empty phony target for soong diff test
+			ctx.DistForGoal("target-files-package-soong-diff-test")
 		}
 		if a.superImageInfo.SuperEmptyImage != nil {
 			ctx.DistForGoal("dist_files", a.superImageInfo.SuperEmptyImage)
