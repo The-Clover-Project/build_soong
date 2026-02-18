@@ -58,7 +58,7 @@ func (e *Environment) Get(key string) (string, bool) {
 	return "", false
 }
 
-// Get returns the int value associated with the key, and whether it exists
+// GetInt returns the int value associated with the key, and whether it exists
 // and is a valid int.
 func (e *Environment) GetInt(key string) (int, bool) {
 	if v, ok := e.Get(key); ok {
@@ -69,11 +69,27 @@ func (e *Environment) GetInt(key string) (int, bool) {
 	return 0, false
 }
 
+// GetBool returns the bool value associated with the key, and whether it exists.
+//
+// Positive values (1,y,yes,on,true) return true, all others return false.
+func (e *Environment) GetBool(key string) (value bool, ok bool) {
+	if v, ok := e.Get(key); ok {
+		return isTrue(v), ok
+	}
+	return false, false
+}
+
 // Set sets the value associated with the key, overwriting the current value
 // if it exists.
 func (e *Environment) Set(key, value string) {
 	e.Unset(key)
 	*e = append(*e, key+"="+value)
+}
+
+// SetBool sets the value associated with the key, overwriting the current value
+// if it exists.
+func (e *Environment) SetBool(key string, value bool) {
+	e.Set(key, strconv.FormatBool(value))
 }
 
 // Unset removes the specified keys from the Environment.
@@ -131,9 +147,13 @@ func (e *Environment) Copy() *Environment {
 // IsTrue returns whether an environment variable is set to a positive value (1,y,yes,on,true)
 func (e *Environment) IsEnvTrue(key string) bool {
 	if value, ok := e.Get(key); ok {
-		return value == "1" || value == "y" || value == "yes" || value == "on" || value == "true"
+		return isTrue(value)
 	}
 	return false
+}
+
+func isTrue(value string) bool {
+	return value == "1" || value == "y" || value == "yes" || value == "on" || value == "true"
 }
 
 // IsFalse returns whether an environment variable is set to a negative value (0,n,no,off,false)
