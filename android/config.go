@@ -398,6 +398,7 @@ type config struct {
 	BuildOSCommonTarget      Target // the Target for common (java) tools run on the build machine
 	AndroidCommonTarget      Target // the Target for common modules for the Android device
 	AndroidFirstDeviceTarget Target // the first Target for modules for the Android device
+	AndroidLFITarget         Target
 
 	// Flags for Partial Compile, derived from SOONG_PARTIAL_COMPILE.
 	partialCompileFlags partialCompileFlags
@@ -875,6 +876,8 @@ func initConfig(cmdArgs CmdArgs, availableEnv map[string]string) (*config, error
 	if len(newConfig.Targets[Android]) > 0 {
 		newConfig.AndroidCommonTarget = getCommonTargets(newConfig.Targets[Android])[0]
 		newConfig.AndroidFirstDeviceTarget = FirstTarget(newConfig.Targets[Android], "lib64", "lib32")[0]
+		newConfig.AndroidLFITarget = newConfig.AndroidFirstDeviceTarget
+		newConfig.AndroidLFITarget.LFI = true
 	}
 
 	setBuildMode := func(arg string, mode SoongBuildMode) {

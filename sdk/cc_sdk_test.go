@@ -622,7 +622,11 @@ func TestSnapshotWithSingleHostOsType(t *testing.T) {
 		cc.PrepareForTestOnLinuxBionic,
 		android.FixtureModifyConfig(func(config android.Config) {
 			config.Targets[android.LinuxBionic] = []android.Target{
-				{android.LinuxBionic, android.Arch{ArchType: android.X86_64}, android.NativeBridgeDisabled, "", "", false},
+				{
+					Os:           android.LinuxBionic,
+					Arch:         android.Arch{ArchType: android.X86_64},
+					NativeBridge: android.NativeBridgeDisabled,
+				},
 			}
 		}),
 	).RunTestWithBp(t, `

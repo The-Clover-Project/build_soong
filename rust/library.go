@@ -867,7 +867,7 @@ func (library *libraryDecorator) crateRootPath(ctx ModuleContext) android.Path {
 
 func (library *libraryDecorator) getApiStubsCcFlags(ctx ModuleContext) cc.Flags {
 	ccFlags := cc.Flags{}
-	toolchain := cc_config.FindToolchain(ctx.Os(), ctx.Arch())
+	toolchain := cc_config.FindToolchain(ctx.Os(), ctx.Arch(), false)
 
 	platformSdkVersion := ""
 	if ctx.Device() {
@@ -879,7 +879,7 @@ func (library *libraryDecorator) getApiStubsCcFlags(ctx ModuleContext) cc.Flags 
 	ccFlags = cc.CommonLinkerFlags(ctx, ccFlags, toolchain, false)
 	ccFlags = cc.CommonLibraryLinkerFlags(ctx, ccFlags, toolchain, library.getStem(ctx))
 	ccFlags = cc.AddStubLibraryCompilerFlags(ccFlags)
-	ccFlags = cc.AddTargetFlags(ctx, ccFlags, toolchain, minSdkVersion, false)
+	ccFlags = cc.AddTargetFlags(ctx, ccFlags, toolchain, minSdkVersion, false, false)
 
 	return ccFlags
 }

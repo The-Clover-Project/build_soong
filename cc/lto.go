@@ -143,7 +143,9 @@ func (lto *lto) flags(ctx ModuleContext, flags Flags) Flags {
 
 		if !ctx.Config().IsEnvFalse("THINLTO_USE_MLGO") {
 			// Register allocation MLGO flags for ARM64.
-			if ctx.Arch().ArchType == android.Arm64 && !ctx.optimizeForSize() {
+			// Combining with LFI fails with:
+			// ld.lld: error: Requested regalloc eviction advisor analysis could not be created. Using default
+			if ctx.Arch().ArchType == android.Arm64 && !ctx.optimizeForSize() && !ctx.isLFIVariation() {
 				ltoLdFlags = append(ltoLdFlags, "-Wl,-mllvm,-regalloc-enable-advisor=release")
 			}
 			// Flags for training MLGO model.
@@ -219,6 +221,9 @@ func (l *ltoTransitionMutator) OutgoingTransition(ctx android.OutgoingTransition
 func (l *ltoTransitionMutator) IncomingTransition(ctx android.IncomingTransitionContext, incomingVariation string) string {
 	if m, ok := ctx.Module().(*Module); ok && m.lto != nil {
 		if m.lto.Never() {
+			return ""
+		}
+		if ctx.Target().LFI && m.staticLibrary() {
 			return ""
 		}
 		// Rewrite explicit variations back to the default variation if the default variation matches.

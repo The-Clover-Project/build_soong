@@ -363,6 +363,11 @@ type Target struct {
 	// libraries and binaries.
 	NativeBridgeRelativePath string
 
+	// If this is an LFI (Lightweight Fault Isolation) arch variant. There is also an LFI
+	// transition mutator, but we have separate LFI arch variants as well because toolchain
+	// resolution happens early, based on arch.
+	LFI bool
+
 	// HostCross is true when the target cannot run natively on the current build host.
 	// For example, linux_glibc_x86 returns true on a regular x86/i686/Linux machines, but returns false
 	// on Mac (different OS), or on 64-bit only i686/Linux machines (unsupported arch).
@@ -392,6 +397,8 @@ func (target Target) ArchVariation() string {
 	var variation string
 	if target.NativeBridge {
 		variation = "native_bridge_"
+	} else if target.LFI {
+		variation = "lfi_"
 	}
 	variation += target.Arch.String()
 
@@ -665,6 +672,10 @@ func (a *archTransitionMutator) Split(ctx BaseModuleContext) []string {
 	if len(targets) == 0 {
 		base.Disable()
 		return []string{""}
+	}
+
+	if os == Android && base.IsLFISupported() {
+		targets = append([]Target{ctx.Config().AndroidLFITarget}, targets...)
 	}
 
 	// If the module is using extraMultilib, decode the extraMultilib selection into

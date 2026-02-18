@@ -555,7 +555,7 @@ func init() {
 		if override := ctx.Config().Getenv("LLVM_PREBUILTS_VERSION"); override != "" {
 			return override
 		}
-		return ctx.Config().ReleaseBuildClangVersion(ClangDefaultVersion)
+		return ClangVersion(ctx)
 	})
 	pctx.VariableFunc("ClangShortVersion", func(ctx android.PackageVarContext) string {
 		if override := ctx.Config().Getenv("LLVM_RELEASE_VERSION"); override != "" {
@@ -630,7 +630,7 @@ func clangPathNoOnce(ctx android.PathContext) android.SourcePath {
 	if override := ctx.Config().Getenv("LLVM_PREBUILTS_BASE"); override != "" {
 		clangBase = override
 	}
-	clangVersion := ctx.Config().ReleaseBuildClangVersion(ClangDefaultVersion)
+	clangVersion := ClangVersion(ctx)
 	if override := ctx.Config().Getenv("LLVM_PREBUILTS_VERSION"); override != "" {
 		clangVersion = override
 	}
