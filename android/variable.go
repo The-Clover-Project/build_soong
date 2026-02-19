@@ -294,9 +294,6 @@ type ProductVariables struct {
 	UseABFS                      *bool    `json:",omitempty"`
 	UseRBE                       *bool    `json:",omitempty"`
 	UseREWrapper                 *bool    `json:",omitempty"`
-	UseRBEJAVAC                  *bool    `json:",omitempty"`
-	UseRBER8                     *bool    `json:",omitempty"`
-	UseRBED8                     *bool    `json:",omitempty"`
 	RBEContainerImage            *string  `json:",omitempty"`
 	Debuggable                   *bool    `json:",omitempty"`
 	Eng                          *bool    `json:",omitempty"`
@@ -626,9 +623,9 @@ type PartitionVariables struct {
 	TargetUserimagesUseExt3     bool `json:",omitempty"`
 	TargetUserimagesUseExt4     bool `json:",omitempty"`
 
-	TargetUserimagesSparseExtDisabled      bool `json:",omitempty"`
-	TargetUserimagesSparseErofsDisabled    bool `json:",omitempty"`
-	TargetUserimagesSparseF2fsDisabled     bool `json:",omitempty"`
+	TargetUserimagesSparseExtDisabled   bool `json:",omitempty"`
+	TargetUserimagesSparseErofsDisabled bool `json:",omitempty"`
+	TargetUserimagesSparseF2fsDisabled  bool `json:",omitempty"`
 
 	BoardErofsCompressor           string `json:",omitempty"`
 	BoardErofsCompressorHints      string `json:",omitempty"`
