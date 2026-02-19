@@ -15,6 +15,7 @@
 package rust
 
 import (
+	"path/filepath"
 	"slices"
 	"strings"
 
@@ -23,6 +24,7 @@ import (
 
 	"android/soong/android"
 	"android/soong/cc"
+	cc_config "android/soong/cc/config"
 	"android/soong/remoteexec"
 	"android/soong/rust/config"
 )
@@ -523,15 +525,12 @@ func transformSrctoCrate(ctx android.ModuleContext, main android.Path, deps Path
 	implicits = append(implicits, srcInputs...)
 	implicits = append(implicits, libFlagsDeps...)
 
-	// TODO: Re-enable. Causes slow analysis
-	// toolchainImplicitsPhony := ctx.CreateNinjaPhonyOnce("rustToolchainImplicits", slices.Concat(
-	// 	ctx.GlobFilesOutsideModuleDir(filepath.Join(config.RustPath(ctx), "**/*"), nil),
-	// 	ctx.GlobFilesOutsideModuleDir(cc_config.ClangPathNoOnce(ctx, "lib/**/*").String(), nil),
-	// 	ctx.GlobFilesOutsideModuleDir(cc_config.ClangPathNoOnce(ctx, "bin/**/*").String(), nil),
-	// ))
-	// if toolchainImplicitsPhony != nil {
-	// 	implicits = append(implicits, toolchainImplicitsPhony)
-	// }
+	toolchainImplicitsPhony := ctx.CreateNinjaPhonyOnce("rustToolchainImplicits", []string{
+		filepath.Join(config.RustPath(ctx), "**/*"),
+		cc_config.ClangPathNoOnce(ctx, "lib/**/*").String(),
+		cc_config.ClangPathNoOnce(ctx, "bin/**/*").String(),
+	})
+	implicits = append(implicits, toolchainImplicitsPhony)
 
 	if !t.synthetic {
 		// Only worry about clippy for actual Rust modules.
