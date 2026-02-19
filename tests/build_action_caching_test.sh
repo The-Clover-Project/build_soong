@@ -318,15 +318,15 @@ function test_set_environment_variable() {
 
   run_soong SOONG_INCREMENTAL_ANALYSIS=true
 
-  compare_incremental_and_full_analysis LLVM_PREBUILTS_VERSION=foo
+  compare_incremental_and_full_analysis CC_WRAPPER=foo
 }
 
 function test_change_environment_variable() {
   setup
 
-  run_soong SOONG_INCREMENTAL_ANALYSIS=true LLVM_PREBUILTS_VERSION=foo
+  run_soong SOONG_INCREMENTAL_ANALYSIS=true CC_WRAPPER=foo
 
-  compare_incremental_and_full_analysis LLVM_PREBUILTS_VERSION=bar
+  compare_incremental_and_full_analysis CC_WRAPPER=bar
 }
 
 function test_change_target_product() {

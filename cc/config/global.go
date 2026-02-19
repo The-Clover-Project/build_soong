@@ -557,19 +557,12 @@ func init() {
 		}
 		return ctx.Config().ReleaseBuildClangVersion(ClangDefaultVersion)
 	})
-	pctx.VariableFunc("ClangShortVersion", func(ctx android.PackageVarContext) string {
-		if override := ctx.Config().Getenv("LLVM_RELEASE_VERSION"); override != "" {
-			return override
-		}
-		return ctx.Config().ReleaseBuildClangShortVersion(ClangDefaultShortVersion)
-	})
 	pctx.VariableFunc("CppStdVersion", func(ctx android.PackageVarContext) string {
 		return ctx.Config().ReleaseBuildCppStdVersion(CppDefaultStdVersion)
 	})
 
 	pctx.StaticVariable("ClangPath", "${ClangBase}/${HostPrebuiltTag}/${ClangVersion}")
 	pctx.StaticVariable("ClangBin", "${ClangPath}/bin")
-	pctx.StaticVariable("ClangAsanLibDir", "${ClangBase}/linux-x86/${ClangVersion}/lib/clang/${ClangShortVersion}/lib/linux")
 
 	pctx.StaticVariable("WarningAllowedProjects", strings.Join(WarningAllowedProjects, " "))
 
@@ -639,10 +632,6 @@ func clangPathNoOnce(ctx android.PathContext) android.SourcePath {
 
 func ClangVersion(ctx android.PathContext) string {
 	return ctx.Config().ReleaseBuildClangVersion(ClangDefaultVersion)
-}
-
-func ClangShortVersion(ctx android.PathContext) string {
-	return ctx.Config().ReleaseBuildClangShortVersion(ClangDefaultShortVersion)
 }
 
 func CppStdVersion(ctx android.PathContext) string {

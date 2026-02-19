@@ -259,13 +259,6 @@ func (c Config) ReleaseBuildClangVersion(defaultVersion string) string {
 	return defaultVersion
 }
 
-func (c Config) ReleaseBuildClangShortVersion(defaultVersion string) string {
-	if val, exists := c.GetBuildFlag("RELEASE_BUILD_CLANG_SHORT_VERSION"); exists && val != "" {
-		return val
-	}
-	return defaultVersion
-}
-
 func (c Config) ReleaseBuildCppStdVersion(defaultVersion string) string {
 	if val, exists := c.GetBuildFlag("RELEASE_BUILD_CPP_STD_VERSION"); exists && val != "" {
 		return val
