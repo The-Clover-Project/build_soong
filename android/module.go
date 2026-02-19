@@ -29,6 +29,7 @@ import (
 	"github.com/google/blueprint/depset"
 	"github.com/google/blueprint/pathtools"
 	"github.com/google/blueprint/proptools"
+	"github.com/google/blueprint/uniquelist"
 )
 
 //go:generate go run ../../blueprint/gobtools/codegen
@@ -2141,14 +2142,14 @@ type CommonModuleInfo struct {
 	AndroidMkData                  *AndroidMkDataInfo
 	BaseJarJarProviderData         *BaseJarJarProviderData
 	InstallFiles                   *InstallFilesInfo
-	NinjaPhonies                   map[string]NinjaPhoniesDepsInfo
+	NinjaPhonies                   map[string]NinjaPhoniesGlobsInfo
 }
 
-// NinjaPhoniesDepsInfo is only necessary because the gob code doesn't support serializing
-// a map[string]DepSet[Path] directly.
+// NinjaPhoniesGlobsInfo is only necessary because the gob code doesn't support serializing
+// a map[string]UniqueList[string] directly.
 // @auto-generate: gob
-type NinjaPhoniesDepsInfo struct {
-	Deps depset.DepSet[Path]
+type NinjaPhoniesGlobsInfo struct {
+	Globs uniquelist.UniqueList[string]
 }
 
 // @auto-generate: gob
