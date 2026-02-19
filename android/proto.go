@@ -70,16 +70,8 @@ func GetProtoFlags(ctx ModuleContext, p *ProtoProperties) ProtoFlags {
 	// (saves ~145 MB at time of writing)
 	createPhonyForIncludeDir := func(deps *Paths, includeDir string, local bool) {
 		phonyName := fmt.Sprintf("protoIncDir_%s", strings.ReplaceAll(includeDir, "/", "__"))
-		var files Paths
-		if local {
-			files = ctx.GlobFiles(includeDir+"/**/*.proto", nil)
-		} else {
-			files = ctx.GlobFilesOutsideModuleDir(includeDir+"/**/*.proto", nil)
-		}
-		phonyPath := ctx.CreateNinjaPhonyOnce(phonyName, files)
-		if phonyPath != nil {
-			*deps = append(*deps, phonyPath)
-		}
+		phony := ctx.CreateNinjaPhonyOnce(phonyName, []string{includeDir + "/**/*.proto"})
+		*deps = append(*deps, phony)
 	}
 
 	if len(p.Proto.Local_include_dirs) > 0 {

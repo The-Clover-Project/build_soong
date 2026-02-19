@@ -16,7 +16,6 @@ package config
 
 import (
 	"path/filepath"
-	"slices"
 	"strings"
 
 	"android/soong/android"
@@ -121,15 +120,11 @@ var (
 
 func WindowsX86Ldflags(ctx ToolchainFlagsContext) FlagsWithDeps {
 	windowsGccRoot := WindowsGccRoot(ctx.Config())
-	depsPhony := ctx.CreateNinjaPhonyOnce("windowsX86LdFlagsDeps", slices.Concat(
-		android.GlobFilesOutsideModuleDir(ctx, filepath.Join(windowsGccRoot, windowsGccTriple, "bin", "*"), nil),
-		android.GlobFilesOutsideModuleDir(ctx, filepath.Join(windowsGccRoot, "lib/gcc", windowsGccTriple, "4.8.3", "32", "*"), nil),
-		android.GlobFilesOutsideModuleDir(ctx, filepath.Join(windowsGccRoot, windowsGccTriple, "lib32", "*"), nil),
-	))
-	var deps android.Paths
-	if depsPhony != nil {
-		deps = append(deps, depsPhony)
-	}
+	depsPhony := ctx.CreateNinjaPhonyOnce("windowsX86LdFlagsDeps", []string{
+		filepath.Join(windowsGccRoot, windowsGccTriple, "bin", "*"),
+		filepath.Join(windowsGccRoot, "lib/gcc", windowsGccTriple, "4.8.3", "32", "*"),
+		filepath.Join(windowsGccRoot, windowsGccTriple, "lib32", "*"),
+	})
 	return FlagsWithDeps{
 		Flags: strings.Join([]string{
 			"-m32",
@@ -142,21 +137,17 @@ func WindowsX86Ldflags(ctx ToolchainFlagsContext) FlagsWithDeps {
 			"-L${config.WindowsGccRoot}/lib/gcc/${config.WindowsGccTriple}/4.8.3/32",
 			"-B${config.WindowsGccRoot}/${config.WindowsGccTriple}/lib32",
 		}, " "),
-		Deps: deps,
+		Deps: android.Paths{depsPhony},
 	}
 }
 
 func WindowsX8664Ldflags(ctx ToolchainFlagsContext) FlagsWithDeps {
 	windowsGccRoot := WindowsGccRoot(ctx.Config())
-	depsPhony := ctx.CreateNinjaPhonyOnce("windowsX8664LdFlagsDeps", slices.Concat(
-		android.GlobFilesOutsideModuleDir(ctx, filepath.Join(windowsGccRoot, windowsGccTriple, "bin", "*"), nil),
-		android.GlobFilesOutsideModuleDir(ctx, filepath.Join(windowsGccRoot, "lib/gcc", windowsGccTriple, "4.8.3", "*"), nil),
-		android.GlobFilesOutsideModuleDir(ctx, filepath.Join(windowsGccRoot, windowsGccTriple, "lib64", "*"), nil),
-	))
-	var deps android.Paths
-	if depsPhony != nil {
-		deps = append(deps, depsPhony)
-	}
+	depsPhony := ctx.CreateNinjaPhonyOnce("windowsX8664LdFlagsDeps", []string{
+		filepath.Join(windowsGccRoot, windowsGccTriple, "bin", "*"),
+		filepath.Join(windowsGccRoot, "lib/gcc", windowsGccTriple, "4.8.3", "*"),
+		filepath.Join(windowsGccRoot, windowsGccTriple, "lib64", "*"),
+	})
 	return FlagsWithDeps{
 		Flags: strings.Join([]string{
 			"-m64",
@@ -169,7 +160,7 @@ func WindowsX8664Ldflags(ctx ToolchainFlagsContext) FlagsWithDeps {
 			"-L${config.WindowsGccRoot}/lib/gcc/${config.WindowsGccTriple}/4.8.3",
 			"-B${config.WindowsGccRoot}/${config.WindowsGccTriple}/lib64",
 		}, " "),
-		Deps: deps,
+		Deps: android.Paths{depsPhony},
 	}
 }
 
