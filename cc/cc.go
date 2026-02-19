@@ -2944,6 +2944,10 @@ func buildComplianceMetadataInfo(ctx ModuleContext, c *Module, deps PathDeps) {
 		headerLibDepNames = append(headerLibDepNames, dep.Name())
 	}
 	complianceMetadataInfo.SetListValue(android.ComplianceMetadataProp.HEADER_LIBS, android.FirstUniqueStrings(headerLibDepNames))
+
+	if p, ok := c.linker.(*prebuiltLibraryLinker); ok && len(p.SingleSource(ctx)) > 0 {
+		complianceMetadataInfo.SetCipdSrc(ctx, p.SingleSource(ctx))
+	}
 }
 
 func (c *Module) maybeUnhideFromMake() {
