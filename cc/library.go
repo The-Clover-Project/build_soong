@@ -772,8 +772,13 @@ func (library *libraryDecorator) compileModuleLibApiStubs(ctx ModuleContext, fla
 	}
 	flag := GetApiStubsFlags(apiParams)
 
-	nativeAbiResult := ParseNativeAbiDefinition(ctx, symbolFile,
-		android.ApiLevelOrPanic(ctx, library.MutatedProperties.StubsVersion), flag)
+	nativeAbiResult := ParseNativeAbiDefinition(ctx,
+		symbolFile,
+		// Raise the version to at least the minimum API level for the device architecture.
+		// This might mean that some old API level stubs contain the symbols from minimum API level.
+		nativeClampedApiLevel(ctx, android.ApiLevelOrPanic(ctx, library.MutatedProperties.StubsVersion)),
+		flag,
+	)
 	objs := CompileStubLibrary(ctx, flags, nativeAbiResult.StubSrc, ctx.getSharedFlags())
 
 	library.versionScriptPath = android.OptionalPathForPath(
