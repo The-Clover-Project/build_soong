@@ -266,6 +266,13 @@ func (c Config) ReleaseBuildClangShortVersion(defaultVersion string) string {
 	return defaultVersion
 }
 
+func (c Config) ReleaseBuildCppStdVersion(defaultVersion string) string {
+	if val, exists := c.GetBuildFlag("RELEASE_BUILD_CPP_STD_VERSION"); exists && val != "" {
+		return val
+	}
+	return defaultVersion
+}
+
 // The flag indicating behavior for the tree wrt building modules or using prebuilts
 // derived from RELEASE_DEFAULT_MODULE_BUILD_FROM_SOURCE
 func (c Config) ReleaseDefaultModuleBuildFromSource() bool {
@@ -2169,11 +2176,11 @@ func (c *config) MemtagHeapDisabledForPath(path string) bool {
 	return HasAnyPrefix(path, c.productVariables.MemtagHeapExcludePaths)
 }
 
-func (c *config) MemtagHeapAsyncEnabledForPath(path string) bool {
-	if len(c.productVariables.MemtagHeapAsyncIncludePaths) == 0 {
+func (c *config) MemtagHeapAsyncDisabledForPath(path string) bool {
+	if len(c.productVariables.MemtagHeapAsyncExcludePaths) == 0 {
 		return false
 	}
-	return HasAnyPrefix(path, c.productVariables.MemtagHeapAsyncIncludePaths) && !c.MemtagHeapDisabledForPath(path)
+	return HasAnyPrefix(path, c.productVariables.MemtagHeapAsyncExcludePaths) || c.MemtagHeapDisabledForPath(path)
 }
 
 func (c *config) MemtagHeapSyncEnabledForPath(path string) bool {

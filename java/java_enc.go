@@ -35,19 +35,30 @@ func (r resourcesNode) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error 
 		return err
 	}
 
-	val1 := r.additionalManifests.ToSlice()
-	if val1 == nil {
-		if err = gobtools.EncodeInt(buf, -1); err != nil {
-			return err
-		}
-	} else {
-		if err = gobtools.EncodeInt(buf, len(val1)); err != nil {
-			return err
-		}
-		for val2 := 0; val2 < len(val1); val2++ {
-			if err = gobtools.EncodeInterface(ctx, buf, val1[val2]); err != nil {
-				return err
+	val1 := r.additionalManifests.Len() == 0
+	if err = gobtools.EncodeBool(buf, val1); err != nil {
+		return err
+	}
+	if !val1 {
+		if err = gobtools.EncodeReference(ctx, r.additionalManifests, buf, func(v uniquelist.UniqueList[android.Path], buf *bytes.Buffer) error {
+			val2 := v.ToSlice()
+			if val2 == nil {
+				if err = gobtools.EncodeInt(buf, -1); err != nil {
+					return err
+				}
+			} else {
+				if err = gobtools.EncodeInt(buf, len(val2)); err != nil {
+					return err
+				}
+				for val3 := 0; val3 < len(val2); val3++ {
+					if err = gobtools.EncodeInterface(ctx, buf, val2[val3]); err != nil {
+						return err
+					}
+				}
 			}
+			return nil
+		}); err != nil {
+			return err
 		}
 	}
 
@@ -225,40 +236,53 @@ func (r *resourcesNode) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error
 		r.manifest = val4.(android.Path)
 	}
 
-	var val6 []android.Path
-	var val7 int
-	err = gobtools.DecodeInt(buf, &val7)
-	if err != nil {
+	var val6 bool
+	if err = gobtools.DecodeBool(buf, &val6); err != nil {
 		return err
 	}
-	if val7 != -1 {
-		val6 = make([]android.Path, val7)
-		for val8 := 0; val8 < int(val7); val8++ {
-			if val10, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+	if !val6 {
+		tmp, err := gobtools.DecodeReference(ctx, &r.additionalManifests, buf, func(value *uniquelist.UniqueList[android.Path], buf *bytes.Reader) error {
+			var val7 []android.Path
+			var val8 int
+			err = gobtools.DecodeInt(buf, &val8)
+			if err != nil {
 				return err
-			} else if val10 == nil {
-				val6[val8] = nil
-			} else {
-				val6[val8] = val10.(android.Path)
 			}
+			if val8 != -1 {
+				val7 = make([]android.Path, val8)
+				for val9 := 0; val9 < int(val8); val9++ {
+					if val11, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+						return err
+					} else if val11 == nil {
+						val7[val9] = nil
+					} else {
+						val7[val9] = val11.(android.Path)
+					}
+				}
+			}
+			*value = uniquelist.Make(val7)
+			return nil
+		})
+		if err != nil {
+			return err
 		}
+		r.additionalManifests = *tmp
 	}
-	r.additionalManifests = uniquelist.Make(val6)
 
-	if val12, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+	if val13, err := gobtools.DecodeInterface(ctx, buf); err != nil {
 		return err
-	} else if val12 == nil {
+	} else if val13 == nil {
 		r.rTxt = nil
 	} else {
-		r.rTxt = val12.(android.Path)
+		r.rTxt = val13.(android.Path)
 	}
 
-	if val14, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+	if val15, err := gobtools.DecodeInterface(ctx, buf); err != nil {
 		return err
-	} else if val14 == nil {
+	} else if val15 == nil {
 		r.rJar = nil
 	} else {
-		r.rJar = val14.(android.Path)
+		r.rJar = val15.(android.Path)
 	}
 
 	if err = r.assets.Decode(ctx, buf); err != nil {

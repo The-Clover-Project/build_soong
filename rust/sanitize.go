@@ -189,7 +189,7 @@ func (sanitize *sanitize) begin(ctx BaseModuleContext) {
 			if s.Diag.Memtag_heap == nil {
 				s.Diag.Memtag_heap = proptools.BoolPtr(true)
 			}
-		} else if ctx.Config().MemtagHeapAsyncEnabledForPath(ctx.ModuleDir()) {
+		} else if !ctx.Config().MemtagHeapAsyncDisabledForPath(ctx.ModuleDir()) {
 			if s.Memtag_heap == nil {
 				s.Memtag_heap = proptools.BoolPtr(true)
 			}

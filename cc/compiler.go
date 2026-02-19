@@ -341,11 +341,11 @@ func maybeReplaceGnuToC(gnuExtensions *bool, cStd string, cppStd string) (string
 	return cStd, cppStd
 }
 
-func parseCppStd(cppStdPtr *string) string {
+func parseCppStd(ctx ModuleContext, cppStdPtr *string) string {
 	cppStd := String(cppStdPtr)
 	switch cppStd {
 	case "":
-		return config.CppStdVersion
+		return config.CppStdVersion(ctx)
 	case "experimental":
 		return config.ExperimentalCppStdVersion
 	default:
@@ -591,7 +591,7 @@ func (compiler *baseCompiler) compilerFlags(ctx ModuleContext, flags Flags, deps
 	}
 
 	cStd := parseCStd(compiler.Properties.C_std)
-	cppStd := parseCppStd(compiler.Properties.Cpp_std)
+	cppStd := parseCppStd(ctx, compiler.Properties.Cpp_std)
 
 	cStd, cppStd = maybeReplaceGnuToC(compiler.Properties.Gnu_extensions, cStd, cppStd)
 
