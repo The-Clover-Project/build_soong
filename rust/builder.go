@@ -39,10 +39,9 @@ var (
 				"-C link-args=@${out}.clang.rsp " +
 				"--emit ${emitType} -o $out --emit dep-info=$out.d.raw $in ${libFlags} $rustcFlags" +
 				" && ${DepfileVerifier} --check-suffix-only $out.d ${soongSrcsFile}",
-			CommandDeps:     []string{"$rustcCmd", "${RustcLinkerCmd}", "${config.ClangCmd}", "${DepfileVerifier}", "${RustcWrapper}"},
-			Rspfile:         "${out}.clang.rsp",
-			RspfileContent:  "${crtBegin} ${earlyLinkFlags} ${linkFlags} ${crtEnd}",
-			SandboxDisabled: true,
+			CommandDeps:    []string{"$rustcCmd", "${RustcLinkerCmd}", "${config.ClangCmd}", "${DepfileVerifier}", "${RustcWrapper}"},
+			Rspfile:        "${out}.clang.rsp",
+			RspfileContent: "${crtBegin} ${earlyLinkFlags} ${linkFlags} ${crtEnd}",
 		}, &remoteexec.REParams{
 			// Until there's a "rust" tool, use clang. This interprets "-L" flags
 			// to help identify potential build dependencies.
