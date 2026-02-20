@@ -1201,6 +1201,7 @@ func (mod *Module) GenerateAndroidBuildActions(actx android.ModuleContext) {
 			bloaty.MeasureSizeForPaths(ctx, mod.compiler.strippedOutputFilePath(), android.OptionalPathForPath(mod.compiler.unstrippedOutputFilePath()))
 		}
 
+		deps.SrcFiles = append(deps.SrcFiles, mod.compiler.crateSources(ctx)...)
 		mod.docTimestampFile = mod.compiler.rustdoc(ctx, flags, deps)
 
 		apexInfo, _ := android.ModuleProvider(actx, android.ApexInfoProvider)
