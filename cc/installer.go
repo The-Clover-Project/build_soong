@@ -84,6 +84,8 @@ func (installer *baseInstaller) installDir(ctx ModuleContext) android.InstallPat
 
 	if ctx.Target().NativeBridge == android.NativeBridgeEnabled {
 		dir = filepath.Join(dir, ctx.Target().NativeBridgeRelativePath)
+	} else if ctx.isLFIVariation() {
+		dir = filepath.Join(dir, "lfi")
 	} else if !ctx.Host() && ctx.Config().HasMultilibConflict(ctx.Arch().ArchType) {
 		dir = filepath.Join(dir, ctx.Arch().ArchType.String())
 	}

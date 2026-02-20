@@ -199,10 +199,11 @@ func TransformRlibstoStaticlib(ctx android.ModuleContext, mainSrc android.Path, 
 
 	var rustPathDeps PathDeps
 	var rustFlags Flags
-
+	IsHwasan := false
 	for _, rlibDep := range deps {
 		rustPathDeps.RLibs = append(rustPathDeps.RLibs, RustLibrary{Path: rlibDep.LibPath, CrateName: rlibDep.CrateName})
 		rustPathDeps.linkDirs = append(rustPathDeps.linkDirs, rlibDep.LinkDirs...)
+		IsHwasan = IsHwasan || rlibDep.IsHwasan
 		rustPathDeps.linkDirsDeps = append(rustPathDeps.linkDirsDeps, rlibDep.LinkDirsDeps...)
 	}
 	rustPathDeps.linkDirs = android.FirstUniqueStrings(rustPathDeps.linkDirs)
@@ -237,6 +238,9 @@ func TransformRlibstoStaticlib(ctx android.ModuleContext, mainSrc android.Path, 
 
 	rustFlags = CommonDefaultFlags(ctx, toolchain, rustFlags)
 	rustFlags = CommonLibraryCompilerFlags(ctx, rustFlags)
+	if IsHwasan {
+		rustFlags.RustFlags = append(rustFlags.RustFlags, "-Zsanitizer=hwaddress")
+	}
 	rustFlags.GlobalRustFlags = rustFlags.GlobalRustFlags.AppendNoDeps("-C lto=thin")
 
 	rustFlags.EmitXrefs = false

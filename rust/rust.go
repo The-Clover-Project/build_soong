@@ -1110,7 +1110,7 @@ func (mod *Module) toolchain(ctx android.BaseModuleContext) config.Toolchain {
 }
 
 func (mod *Module) ccToolchain(ctx android.BaseModuleContext) cc_config.Toolchain {
-	return cc_config.FindToolchain(ctx.Os(), ctx.Arch())
+	return cc_config.FindToolchain(ctx.Os(), ctx.Arch(), false)
 }
 
 func (d *Defaults) GenerateAndroidBuildActions(ctx android.ModuleContext) {

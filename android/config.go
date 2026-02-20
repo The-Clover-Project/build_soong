@@ -398,6 +398,7 @@ type config struct {
 	BuildOSCommonTarget      Target // the Target for common (java) tools run on the build machine
 	AndroidCommonTarget      Target // the Target for common modules for the Android device
 	AndroidFirstDeviceTarget Target // the first Target for modules for the Android device
+	AndroidLFITarget         Target
 
 	// Flags for Partial Compile, derived from SOONG_PARTIAL_COMPILE.
 	partialCompileFlags partialCompileFlags
@@ -875,6 +876,8 @@ func initConfig(cmdArgs CmdArgs, availableEnv map[string]string) (*config, error
 	if len(newConfig.Targets[Android]) > 0 {
 		newConfig.AndroidCommonTarget = getCommonTargets(newConfig.Targets[Android])[0]
 		newConfig.AndroidFirstDeviceTarget = FirstTarget(newConfig.Targets[Android], "lib64", "lib32")[0]
+		newConfig.AndroidLFITarget = newConfig.AndroidFirstDeviceTarget
+		newConfig.AndroidLFITarget.LFI = true
 	}
 
 	setBuildMode := func(arg string, mode SoongBuildMode) {
@@ -1654,22 +1657,15 @@ func (c *config) UseREWrapper() bool {
 	return Bool(c.productVariables.UseREWrapper)
 }
 
-func (c *config) UseRBEJAVAC() bool {
-	return Bool(c.productVariables.UseRBEJAVAC) && c.UseREWrapper()
-}
-
+// Return the container image used for RBE.
+//
+// This is found in build/make/core/rbe.mk, if not overridden elsewhere.
 func (c *config) RBEContainerImage() string {
 	return String(c.productVariables.RBEContainerImage)
 }
 
-func (c *config) UseRBER8() bool {
-	return Bool(c.productVariables.UseRBER8) && c.UseREWrapper()
-}
-
-func (c *config) UseRBED8() bool {
-	return Bool(c.productVariables.UseRBED8) && c.UseREWrapper()
-}
-
+// TODO(b/485589948): Fix this name and confirm that we set params.Pool
+// correctly when UseREWrapper() is false.
 func (c *config) UseRemoteBuild() bool {
 	return c.UseRBE() && c.UseREWrapper()
 }

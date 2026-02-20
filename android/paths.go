@@ -111,7 +111,15 @@ func GlobFilesOutsideModuleDir(ctx PathGlobContext, globPattern string, excludes
 		if strings.HasSuffix(p, "/") {
 			continue
 		}
-		ret = append(ret, PathForSource(ctx, p))
+		// use pathForSource instead of PathForSource because the former does not check that
+		// the file exists while the latter does. These paths are all from a glob we just did,
+		// so we know that they exist already.
+		path, err := pathForSource(ctx, p)
+		if err != nil {
+			reportPathError(ctx, err)
+			continue
+		}
+		ret = append(ret, path)
 	}
 	return ret
 }

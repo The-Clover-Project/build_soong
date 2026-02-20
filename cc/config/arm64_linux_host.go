@@ -93,7 +93,7 @@ func linuxBionicArm64ToolchainFactory(arch android.Arch) Toolchain {
 	ret := toolchainLinuxBionicArm64{}
 
 	// add the extra ld and lld flags
-	ret.toolchainArm64.ldflags = strings.Join([]string{
+	ret.toolchainArm64.toolchainLdflags = strings.Join([]string{
 		"${config.Arm64Ldflags}",
 		"${config.LinuxBionicArm64Ldflags}",
 		extraLdflags,

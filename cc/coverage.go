@@ -254,6 +254,11 @@ func SetCoverageProperties(ctx android.BaseModuleContext, properties CoveragePro
 			}
 		}
 
+		// Coverage is still untested with LFI
+		if ctx.Target().LFI {
+			needCoverageVariant = false
+		}
+
 		if needCoverageVariant {
 			// Coverage variant is actually built with coverage if enabled for its module path
 			needCoverageBuild = ctx.DeviceConfig().NativeCoverageEnabledForPath(ctx.ModuleDir())

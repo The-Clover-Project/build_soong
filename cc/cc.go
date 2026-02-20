@@ -248,6 +248,7 @@ type LinkableInfo struct {
 	InVendorOrProduct bool
 	// SubName returns the modules SubName, used for image and NDK/SDK variations.
 	SubName             string
+	IsHwasan            bool
 	InRamdisk           bool
 	OnlyInRamdisk       bool
 	InVendorRamdisk     bool
@@ -329,6 +330,8 @@ func RegisterCCBuildComponents(ctx android.RegistrationContext) {
 		ctx.Transition("orderfile", &orderfileTransitionMutator{})
 
 		ctx.Transition("lto", &ltoTransitionMutator{})
+
+		ctx.Transition("lfi", &lfiTransitionMutator{})
 	})
 
 	ctx.PostApexMutators(func(ctx android.RegisterMutatorsContext) {
@@ -352,6 +355,7 @@ type Deps struct {
 	StaticLibs, LateStaticLibs, WholeStaticLibs []string
 	HeaderLibs                                  []string
 	RuntimeLibs                                 []string
+	LfiLibs                                     []string
 
 	// UnexportedStaticLibs are static libraries that are also passed to -Wl,--exclude-libs= to
 	// prevent automatically exporting symbols.
@@ -405,6 +409,7 @@ type RustRlibDep struct {
 	LinkDirs     []string       // flags required for dependency (e.g. -L flags)
 	LinkDirsDeps []android.Path // files in linkdirs to be used as implicit deps
 	CrateName    string         // crateNames associated with rlibDeps
+	IsHwasan     bool           // true if HAWSAN sanitizer is set
 }
 
 func EqRustRlibDeps(a RustRlibDep, b RustRlibDep) bool {
@@ -787,6 +792,9 @@ type ModuleContextIntf interface {
 	notInPlatform() bool
 	optimizeForSize() bool
 	getOrCreateMakeVarsInfo() *CcMakeVarsInfo
+	isLFIEnabled() bool
+	isLFIVariation() bool
+	lfiUseRlbox() bool
 }
 
 type SharedFlags struct {
@@ -1187,6 +1195,7 @@ type Module struct {
 	coverage  *coverage
 	fuzzer    *fuzzer
 	sabi      *sabi
+	lfi       *Lfi
 	lto       *lto
 	afdo      *afdo
 	orderfile *orderfile
@@ -1545,6 +1554,9 @@ func (c *Module) Init() android.Module {
 	if c.sabi != nil {
 		c.AddProperties(c.sabi.props()...)
 	}
+	if c.lfi != nil {
+		c.AddProperties(c.lfi.Props(c.Binary())...)
+	}
 	if c.lto != nil {
 		c.AddProperties(c.lto.props()...)
 	}
@@ -1770,6 +1782,18 @@ func (c *Module) isCfiAssemblySupportEnabled() bool {
 
 func (c *Module) InstallInRoot() bool {
 	return c.installer != nil && c.installer.installInRoot()
+}
+
+func (c *Module) isLFIEnabled() bool {
+	return c.lfi != nil && c.lfi.MutatedProperties.LFIEnabled
+}
+
+func (c *Module) isLFIVariation() bool {
+	return c.lfi.IsLFIVariation()
+}
+
+func (c *Module) lfiUseRlbox() bool {
+	return c.lfi != nil && c.lfi.MutatedProperties.LFIUseRlbox
 }
 
 type baseModuleContext struct {
@@ -2008,6 +2032,18 @@ func (ctx *moduleContextImpl) getOrCreateMakeVarsInfo() *CcMakeVarsInfo {
 	return ctx.mod.makeVarsInfo
 }
 
+func (ctx *moduleContextImpl) isLFIEnabled() bool {
+	return ctx.mod.isLFIEnabled()
+}
+
+func (ctx *moduleContextImpl) isLFIVariation() bool {
+	return ctx.mod.isLFIVariation()
+}
+
+func (ctx *moduleContextImpl) lfiUseRlbox() bool {
+	return ctx.mod.lfiUseRlbox()
+}
+
 func newBaseModule(hod android.HostOrDeviceSupported, multilib android.Multilib) *Module {
 	return &Module{
 		hod:      hod,
@@ -2025,6 +2061,7 @@ func newModule(hod android.HostOrDeviceSupported, multilib android.Multilib) *Mo
 	module.coverage = &coverage{}
 	module.fuzzer = &fuzzer{}
 	module.sabi = &sabi{}
+	module.lfi = &Lfi{}
 	module.lto = &lto{}
 	module.afdo = &afdo{}
 	module.orderfile = &orderfile{}
@@ -2452,6 +2489,9 @@ func (c *Module) GenerateAndroidBuildActions(actx android.ModuleContext) {
 	if c.fuzzer != nil {
 		flags = c.fuzzer.flags(ctx, flags)
 	}
+	if c.lfi != nil {
+		flags, deps = c.lfi.flags(ctx, flags, deps)
+	}
 	if c.lto != nil {
 		flags = c.lto.flags(ctx, flags)
 	}
@@ -2770,6 +2810,7 @@ func (c *Module) GenerateAndroidBuildActions(actx android.ModuleContext) {
 }
 
 func CreateCommonLinkableInfo(ctx android.ModuleContext, mod VersionedLinkableInterface) *LinkableInfo {
+	sanitizeable := ctx.Module().(PlatformSanitizeable)
 	info := &LinkableInfo{
 		StaticExecutable:     mod.StaticExecutable(),
 		HasStubsVariants:     mod.HasStubsVariants(),
@@ -2786,6 +2827,7 @@ func CreateCommonLinkableInfo(ctx android.ModuleContext, mod VersionedLinkableIn
 		IsNdk:                mod.IsNdk(ctx.Config()),
 		HasNonSystemVariants: mod.HasNonSystemVariants(),
 		SubName:              mod.SubName(),
+		IsHwasan:             sanitizeable.IsSanitizerEnabled(Hwasan),
 		InVendorOrProduct:    mod.InVendorOrProduct(),
 		InRamdisk:            mod.InRamdisk(),
 		OnlyInRamdisk:        mod.OnlyInRamdisk(),
@@ -2953,6 +2995,13 @@ func (c *Module) toolchain(ctx android.BaseModuleContext) config.Toolchain {
 }
 
 func (c *Module) begin(ctx BaseModuleContext) {
+
+	// Lfi only supports arm64 at the moment, disable the module if there's no toolchain.
+	if ctx.Target().LFI && !config.HasToolchainWithContext(ctx) {
+		c.Disable()
+		return
+	}
+
 	for _, generator := range c.generators {
 		generator.GeneratorInit(ctx)
 	}
@@ -2973,6 +3022,9 @@ func (c *Module) begin(ctx BaseModuleContext) {
 	}
 	if c.afdo != nil {
 		c.afdo.begin(ctx)
+	}
+	if c.lfi != nil {
+		c.lfi.begin(ctx)
 	}
 	if c.lto != nil {
 		c.lto.begin(ctx)
@@ -3008,6 +3060,9 @@ func (c *Module) deps(ctx DepsContext) Deps {
 	}
 	if c.coverage != nil {
 		deps = c.coverage.deps(ctx, deps)
+	}
+	if c.lfi != nil {
+		deps = c.lfi.deps(ctx, deps)
 	}
 
 	deps.WholeStaticLibs = android.LastUniqueStrings(deps.WholeStaticLibs)
@@ -3350,6 +3405,18 @@ func (c *Module) DepsMutator(actx android.BottomUpMutatorContext) {
 		AddSharedLibDependenciesWithVersions(ctx, c, variations, depTag, lib, "", false)
 	}
 
+	if len(deps.LfiLibs) > 0 {
+		// The lfi variation isn't added here because lfi is a post-deps mutator, it hasn't been
+		// created yet.
+		depVariations := []blueprint.Variation{
+			{"arch", "lfi_" + ctx.Arch().String()},
+			// This is a library -> binary dep, remove the link variation as binaries don't have it
+			{"link", ""},
+		}
+
+		ctx.AddVariationDependencies(depVariations, LFIDepTag, deps.LfiLibs...)
+	}
+
 	actx.AddVariationDependencies([]blueprint.Variation{
 		{Mutator: "link", Variation: "shared"},
 	}, dataLibDepTag, deps.DataLibs...)
@@ -3631,7 +3698,7 @@ func findApexSdkVersion(ctx android.BaseModuleContext, apexInfo android.ApexInfo
 }
 
 // Convert dependencies to paths.  Returns a PathDeps containing paths
-func (c *Module) depsToPaths(ctx android.ModuleContext) PathDeps {
+func (c *Module) depsToPaths(ctx ModuleContext) PathDeps {
 	var depPaths PathDeps
 
 	var directStaticDeps []StaticLibraryInfo
@@ -3760,7 +3827,7 @@ func (c *Module) depsToPaths(ctx android.ModuleContext) PathDeps {
 			// The reuseObjTag dependency still exists because the LinkageMutator runs before the
 			// version mutator, so the stubs variant is created from the shared variant that
 			// already has the reuseObjTag dependency on the static variant.
-			if !c.library.BuildStubs() {
+			if !c.library.BuildStubs() && !(ctx.isLFIEnabled() && !ctx.isLFIVariation()) {
 				staticAnalogue, _ := android.OtherModuleProvider(ctx, dep, StaticLibraryInfoProvider)
 				objs := staticAnalogue.ReuseObjects
 				depPaths.Objs = depPaths.Objs.Append(objs)
@@ -3863,6 +3930,7 @@ func (c *Module) depsToPaths(ctx android.ModuleContext) PathDeps {
 						CrateName:    linkableInfo.CrateName,
 						LinkDirs:     linkableInfo.ExportedCrateLinkDirs,
 						LinkDirsDeps: linkableInfo.ExportedCrateLinkDirsDeps,
+						IsHwasan:     linkableInfo.IsHwasan,
 					}
 					depPaths.RustRlibDeps = append(depPaths.RustRlibDeps, rlibDep)
 					depPaths.IncludeDirs = append(depPaths.IncludeDirs, depExporterInfo.IncludeDirs...)
@@ -4698,6 +4766,7 @@ func DefaultsFactory(props ...interface{}) android.Module {
 		&TidyProperties{},
 		&CoverageProperties{},
 		&SAbiProperties{},
+		&LFIProperties{},
 		&LTOProperties{},
 		&AfdoProperties{},
 		&OrderfileProperties{},

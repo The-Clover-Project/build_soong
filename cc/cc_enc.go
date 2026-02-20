@@ -3466,6 +3466,10 @@ func (r LinkableInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		return err
 	}
 
+	if err = gobtools.EncodeBool(buf, r.IsHwasan); err != nil {
+		return err
+	}
+
 	if err = gobtools.EncodeBool(buf, r.InRamdisk); err != nil {
 		return err
 	}
@@ -3604,7 +3608,7 @@ func (r LinkableInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 
 func (r LinkableInfo) CustomHash(hasher *proptools.Hasher) error {
 	hasher.WriteString(":cc.LinkableInfo")
-	hasher.WriteInt(51)
+	hasher.WriteInt(52)
 	hasher.WriteString(":.bool")
 	if r.StaticExecutable {
 		hasher.WriteByte(1)
@@ -3829,6 +3833,12 @@ func (r LinkableInfo) CustomHash(hasher *proptools.Hasher) error {
 	}
 	hasher.WriteString(":.string")
 	hasher.WriteString(r.SubName)
+	hasher.WriteString(":.bool")
+	if r.IsHwasan {
+		hasher.WriteByte(1)
+	} else {
+		hasher.WriteByte(0)
+	}
 	hasher.WriteString(":.bool")
 	if r.InRamdisk {
 		hasher.WriteByte(1)
@@ -4171,6 +4181,11 @@ func (r *LinkableInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error 
 		return err
 	}
 
+	err = gobtools.DecodeBool(buf, &r.IsHwasan)
+	if err != nil {
+		return err
+	}
+
 	err = gobtools.DecodeBool(buf, &r.InRamdisk)
 	if err != nil {
 		return err
@@ -4206,17 +4221,17 @@ func (r *LinkableInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error 
 		return err
 	}
 
-	var val53 bool
-	if err = gobtools.DecodeBool(buf, &val53); err != nil {
+	var val54 bool
+	if err = gobtools.DecodeBool(buf, &val54); err != nil {
 		return err
 	}
-	if !val53 {
-		var val52 bool
-		err = gobtools.DecodeBool(buf, &val52)
+	if !val54 {
+		var val53 bool
+		err = gobtools.DecodeBool(buf, &val53)
 		if err != nil {
 			return err
 		}
-		r.Installable = &val52
+		r.Installable = &val53
 	}
 
 	err = gobtools.DecodeString(buf, &r.RelativeInstallPath)
@@ -4249,15 +4264,15 @@ func (r *LinkableInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error 
 		return err
 	}
 
-	var val62 int
-	err = gobtools.DecodeInt(buf, &val62)
+	var val63 int
+	err = gobtools.DecodeInt(buf, &val63)
 	if err != nil {
 		return err
 	}
-	if val62 != -1 {
-		r.Symlinks = make([]string, val62)
-		for val63 := 0; val63 < int(val62); val63++ {
-			err = gobtools.DecodeString(buf, &r.Symlinks[val63])
+	if val63 != -1 {
+		r.Symlinks = make([]string, val63)
+		for val64 := 0; val64 < int(val63); val64++ {
+			err = gobtools.DecodeString(buf, &r.Symlinks[val64])
 			if err != nil {
 				return err
 			}
@@ -4268,15 +4283,15 @@ func (r *LinkableInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error 
 		return err
 	}
 
-	var val68 int
-	err = gobtools.DecodeInt(buf, &val68)
+	var val69 int
+	err = gobtools.DecodeInt(buf, &val69)
 	if err != nil {
 		return err
 	}
-	if val68 != -1 {
-		r.FuzzSharedLibraries = make([]InstallPair, val68)
-		for val69 := 0; val69 < int(val68); val69++ {
-			if err = r.FuzzSharedLibraries[val69].Decode(ctx, buf); err != nil {
+	if val69 != -1 {
+		r.FuzzSharedLibraries = make([]InstallPair, val69)
+		for val70 := 0; val70 < int(val69); val70++ {
+			if err = r.FuzzSharedLibraries[val70].Decode(ctx, buf); err != nil {
 				return err
 			}
 		}
@@ -4311,17 +4326,17 @@ func (r *LinkableInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error 
 		return err
 	}
 
-	var val78 bool
-	if err = gobtools.DecodeBool(buf, &val78); err != nil {
+	var val79 bool
+	if err = gobtools.DecodeBool(buf, &val79); err != nil {
 		return err
 	}
-	if !val78 {
-		var val77 bool
-		err = gobtools.DecodeBool(buf, &val77)
+	if !val79 {
+		var val78 bool
+		err = gobtools.DecodeBool(buf, &val78)
 		if err != nil {
 			return err
 		}
-		r.Xom = &val77
+		r.Xom = &val78
 	}
 
 	err = gobtools.DecodeBool(buf, &r.XomDisabledByPath)
@@ -4447,12 +4462,16 @@ func (r RustRlibDep) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	if err = gobtools.EncodeString(buf, r.CrateName); err != nil {
 		return err
 	}
+
+	if err = gobtools.EncodeBool(buf, r.IsHwasan); err != nil {
+		return err
+	}
 	return err
 }
 
 func (r RustRlibDep) CustomHash(hasher *proptools.Hasher) error {
 	hasher.WriteString(":cc.RustRlibDep")
-	hasher.WriteInt(4)
+	hasher.WriteInt(5)
 	hasher.WriteString(":cc.android.Path")
 	val1 := r.LibPath == nil
 	if val1 {
@@ -4513,6 +4532,12 @@ func (r RustRlibDep) CustomHash(hasher *proptools.Hasher) error {
 	}
 	hasher.WriteString(":.string")
 	hasher.WriteString(r.CrateName)
+	hasher.WriteString(":.bool")
+	if r.IsHwasan {
+		hasher.WriteByte(1)
+	} else {
+		hasher.WriteByte(0)
+	}
 	return nil
 }
 
@@ -4561,6 +4586,11 @@ func (r *RustRlibDep) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	}
 
 	err = gobtools.DecodeString(buf, &r.CrateName)
+	if err != nil {
+		return err
+	}
+
+	err = gobtools.DecodeBool(buf, &r.IsHwasan)
 	if err != nil {
 		return err
 	}
@@ -4892,6 +4922,167 @@ func (r imageSdkTraitStruct) GetTypeId() int16 {
 }
 
 // end of image_sdk_traits.go
+
+// begin of lfi.go
+func init() {
+	lfiInfoGobRegId = gobtools.RegisterType(func() gobtools.CustomDec { return new(lfiInfo) })
+}
+
+func (r lfiInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
+	var err error
+
+	if err = gobtools.EncodeInterface(ctx, buf, r.includeDir); err != nil {
+		return err
+	}
+
+	if err = gobtools.EncodeInterface(ctx, buf, r.header); err != nil {
+		return err
+	}
+
+	if r.srcs == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r.srcs)); err != nil {
+			return err
+		}
+		for val1 := 0; val1 < len(r.srcs); val1++ {
+			if err = gobtools.EncodeInterface(ctx, buf, r.srcs[val1]); err != nil {
+				return err
+			}
+		}
+	}
+	return err
+}
+
+func (r lfiInfo) CustomHash(hasher *proptools.Hasher) error {
+	hasher.WriteString(":cc.lfiInfo")
+	hasher.WriteInt(3)
+	hasher.WriteString(":cc.android.Path")
+	val1 := r.includeDir == nil
+	if val1 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.includeDir); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val2 := r.includeDir == nil
+				if val2 {
+					hasher.WriteByte(0)
+				} else {
+					val3 := func(hasher *proptools.Hasher) error { return r.includeDir.(proptools.CustomHash).CustomHash(hasher) }
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val3); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.includeDir.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":cc.android.Path")
+	val4 := r.header == nil
+	if val4 {
+		hasher.WriteByte(0)
+	} else {
+		if v := reflect.ValueOf(r.header); v.Kind() == reflect.Ptr {
+			if v.IsNil() {
+				panic(fmt.Errorf("nil pointer is not supported in interface"))
+			} else {
+				val5 := r.header == nil
+				if val5 {
+					hasher.WriteByte(0)
+				} else {
+					val6 := func(hasher *proptools.Hasher) error { return r.header.(proptools.CustomHash).CustomHash(hasher) }
+					if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val6); err != nil {
+						return err
+					}
+				}
+			}
+		} else {
+			r.header.(proptools.CustomHash).CustomHash(hasher)
+		}
+	}
+	hasher.WriteString(":cc.android.Paths")
+	hasher.WriteString(":.[]Path")
+	hasher.WriteInt(len(r.srcs))
+	for val7 := 0; val7 < len(r.srcs); val7++ {
+		hasher.WriteString("android/soong/android:android.Path")
+		val8 := r.srcs[val7] == nil
+		if val8 {
+			hasher.WriteByte(0)
+		} else {
+			if v := reflect.ValueOf(r.srcs[val7]); v.Kind() == reflect.Ptr {
+				if v.IsNil() {
+					panic(fmt.Errorf("nil pointer is not supported in interface"))
+				} else {
+					val9 := r.srcs[val7] == nil
+					if val9 {
+						hasher.WriteByte(0)
+					} else {
+						val10 := func(hasher *proptools.Hasher) error { return r.srcs[val7].(proptools.CustomHash).CustomHash(hasher) }
+						if err := proptools.HashReference(hasher, uintptr(v.Pointer()), val10); err != nil {
+							return err
+						}
+					}
+				}
+			} else {
+				r.srcs[val7].(proptools.CustomHash).CustomHash(hasher)
+			}
+		}
+	}
+	return nil
+}
+
+func (r *lfiInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
+	var err error
+
+	if val2, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+		return err
+	} else if val2 == nil {
+		r.includeDir = nil
+	} else {
+		r.includeDir = val2.(android.Path)
+	}
+
+	if val4, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+		return err
+	} else if val4 == nil {
+		r.header = nil
+	} else {
+		r.header = val4.(android.Path)
+	}
+
+	var val7 int
+	err = gobtools.DecodeInt(buf, &val7)
+	if err != nil {
+		return err
+	}
+	if val7 != -1 {
+		r.srcs = make([]android.Path, val7)
+		for val8 := 0; val8 < int(val7); val8++ {
+			if val10, err := gobtools.DecodeInterface(ctx, buf); err != nil {
+				return err
+			} else if val10 == nil {
+				r.srcs[val8] = nil
+			} else {
+				r.srcs[val8] = val10.(android.Path)
+			}
+		}
+	}
+
+	return err
+}
+
+var lfiInfoGobRegId int16
+
+func (r lfiInfo) GetTypeId() int16 {
+	return lfiInfoGobRegId
+}
+
+// end of lfi.go
 
 // begin of library_sdk_member.go
 func init() {

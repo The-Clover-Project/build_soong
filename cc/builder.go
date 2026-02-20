@@ -371,6 +371,32 @@ var (
 		SandboxDisabled: true,
 	})
 
+	lfiBind = pctx.AndroidStaticRule("lfi_bind", blueprint.RuleParams{
+		Command: `${lfi_bind} -embed -gen-trampolines ${genDir}/trampolines.S -gen-init ${genDir}/init.c -lib ${name}_box -symbols-all $in && ` +
+			// lfi-bind always generates the header next to the source file, move it to another
+			// folder so you can't #include init.c
+			`mv ${genDir}/${name}_box.h ${includeDir}`,
+		CommandDeps: []string{
+			`${lfi_bind}`,
+		},
+		SandboxDisabled: true,
+	}, "name", "genDir", "includeDir")
+
+	lfiVerify = pctx.AndroidStaticRule("lfi_verify", blueprint.RuleParams{
+		Command: `${lfi_verify} $in && touch $out`,
+		CommandDeps: []string{
+			`${lfi_verify}`,
+		},
+		SandboxDisabled: true,
+	})
+
+	lfiBindRlbox = pctx.AndroidStaticRule("lfi_bind_rlbox", blueprint.RuleParams{
+		Command: `${lfi_bind} -gen-inc ${genDir}/inc.S -lib ${name}_box $in`,
+		CommandDeps: []string{
+			`${lfi_bind}`,
+		},
+	}, "name", "genDir")
+
 	// Function pointer for producting staticlibs from rlibs. Corresponds to
 	// rust.TransformRlibstoStaticlib(), initialized in soong-rust (rust/builder.go init())
 	//
@@ -400,6 +426,9 @@ func init() {
 	pctx.HostBinToolVariable("symbols_map", "symbols_map")
 
 	pctx.HostBinToolVariable("checkElfFileCmd", "check_elf_file")
+
+	pctx.HostBinToolVariable("lfi_verify", "lfi-verify")
+	pctx.HostBinToolVariable("lfi_bind", "lfi-bind")
 }
 
 // builderFlags contains various types of command line flags (and settings) for use in building
@@ -1308,4 +1337,54 @@ func transformArchiveRepack(ctx android.ModuleContext, inputFile android.Path,
 			"objects": strings.Join(objects, " "),
 		},
 	})
+}
+
+func transformToLFISandboxedSources(ctx ModuleContext, inputFile android.Path) lfiInfo {
+	verifyTimestamp := android.PathForModuleGen(ctx, "lfi_bind_gendir", "lfi_verify.stamp")
+	ctx.Build(pctx, android.BuildParams{
+		Rule:   lfiVerify,
+		Input:  inputFile,
+		Output: verifyTimestamp,
+	})
+
+	genDir := android.PathForModuleGen(ctx, "lfi_bind_gendir")
+	if ctx.lfiUseRlbox() {
+		initFile := genDir.Join(ctx, "inc.S")
+		ctx.Build(pctx, android.BuildParams{
+			Rule:   lfiBindRlbox,
+			Input:  inputFile,
+			Output: initFile,
+			Args: map[string]string{
+				"genDir": genDir.String(),
+				"name":   ctx.ModuleName(),
+			},
+			Validation: verifyTimestamp,
+		})
+		return lfiInfo{
+			srcs: android.Paths{initFile},
+		}
+	} else {
+		includeDir := android.PathForModuleGen(ctx, "lfi_bind_includedir")
+		srcs := android.WritablePaths{
+			genDir.Join(ctx, "init.c"),
+			genDir.Join(ctx, "trampolines.S"),
+		}
+		header := includeDir.Join(ctx, ctx.ModuleName()+"_box.h")
+		ctx.Build(pctx, android.BuildParams{
+			Rule:    lfiBind,
+			Input:   inputFile,
+			Outputs: append(srcs, header),
+			Args: map[string]string{
+				"genDir":     genDir.String(),
+				"includeDir": includeDir.String(),
+				"name":       ctx.ModuleName(),
+			},
+			Validation: verifyTimestamp,
+		})
+		return lfiInfo{
+			includeDir: includeDir,
+			header:     header,
+			srcs:       srcs.Paths(),
+		}
+	}
 }

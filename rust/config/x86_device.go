@@ -116,7 +116,7 @@ func x86ToolchainFactory(arch android.Arch) Toolchain {
 		toolchainRustFlags = append(toolchainRustFlags, x86ArchFeatureRustFlags[feature]...)
 	}
 
-	cc_toolchain := cc_config.FindToolchain(android.Android, arch)
+	cc_toolchain := cc_config.FindToolchain(android.Android, arch, false)
 	return &toolchainX86{
 		toolchainRustFlags: strings.Join(toolchainRustFlags, " "),
 		cc_toolchain:       cc_toolchain,
