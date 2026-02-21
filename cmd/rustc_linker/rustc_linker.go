@@ -15,10 +15,13 @@
 package main
 
 import (
+	"bufio"
+	"errors"
 	"fmt"
 	"os"
 	"os/exec"
 	"strings"
+	"syscall"
 )
 
 func main() {
@@ -28,15 +31,38 @@ func main() {
 		os.Exit(-1)
 	}
 
-	err = runCommand(androidClangBin, newClangArgs...)
+	err = runClang(androidClangBin, newClangArgs)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "running %q failed: %s\n", androidClangBin, err)
 		os.Exit(-1)
 	}
 }
 
+// runClang attempts to run clang with the given arguments directly, falling back to using an rspfile if it gets E2BIG.
+func runClang(androidClangBin string, newClangArgs []string) error {
+	err := runCommand(androidClangBin, newClangArgs...)
+	if errors.Is(err, syscall.E2BIG) {
+		argsFile, err := writeArgsToTempFile(newClangArgs)
+		defer os.Remove(argsFile)
+		if err != nil {
+			return fmt.Errorf("writing args to rspfile %s: %w", argsFile, err)
+		}
+		err = runCommand(androidClangBin, "@"+argsFile)
+	}
+	return err
+}
+
 func rewriteArgs(oldClangArgs []string) (androidClangBin string, newClangArgs []string, err error) {
 	var replacementVersionScript string
+
+	if len(oldClangArgs) == 1 && strings.HasPrefix(oldClangArgs[0], "@") {
+		// The command line was too long and rustc put the arguments into an rsp file, one per line.
+		argsFile := strings.TrimPrefix(oldClangArgs[0], "@")
+		oldClangArgs, err = readArgsFromFile(argsFile)
+		if err != nil {
+			return "", nil, fmt.Errorf("reading arguments from file %q: %w", argsFile, err)
+		}
+	}
 
 	const androidClangBinFlag = "--android-clang-bin="
 	const androidVersionScriptFlag = "-Wl,--android-version-script="
@@ -79,6 +105,45 @@ func rewriteArgs(oldClangArgs []string) (androidClangBin string, newClangArgs []
 	}
 
 	return
+}
+
+// readArgsFromFile reads a list of arguments from a file, unescaping spaces and backslashes that have been escaped
+// by rustc.
+func readArgsFromFile(filename string) ([]string, error) {
+	f, err := os.Open(filename)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+
+	var args []string
+	scanner := bufio.NewScanner(f)
+	unescaper := strings.NewReplacer(`\ `, ` `, `\\`, `\`)
+	for scanner.Scan() {
+		args = append(args, unescaper.Replace(scanner.Text()))
+	}
+	return args, scanner.Err()
+}
+
+// writeArgsToTempFile writes a list of arguments to a temporary file, one per line and escaping spaces and backslashes.
+// It returns the name of the temporary file.
+func writeArgsToTempFile(args []string) (string, error) {
+	argsFile, err := os.CreateTemp("", "rustc_linker_args_")
+	if err != nil {
+		return "", err
+	}
+	defer argsFile.Close()
+
+	w := bufio.NewWriter(argsFile)
+	defer w.Flush()
+
+	argFileEscaper := strings.NewReplacer(`\`, `\\`, ` `, `\ `)
+	for _, arg := range args {
+		argFileEscaper.WriteString(w, arg)
+		w.WriteRune('\n')
+	}
+
+	return argsFile.Name(), nil
 }
 
 // runCommand runs a command, connecting stdin, stdout and stderr to the corresponding descriptors in this process,
