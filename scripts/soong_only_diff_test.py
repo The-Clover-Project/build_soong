@@ -363,7 +363,10 @@ def get_dist_img_sha_map(product: Product) -> dict[str, str]:
     zip_sha_map = {}
     for file in _DIST_FILES:
         file_path = os.path.join(dist_dir, file)
-        zip_sha_map[file] = get_installed_img_sha(file_path)
+        # Some devices do not dist super.img
+        # Skip if .img file is not found in dist dir.
+        if os.path.exists(file_path):
+            zip_sha_map[file] = get_installed_img_sha(file_path)
 
     return zip_sha_map
 

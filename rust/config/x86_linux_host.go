@@ -16,7 +16,6 @@ package config
 
 import (
 	"path/filepath"
-	"slices"
 	"strings"
 
 	"android/soong/android"
@@ -49,16 +48,12 @@ var (
 )
 
 func LinuxToolchainRustFlags(ctx ToolchainFlagsContext) cc_config.FlagsWithDeps {
-	depsPhony := ctx.CreateNinjaPhonyOnce("linuxToolchainRustDeps", slices.Concat(
-		android.GlobFilesOutsideModuleDir(ctx, filepath.Join(LinuxGccRoot(), LinuxGccTriple(), "lib32", "*"), nil),
-		android.GlobFilesOutsideModuleDir(ctx, filepath.Join(LinuxGccRoot(), LinuxGccTriple(), "lib64", "*"), nil),
-		android.GlobFilesOutsideModuleDir(ctx, filepath.Join(LinuxGccRoot(), "lib/gcc", LinuxGccTriple(), LinuxGccVersion(), "*"), nil),
-		android.GlobFilesOutsideModuleDir(ctx, filepath.Join(LinuxGccRoot(), "sysroot/usr/lib/**/*"), nil),
-	))
-	var deps android.Paths
-	if depsPhony != nil {
-		deps = append(deps, depsPhony)
-	}
+	depsPhony := ctx.CreateNinjaPhonyOnce("linuxToolchainRustDeps", []string{
+		filepath.Join(LinuxGccRoot(), LinuxGccTriple(), "lib32", "*"),
+		filepath.Join(LinuxGccRoot(), LinuxGccTriple(), "lib64", "*"),
+		filepath.Join(LinuxGccRoot(), "lib/gcc", LinuxGccTriple(), LinuxGccVersion(), "*"),
+		filepath.Join(LinuxGccRoot(), "sysroot/usr/lib/**/*"),
+	})
 	return cc_config.FlagsWithDeps{
 		Flags: strings.Join([]string{
 			// These flags are no strictly necessary but included so RBE can discover dependencies.
@@ -67,20 +62,16 @@ func LinuxToolchainRustFlags(ctx ToolchainFlagsContext) cc_config.FlagsWithDeps 
 			"-L${cc_config.LinuxGccRoot}/lib/gcc/${cc_config.LinuxGccTriple}/${cc_config.LinuxGccVersion}",
 			"-L${cc_config.LinuxGccRoot}/sysroot/usr/lib",
 		}, " "),
-		Deps: deps,
+		Deps: android.Paths{depsPhony},
 	}
 }
 
 func LinuxRustGlibcLinkFlags(ctx ToolchainFlagsContext) cc_config.FlagsWithDeps {
 	depsPhony := ctx.CreateNinjaPhonyOnce("linuxRustGlibcLinkDeps",
-		android.GlobFilesOutsideModuleDir(ctx, filepath.Join(LinuxGccRoot(), "sysroot/**/*"), nil))
-	var deps android.Paths
-	if depsPhony != nil {
-		deps = append(deps, depsPhony)
-	}
+		[]string{filepath.Join(LinuxGccRoot(), "sysroot/**/*")})
 	return cc_config.FlagsWithDeps{
 		Flags: "--sysroot ${cc_config.LinuxGccRoot}/sysroot",
-		Deps:  deps,
+		Deps:  android.Paths{depsPhony},
 	}
 }
 

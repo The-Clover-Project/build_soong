@@ -50,7 +50,7 @@ func TestRustProtobuf3(t *testing.T) {
 	// Make sure the correct plugin is being used.
 	librust_proto_out := ctx.ModuleForTests(t, "librust_proto", "android_arm64_armv8-a_source").Output("buf.rs")
 	cmd := librust_proto_out.RuleParams.Command
-	if w := "protoc-gen-rust"; !strings.Contains(cmd, w) {
+	if w := "protoc-gen-rs"; !strings.Contains(cmd, w) {
 		t.Errorf("expected %q in %q", w, cmd)
 	}
 

@@ -17,7 +17,6 @@ package config
 import (
 	"fmt"
 	"path/filepath"
-	"slices"
 	"strings"
 
 	"android/soong/android"
@@ -112,14 +111,10 @@ var (
 
 func LinuxX86Ldflags(ctx ToolchainFlagsContext) FlagsWithDeps {
 	linuxGccRoot := LinuxGccRoot()
-	depsPhony := ctx.CreateNinjaPhonyOnce("linuxX86LdFlagsDeps", slices.Concat(
-		android.GlobFilesOutsideModuleDir(ctx, filepath.Join(linuxGccRoot, "lib/gcc", linuxGccTriple, linuxGccVersion, "32", "*"), nil),
-		android.GlobFilesOutsideModuleDir(ctx, filepath.Join(linuxGccRoot, linuxGccTriple, "lib32", "*"), nil),
-	))
-	var deps android.Paths
-	if depsPhony != nil {
-		deps = append(deps, depsPhony)
-	}
+	depsPhony := ctx.CreateNinjaPhonyOnce("linuxX86LdFlagsDeps", []string{
+		filepath.Join(linuxGccRoot, "lib/gcc", linuxGccTriple, linuxGccVersion, "32", "*"),
+		filepath.Join(linuxGccRoot, linuxGccTriple, "lib32", "*"),
+	})
 	return FlagsWithDeps{
 		Flags: strings.Join([]string{
 			"-m32",
@@ -127,20 +122,16 @@ func LinuxX86Ldflags(ctx ToolchainFlagsContext) FlagsWithDeps {
 			"-L" + linuxGccRoot + "/lib/gcc/" + linuxGccTriple + "/" + linuxGccVersion + "/32",
 			"-L" + linuxGccRoot + "/" + linuxGccTriple + "/lib32",
 		}, " "),
-		Deps: deps,
+		Deps: android.Paths{depsPhony},
 	}
 }
 
 func LinuxX8664Ldflags(ctx ToolchainFlagsContext) FlagsWithDeps {
 	linuxGccRoot := LinuxGccRoot()
-	depsPhony := ctx.CreateNinjaPhonyOnce("linuxX8664LdFlagsDeps", slices.Concat(
-		android.GlobFilesOutsideModuleDir(ctx, filepath.Join(linuxGccRoot, "lib/gcc", linuxGccTriple, linuxGccVersion, "*"), nil),
-		android.GlobFilesOutsideModuleDir(ctx, filepath.Join(linuxGccRoot, linuxGccTriple, "lib64", "*"), nil),
-	))
-	var deps android.Paths
-	if depsPhony != nil {
-		deps = append(deps, depsPhony)
-	}
+	depsPhony := ctx.CreateNinjaPhonyOnce("linuxX8664LdFlagsDeps", []string{
+		filepath.Join(linuxGccRoot, "lib/gcc", linuxGccTriple, linuxGccVersion, "*"),
+		filepath.Join(linuxGccRoot, linuxGccTriple, "lib64", "*"),
+	})
 	return FlagsWithDeps{
 		Flags: strings.Join([]string{
 			"-m64",
@@ -148,7 +139,7 @@ func LinuxX8664Ldflags(ctx ToolchainFlagsContext) FlagsWithDeps {
 			"-L" + linuxGccRoot + "/lib/gcc/" + linuxGccTriple + "/" + linuxGccVersion,
 			"-L" + linuxGccRoot + "/" + linuxGccTriple + "/lib64",
 		}, " "),
-		Deps: deps,
+		Deps: android.Paths{depsPhony},
 	}
 }
 

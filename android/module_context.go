@@ -366,7 +366,7 @@ type moduleContext struct {
 	baseJarJarProviderData    *BaseJarJarProviderData
 	baseJarJarProviderDataSet bool
 
-	ninjaPhonies map[string]NinjaPhoniesDepsInfo
+	ninjaPhonies map[string]NinjaPhoniesGlobsInfo
 }
 
 var _ ModuleContext = &moduleContext{}

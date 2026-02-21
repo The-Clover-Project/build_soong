@@ -348,3 +348,27 @@ func TestProjectJsonMultiVersion(t *testing.T) {
 	}
 	t.Errorf("libb crate has not been found: %v", crates)
 }
+
+func TestProjectJsonTarget(t *testing.T) {
+	t.Parallel()
+	bp := `
+	rust_library {
+		name: "liba",
+		srcs: ["a/src/lib.rs"],
+		crate_name: "a"
+	}
+	`
+	jsonContent := testProjectJson(t, bp)
+	crates := validateJsonCrates(t, jsonContent)
+	for _, c := range crates {
+		crate := validateCrate(t, c)
+		target, ok := crate["target"].(string)
+		if !ok {
+			t.Fatalf("Unexpected type for target: %v", crate["target"])
+		}
+		expectedTarget := "aarch64-linux-android"
+		if target != expectedTarget {
+			t.Errorf("Incorrect target: got %v; want %v", target, expectedTarget)
+		}
+	}
+}

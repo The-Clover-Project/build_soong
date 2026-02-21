@@ -15,6 +15,7 @@ package java
 
 import (
 	"fmt"
+	"maps"
 	"strings"
 
 	"android/soong/aconfig"
@@ -236,17 +237,13 @@ func (r *ravenwoodTest) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		ctx, utils).InstallFiles {
 		installDeps = append(installDeps, installFile)
 	}
-	jniDeps, ok := android.OtherModuleProvider(ctx, utils, ravenwoodLibgroupJniDepProvider)
-	if ok {
-		runtimeJniModuleNames = jniDeps.names
-	}
 
 	runtime := ctx.GetDirectDepsProxyWithTag(ravenwoodRuntimeTag)[0]
 	for _, installFile := range android.GetInstallFiles(
 		ctx, runtime).InstallFiles {
 		installDeps = append(installDeps, installFile)
 	}
-	jniDeps, ok = android.OtherModuleProvider(ctx, runtime, ravenwoodLibgroupJniDepProvider)
+	jniDeps, ok := android.OtherModuleProvider(ctx, runtime, ravenwoodLibgroupJniDepProvider)
 	if ok {
 		runtimeJniModuleNames = jniDeps.names
 	}
@@ -470,9 +467,15 @@ func (r *ravenwoodLibgroup) GenerateAndroidBuildActions(ctx android.ModuleContex
 	r.forceOSType = ctx.Config().BuildOS
 	r.forceArchType = ctx.Config().BuildArch
 
+	jniDepNames := make(map[string]bool)
+
 	// We need to build subruntimes too, so collect their install files.
 	var installDeps android.InstallPaths
 	for _, subruntime := range ctx.GetDirectDepsProxyWithTag(ravenwoodLibSubruntimeTag) {
+		jniDeps, ok := android.OtherModuleProvider(ctx, subruntime, ravenwoodLibgroupJniDepProvider)
+		if ok {
+			maps.Copy(jniDepNames, jniDeps.names)
+		}
 		for _, installFile := range android.GetInstallFiles(
 			ctx, subruntime).InstallFiles {
 			installDeps = append(installDeps, installFile)
@@ -480,7 +483,6 @@ func (r *ravenwoodLibgroup) GenerateAndroidBuildActions(ctx android.ModuleContex
 	}
 
 	// Collect the JNI dependencies, including the transitive deps.
-	jniDepNames := make(map[string]bool)
 	jniLibs := collectTransitiveJniDeps(ctx)
 
 	for _, jni := range jniLibs {

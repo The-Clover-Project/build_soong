@@ -55,6 +55,7 @@ type rustProjectCrate struct {
 	Edition        string                 `json:"edition,omitempty"`
 	Deps           []rustProjectDep       `json:"deps"`
 	Cfg            []string               `json:"cfg"`
+	Target         string                 `json:"target"`
 	Env            map[string]string      `json:"env"`
 	ProcMacro      bool                   `json:"is_proc_macro"`
 	ProcMacroDylib *string                `json:"proc_macro_dylib_path"`
@@ -166,6 +167,8 @@ func (singleton *projectGeneratorSingleton) addCrate(ctx android.SingletonContex
 		procMacroDylib = proptools.StringPtr(procMacro.Dylib.String())
 	}
 
+	var toolchain = config.FindToolchain(commonInfo.Target.Os, commonInfo.Target.Arch)
+
 	var rootmodule = rustInfo.CompilerInfo.CrateRootPath.String()
 	include_dir := []string{ctx.ModuleDir(module)}
 	// Aidl generates rust files so we include those files in the include_dir parameter.
@@ -178,6 +181,7 @@ func (singleton *projectGeneratorSingleton) addCrate(ctx android.SingletonContex
 		Edition:        rustInfo.CompilerInfo.Edition,
 		Deps:           make([]rustProjectDep, 0),
 		Cfg:            make([]string, 0),
+		Target:         toolchain.RustTriple(),
 		Env:            make(map[string]string),
 		ProcMacro:      procMacroDylib != nil,
 		ProcMacroDylib: procMacroDylib,

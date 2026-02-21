@@ -88,7 +88,10 @@ func main() {
 					if strings.HasPrefix(line, outFileColon) {
 						// Absolute paths from include! macros (and similar) can cause a mismatch
 						// between RBE and local dep info files, so strip out $ANDROID_BUILD_TOP
-						line = strings.ReplaceAll(line, cwd+"/", "")
+						// Also we need to make sure stripping only happens at the beginning of each file path
+						prefix := strings.TrimPrefix(outFileColon, cwd+"/")
+						suffix := strings.ReplaceAll(strings.TrimPrefix(line, outFileColon), " "+cwd+"/", " ")
+						line = prefix + suffix
 						depsContent.WriteString(line)
 						depsContent.WriteRune('\n')
 					}

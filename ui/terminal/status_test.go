@@ -268,23 +268,23 @@ func actionWithOutputWithAnsiCodes(stat status.StatusOutput) {
 }
 
 func TestSkipActionProgress(t *testing.T) {
-    simple := &bytes.Buffer{}
-    formatter := newFormatter(false, "", false)
-    stat := NewSimpleStatusOutput(simple, formatter, false, true)
+	simple := &bytes.Buffer{}
+	formatter := newFormatter(false, "", false)
+	stat := NewSimpleStatusOutput(simple, formatter, false, true)
 
-    runner := newRunner(stat, 2)
-    runner.startAction(action1)
-    runner.finishAction(result1)
-    runner.startAction(action2)
-    runner.finishAction(status.ActionResult{Action: action2, Output: "output2"})
-    stat.Flush()
+	runner := newRunner(stat, 2)
+	runner.startAction(action1)
+	runner.finishAction(result1)
+	runner.startAction(action2)
+	runner.finishAction(status.ActionResult{Action: action2, Output: "output2"})
+	stat.Flush()
 
-    // action1 finished without output -> skipped
-    // action2 finished with output -> printed progress + output
-    w := "action2\noutput2\n"
-    if g := simple.String(); g != w {
-        t.Errorf("want:\n%q\ngot:\n%q", w, g)
-    }
+	// action1 finished without output -> skipped
+	// action2 finished with output -> printed progress + output
+	w := "action2\noutput2\n"
+	if g := simple.String(); g != w {
+		t.Errorf("want:\n%q\ngot:\n%q", w, g)
+	}
 }
 
 func TestSmartStatusOutputWidthChange(t *testing.T) {
