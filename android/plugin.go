@@ -42,6 +42,7 @@ var allowedPluginsByName = map[string]bool{
 	"aidl-soong-rules":                       true,
 	"arm_compute_library_nn_driver":          true,
 	"cuttlefish-soong-rules":                 true,
+	"ferrochrome-soong-rules":                true,
 	"gki-soong-rules":                        true,
 	"hidl-soong-rules":                       true,
 	"kernel-config-soong-rules":              true,
