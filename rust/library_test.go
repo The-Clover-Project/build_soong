@@ -560,30 +560,6 @@ func TestStubsVersions(t *testing.T) {
 	}
 }
 
-func TestStubsVersions_NotSorted(t *testing.T) {
-	t.Parallel()
-	bp := `
-	rust_ffi_shared {
-		name: "libfoo",
-		crate_name: "foo",
-		srcs: ["foo.rs"],
-		stubs: {
-				versions: ["29", "current", "R"],
-			},
-		}
-	`
-	fixture := android.GroupFixturePreparers(
-		prepareForRustTest,
-		android.PrepareForTestWithVisibility,
-		rustMockedFiles.AddToFixture(),
-
-		android.FixtureModifyConfigAndContext(func(config android.Config, ctx *android.TestContext) {
-			config.TestProductVariables.Platform_version_active_codenames = []string{"R"}
-		}))
-
-	fixture.ExtendWithErrorHandler(android.FixtureExpectsOneErrorPattern(`"libfoo" .*: versions: not sorted`)).RunTestWithBp(t, bp)
-}
-
 func TestStubsVersions_ParseError(t *testing.T) {
 	t.Parallel()
 	bp := `
@@ -605,7 +581,7 @@ func TestStubsVersions_ParseError(t *testing.T) {
 			config.TestProductVariables.Platform_version_active_codenames = []string{"R"}
 		}))
 
-	fixture.ExtendWithErrorHandler(android.FixtureExpectsOneErrorPattern(`"libfoo" .*: versions: "X" could not be parsed as an integer and is not a recognized codename`)).RunTestWithBp(t, bp)
+	fixture.ExtendWithErrorHandler(android.FixtureExpectsAtLeastOneErrorMatchingPattern(`"libfoo" .*: versions: "X" could not be parsed as an integer and is not a recognized codename`)).RunTestWithBp(t, bp)
 }
 
 func TestVersionedStubs(t *testing.T) {

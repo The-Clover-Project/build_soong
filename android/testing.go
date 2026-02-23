@@ -175,6 +175,8 @@ var PrepareForTestWithAllowMissingDependencies = GroupFixturePreparers(
 	}),
 	FixtureModifyContext(func(ctx *TestContext) {
 		ctx.SetAllowMissingDependencies(true)
+		// TODO(b/477627661): on-demand variants is not supported with allow missing deps.
+		ctx.SetSplitAllVariants(true)
 	}),
 )
 
