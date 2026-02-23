@@ -438,6 +438,10 @@ type overridableProperties struct {
 	// Mainline beta namespace. Each mainline module would have a dedicated server side
 	// namespace to support flag based A/B feature testing on mainline beta population.
 	Beta_namespace *string
+
+	// Mark the apex as non-production. Google Play Store will prevent it from being
+	// distributed to production channels.
+	Non_production *bool
 }
 
 // installPair stores a path to a built object and its install location.  It is used for holding
@@ -1387,6 +1391,10 @@ func (a *apexBundle) testOnlyShouldForceCompression() bool {
 // See the dynamic_common_lib_apex property
 func (a *apexBundle) dynamic_common_lib_apex() bool {
 	return proptools.BoolDefault(a.properties.Dynamic_common_lib_apex, false)
+}
+
+func (a *apexBundle) nonProduction() bool {
+	return proptools.Bool(a.overridableProperties.Non_production)
 }
 
 // These functions are interfacing with cc/sanitizer.go. The entire APEX (along with all of its
