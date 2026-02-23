@@ -860,6 +860,14 @@ func metalavaCmd(ctx android.ModuleContext, rule *android.RuleBuilder, srcs andr
 		FlagWithRspFileInputList("@", android.PathForModuleOut(ctx, fmt.Sprintf("%s.metalava.rsp", params.stubsType.String())), srcs).
 		FlagWithInput("@", srcJarList)
 
+	// If this is for the host then pass the --jdk-home option to Metalava and
+	// make sure the files necessary to access the JDK class files are available.
+	if ctx.Host() {
+		homeDir := ctx.Config().Getenv("ANDROID_JAVA_HOME")
+		cmd.FlagWithArg("--jdk-home ", homeDir)
+		cmd.Implicits(ctx.GlobFilesOutsideModuleDir(filepath.Join(homeDir, "**/*"), nil))
+	}
+
 	// Metalava does not differentiate between bootclasspath and classpath and has not done so for
 	// years, so it is unlikely to change any time soon.
 	combinedPaths := append(([]android.Path)(nil), params.deps.bootClasspath.Paths()...)
