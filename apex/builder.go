@@ -878,6 +878,10 @@ func (a *apexBundle) buildApex(ctx android.ModuleContext) {
 		implicitInputs = append(implicitInputs, inputs...)
 	}
 
+	if a.nonProduction() {
+		optFlags = append(optFlags, "--non_production")
+	}
+
 	if a.dynamic_common_lib_apex() {
 		ctx.Build(pctx, android.BuildParams{
 			Rule:        DCLAApexRule,

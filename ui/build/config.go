@@ -291,6 +291,7 @@ func newConfig(ctx Context, isDumpVar bool, args ...string) Config {
 		sandboxConfig:         &SandboxConfig{},
 		ninjaWeightListSource: DEFAULT,
 		isDumpVar:             isDumpVar,
+		runCIPDProxyServer:    true,
 	}
 	wd, err := os.Getwd()
 	if err != nil {
