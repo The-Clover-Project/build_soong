@@ -165,6 +165,13 @@ phony {
     ],
 }
 
+all_artless_denylists {
+    name: "libandroid_native_denylist",
+    visibility: [
+        "//visibility:any_system_partition",
+    ],
+}
+
 all_artless_blocked_symbol_files {
     name: "all_artless_blocked_symbol_files",
     visibility: [
