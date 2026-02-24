@@ -269,6 +269,14 @@ org\.chromium\.arc\..*
 com\.google\.wear
 com\.google\.wear\..*
 
+# MTK adds
+com\.mediatek
+com\.mediatek\..*
+mediatek\.app
+mediatek\.app\..*
+vendor\.mediatek
+vendor\.mediatek\..*
+
 # NT adds
 com\.nothing
 com\.nothing\..*
