@@ -1941,7 +1941,7 @@ func (a *androidDevice) extractKernelVersionAndConfigs(ctx android.ModuleContext
 		if ctx.Config().EnableUffdGc() == "default" {
 			kernelVersionFile := android.PathForOutput(ctx, "dexpreopt/kernel_version_for_uffd_gc.txt")
 			ctx.Build(pctx, android.BuildParams{
-				Rule:   android.CpIfChanged,
+				Rule:   android.CpIfChangedRule,
 				Input:  extractedVersionFile,
 				Output: kernelVersionFile,
 			})

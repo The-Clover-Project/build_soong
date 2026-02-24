@@ -518,7 +518,7 @@ func (s *ccRustFuzzPackager) GenerateBuildActions(ctx android.SingletonContext) 
 
 	for _, k := range android.SortedKeys(sharedLibraryInstalled) {
 		ctx.Build(pctx, android.BuildParams{
-			Rule:   android.CpIfChanged,
+			Rule:   android.CpIfChangedRule,
 			Input:  sharedLibraryInstalled[k].Src,
 			Output: sharedLibraryInstalled[k].Dst,
 		})

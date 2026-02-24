@@ -125,7 +125,7 @@ func (c *cpData) AddCopy(ctx android.ModuleContext, product, prefix, suffix stri
 	c.inFiles = append(c.inFiles, i)
 	c.outFiles = append(c.outFiles, o)
 	ctx.Build(pctx, android.BuildParams{
-		Rule:   android.CpIfChanged,
+		Rule:   android.CpIfChangedRule,
 		Input:  i,
 		Output: o,
 	})

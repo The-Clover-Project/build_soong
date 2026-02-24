@@ -119,13 +119,13 @@ func (this *allBuildFlagDeclarationsSingleton) GenerateBuildActions(ctx android.
 
 	// The file containing the list of all `release_config_map.textproto` files in the source tree.
 	ctx.Build(pctx, android.BuildParams{
-		Rule:       android.CpIfChanged,
+		Rule:       android.CpIfChangedRule,
 		Input:      android.PathForArbitraryOutput(ctx, ".module_paths", "release_config_map.list"),
 		Output:     mapsListPath,
 		Validation: validatorPath,
 	})
 	ctx.Build(pctx, android.BuildParams{
-		Rule:       android.CpIfChanged,
+		Rule:       android.CpIfChangedRule,
 		Input:      android.PathForArbitraryOutput(ctx, ".module_paths", "duplicate_allowlist.list"),
 		Output:     duplicatesPath,
 		Validation: validatorPath,
