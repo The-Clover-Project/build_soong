@@ -69,7 +69,8 @@ type artlessDenylistDecorator struct {
 
 	properties artlessDenylistLibraryProperties
 
-	versionScriptPath android.ModuleGenPath
+	versionScriptPath     android.ModuleGenPath
+	blockedSymbolListPath android.ModuleGenPath
 }
 
 func AddArtlessDenylistLibraryCompilerFlags(flags Flags) Flags {
@@ -88,17 +89,23 @@ func (stub *artlessDenylistDecorator) compilerFlags(ctx ModuleContext, flags Fla
 	return flags
 }
 
-func genNativeStubs(ctx android.ModuleContext, symbolFile string, genstubFlags string) NdkApiOutputs {
+type artlessDenylistOutputs struct {
+	StubSrc           android.ModuleGenPath
+	VersionScript     android.ModuleGenPath
+	blockedSymbolList android.ModuleGenPath
+}
+
+func genNativeStubs(ctx android.ModuleContext, symbolFile string, genstubFlags string) artlessDenylistOutputs {
 	stubSrcPath := android.PathForModuleGen(ctx, "stub.c")
 	versionScriptPath := android.PathForModuleGen(ctx, "stub.map")
 	symbolFilePath := android.PathForModuleSrc(ctx, symbolFile)
-	symbolListPath := android.PathForModuleGen(ctx, "abi_symbol_list.txt")
+	blockedSymbolListPath := android.PathForModuleGen(ctx, "artless_blocked_symbol_list.txt")
 	apiLevelsJson := android.GetApiLevelsJson(ctx)
 	ctx.Build(pctx, android.BuildParams{
 		Rule:        genNativeStubSrc,
 		Description: "generate native-only denylist " + symbolFilePath.Rel(),
 		Outputs: []android.WritablePath{stubSrcPath, versionScriptPath,
-			symbolListPath},
+			blockedSymbolListPath},
 		Input:     symbolFilePath,
 		Implicits: []android.Path{apiLevelsJson},
 		Args: map[string]string{
@@ -108,10 +115,10 @@ func genNativeStubs(ctx android.ModuleContext, symbolFile string, genstubFlags s
 		},
 	})
 
-	return NdkApiOutputs{
-		StubSrc:       stubSrcPath,
-		VersionScript: versionScriptPath,
-		symbolList:    symbolListPath,
+	return artlessDenylistOutputs{
+		StubSrc:           stubSrcPath,
+		VersionScript:     versionScriptPath,
+		blockedSymbolList: blockedSymbolListPath,
 	}
 }
 
@@ -127,6 +134,7 @@ func (c *artlessDenylistDecorator) compile(ctx ModuleContext, flags Flags, deps 
 	symbolFile := String(c.properties.Symbol_file)
 	nativeAbiResult := genNativeStubs(ctx, symbolFile, "")
 	objs := CompileStubLibrary(ctx, flags, nativeAbiResult.StubSrc, ctx.getSharedFlags())
+	c.blockedSymbolListPath = nativeAbiResult.blockedSymbolList
 	c.versionScriptPath = nativeAbiResult.VersionScript
 	return objs
 }
@@ -137,6 +145,15 @@ func (c *artlessDenylistDecorator) linkerDeps(ctx DepsContext, deps Deps) Deps {
 		deps.HeaderLibs = append(deps.HeaderLibs, "liblog_headers")
 	}
 	return deps
+}
+
+func (stub *artlessDenylistDecorator) extraOutputFilePaths() map[string]android.Paths {
+	if stub.properties.Symbol_file == nil {
+		return nil
+	}
+	return map[string]android.Paths{
+		"artless_blocked_symbol_list.txt": {stub.blockedSymbolListPath},
+	}
 }
 
 // artless_denylist creates a static library that redirects functions
