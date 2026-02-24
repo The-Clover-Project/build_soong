@@ -37,7 +37,6 @@ func RegisterRequiredBuildComponentsForTest(ctx android.RegistrationContext) {
 	ctx.RegisterModuleType("cc_genrule_defaults", genruleDefaultsFactory)
 	ctx.RegisterModuleType("ndk_library", NdkLibraryFactory)
 	ctx.RegisterModuleType("ndk_headers", NdkHeadersFactory)
-	ctx.RegisterModuleType("artless_denylist_stub", ArtlessDenylistFactory)
 	ctx.RegisterModuleType("all_artless_denylists", AllArtlessDenylistsFactory)
 }
 

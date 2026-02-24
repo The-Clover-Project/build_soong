@@ -27,7 +27,6 @@ func init() {
 }
 
 func RegisterBuildComponents(ctx android.RegistrationContext) {
-	ctx.RegisterModuleType("artless_denylist_stub", ArtlessDenylistFactory)
 	ctx.RegisterModuleType("all_artless_denylists", AllArtlessDenylistsFactory)
 }
 
@@ -45,9 +44,12 @@ var (
 // Creates a stub static library that denies access to APIs incompatible with
 // native-only processes, based on the provided version file.
 //
+// Note: This module type is only available via direct CreateModule() calls and
+// is not available in Android.bp files.
+//
 // Example:
 //
-// artless_denylist_stub {
+// artless_denylist {
 //
 //	name: "libfoo_denylist",
 //	symbol_file: "libfoo.map.txt",
@@ -56,6 +58,9 @@ var (
 type artlessDenylistLibraryProperties struct {
 	// Relative path to the symbol map.
 	// See build/soong/docs/map_files.md.
+	//
+	// If unset, this emits an empty library and empty target for blocked symbol
+	// list.
 	Symbol_file *string `android:"path"`
 }
 
@@ -77,7 +82,10 @@ func AddArtlessDenylistLibraryCompilerFlags(flags Flags) Flags {
 
 func (stub *artlessDenylistDecorator) compilerFlags(ctx ModuleContext, flags Flags, deps PathDeps) Flags {
 	flags = stub.baseCompiler.compilerFlags(ctx, flags, deps)
-	return AddArtlessDenylistLibraryCompilerFlags(flags)
+	if stub.properties.Symbol_file != nil {
+		return AddArtlessDenylistLibraryCompilerFlags(flags)
+	}
+	return flags
 }
 
 func genNativeStubs(ctx android.ModuleContext, symbolFile string, genstubFlags string) NdkApiOutputs {
@@ -108,6 +116,10 @@ func genNativeStubs(ctx android.ModuleContext, symbolFile string, genstubFlags s
 }
 
 func (c *artlessDenylistDecorator) compile(ctx ModuleContext, flags Flags, deps PathDeps) Objects {
+	if c.properties.Symbol_file == nil {
+		return Objects{}
+	}
+
 	if !strings.HasSuffix(String(c.properties.Symbol_file), ".map.txt") {
 		ctx.PropertyErrorf("symbol_file", "must end with .map.txt")
 	}
@@ -121,12 +133,17 @@ func (c *artlessDenylistDecorator) compile(ctx ModuleContext, flags Flags, deps 
 
 func (c *artlessDenylistDecorator) linkerDeps(ctx DepsContext, deps Deps) Deps {
 	deps = c.libraryDecorator.linkerDeps(ctx, deps)
-	deps.HeaderLibs = append(deps.HeaderLibs, "liblog_headers")
+	if c.properties.Symbol_file != nil {
+		deps.HeaderLibs = append(deps.HeaderLibs, "liblog_headers")
+	}
 	return deps
 }
 
-// artless_denylist_stub creates a static library that redirects functions
+// artless_denylist creates a static library that redirects functions
 // incompatible with native-only app processes to an aborting implementation.
+//
+// Note: This module type is only available via direct CreateModule() calls and
+// is not available in Android.bp files.
 func ArtlessDenylistFactory() android.Module {
 	module, library := NewLibrary(android.DeviceSupported)
 	library.BuildOnlyStatic()
