@@ -164,3 +164,10 @@ phony {
         "libvulkan",
     ],
 }
+
+all_artless_blocked_symbol_files {
+    name: "all_artless_blocked_symbol_files",
+    visibility: [
+        "//cts:__subpackages__",
+    ],
+}
