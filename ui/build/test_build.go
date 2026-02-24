@@ -92,6 +92,9 @@ func testForDanglingRules(ctx Context, config Config) {
 
 	buildFingerprintFilePattern := regexp.MustCompile("^" + filepath.Join(outDir, "target", "product") + "/[^/]+/build_((system_)?fingerprint|thumbprint)-[^-/]*\\.txt$")
 
+	// out/soong/soong_api/<product>/soong_api.zip is generate at the analysis phase.
+	soongApiZipPattern := regexp.MustCompile("^" + filepath.Join(outDir, "soong", "soong_api") + "/[^/]+/soong_api\\.zip$")
+
 	danglingRules := make(map[string]bool)
 
 	scanner := bufio.NewScanner(stdout)
@@ -112,7 +115,8 @@ func testForDanglingRules(ctx Context, config Config) {
 			line == partialCompileSource ||
 			line == config.BuildUUIDFile() ||
 			strings.HasPrefix(line, releaseConfigDir) ||
-			buildFingerprintFilePattern.MatchString(line) {
+			buildFingerprintFilePattern.MatchString(line) ||
+			soongApiZipPattern.MatchString(line) {
 			// Leaf node is in one of Soong's bootstrap directories, which do not have
 			// full build rules in the primary build.ninja file.
 			continue
