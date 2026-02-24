@@ -785,7 +785,8 @@ func (a *archTransitionMutator) Mutate(ctx BottomUpMutatorContext, variation str
 
 	target, ok := allArchInfo.Targets[variation]
 	if !ok {
-		panic(fmt.Errorf("missing Target for %q", variation))
+		ctx.ModuleErrorf("missing Target for %q", variation)
+		return
 	}
 	primary := variation == allArchInfo.Primary
 	multiTargets := allArchInfo.MultiTargets

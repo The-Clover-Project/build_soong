@@ -45,6 +45,7 @@ func TestVendorPublicLibraries(t *testing.T) {
 		srcs: ["foo.c"],
 		no_libcrt: true,
 		nocrt: true,
+		split_all_variants: true,
 	}
 	cc_library {
 		name: "libproduct",
@@ -53,6 +54,7 @@ func TestVendorPublicLibraries(t *testing.T) {
 		srcs: ["foo.c"],
 		no_libcrt: true,
 		nocrt: true,
+		split_all_variants: true,
 	}
 	cc_library {
 		name: "libvendor",
@@ -61,6 +63,7 @@ func TestVendorPublicLibraries(t *testing.T) {
 		srcs: ["foo.c"],
 		no_libcrt: true,
 		nocrt: true,
+		split_all_variants: true,
 	}
 	`)
 

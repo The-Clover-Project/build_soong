@@ -44,6 +44,7 @@ func TestPrebuilt(t *testing.T) {
 	bp := `
 		cc_library {
 			name: "liba",
+			split_all_variants: true,
 		}
 
 		cc_prebuilt_library_shared {
@@ -82,6 +83,7 @@ func TestPrebuilt(t *testing.T) {
 
 		cc_library {
 			name: "libf",
+			split_all_variants: true,
 		}
 
 		cc_prebuilt_library {
@@ -170,6 +172,7 @@ func TestPrebuiltLibraryShared(t *testing.T) {
 	cc_prebuilt_library_shared {
 		name: "libtest",
 		srcs: ["libf.so"],
+		split_all_variants: true,
     strip: {
         none: true,
     },
@@ -206,6 +209,7 @@ func TestPrebuiltLibrary(t *testing.T) {
 		shared: {
 			srcs: ["libf.so"],
 		},
+		split_all_variants: true,
     strip: {
         none: true,
     },
@@ -236,6 +240,7 @@ func TestPrebuiltLibraryStem(t *testing.T) {
 		strip: {
 			none: true,
 		},
+		split_all_variants: true,
 	}
 	`, map[string][]byte{
 		"libfoo.a":  nil,
@@ -258,6 +263,7 @@ func TestPrebuiltLibrarySharedStem(t *testing.T) {
 		strip: {
 			none: true,
 		},
+		split_all_variants: true,
 	}
 	`, map[string][]byte{
 		"libfoo.so": nil,
@@ -395,12 +401,14 @@ func TestMultiplePrebuilts(t *testing.T) {
 		cc_library {
 			name: "libfoo",
 			shared_libs: ["libbar"],
+			split_all_variants: true,
 		}
 
 		// multiple variations of dep
 		// source
 		cc_library {
 			name: "libbar",
+			split_all_variants: true,
 		}
 		// prebuilt "v1"
 		cc_prebuilt_library_shared {
@@ -560,6 +568,7 @@ func TestMissingVariantInModuleSdk(t *testing.T) {
 		cc_library {
 			name: "libfoo",
 			static_libs: ["libbar"],
+			split_all_variants: true,
 		}
 
 		// source

@@ -2273,7 +2273,7 @@ func reuseStaticLibrary(ctx android.BottomUpMutatorContext, shared *Module) {
 // on whether the module can be built as a static library or a shared library.
 type linkageTransitionMutator struct{}
 
-func (linkageTransitionMutator) Split(ctx android.BaseModuleContext) []string {
+func (linkageTransitionMutator) split(ctx android.BaseModuleContext) []string {
 	ccPrebuilt := false
 	if m, ok := ctx.Module().(*Module); ok && m.linker != nil {
 		_, ccPrebuilt = m.linker.(prebuiltLibraryInterface)
@@ -2320,8 +2320,58 @@ func (linkageTransitionMutator) Split(ctx android.BaseModuleContext) []string {
 	return []string{""}
 }
 
-func (linkageTransitionMutator) SplitOnDemand(ctx android.BaseModuleContext) []string {
+var denylist = []string{
+	"libsqlite", // TODO (b/448182248): This seems to cause a circular dependency. Fix and remove this.
+}
+
+func (l linkageTransitionMutator) splitAll(ctx android.BaseModuleContext) bool {
+	// Not cc
+	if _, isCc := ctx.Module().(*Module); !isCc {
+		return true
+	}
+	// Prebuilt (TODO: b/448182248) Handle prebuilts
+	if p := android.GetEmbeddedPrebuilt(ctx.Module()); p != nil {
+		return true
+	}
+	// Source with prebuilt (TODO b/448182248): Handle source modules with prebuilts
+	sourceWithPrebuilt := false
+	ctx.VisitDirectDepsProxyWithTag(android.PrebuiltDepTag, func(m android.ModuleProxy) {
+		sourceWithPrebuilt = true
+	})
+	if sourceWithPrebuilt {
+		return true
+	}
+	if android.InList(ctx.ModuleName(), denylist) {
+		return true
+	}
+	if c, ok := ctx.Module().(*Module); ok && c.HasStubsVariants() {
+		return true
+	}
+	// Soong benchmark builds
+	if ctx.Config().IsEnvTrue("SOONG_SPLIT_OPT_IN_VARIANTS_ON_DEMAND") {
+		return false
+	}
+	// Otherwise use build flags
+	return !ctx.Config().GetBuildFlagBool("RELEASE_SOONG_LINK_VARIANT_ON_DEMAND")
+}
+
+func (l linkageTransitionMutator) Split(ctx android.BaseModuleContext) []string {
+	allSplits := l.split(ctx)
+	if !l.splitAll(ctx) {
+		return allSplits[0:1]
+	} else {
+		return allSplits
+	}
 	return nil
+}
+
+func (l linkageTransitionMutator) SplitOnDemand(ctx android.BaseModuleContext) []string {
+	allSplits := l.split(ctx)
+	if len(allSplits) <= 1 || l.splitAll(ctx) {
+		return nil
+	} else {
+		return allSplits[1:]
+	}
 }
 
 func (linkageTransitionMutator) OutgoingTransition(ctx android.OutgoingTransitionContext, sourceVariation string) string {
