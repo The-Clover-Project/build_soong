@@ -2530,6 +2530,10 @@ func (c *config) UseOptimizedResourceShrinkingByDefault() bool {
 	return c.productVariables.GetBuildFlagBool("RELEASE_USE_OPTIMIZED_RESOURCE_SHRINKING_BY_DEFAULT")
 }
 
+func (c *config) EnableAppOptimizationByDefault() bool {
+	return c.productVariables.GetBuildFlagBool("RELEASE_R8_OPTIMIZE_BY_DEFAULT")
+}
+
 func (c *config) UseR8FullModeByDefault() bool {
 	return c.productVariables.GetBuildFlagBool("RELEASE_R8_FULL_MODE_BY_DEFAULT")
 }
