@@ -24,6 +24,7 @@ import (
 	"path/filepath"
 
 	"github.com/google/blueprint"
+	"github.com/google/blueprint/proptools"
 )
 
 func init() {
@@ -42,6 +43,7 @@ type SoongApiModuleRecord struct {
 	Path         string   `json:"path"`
 	Enabled      bool     `json:"enabled"`
 	InstallFiles []string `json:"install_files,omitempty"`
+	TrendyTeamId string   `json:"trendy_team_id,omitempty"`
 }
 
 func soongApiSingletonFactory() Singleton {
@@ -71,6 +73,10 @@ func (c *soongApiSingleton) GenerateBuildActions(ctx SingletonContext) {
 			for _, p := range commonInfo.InstallFiles.InstallFiles {
 				record.InstallFiles = append(record.InstallFiles, p.String())
 			}
+		}
+
+		if team, ok := OtherModuleProvider(ctx, m, TeamInfoProvider); ok {
+			record.TrendyTeamId = proptools.String(team.Properties.Trendy_team_id)
 		}
 
 		records = append(records, record)
