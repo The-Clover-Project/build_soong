@@ -29,7 +29,6 @@ import (
 	"android/soong/android"
 	"android/soong/dexpreopt"
 	"android/soong/java"
-
 	"github.com/google/blueprint"
 	"github.com/google/blueprint/proptools"
 )
@@ -101,6 +100,12 @@ var createStorageInfo = []createStorageStruct{
 }
 
 var (
+	apex_elf_checker   = pctx.HostTool("apex_elf_checker")
+	host_apex_verifier = pctx.HostTool("host_apex_verifier")
+	deapexer           = pctx.HostTool("deapexer")
+	debugfs            = pctx.HostTool("debugfs")
+	fsck_erofs         = pctx.HostTool("fsck.erofs")
+
 	apexManifestRule = pctx.StaticRule("apexManifestRule", blueprint.RuleParams{
 		Command: `rm -f $out && ${jsonmodify} $in ` +
 			`-a provideNativeLibs ${provideNativeLibs} ` +
@@ -235,18 +240,23 @@ var (
 	}, "image_dir")
 
 	apexHostVerifierRule = pctx.StaticRule("apexHostVerifierRule", blueprint.RuleParams{
-		Command: `${host_apex_verifier} --deapexer=${deapexer} --debugfs=${debugfs} ` +
-			`--fsckerofs=${fsck_erofs} --apex=${in} --partition_tag=${partition_tag} && touch ${out}`,
-		CommandDeps:     []string{"${host_apex_verifier}", "${deapexer}", "${debugfs}", "${fsck_erofs}"},
-		Description:     "run host_apex_verifier",
-		SandboxDisabled: true,
+		Command2: blueprint.NewCommand(
+			host_apex_verifier, ` --deapexer=`, deapexer, ` --debugfs=`, debugfs, ` `,
+			`--fsckerofs=`, fsck_erofs, ` --apex=${in} --partition_tag=${partition_tag} && `,
+			android.Touch, ` ${out}`),
+		Description: "run host_apex_verifier",
 	}, "partition_tag")
 
 	apexElfCheckerUnwantedRule = pctx.StaticRule("apexElfCheckerUnwantedRule", blueprint.RuleParams{
-		Command:         `${apex_elf_checker} --tool_path ${tool_path} --unwanted ${unwanted} ${in} && touch ${out}`,
-		CommandDeps:     []string{"${apex_elf_checker}", "${deapexer}", "${debugfs}", "${fsck_erofs}", "${config.ClangBin}/llvm-readelf"},
-		Description:     "run apex_elf_checker --unwanted",
-		SandboxDisabled: true,
+		Command2: blueprint.NewCommand(
+			apex_elf_checker, ` --tool_path ${tool_path} --unwanted ${unwanted} ${in} && `,
+			android.Touch, ` ${out}`),
+		CommandDeps: []string{
+			"${config.ClangBin}/llvm-readelf",
+			"${config.ClangBin}/llvm-readobj",
+		},
+		CommandDepsTools: []*blueprint.HostTool{&deapexer, &debugfs, &fsck_erofs},
+		Description:      "run apex_elf_checker --unwanted",
 	}, "tool_path", "unwanted")
 
 	apexAconfigFlagsPbRule = pctx.StaticRule("apexAconfigFlagsPbRule", blueprint.RuleParams{
