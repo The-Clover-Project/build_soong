@@ -1268,7 +1268,7 @@ func buildBootImageVariant(ctx android.ModuleContext, image *bootImageVariant, p
 		// TODO: b/458374506 - Remove the legacy mechanism and loop over the
 		// apexNameToApexExportsInfoMap directly.
 		bootclasspathFragments := gatherBootclasspathFragments(ctx)
-		for apex := range bootclasspathFragments {
+		for _, apex := range android.SortedKeys(bootclasspathFragments) {
 			profilePath := getProfilePathForApex(ctx, apex, apexNameToApexExportsInfoMap)
 			if profilePath != nil {
 				cmd.FlagWithInput("--profile-file=", profilePath)
