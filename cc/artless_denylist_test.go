@@ -33,6 +33,17 @@ func TestAllArtlessDenylistDependency(t *testing.T) {
 			name: "libfoo",
 		}
 
+		ndk_library {
+			name: "libbar",
+			first_version: "29",
+			symbol_file: "libbar.map.txt",
+			bypass_artless_denylist: true,
+		}
+
+		cc_library {
+			name: "libbar",
+		}
+
 		cc_library {
 		  name: "liblog",
 		}

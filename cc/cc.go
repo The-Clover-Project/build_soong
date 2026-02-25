@@ -870,6 +870,8 @@ type linker interface {
 	unstrippedOutputFilePath() android.Path
 	strippedAllOutputFilePath() android.Path
 
+	extraOutputFilePaths() map[string]android.Paths
+
 	nativeCoverage() bool
 	coverageOutputFilePath() android.OptionalPath
 
@@ -2879,6 +2881,9 @@ func (c *Module) setOutputFiles(ctx ModuleContext) {
 	if c.linker != nil {
 		ctx.SetOutputFiles(android.PathsIfNonNil(c.linker.unstrippedOutputFilePath()), "unstripped")
 		ctx.SetOutputFiles(android.PathsIfNonNil(c.linker.strippedAllOutputFilePath()), "stripped_all")
+		for tag, paths := range c.linker.extraOutputFilePaths() {
+			ctx.SetOutputFiles(paths, tag)
+		}
 		defaultDistFiles := c.linker.defaultDistFiles()
 		if len(defaultDistFiles) > 0 {
 			ctx.SetOutputFiles(defaultDistFiles, android.DefaultDistTag)

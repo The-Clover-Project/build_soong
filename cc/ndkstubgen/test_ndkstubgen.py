@@ -172,9 +172,12 @@ class ArtlessDenylistGeneratorTest(unittest.TestCase):
     def test_artless_denylist(self) -> None:
         src_file = io.StringIO()
         version_file = io.StringIO()
+        blocked_symbol_list_file = io.StringIO()
         generator = ndkstubgen.ArtlessDenylistGenerator(src_file,
                                                         version_file,
-                                                        self.filter)
+                                                        blocked_symbol_list_file,
+                                                        self.filter,
+                                                        'libfoo.map.txt')
 
         versions = [
             symbolfile.Version('VERSION_1', None, Tags(), [
@@ -203,6 +206,12 @@ class ArtlessDenylistGeneratorTest(unittest.TestCase):
             void foo() { LOG_ALWAYS_FATAL("Function foo is not allowed in artless processes."); }
         """)
         self.assertEqual(expected_src, src_file.getvalue())
+
+        expected_blocked = textwrap.dedent("""\
+            # libfoo.map.txt
+            foo
+        """)
+        self.assertEqual(expected_blocked, blocked_symbol_list_file.getvalue())
 
 
 class IntegrationTest(unittest.TestCase):
