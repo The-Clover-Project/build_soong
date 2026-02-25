@@ -124,7 +124,7 @@ func (p PackageContext) RuleFunc(name string,
 		if len(ctx.errors) > 0 {
 			return params, ctx.errors[0]
 		}
-		if ctx.Config().UseRemoteBuild() && params.Pool == nil {
+		if ctx.Config().REWrapperRemoteBuild() && params.Pool == nil {
 			// When USE_REWRAPPER=true is set and the rule is not supported by
 			// RBE, restrict jobs to the local parallelism value
 			params.Pool = localPool

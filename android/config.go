@@ -1661,9 +1661,8 @@ func (c *config) RBEContainerImage() string {
 	return String(c.productVariables.RBEContainerImage)
 }
 
-// TODO(b/485589948): Fix this name and confirm that we set params.Pool
-// correctly when UseREWrapper() is false.
-func (c *config) UseRemoteBuild() bool {
+// Return true if we are using rewrapper **and** RBE.
+func (c *config) REWrapperRemoteBuild() bool {
 	return c.UseRBE() && c.UseREWrapper()
 }
 

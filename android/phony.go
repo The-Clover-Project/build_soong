@@ -150,7 +150,7 @@ func (p *phonySingleton) GenerateBuildActions(ctx SingletonContext) {
 		})
 
 		wg.GoWithMultipleErrors(func() []error {
-			return p.soongDist.writeNinjaFiles(soongDistFile, soongNoDistFile, ctx.Config().UseRemoteBuild())
+			return p.soongDist.writeNinjaFiles(soongDistFile, soongNoDistFile, ctx.Config().REWrapperRemoteBuild())
 		})
 
 		wg.Wait()
