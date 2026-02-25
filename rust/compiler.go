@@ -718,10 +718,6 @@ func (compiler *baseCompiler) crateSources(ctx ModuleContext) android.Paths {
 				"**/*.md",
 				"*.rs",
 				"**/*.rs",
-				"*.proto",
-				"**/*.proto",
-				"*.xml",
-				"**/*.xml",
 				"*.h",
 				"**/*.h"})...)
 	}
