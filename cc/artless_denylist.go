@@ -28,6 +28,7 @@ func init() {
 
 func RegisterBuildComponents(ctx android.RegistrationContext) {
 	ctx.RegisterModuleType("all_artless_denylists", AllArtlessDenylistsFactory)
+	ctx.RegisterModuleType("all_artless_blocked_symbol_files", AllArtlessBlockedSymbolFilesFactory)
 }
 
 var (
@@ -149,7 +150,9 @@ func (c *artlessDenylistDecorator) linkerDeps(ctx DepsContext, deps Deps) Deps {
 
 func (stub *artlessDenylistDecorator) extraOutputFilePaths() map[string]android.Paths {
 	if stub.properties.Symbol_file == nil {
-		return nil
+		return map[string]android.Paths{
+			"artless_blocked_symbol_list.txt": nil,
+		}
 	}
 	return map[string]android.Paths{
 		"artless_blocked_symbol_list.txt": {stub.blockedSymbolListPath},
@@ -215,4 +218,44 @@ func AllArtlessDenylistsFactory() android.Module {
 	module.library = decorator
 
 	return module.Init()
+}
+
+type AllArtlessBlockedSymbolFiles struct {
+	android.ModuleBase
+}
+
+func AllArtlessBlockedSymbolFilesFactory() android.Module {
+	module := &AllArtlessBlockedSymbolFiles{}
+	android.InitAndroidArchModule(module, android.DeviceSupported, android.MultilibBoth)
+	return module
+}
+
+type blockedSymbolFileTag struct {
+	blueprint.BaseDependencyTag
+}
+
+func (c *AllArtlessBlockedSymbolFiles) DepsMutator(ctx android.BottomUpMutatorContext) {
+	for _, lib := range android.SortedUniqueStrings(*getNDKKnownLibs(ctx.Config())) {
+		libName := strings.TrimSuffix(lib, ndkLibrarySuffix)
+		// Ideally, we should be emitting the list of symbols from a sdk variant
+		// module, but it is more convenient for now to emit it when the platform
+		// denylist (libfoo_denylist) is being generated.
+		//
+		// Eventually, this should be moved to being generated as a part of
+		// libfoo.ndk, which generates the public NDK stubs.
+		ctx.AddVariationDependencies([]blueprint.Variation{{Mutator: "sdk", Variation: ""}},
+			blockedSymbolFileTag{}, libName+"_denylist")
+	}
+}
+
+func (c *AllArtlessBlockedSymbolFiles) GenerateAndroidBuildActions(ctx android.ModuleContext) {
+	if ctx.ModuleDir() != "build/soong/cc" || ctx.ModuleName() != "all_artless_blocked_symbol_files" {
+		ctx.ModuleErrorf("There can only be one all_artless_blocked_symbol_files in build/soong/cc")
+		return
+	}
+	var srcs android.Paths
+	ctx.VisitDirectDepsProxyWithTag(blockedSymbolFileTag{}, func(proxy android.ModuleProxy) {
+		srcs = append(srcs, android.OutputFilesForModule(ctx, proxy, "artless_blocked_symbol_list.txt")...)
+	})
+	ctx.SetOutputFiles(srcs, "")
 }
