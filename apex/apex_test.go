@@ -1490,6 +1490,7 @@ func TestApex_PlatformUsesLatestStubFromApex(t *testing.T) {
 				"libstub",
 				"libstub_rust",
 			],
+			split_all_variants: true,
 		}
 	`,
 		android.FixtureModifyProductVariables(func(variables android.FixtureProductVariables) {
@@ -2024,6 +2025,7 @@ func TestApexWithSystemLibsStubs(t *testing.T) {
 			srcs: ["mylib.cpp"],
 			stl: "none",
 			bootstrap: true,
+			split_all_variants: true,
 		}
 
 		rust_ffi {
@@ -2463,6 +2465,7 @@ func TestPlatformUsesLatestStubsFromApexes(t *testing.T) {
 			shared_libs: ["libx", "libx_rs",],
 			system_shared_libs: [],
 			stl: "none",
+			split_all_variants: true,
 		}
 	`)
 
@@ -4760,6 +4763,7 @@ func TestApexWithTarget(t *testing.T) {
 				"//apex_available:platform",
 				"myapex",
 			],
+			split_all_variants: true,
 		}
 
 		cc_library {
@@ -4768,6 +4772,7 @@ func TestApexWithTarget(t *testing.T) {
 			system_shared_libs: [],
 			stl: "none",
 			compile_multilib: "first",
+			split_all_variants: true,
 		}
 	`)
 
@@ -7118,6 +7123,7 @@ func TestApexAvailable_CheckForPlatform(t *testing.T) {
 		system_shared_libs: [],
 		shared_libs: ["libbar"],
 		apex_available: ["//apex_available:platform"],
+		split_all_variants: true,
 	}
 
 	cc_library {
@@ -7126,6 +7132,7 @@ func TestApexAvailable_CheckForPlatform(t *testing.T) {
 		system_shared_libs: [],
 		shared_libs: ["libbaz"],
 		apex_available: ["//apex_available:platform"],
+		split_all_variants: true,
 	}
 
 	cc_library {
@@ -12004,6 +12011,7 @@ func TestPrebuiltStubNoinstall(t *testing.T) {
 		cc_library {
 			name: "installedlib",
 			shared_libs: ["libfoo"],
+			split_all_variants: true,
 		}
 	`)
 

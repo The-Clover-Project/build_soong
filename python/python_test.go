@@ -363,6 +363,10 @@ func TestSharedLib(t *testing.T) {
 		android.PrepareForTestWithDefaults,
 		android.PrepareForTestWithArchMutator,
 		android.PrepareForTestWithAllowMissingDependencies,
+		android.FixtureModifyContext(func(ctx *android.TestContext) {
+			// TODO(b/477627661): on-demand variants is not supported with allow missing deps.
+			ctx.SetSplitAllVariants(true)
+		}),
 		cc.PrepareForTestWithCcDefaultModules,
 		PrepareForTestWithPythonBuildComponents,
 	).RunTestWithBp(

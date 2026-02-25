@@ -34,7 +34,8 @@ func TestLibraryVariants(t *testing.T) {
 		rust_ffi {
 			name: "libfoo.ffi",
 			srcs: ["foo.rs"],
-			crate_name: "foo"
+			crate_name: "foo",
+			split_all_variants: true,
 		}
 		rust_ffi_static {
 			name: "libfoo.ffi_static",
@@ -362,6 +363,7 @@ func TestLibstdLinkage(t *testing.T) {
 			srcs: ["foo.rs"],
 			crate_name: "bar",
 			rustlibs: ["libfoo"],
+			split_all_variants: true,
 		}
 		rust_ffi_static {
 			name: "libbar_static",

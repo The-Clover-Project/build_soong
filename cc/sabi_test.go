@@ -30,6 +30,7 @@ func TestSabi(t *testing.T) {
 				symbol_file: "libsabi.map.txt",
                 ref_dump_dirs: ["abi-dumps"],
 			},
+			split_all_variants: true,
 		}
 
 		cc_library {

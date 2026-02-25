@@ -75,6 +75,7 @@ func testCCCodegenModeHelper(t *testing.T, bpMode string, ruleMode string) {
 			cc_aconfig_library {
 				name: "my_cc_aconfig_library",
 				aconfig_declarations: "my_aconfig_declarations",
+				split_all_variants: true,
 				%s
 			}
 		`, bpMode))
@@ -176,6 +177,7 @@ func TestAndroidMkCcLibrary(t *testing.T) {
 				"my_cc_aconfig_library_bar",
 			],
 			vendor: true,
+			split_all_variants: true,
 		}
 
 		cc_library {
@@ -234,6 +236,7 @@ func TestForceReadOnly(t *testing.T) {
 				name: "my_cc_aconfig_library",
 				aconfig_declarations: "my_aconfig_declarations",
 				mode: "force-read-only",
+				split_all_variants: true,
 			}
 
 

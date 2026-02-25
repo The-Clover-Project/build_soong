@@ -647,12 +647,13 @@ func (r *RuleBuilder) Build(name string, desc string) {
 			}
 		}
 
-		// These five directories are necessary to run native host tools like /bin/bash and py3-cmd.
+		// These directories are necessary to run native host tools like /bin/bash and py3-cmd.
 		nsjailCmd.WriteString(" -R /bin")
 		nsjailCmd.WriteString(" -R /lib")
 		nsjailCmd.WriteString(" -R /lib64")
 		nsjailCmd.WriteString(" -R /dev")
 		nsjailCmd.WriteString(" -R /usr")
+		nsjailCmd.WriteString(" -R /etc")
 
 		nsjailCmd.WriteString(" -m none:/tmp:tmpfs:size=1073741824") // 1GB, should be enough
 		nsjailCmd.WriteString(" -D nsjail_build_sandbox")

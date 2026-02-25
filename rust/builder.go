@@ -68,10 +68,10 @@ var (
 	_       = pctx.SourcePathVariable("rustdocCmd", "${config.RustBin}/rustdoc")
 	rustdoc = pctx.AndroidStaticRule("rustdoc",
 		blueprint.RuleParams{
-			Command: "$envVars ${RustcWrapper} $rustdocCmd $rustdocFlags $in -o $outDir && " +
-				"touch $out",
-			CommandDeps:     []string{"$rustdocCmd", "${RustcWrapper}"},
-			SandboxDisabled: true,
+			Command2: blueprint.NewCommand(
+				"$envVars ", rustcWrapper, " $rustdocCmd $rustdocFlags $in -o $outDir && ",
+				android.Touch, " $out"),
+			CommandDeps: []string{"$rustdocCmd"},
 		},
 		"rustdocFlags", "outDir", "envVars")
 
@@ -515,11 +515,7 @@ func transformSrctoCrate(ctx android.ModuleContext, main android.Path, deps Path
 	implicits = append(implicits, srcInputs...)
 	implicits = append(implicits, libFlagsDeps...)
 
-	toolchainImplicitsPhony := ctx.CreateNinjaPhonyOnce("rustToolchainImplicits", []string{
-		filepath.Join(config.RustPath(ctx), "**/*"),
-		cc_config.ClangPathNoOnce(ctx, "lib/**/*").String(),
-		cc_config.ClangPathNoOnce(ctx, "bin/**/*").String(),
-	})
+	toolchainImplicitsPhony := toolchainImplicitsPhony(ctx)
 	implicits = append(implicits, toolchainImplicitsPhony)
 
 	soongDepsFile := android.PathForModuleOut(ctx, outputFile.Base()+".soong_deps")
@@ -654,10 +650,14 @@ func Rustdoc(ctx ModuleContext, main android.Path, deps PathDeps,
 	// https://github.com/rust-lang/rust/blob/master/src/librustdoc/html/render/write_shared.rs#L144-L146
 	docDir := android.PathForOutput(ctx, "rustdoc")
 
+	toolchainImplicitsPhony := toolchainImplicitsPhony(ctx)
+	implicits = append(implicits, toolchainImplicitsPhony)
+
 	implicits = append(implicits, rustLibsToPaths(deps.RLibs)...)
 	implicits = append(implicits, rustLibsToPaths(deps.DyLibs)...)
 	implicits = append(implicits, rustLibsToPaths(deps.ProcMacros)...)
 	implicits = append(implicits, libFlagsDeps...)
+	implicits = append(implicits, deps.SrcFiles...)
 	envVars := rustEnvVars(ctx, deps, crateName, ctx.RustModule().compiler.cargoOutDir(ctx))
 	ctx.Build(pctx, android.BuildParams{
 		Rule:        rustdoc,
@@ -674,4 +674,12 @@ func Rustdoc(ctx ModuleContext, main android.Path, deps PathDeps,
 	})
 
 	return docTimestampFile
+}
+
+func toolchainImplicitsPhony(ctx android.ModuleContext) android.Path {
+	return ctx.CreateNinjaPhonyOnce("rustToolchainImplicits", []string{
+		filepath.Join(config.RustPath(ctx), "**/*"),
+		cc_config.ClangPathNoOnce(ctx, "lib/**/*").String(),
+		cc_config.ClangPathNoOnce(ctx, "bin/**/*").String(),
+	})
 }

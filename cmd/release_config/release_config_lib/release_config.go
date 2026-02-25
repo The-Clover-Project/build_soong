@@ -167,6 +167,8 @@ func (config *ReleaseConfig) InheritConfig(iConfig *ReleaseConfig) error {
 		return fmt.Errorf("Release config %s (type '%s') cannot inherit from %s (type '%s')",
 			config.Name, config.ReleaseConfigType, iConfig.Name, iConfig.ReleaseConfigType)
 	}
+	// If we inherit from a release config which is aconfig_flags_only, then we are aconfig_flags_only.
+	config.AconfigFlagsOnly = config.AconfigFlagsOnly || iConfig.AconfigFlagsOnly
 	for _, fa := range iConfig.FlagArtifacts {
 		name := *fa.FlagDeclaration.Name
 		myFa, ok := config.FlagArtifacts[name]

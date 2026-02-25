@@ -158,6 +158,7 @@ func TestSyspropLibrary(t *testing.T) {
 			property_owner: "Platform",
 			vendor_available: true,
 			host_supported: true,
+			split_all_variants: true,
 		}
 
 		sysprop_library {
@@ -166,6 +167,7 @@ func TestSyspropLibrary(t *testing.T) {
 			api_packages: ["android.sysprop"],
 			property_owner: "Platform",
 			product_specific: true,
+			split_all_variants: true,
 		}
 
 		sysprop_library {
@@ -174,6 +176,7 @@ func TestSyspropLibrary(t *testing.T) {
 			api_packages: ["com.android"],
 			property_owner: "Vendor",
 			vendor: true,
+			split_all_variants: true,
 		}
 
 		sysprop_library {
@@ -182,6 +185,7 @@ func TestSyspropLibrary(t *testing.T) {
 			api_packages: ["com.android"],
 			property_owner: "Vendor",
 			product_specific: true,
+			split_all_variants: true,
 		}
 
 		sysprop_library {
@@ -190,6 +194,7 @@ func TestSyspropLibrary(t *testing.T) {
 			api_packages: ["com.android2"],
 			property_owner: "Odm",
 			device_specific: true,
+			split_all_variants: true,
 		}
 
 		java_library {
