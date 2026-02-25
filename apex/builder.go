@@ -145,7 +145,8 @@ var (
 			`--canned_fs_config ${canned_fs_config} ` +
 			`--include_build_info ` +
 			`--payload_type image ` +
-			`--key ${key} ${opt_flags} ${image_dir} ${out} `,
+			`--key ${key} ${opt_flags} ${image_dir} ${out} ` +
+			`&& ${soong_zip} -d -C ${image_dir} -D ${image_dir} -o ${image_zip}`,
 		CommandDeps: []string{"${apexer}", "${avbtool}", "${e2fsdroid}", "${merge_zips}",
 			"${mke2fs}", "${resize2fs}", "${sefcontext_compile}", "${make_f2fs}", "${sload_f2fs}", "${make_erofs}",
 			"${soong_zip}", "${zipalign}", "${aapt2}", "prebuilts/sdk/current/public/android.jar"},
@@ -153,7 +154,7 @@ var (
 		RspfileContent:  "${copy_commands}",
 		Description:     "APEX ${image_dir} => ${out}",
 		SandboxDisabled: true,
-	}, "tool_path", "image_dir", "copy_commands", "file_contexts", "canned_fs_config", "key",
+	}, "tool_path", "image_dir", "image_zip", "copy_commands", "file_contexts", "canned_fs_config", "key",
 		"opt_flags", "manifest")
 
 	DCLAApexRule = pctx.StaticRule("DCLAApexRule", blueprint.RuleParams{
@@ -172,7 +173,8 @@ var (
 			`--key ${key} ` +
 			`--file_contexts ${file_contexts} ` +
 			`--manifest ${manifest} ` +
-			`${opt_flags} `,
+			`${opt_flags} ` +
+			`&& ${soong_zip} -d -C ${image_dir} -D ${image_dir} -o ${image_zip}`,
 		CommandDeps: []string{"${apexer_with_DCLA_preprocessing}", "${apexer}", "${avbtool}", "${e2fsdroid}",
 			"${merge_zips}", "${mke2fs}", "${resize2fs}", "${sefcontext_compile}", "${make_f2fs}",
 			"${sload_f2fs}", "${make_erofs}", "${soong_zip}", "${zipalign}", "${aapt2}",
@@ -181,7 +183,7 @@ var (
 		RspfileContent:  "${copy_commands}",
 		Description:     "APEX ${image_dir} => ${out}",
 		SandboxDisabled: true,
-	}, "tool_path", "image_dir", "copy_commands", "file_contexts", "canned_fs_config", "key",
+	}, "tool_path", "image_dir", "image_zip", "copy_commands", "file_contexts", "canned_fs_config", "key",
 		"opt_flags", "manifest", "is_DCLA")
 
 	apexProtoConvertRule = pctx.AndroidStaticRule("apexProtoConvertRule",
@@ -892,15 +894,18 @@ func (a *apexBundle) buildApex(ctx android.ModuleContext) {
 		optFlags = append(optFlags, "--non_production")
 	}
 
+	imageZipOut := android.PathForModuleOut(ctx, "image.zip")
 	if a.dynamic_common_lib_apex() {
 		ctx.Build(pctx, android.BuildParams{
-			Rule:        DCLAApexRule,
-			Implicits:   implicitInputs,
-			Output:      unsignedOutputFile,
-			Description: "apex",
+			Rule:           DCLAApexRule,
+			Implicits:      implicitInputs,
+			Output:         unsignedOutputFile,
+			ImplicitOutput: imageZipOut,
+			Description:    "apex",
 			Args: map[string]string{
 				"tool_path":        outHostBinDir + ":" + prebuiltSdkToolsBinDir,
 				"image_dir":        imageDir.String(),
+				"image_zip":        imageZipOut.String(),
 				"copy_commands":    strings.Join(copyCommands, " && "),
 				"manifest":         a.manifestPbOut.String(),
 				"file_contexts":    fileContexts.String(),
@@ -911,13 +916,15 @@ func (a *apexBundle) buildApex(ctx android.ModuleContext) {
 		})
 	} else {
 		ctx.Build(pctx, android.BuildParams{
-			Rule:        apexRule,
-			Implicits:   implicitInputs,
-			Output:      unsignedOutputFile,
-			Description: "apex",
+			Rule:           apexRule,
+			Implicits:      implicitInputs,
+			Output:         unsignedOutputFile,
+			ImplicitOutput: imageZipOut,
+			Description:    "apex",
 			Args: map[string]string{
 				"tool_path":        outHostBinDir + ":" + prebuiltSdkToolsBinDir,
 				"image_dir":        imageDir.String(),
+				"image_zip":        imageZipOut.String(),
 				"copy_commands":    strings.Join(copyCommands, " && "),
 				"manifest":         a.manifestPbOut.String(),
 				"file_contexts":    fileContexts.String(),
