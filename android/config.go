@@ -1040,7 +1040,11 @@ func (c *config) HostCcSharedLibPath(ctx PathContext, lib string) Path {
 	if ctx.Config().BuildArch.Multilib == "lib64" {
 		libDir = "lib64"
 	}
-	return pathForInstall(ctx, ctx.Config().BuildOS, ctx.Config().BuildArch, libDir, lib+".so")
+	ext := ".so"
+	if runtime.GOOS == "darwin" {
+		ext = ".dylib"
+	}
+	return pathForInstall(ctx, ctx.Config().BuildOS, ctx.Config().BuildArch, libDir, lib+ext)
 }
 
 // PrebuiltOS returns the name of the host OS used in prebuilts directories.
