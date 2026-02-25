@@ -125,13 +125,11 @@ func (s *sdkRepoHost) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 
 	// Handle `merge_zips` by extracting their contents into our tmpdir.  Do this first in case their
 	// files (like NOTICE.txt) need to be overwritten.
-	for _, zip := range android.PathsForModuleSrc(ctx, s.properties.Merge_zips) {
+	if zips := android.PathsForModuleSrc(ctx, s.properties.Merge_zips); len(zips) > 0 {
 		builder.Command().
-			Text("unzip").
-			Flag("-DD").
-			Flag("-q").
+			BuiltTool("zipsync").
 			FlagWithArg("-d ", dir.String()).
-			Input(zip)
+			Inputs(zips)
 	}
 
 	// Get files from modules listed in `deps`
