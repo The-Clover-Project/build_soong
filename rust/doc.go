@@ -43,7 +43,7 @@ func (n *rustdocSingleton) GenerateBuildActions(ctx android.SingletonContext) {
 		}
 
 		if m, ok := android.OtherModuleProvider(ctx, module, RustInfoProvider); ok {
-			if m.DocTimestampFile.Valid() {
+			if m.CollectDoc && m.DocTimestampFile.Valid() {
 				zipCmd.Implicit(m.DocTimestampFile.Path())
 			}
 		}
