@@ -1263,7 +1263,7 @@ func buildRuleToGenerateRemovedDexSignatures(ctx android.ModuleContext, suffix s
 
 	output := android.PathForModuleOut(ctx, "module-hiddenapi"+suffix, "removed-dex-signatures.txt")
 
-	rule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
+	rule := android.NewRuleBuilder(pctx, ctx)
 	rule.Command().
 		BuiltTool("metalava").
 		Text("signature-to-dex").

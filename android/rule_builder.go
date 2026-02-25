@@ -1375,7 +1375,7 @@ func (c *RuleBuilderCommand) getToolModule(tool string) ModuleProxy {
 		if ctx.Config().AllowMissingDependencies() {
 			c.rule.MissingDeps([]string{tool})
 		} else {
-			ctxInfo.errorFunc("Host tool %s not found in deps", tool)
+			ctxInfo.errorFunc("Host tool %s not found in deps. Please add a dependency to the tool using AddHostToolDependencies", tool)
 		}
 	}
 	return toolModule

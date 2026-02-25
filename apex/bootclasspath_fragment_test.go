@@ -623,6 +623,7 @@ func TestBootclasspathFragmentInPrebuiltArtApex(t *testing.T) {
 		java.CheckModuleDependencies(t, result.TestContext, "art-bootclasspath-fragment", "android_common_prebuilt_com.android.art", []string{
 			`all_apex_contributions`,
 			`dex2oatd`,
+			`metalava`,
 			`prebuilt_bar`,
 			`prebuilt_foo`,
 		})
@@ -1140,6 +1141,7 @@ func TestBootclasspathFragment_HiddenAPIList(t *testing.T) {
 		"com.android.art",
 		"dex2oatd",
 		"foo",
+		"metalava",
 	})
 
 	fooStubs := getDexJarPath(result, "foo.stubs.exportable")
@@ -1320,6 +1322,7 @@ func TestBootclasspathFragment_AndroidNonUpdatable_FromSource(t *testing.T) {
 		"com.android.art",
 		"dex2oatd",
 		"foo",
+		"metalava",
 	})
 
 	nonUpdatablePublicStubs := getDexJarPath(result, "android-non-updatable.stubs")
@@ -1497,6 +1500,7 @@ func TestBootclasspathFragment_AndroidNonUpdatable_FromText(t *testing.T) {
 		"com.android.art",
 		"dex2oatd",
 		"foo",
+		"metalava",
 	})
 
 	nonUpdatableTestModuleLibStubs := getDexJarPath(result, "android-non-updatable.stubs.test_module_lib")
@@ -1651,6 +1655,7 @@ func TestBootclasspathFragment_AndroidNonUpdatable_AlwaysUsePrebuiltSdks(t *test
 		"com.android.art",
 		"dex2oatd",
 		"foo",
+		"metalava",
 		"prebuilt_sdk_module-lib_current_android-non-updatable",
 		"prebuilt_sdk_public_current_android-non-updatable",
 		"prebuilt_sdk_system_current_android-non-updatable",
