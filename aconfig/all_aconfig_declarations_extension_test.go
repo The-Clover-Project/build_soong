@@ -24,6 +24,7 @@ import (
 func TestAllAconfigDeclarationsExtension(t *testing.T) {
 	result := android.GroupFixturePreparers(
 		PrepareForTestWithAconfigBuildComponents,
+		android.PrepareForTestWithHostTools("aconfig-to-metalava-flags", "metalava", "record-finalized-flags"),
 		android.FixtureMergeMockFs(
 			android.MockFS{
 				"a.txt":     nil,
