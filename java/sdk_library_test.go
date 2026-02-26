@@ -1818,3 +1818,31 @@ func TestSdkLibDirectDependencyWithPrebuiltSdk(t *testing.T) {
 		}
 	`)
 }
+
+func TestJavaSdkLibrary_Proguard(t *testing.T) {
+	t.Parallel()
+	result := android.GroupFixturePreparers(
+		prepareForJavaTest,
+		PrepareForTestWithJavaSdkLibraryFiles,
+		FixtureWithLastReleaseApis("foo"),
+	).RunTestWithBp(t, `
+		java_sdk_library {
+			name: "foo",
+			srcs: ["a.java"],
+			public: {
+				enabled: true,
+			},
+			optimize: {
+				enabled: true,
+			},
+		}
+	`)
+
+	foo := result.ModuleForTests(t, "foo", "android_common").Module()
+	proguardInfos, _ := android.OtherModuleProvider(result, foo, ProguardProvider)
+	android.AssertIntEquals(t, "Expected 1 ProguardInfo output", 1, len(proguardInfos))
+	android.AssertStringEquals(t, "Proguard info should reflect library name",
+		proguardInfos[0].ModuleName, "foo")
+	android.AssertStringDoesContain(t, "Proguard dict should come from impl library",
+		proguardInfos[0].ProguardDictionary.String(), "foo.impl")
+}
