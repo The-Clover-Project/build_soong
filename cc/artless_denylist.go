@@ -203,6 +203,14 @@ func (c *allArtlessDenylistsDecorator) linkerFlags(ctx ModuleContext, flags Flag
 	return flags
 }
 
+func (c *allArtlessDenylistsDecorator) link(ctx ModuleContext, flags Flags, deps PathDeps, objs Objects) android.Path {
+	if ctx.ModuleDir() != "build/soong/cc" || ctx.ModuleName() != "libandroid_native_denylist" {
+		ctx.ModuleErrorf("There can only be one libandroid_native_denylist in build/soong/cc")
+		return nil
+	}
+	return c.libraryDecorator.link(ctx, flags, deps, objs)
+}
+
 func AllArtlessDenylistsFactory() android.Module {
 	module, library := NewLibrary(android.DeviceSupported)
 	library.BuildOnlyShared()
