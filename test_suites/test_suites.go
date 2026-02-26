@@ -83,6 +83,7 @@ func (t *testSuiteFiles) GenerateBuildActions(ctx android.SingletonContext) {
 		"device-tests",
 		"vts",
 		"tvts",
+		"sdvts",
 		"art-host-tests",
 		"host-unit-tests",
 		"sdv-host-unit-tests",
@@ -186,7 +187,7 @@ func (t *testSuiteFiles) GenerateBuildActions(ctx android.SingletonContext) {
 	for _, suite := range allTestSuitesWithHostSharedLibs {
 		var myTestCases android.WritablePath = hostOutTestCases
 		switch suite {
-		case "vts", "tvts":
+		case "vts", "tvts", "sdvts":
 			suiteInfo := ctx.Config().CompatibilityTestcases()[suite]
 			outDir := suiteInfo.OutDir
 			if outDir == "" {
