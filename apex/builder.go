@@ -112,6 +112,7 @@ var (
 	zip2zip             = pctx.HostTool("zip2zip")
 	jsonmodify          = pctx.HostTool("jsonmodify")
 	conv_apex_manifest  = pctx.HostTool("conv_apex_manifest")
+	conv_linker_config  = pctx.HostTool("conv_linker_config")
 
 	apexManifestRule = pctx.StaticRule("apexManifestRule", blueprint.RuleParams{
 		Command2: blueprint.NewCommand(
@@ -227,11 +228,15 @@ var (
 	}, "image_content_file", "allowed_files_file", "apex_module_name")
 
 	generateAPIsUsedbyApexRule = pctx.StaticRule("generateAPIsUsedbyApexRule", blueprint.RuleParams{
-		Command:         "$genNdkUsedbyApexPath ${image_dir} ${readelf} ${out}",
-		CommandDeps:     []string{"${genNdkUsedbyApexPath}"},
-		Description:     "Generate symbol list used by Apex",
-		SandboxDisabled: true,
-	}, "image_dir", "readelf")
+		Command2: blueprint.NewCommand(
+			android.Rm, ` -rf ${out}.image && `, android.Mkdir, ` -p ${out}.image && `,
+			android.ZipSync, ` -d ${out}.image ${image_zip} && `,
+			`$genNdkUsedbyApexPath ${out}.image ${readelf} ${out} && `,
+			android.Rm, ` -rf ${out}.image`,
+		),
+		CommandDeps: []string{"${genNdkUsedbyApexPath}"},
+		Description: "Generate symbol list used by Apex",
+	}, "image_zip", "readelf")
 
 	apexSepolicyTestsRule = pctx.StaticRule("apexSepolicyTestsRule", blueprint.RuleParams{
 		Command2: blueprint.NewCommand(
@@ -243,11 +248,16 @@ var (
 	}, "partition_tag")
 
 	apexLinkerconfigValidationRule = pctx.StaticRule("apexLinkerconfigValidationRule", blueprint.RuleParams{
-		Command:         `${conv_linker_config} validate --type apex ${image_dir} && touch ${out}`,
-		CommandDeps:     []string{"${conv_linker_config}"},
-		Description:     "run apex_linkerconfig_validation",
-		SandboxDisabled: true,
-	}, "image_dir")
+		Command2: blueprint.NewCommand(
+			android.Rm, ` -rf ${out}.image && `, android.Mkdir, ` -p ${out}.image && `,
+			android.ZipSync, ` -d ${out}.image ${image_zip} && `,
+			conv_linker_config, ` validate --type apex ${out}.image && `,
+			android.Touch, ` ${out} && `,
+			android.Rm, ` -rf ${out}.image`,
+		),
+		CommandDeps: []string{"${conv_linker_config}"},
+		Description: "run apex_linkerconfig_validation",
+	}, "image_zip")
 
 	apexHostVerifierRule = pctx.StaticRule("apexHostVerifierRule", blueprint.RuleParams{
 		Command2: blueprint.NewCommand(
@@ -960,11 +970,12 @@ func (a *apexBundle) buildApex(ctx android.ModuleContext) {
 	apisUsedbyOutputFile := android.PathForModuleOut(ctx, a.Name()+"_using.txt")
 	ctx.Build(pctx, android.BuildParams{
 		Rule:        generateAPIsUsedbyApexRule,
+		Input:       imageZipOut,
 		Implicits:   implicitInputs,
 		Description: "coverage",
 		Output:      apisUsedbyOutputFile,
 		Args: map[string]string{
-			"image_dir": imageDir.String(),
+			"image_zip": imageZipOut.String(),
 			"readelf":   "${config.ClangBin}/llvm-readelf",
 		},
 	})
@@ -1044,7 +1055,7 @@ func (a *apexBundle) buildApex(ctx android.ModuleContext) {
 		args["outCommaList"] = signedOutputFile.String()
 	}
 	var validations android.Paths
-	validations = append(validations, runApexLinkerconfigValidation(ctx, signedOutputFile, imageDir))
+	validations = append(validations, runApexLinkerconfigValidation(ctx, signedOutputFile, imageZipOut))
 	if !a.skipValidation(apexSepolicyTests) && android.InList(a.payloadFsType, []fsType{ext4, erofs}) {
 		validations = append(validations, runApexSepolicyTests(ctx, a, signedOutputFile))
 	}
@@ -1311,14 +1322,15 @@ func (a *apexBundle) buildCannedFsConfig(ctx android.ModuleContext) android.Path
 	return cannedFsConfig
 }
 
-func runApexLinkerconfigValidation(ctx android.ModuleContext, apexFile android.Path, imageDir android.Path) android.Path {
+func runApexLinkerconfigValidation(ctx android.ModuleContext, apexFile android.Path, imageZip android.Path) android.Path {
 	timestamp := android.PathForModuleOut(ctx, "apex_linkerconfig_validation.timestamp")
 	ctx.Build(pctx, android.BuildParams{
-		Rule:   apexLinkerconfigValidationRule,
-		Input:  apexFile,
-		Output: timestamp,
+		Rule:     apexLinkerconfigValidationRule,
+		Input:    apexFile,
+		Output:   timestamp,
+		Implicit: imageZip,
 		Args: map[string]string{
-			"image_dir": imageDir.String(),
+			"image_zip": imageZip.String(),
 		},
 	})
 	return timestamp
