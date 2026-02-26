@@ -1619,6 +1619,16 @@ func (module *SdkLibrary) GenerateAndroidBuildActions(ctx android.ModuleContext)
 			android.SetProvider(ctx, LintProvider, lintInfo)
 		}
 
+		if module.dexer.proguardDictionary.Valid() {
+			android.SetProvider(ctx, ProguardProvider, ProguardInfos{{
+				ModuleName:         android.ModuleNameWithPossibleOverride(ctx),
+				Class:              "JAVA_LIBRARIES",
+				ProguardDictionary: module.dexer.proguardDictionary.Path(),
+				ProguardUsageZip:   module.dexer.proguardUsageZip.Path(),
+				ClassesJar:         module.implementationAndResourcesJar,
+			}})
+		}
+
 		if !module.Host() {
 			module.hostdexInstallFile = module.implLibraryInfo.HostdexInstallFile
 		}
