@@ -17,6 +17,7 @@ package android
 import (
 	"fmt"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 )
@@ -173,7 +174,7 @@ type MockFS map[string][]byte
 func (fs MockFS) Merge(extra map[string][]byte) {
 	for p, c := range extra {
 		validateFixtureMockFSPath(p)
-		if _, ok := fs[p]; ok {
+		if oldC, ok := fs[p]; ok && !slices.Equal(c, oldC) {
 			panic(fmt.Errorf("attempted to add file %s to the mock filesystem but it already exists", p))
 		}
 		fs[p] = c
@@ -317,7 +318,7 @@ func FixtureMergeMockFs(mockFS MockFS) FixturePreparer {
 func FixtureAddFile(path string, contents []byte) FixturePreparer {
 	return FixtureModifyMockFS(func(fs MockFS) {
 		validateFixtureMockFSPath(path)
-		if _, ok := fs[path]; ok {
+		if oldContents, ok := fs[path]; ok && !slices.Equal(contents, oldContents) {
 			panic(fmt.Errorf("attempted to add file %s to the mock filesystem but it already exists, use FixtureOverride*File instead", path))
 		}
 		fs[path] = contents

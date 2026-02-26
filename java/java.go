@@ -3701,6 +3701,10 @@ func (j *DexImport) IsInstallable() bool {
 	return true
 }
 
+func (j *DexImport) DepsMutator(ctx android.BottomUpMutatorContext) {
+	ctx.AddHostToolDependencies("cp_if_changed")
+}
+
 func (j *DexImport) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	if len(j.properties.Jars) != 1 {
 		ctx.PropertyErrorf("jars", "exactly one jar must be provided")
