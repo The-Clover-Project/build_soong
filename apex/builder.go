@@ -29,6 +29,7 @@ import (
 	"android/soong/android"
 	"android/soong/dexpreopt"
 	"android/soong/java"
+
 	"github.com/google/blueprint"
 	"github.com/google/blueprint/proptools"
 )
@@ -1037,16 +1038,16 @@ func (a *apexBundle) buildApex(ctx android.ModuleContext) {
 		args["outCommaList"] = signedOutputFile.String()
 	}
 	var validations android.Paths
-	validations = append(validations, runApexLinkerconfigValidation(ctx, unsignedOutputFile, imageDir))
+	validations = append(validations, runApexLinkerconfigValidation(ctx, signedOutputFile, imageDir))
 	if !a.skipValidation(apexSepolicyTests) && android.InList(a.payloadFsType, []fsType{ext4, erofs}) {
-		validations = append(validations, runApexSepolicyTests(ctx, a, unsignedOutputFile))
+		validations = append(validations, runApexSepolicyTests(ctx, a, signedOutputFile))
 	}
 	if !a.testApex && len(a.properties.Unwanted_transitive_deps) > 0 {
 		validations = append(validations,
-			runApexElfCheckerUnwanted(ctx, unsignedOutputFile, a.properties.Unwanted_transitive_deps))
+			runApexElfCheckerUnwanted(ctx, signedOutputFile, a.properties.Unwanted_transitive_deps))
 	}
 	if !a.skipValidation(hostApexVerifier) && android.InList(a.payloadFsType, []fsType{ext4, erofs}) {
-		validations = append(validations, runApexHostVerifier(ctx, a, unsignedOutputFile))
+		validations = append(validations, runApexHostVerifier(ctx, a, signedOutputFile))
 	}
 	ctx.Build(pctx, android.BuildParams{
 		Rule:        rule,
