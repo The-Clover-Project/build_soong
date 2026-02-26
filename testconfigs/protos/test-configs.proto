@@ -130,6 +130,8 @@ message ModulePlan {
   repeated string exclude = 3;
   // Test arguments specific to this test module.
   repeated KeyValue module_args = 4;
+  // The hash of the module.
+  string module_hash = 5;
 }
 
 // KeyValue defines how test arguments will be stored as
