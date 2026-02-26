@@ -237,8 +237,17 @@ func (c *ComplianceMetadataInfo) SetCipdSrc(ctx ModuleContext, src string) {
 	if module, tag := SrcIsModuleWithTag(src); module != "" {
 		m := GetModuleProxyFromPathDep(ctx, module, tag)
 		baseModuleType := OtherModuleProviderOrDefault(ctx, m, CommonModuleInfoProvider).BaseModuleType
-		if ctx.OtherModuleType(m) == "cipd_package" || baseModuleType == "cipd_package" {
-			c.SetStringValue(ComplianceMetadataProp.CIPD_SRC, module)
+		if ctx.OtherModuleType(m) == "cipd_package" || baseModuleType == "cipd_package" ||
+			ctx.OtherModuleType(m) == "filegroup" || baseModuleType == "filegroup" {
+			paths, err := expandOneSrcPath(sourcePathInput{context: ctx, path: src, includeDirs: true})
+			if err != nil {
+				panic(err)
+			}
+			for _, p := range paths {
+				if strings.HasPrefix(p.String(), ctx.Config().SoongOutDir()) {
+					c.SetStringValue(ComplianceMetadataProp.CIPD_SRC, p.String())
+				}
+			}
 		}
 	}
 }

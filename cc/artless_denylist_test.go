@@ -22,27 +22,64 @@ import (
 
 func TestAllArtlessDenylistDependency(t *testing.T) {
 	t.Parallel()
-	bp := `
-		ndk_library {
-			name: "libfoo",
-			first_version: "29",
-			symbol_file: "libfoo.map.txt",
-		}
 
-		cc_library {
-			name: "libfoo",
-		}
+	result := android.GroupFixturePreparers(
+		prepareForCcTest,
+		android.FixtureAddTextFile("build/soong/cc/Android.bp", `
+			all_artless_denylists {
+				name: "all_denylists",
+			}
 
-		cc_library {
-		  name: "liblog",
-		}
+			all_artless_blocked_symbol_files {
+				name: "all_artless_blocked_symbol_files",
+			}
+		`),
+		android.FixtureAddTextFile("Android.bp", `
+			ndk_library {
+				name: "libfoo",
+				first_version: "29",
+				symbol_file: "libfoo.map.txt",
+			}
 
-		all_artless_denylists {
-			name: "all_denylists",
-		}
-	`
+			cc_library {
+				name: "libfoo",
+			}
 
-	ctx := prepareForCcTest.RunTestWithBp(t, bp)
+			ndk_library {
+				name: "libbar",
+				first_version: "29",
+				symbol_file: "libbar.map.txt",
+				bypass_artless_denylist: true,
+			}
+
+			cc_library {
+				name: "libbar",
+			}
+
+			cc_library {
+			  name: "liblog",
+			}
+
+			cc_genrule {
+				srcs: [":all_artless_blocked_symbol_files"],
+				name: "artless_blocked_symbols_gen",
+				out: ["artless_blocked_symbols_gen.cpp"],
+				cmd: "gen_blocklist.py $(in) -o $(out)",
+				sdk_version: "current",
+			}
+
+			cc_library_shared {
+				name: "libfoo_blocklist_symbols_lib",
+				srcs: [":artless_blocked_symbols_gen"],
+				// Force SDK variant when variant-on-demand is enabled.
+				sdk_variant_only: true,
+				sdk_version: "current",
+				stl: "none",
+			}
+		`),
+	).RunTest(t)
+
+	ctx := result.TestContext
 
 	// Check if all_denylists depends on libfoo_denylist
 	allDenylists := ctx.ModuleForTests(t, "all_denylists", "android_arm64_armv8-a_shared").Module()
@@ -55,4 +92,9 @@ func TestAllArtlessDenylistDependency(t *testing.T) {
 	android.AssertHasDirectDep(t, ctx, allDenylists, libcDenylist)
 	android.AssertHasDirectDep(t, ctx, allDenylists, libmDenylist)
 	android.AssertHasDirectDep(t, ctx, allDenylists, libdlDenylist)
+
+	denylistSymbolsLib := ctx.ModuleForTests(t, "artless_blocked_symbols_gen", "android_arm64_armv8-a_sdk").Module()
+	blocklistFiles := ctx.ModuleForTests(t, "all_artless_blocked_symbol_files", "android_arm64_armv8-a_sdk").Module()
+	android.AssertHasDirectDep(t, ctx, blocklistFiles, libfooDenylist)
+	android.AssertHasDirectDep(t, ctx, denylistSymbolsLib, blocklistFiles)
 }

@@ -14,6 +14,7 @@ bootstrap_go_package {
         "arm_device.go",
         "arm_linux_host.go",
         "arm64_device.go",
+        "doc.go",
         "global.go",
         "lints.go",
         "riscv64_device.go",

@@ -308,6 +308,10 @@ func (linker *baseLinker) Xom() *bool {
 	return linker.Properties.Xom
 }
 
+func (linker *baseLinker) extraOutputFilePaths() map[string]android.Paths {
+	return nil
+}
+
 func CoalesceLibs(ctx android.BaseModuleContext, props *BaseLinkerProperties, deps Deps) Deps {
 	mod, ok := ctx.Module().(*Module)
 	if !ok {

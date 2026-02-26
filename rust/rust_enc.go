@@ -607,12 +607,16 @@ func (r RustInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 	if err = r.DocTimestampFile.Encode(ctx, buf); err != nil {
 		return err
 	}
+
+	if err = gobtools.EncodeBool(buf, r.CollectDoc); err != nil {
+		return err
+	}
 	return err
 }
 
 func (r RustInfo) CustomHash(hasher *proptools.Hasher) error {
 	hasher.WriteString(":rust.RustInfo")
-	hasher.WriteInt(9)
+	hasher.WriteInt(10)
 	hasher.WriteString(":.string")
 	hasher.WriteString(r.AndroidMkSuffix)
 	hasher.WriteString(":.string")
@@ -718,6 +722,12 @@ func (r RustInfo) CustomHash(hasher *proptools.Hasher) error {
 	if err := r.DocTimestampFile.CustomHash(hasher); err != nil {
 		return err
 	}
+	hasher.WriteString(":.bool")
+	if r.CollectDoc {
+		hasher.WriteByte(1)
+	} else {
+		hasher.WriteByte(0)
+	}
 	return nil
 }
 
@@ -805,6 +815,11 @@ func (r *RustInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 	}
 
 	if err = r.DocTimestampFile.Decode(ctx, buf); err != nil {
+		return err
+	}
+
+	err = gobtools.DecodeBool(buf, &r.CollectDoc)
+	if err != nil {
 		return err
 	}
 

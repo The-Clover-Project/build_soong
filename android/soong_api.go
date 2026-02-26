@@ -18,6 +18,10 @@ import (
 	"archive/zip"
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"io"
+	"os"
+	"path/filepath"
 
 	"github.com/google/blueprint"
 )
@@ -101,17 +105,12 @@ func (c *soongApiSingleton) GenerateBuildActions(ctx SingletonContext) {
 		product = ctx.Config().DeviceProduct()
 	}
 
-	// Write the binary ZIP data to the product-specific output path.
+	// Output path for soong_api.zip
 	// Path: out/soong/soong_api/<product>/soong_api.zip
 	zipPath := PathForOutput(ctx, "soong_api", product, "soong_api.zip")
-	WriteFileRule(ctx, zipPath, zipBuf.String())
+	WriteContentToFile(zipPath, zipBuf.String())
 
-	// Phony target for 'm soong_api.zip'
-	ctx.Build(soongApiPctx, BuildParams{
-		Rule:   blueprint.Phony,
-		Input:  zipPath,
-		Output: PathForPhony(ctx, "soong_api.zip"),
-	})
+	ctx.DistForGoal("droid", zipPath)
 
 	// Generate the soong_api.db using the ZIP file as the input source.
 	// Path: out/soong/soong_api/<product>/soong_api.db
@@ -135,4 +134,30 @@ func (c *soongApiSingleton) GenerateBuildActions(ctx SingletonContext) {
 		Input:  soongApiDbPath,
 		Output: PathForPhony(ctx, "soong_api.db"),
 	})
+}
+
+// WriteContentToFile writes content to the given Path no matter what the file exist.
+func WriteContentToFile(path Path, content string) {
+	// 1. Convert Path to an absolute path string (e.g., "/usr/local/xxx/git_main/out/soong/soong_api/...")
+	filePath := absolutePath(path.String())
+
+	// 2. Get the directory path
+	dir := filepath.Dir(filePath)
+
+	// 3. Create the directory if it doesn't exist
+	if err := os.MkdirAll(dir, 0755); err != nil {
+		panic(fmt.Errorf("failed to create directory %q: %w", dir, err))
+	}
+
+	// 4. Create the file
+	f, err := os.Create(filePath)
+	if err != nil {
+		panic(fmt.Errorf("failed to create file %q: %w", filePath, err))
+	}
+	defer f.Close()
+
+	// 5. Write content
+	if _, err := io.WriteString(f, content); err != nil {
+		panic(fmt.Errorf("failed to write content to %q: %w", filePath, err))
+	}
 }

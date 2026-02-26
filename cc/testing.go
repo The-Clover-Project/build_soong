@@ -37,8 +37,8 @@ func RegisterRequiredBuildComponentsForTest(ctx android.RegistrationContext) {
 	ctx.RegisterModuleType("cc_genrule_defaults", genruleDefaultsFactory)
 	ctx.RegisterModuleType("ndk_library", NdkLibraryFactory)
 	ctx.RegisterModuleType("ndk_headers", NdkHeadersFactory)
-	ctx.RegisterModuleType("artless_denylist_stub", ArtlessDenylistFactory)
 	ctx.RegisterModuleType("all_artless_denylists", AllArtlessDenylistsFactory)
+	ctx.RegisterModuleType("all_artless_blocked_symbol_files", AllArtlessBlockedSymbolFilesFactory)
 }
 
 func GatherRequiredDepsForTest(oses ...android.OsType) string {
@@ -417,6 +417,7 @@ func commonDefaultModules() string {
 
 		cc_library_headers {
 			name: "liblog_headers",
+			sdk_version: "minimum",
 		}
 
 		ndk_library {

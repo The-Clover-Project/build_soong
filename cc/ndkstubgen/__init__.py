@@ -101,10 +101,17 @@ class Generator(BaseGenerator):
 
 class ArtlessDenylistGenerator(BaseGenerator):
     """Output generator that writes stub source files and version scripts for artless denylist."""
+    def __init__(self, src_file: TextIO, version_script: TextIO,
+                 blocked_symbol_list: TextIO, filt: symbolfile.Filter,
+                 symbol_file_name: str) -> None:
+        super().__init__(src_file, version_script, filt)
+        self.blocked_symbol_list = blocked_symbol_list
+        self.symbol_file_name = symbol_file_name
 
     def write(self, versions: Iterable[Version]) -> None:
         """Writes all symbol data to the output files."""
         self.src_file.write('#include <log/log.h>\n')
+        self.blocked_symbol_list.write(f'# {self.symbol_file_name}\n')
         for version in versions:
             self.write_version(version)
 
@@ -131,6 +138,7 @@ class ArtlessDenylistGenerator(BaseGenerator):
                     f'{weak}void {symbol.name}() {{ '
                     f'LOG_ALWAYS_FATAL("Function {symbol.name} is not allowed in artless processes."); }}\n'
                 )
+                self.blocked_symbol_list.write(f'{symbol.name}\n')
 
 
 def parse_args() -> argparse.Namespace:
@@ -186,7 +194,7 @@ def parse_args() -> argparse.Namespace:
                         help='Path to output version script.')
     parser.add_argument('symbol_list',
                         type=resolved_path,
-                        help='Path to output abigail symbol list.')
+                        help='Path to output abigail symbol list (if not artless-denylist) or blocked symbol list (if artless-denylist).')
 
     return parser.parse_args()
 
@@ -217,7 +225,8 @@ def main() -> None:
             with args.symbol_list.open('w') as symbol_list:
                 if args.artless_denylist:
                     generator = ArtlessDenylistGenerator(src_file, version_script,
-                                                         filt)
+                                                         symbol_list, filt,
+                                                         args.symbol_file.name)
                 else:
                     generator = Generator(src_file, version_script, symbol_list,
                                           filt)

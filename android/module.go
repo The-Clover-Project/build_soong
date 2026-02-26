@@ -2179,23 +2179,13 @@ type SourceFileGenerator interface {
 	GeneratedDeps() Paths
 }
 
-type HostToolDepTagType interface {
-	isHostToolDepTag() bool
-}
-
-type BaseHostToolDepTag struct {
+type HostToolDepTagType struct {
 	blueprint.BaseDependencyTag
 }
 
-var _ HostToolDepTagType = (*BaseHostToolDepTag)(nil)
+func (HostToolDepTagType) ExcludeFromVisibilityEnforcement() {}
 
-func (BaseHostToolDepTag) isHostToolDepTag() bool { return true }
-
-var _ ExcludeFromVisibilityEnforcementTag = (*BaseHostToolDepTag)(nil)
-
-func (BaseHostToolDepTag) ExcludeFromVisibilityEnforcement() {}
-
-var HostToolDepTag = BaseHostToolDepTag{}
+var HostToolDepTag = HostToolDepTagType{}
 
 // @auto-generate: gob
 type GeneratedSourceInfo struct {

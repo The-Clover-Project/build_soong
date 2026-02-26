@@ -615,15 +615,14 @@ func newStubLibrary() *Module {
 	module.SetDefaultableHook(func(ctx android.DefaultableHookContext) {
 		libName := strings.TrimSuffix(ctx.ModuleName(), ndkLibrarySuffix)
 		if proptools.Bool(stub.properties.Bypass_artless_denylist) {
-			// This module opted out of the denylist, but all_artless_denylists
-			// unconditionally add dependencies based on the list of NDK libraries.
-			// Generate an empty cc_library_static target to make it a noop.
+			// Create an empty denylist to satisfy all_artless_denylists, which
+			// unconditionally adds dependencies for all NDK libraries.
 			props := &struct {
 				Name *string
 			}{
 				Name: proptools.StringPtr(libName + "_denylist"),
 			}
-			ctx.CreateModule(LibraryStaticFactory, props)
+			ctx.CreateModule(ArtlessDenylistFactory, props)
 			return
 		}
 		if stub.properties.Symbol_file != nil {
