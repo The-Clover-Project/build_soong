@@ -38,12 +38,25 @@ var soongApiPctx = NewPackageContext("android/soong/android/soong_api")
 // module's properties intended for database storage (soong_api.db),
 // rather than a functional Soong module object.
 type SoongApiModuleRecord struct {
-	Name         string   `json:"name"`
-	Type         string   `json:"type"`
-	Path         string   `json:"path"`
-	Enabled      bool     `json:"enabled"`
-	InstallFiles []string `json:"install_files,omitempty"`
+	// Identity
+	Name string `json:"name"`
+	Type string `json:"type"`
+
+	// Location
+	Path string `json:"path"`
+
+	// Target / Variation Info
+	Os   string `json:"os,omitempty"`
+	Arch string `json:"arch,omitempty"`
+
+	// Status
+	Enabled bool `json:"enabled"`
+
+	// Artifacts
 	TrendyTeamId string   `json:"trendy_team_id,omitempty"`
+	InstallFiles []string `json:"install_files,omitempty"`
+	BuiltFiles   []string `json:"built_files,omitempty"`
+	Licenses     []string `json:"license,omitempty"`
 }
 
 func soongApiSingletonFactory() Singleton {
@@ -69,14 +82,24 @@ func (c *soongApiSingleton) GenerateBuildActions(ctx SingletonContext) {
 			Enabled: commonInfo.Enabled,
 		}
 
-		if commonInfo.InstallFiles != nil {
-			for _, p := range commonInfo.InstallFiles.InstallFiles {
-				record.InstallFiles = append(record.InstallFiles, p.String())
-			}
-		}
+		// Extract OS / Arch
+		record.Os = commonInfo.Target.Os.Name
+		record.Arch = commonInfo.Target.Arch.ArchType.Name
 
 		if team, ok := OtherModuleProvider(ctx, m, TeamInfoProvider); ok {
 			record.TrendyTeamId = proptools.String(team.Properties.Trendy_team_id)
+		}
+
+		if commonInfo.InstallFiles != nil {
+			record.InstallFiles = pathsToStrings(commonInfo.InstallFiles.InstallFiles)
+		}
+
+		if commonInfo.OutputFiles != nil {
+			record.BuiltFiles = pathsToStrings(commonInfo.OutputFiles.DefaultOutputFiles)
+		}
+
+		if commonInfo.Licenses != nil {
+			record.Licenses = commonInfo.Licenses.Licenses
 		}
 
 		records = append(records, record)
@@ -140,6 +163,17 @@ func (c *soongApiSingleton) GenerateBuildActions(ctx SingletonContext) {
 		Input:  soongApiDbPath,
 		Output: PathForPhony(ctx, "soong_api.db"),
 	})
+}
+
+func pathsToStrings[T Path](paths []T) []string {
+	if len(paths) == 0 {
+		return nil
+	}
+	ret := make([]string, len(paths))
+	for i, p := range paths {
+		ret[i] = p.String()
+	}
+	return ret
 }
 
 // WriteContentToFile writes content to the given Path no matter what the file exist.
