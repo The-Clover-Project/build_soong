@@ -175,7 +175,17 @@ func TestCargoCompat(t *testing.T) {
 			crate_name: "foo",
 			cargo_env_compat: true,
 			cargo_pkg_version: "1.0.0"
-		}`)
+		}`,
+		android.FixtureAddTextFile("subdir/Android.bp", `
+			rust_binary {
+				name: "buzz",
+				srcs: ["foo.rs"],
+				crate_name: "buzz",
+				cargo_env_compat: true,
+				cargo_pkg_version: "1.0.0"
+			}
+		`),
+	)
 
 	fizz := ctx.ModuleForTests(t, "fizz", "android_arm64_armv8-a").Rule("rustc")
 
@@ -187,6 +197,14 @@ func TestCargoCompat(t *testing.T) {
 	}
 	if !strings.Contains(fizz.Args["envVars"], "CARGO_PKG_VERSION=1.0.0") {
 		t.Fatalf("expected 'CARGO_PKG_VERSION=1.0.0' in envVars, actual envVars: %#v", fizz.Args["envVars"])
+	}
+	if !strings.Contains(fizz.Args["envVars"], "CARGO_MANIFEST_DIR=.") {
+		t.Fatalf("expected 'CARGO_MANIFEST_DIR=.' in envVars, actual envVars: %#v", fizz.Args["envVars"])
+	}
+
+	buzz := ctx.ModuleForTests(t, "buzz", "android_arm64_armv8-a").Rule("rustc")
+	if !strings.Contains(buzz.Args["envVars"], "CARGO_MANIFEST_DIR=subdir") {
+		t.Fatalf("expected 'CARGO_MANIFEST_DIR=subdir' in envVars, actual envVars: %#v", buzz.Args["envVars"])
 	}
 }
 

@@ -334,6 +334,7 @@ func rustEnvVars(ctx android.ModuleContext, deps PathDeps, crateName string, car
 			envVars["CARGO_BIN_NAME"] = bin.getStem(ctx)
 		}
 		envVars["CARGO_CRATE_NAME"] = crateName
+		envVars["CARGO_MANIFEST_DIR"] = ctx.ModuleDir()
 		envVars["CARGO_PKG_NAME"] = crateName
 		pkgVersion := rustMod.compiler.cargoPkgVersion()
 		if pkgVersion != "" {
