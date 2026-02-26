@@ -2169,11 +2169,11 @@ func (c *config) MemtagHeapDisabledForPath(path string) bool {
 	return HasAnyPrefix(path, c.productVariables.MemtagHeapExcludePaths)
 }
 
-func (c *config) MemtagHeapAsyncDisabledForPath(path string) bool {
-	if len(c.productVariables.MemtagHeapAsyncExcludePaths) == 0 {
+func (c *config) MemtagHeapAsyncEnabledForPath(path string) bool {
+	if len(c.productVariables.MemtagHeapAsyncIncludePaths) == 0 {
 		return false
 	}
-	return HasAnyPrefix(path, c.productVariables.MemtagHeapAsyncExcludePaths) || c.MemtagHeapDisabledForPath(path)
+	return HasAnyPrefix(path, c.productVariables.MemtagHeapAsyncIncludePaths) && !c.MemtagHeapDisabledForPath(path)
 }
 
 func (c *config) MemtagHeapSyncEnabledForPath(path string) bool {

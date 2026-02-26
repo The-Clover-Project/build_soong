@@ -446,18 +446,10 @@ func commonDefaultModules() string {
 
 		cc_library_static {
 			name: "note_memtag_heap_async",
-			apex_available: [
-				"//apex_available:anyapex",
-				"//apex_available:platform",
-			],
 		}
 
 		cc_library_static {
 			name: "note_memtag_heap_sync",
-			apex_available: [
-				"//apex_available:anyapex",
-				"//apex_available:platform",
-			],
 		}
 
 		cc_library {
