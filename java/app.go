@@ -1576,6 +1576,8 @@ func AndroidAppFactory() android.Module {
 	android.AddLoadHook(module, func(ctx android.LoadHookContext) {
 		a := ctx.Module().(*AndroidApp)
 
+		a.dexProperties.Optimize.OptimizeByDefault = ctx.Config().EnableAppOptimizationByDefault()
+
 		characteristics := ctx.Config().ProductAAPTCharacteristics()
 		if characteristics == "default" || characteristics == "" {
 			module.appProperties.Generate_product_characteristics_rro = nil
