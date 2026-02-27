@@ -265,7 +265,7 @@ var (
 			"${config.ClangBin}/llvm-readelf",
 			"${config.ClangBin}/llvm-readobj",
 		},
-		CommandDepsTools: []*blueprint.HostTool{&deapexer, &debugfs, &fsck_erofs},
+		CommandDepsTools: []blueprint.HostTool{deapexer, debugfs, fsck_erofs},
 		Description:      "run apex_elf_checker --unwanted",
 	}, "tool_path", "unwanted")
 
