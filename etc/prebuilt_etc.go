@@ -480,7 +480,7 @@ func (p *PrebuiltEtc) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		p.installDirPaths = append(p.installDirPaths, baseInstallDirPath)
 
 		// Build compliance metadata
-		ctx.ComplianceMetadataInfo().SetCipdSrc(ctx, src)
+		ctx.ComplianceMetadataInfo().SetPrebuiltSrc(ctx, src)
 
 	} else if len(srcsProperty) > 0 {
 		p.usedSrcsProperty = true
@@ -531,7 +531,7 @@ func (p *PrebuiltEtc) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		// Iterate through srcs and set CIPD_SRC accordingly.
 		// Note: only the metadata for the last cipd source will be counted.
 		for _, s := range srcsProperty {
-			ctx.ComplianceMetadataInfo().SetCipdSrc(ctx, s)
+			ctx.ComplianceMetadataInfo().SetPrebuiltSrc(ctx, s)
 		}
 
 	} else if ctx.Config().AllowMissingDependencies() {

@@ -718,7 +718,7 @@ func (p *Prebuilt) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 
 	android.SetProvider(ctx, filesystem.ApexKeyPathInfoProvider, filesystem.ApexKeyPathInfo{p.apexKeysPath})
 
-	ctx.ComplianceMetadataInfo().SetCipdSrc(ctx, prebuiltApex)
+	ctx.ComplianceMetadataInfo().SetPrebuiltSrc(ctx, prebuiltApex)
 }
 
 // Creates a timestamp file that will be used to validate that there is no mismtach
