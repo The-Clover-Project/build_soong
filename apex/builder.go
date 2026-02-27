@@ -101,11 +101,14 @@ var createStorageInfo = []createStorageStruct{
 }
 
 var (
-	apex_elf_checker   = pctx.HostTool("apex_elf_checker")
-	host_apex_verifier = pctx.HostTool("host_apex_verifier")
-	deapexer           = pctx.HostTool("deapexer")
-	debugfs            = pctx.HostTool("debugfs")
-	fsck_erofs         = pctx.HostTool("fsck.erofs")
+	apex_elf_checker    = pctx.HostTool("apex_elf_checker")
+	host_apex_verifier  = pctx.HostTool("host_apex_verifier")
+	deapexer            = pctx.HostTool("deapexer")
+	debugfs             = pctx.HostTool("debugfs")
+	fsck_erofs          = pctx.HostTool("fsck.erofs")
+	aconfigTool         = pctx.HostTool("aconfig")
+	apex_ls             = pctx.HostTool("apex-ls")
+	apex_sepolicy_tests = pctx.HostTool("apex_sepolicy_tests")
 
 	apexManifestRule = pctx.StaticRule("apexManifestRule", blueprint.RuleParams{
 		Command: `rm -f $out && ${jsonmodify} $in ` +
@@ -209,15 +212,16 @@ var (
 	}, "abi", "config")
 
 	diffApexContentRule = pctx.StaticRule("diffApexContentRule", blueprint.RuleParams{
-		Command: `diff --unchanged-group-format='' \` +
-			`--changed-group-format='%<' \` +
-			`${image_content_file} ${allowed_files_file} || (` +
-			`echo "New unexpected files were added to ${apex_module_name}." ` +
-			` "To fix the build run following command:" && ` +
-			`echo "system/apex/tools/update_allowed_list.sh ${allowed_files_file} ${image_content_file}" && ` +
-			`exit 1); touch ${out}`,
-		Description:     "Diff ${image_content_file} and ${allowed_files_file}",
-		SandboxDisabled: true,
+		Command2: blueprint.NewCommand(
+			`diff --unchanged-group-format='' \`,
+			`--changed-group-format='%<' \`,
+			`${image_content_file} ${allowed_files_file} || (`,
+			android.Echo, ` "New unexpected files were added to ${apex_module_name}." `,
+			` "To fix the build run following command:" && `,
+			android.Echo, ` "system/apex/tools/update_allowed_list.sh ${allowed_files_file} ${image_content_file}" && `,
+			`exit 1); `, android.Touch, ` ${out}`,
+		),
+		Description: "Diff ${image_content_file} and ${allowed_files_file}",
 	}, "image_content_file", "allowed_files_file", "apex_module_name")
 
 	generateAPIsUsedbyApexRule = pctx.StaticRule("generateAPIsUsedbyApexRule", blueprint.RuleParams{
@@ -228,11 +232,12 @@ var (
 	}, "image_dir", "readelf")
 
 	apexSepolicyTestsRule = pctx.StaticRule("apexSepolicyTestsRule", blueprint.RuleParams{
-		Command: `${apex_ls} -Z ${in} > ${out}.fc` +
-			` && ${apex_sepolicy_tests} -f ${out}.fc --partition ${partition_tag} && touch ${out}`,
-		CommandDeps:     []string{"${apex_sepolicy_tests}", "${apex_ls}"},
-		Description:     "run apex_sepolicy_tests",
-		SandboxDisabled: true,
+		Command2: blueprint.NewCommand(
+			apex_ls, ` -Z ${in} > ${out}.fc`,
+			` &&`, apex_sepolicy_tests, ` -f ${out}.fc --partition ${partition_tag}`,
+			` &&`, android.Touch, ` ${out}`,
+		),
+		Description: "run apex_sepolicy_tests",
 	}, "partition_tag")
 
 	apexLinkerconfigValidationRule = pctx.StaticRule("apexLinkerconfigValidationRule", blueprint.RuleParams{
@@ -263,11 +268,10 @@ var (
 	}, "tool_path", "unwanted")
 
 	apexAconfigFlagsPbRule = pctx.StaticRule("apexAconfigFlagsPbRule", blueprint.RuleParams{
-		Command: `${aconfig} dump-cache --dedup --format protobuf --out ${out} ` +
-			`--filter container:${container}+namespace:!${beta_namespace} ${cache_files}`,
-		CommandDeps:     []string{"${aconfig}"},
-		Description:     "create aconfig_flags.pb file",
-		SandboxDisabled: true,
+		Command2: blueprint.NewCommand(
+			aconfigTool, ` dump-cache --dedup --format protobuf --out ${out} `,
+			`--filter container:${container}+namespace:!${beta_namespace} ${cache_files}`),
+		Description: "create aconfig_flags.pb file",
 	}, "container", "beta_namespace", "cache_files")
 )
 
