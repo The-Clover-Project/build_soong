@@ -109,31 +109,33 @@ var (
 	aconfigTool         = pctx.HostTool("aconfig")
 	apex_ls             = pctx.HostTool("apex-ls")
 	apex_sepolicy_tests = pctx.HostTool("apex_sepolicy_tests")
+	zip2zip             = pctx.HostTool("zip2zip")
+	jsonmodify          = pctx.HostTool("jsonmodify")
+	conv_apex_manifest  = pctx.HostTool("conv_apex_manifest")
 
 	apexManifestRule = pctx.StaticRule("apexManifestRule", blueprint.RuleParams{
-		Command: `rm -f $out && ${jsonmodify} $in ` +
-			`-a provideNativeLibs ${provideNativeLibs} ` +
-			`-a requireNativeLibs ${requireNativeLibs} ` +
-			`-se version 0 ${default_version} ` +
-			`${opt} ` +
-			`-o $out`,
-		CommandDeps:     []string{"${jsonmodify}"},
-		Description:     "prepare ${out}",
-		SandboxDisabled: true,
+		Command2: blueprint.NewCommand(
+			android.Rm, ` -f $out && `, jsonmodify, ` $in `,
+			`-a provideNativeLibs ${provideNativeLibs} `,
+			`-a requireNativeLibs ${requireNativeLibs} `,
+			`-se version 0 ${default_version} `,
+			`${opt} -o $out`,
+		),
+		Description: "prepare ${out}",
 	}, "provideNativeLibs", "requireNativeLibs", "default_version", "opt")
 
 	stripApexManifestRule = pctx.StaticRule("stripApexManifestRule", blueprint.RuleParams{
-		Command:         `rm -f $out && ${conv_apex_manifest} strip $in -o $out`,
-		CommandDeps:     []string{"${conv_apex_manifest}"},
-		Description:     "strip ${in}=>${out}",
-		SandboxDisabled: true,
+		Command2: blueprint.NewCommand(
+			android.Rm, ` -f $out && `, conv_apex_manifest, ` strip $in -o $out`,
+		),
+		Description: "strip ${in}=>${out}",
 	})
 
 	pbApexManifestRule = pctx.StaticRule("pbApexManifestRule", blueprint.RuleParams{
-		Command:         `rm -f $out && ${conv_apex_manifest} proto $in -o $out`,
-		CommandDeps:     []string{"${conv_apex_manifest}"},
-		Description:     "convert ${in}=>${out}",
-		SandboxDisabled: true,
+		Command2: blueprint.NewCommand(
+			android.Rm, ` -f $out && `, conv_apex_manifest, ` proto $in -o $out`,
+		),
+		Description: "convert ${in}=>${out}",
 	})
 
 	// TODO(b/113233103): make sure that file_contexts is as expected, i.e., validate
@@ -197,18 +199,18 @@ var (
 		})
 
 	apexBundleRule = pctx.StaticRule("apexBundleRule", blueprint.RuleParams{
-		Command: `${zip2zip} -i $in -o $out.base ` +
-			`apex_payload.img:apex/${abi}.img ` +
-			`apex_build_info.pb:apex/${abi}.build_info.pb ` +
-			`apex_manifest.json:root/apex_manifest.json ` +
-			`apex_manifest.pb:root/apex_manifest.pb ` +
-			`AndroidManifest.xml:manifest/AndroidManifest.xml ` +
-			`assets/NOTICE.html.gz:assets/NOTICE.html.gz &&` +
-			`${soong_zip} -o $out.config -C $$(dirname ${config}) -f ${config} && ` +
-			`${merge_zips} $out $out.base $out.config`,
-		CommandDeps:     []string{"${zip2zip}", "${soong_zip}", "${merge_zips}"},
-		Description:     "app bundle",
-		SandboxDisabled: true,
+		Command2: blueprint.NewCommand(
+			zip2zip, ` -i $in -o $out.base `,
+			`apex_payload.img:apex/${abi}.img `,
+			`apex_build_info.pb:apex/${abi}.build_info.pb `,
+			`apex_manifest.json:root/apex_manifest.json `,
+			`apex_manifest.pb:root/apex_manifest.pb `,
+			`AndroidManifest.xml:manifest/AndroidManifest.xml `,
+			`assets/NOTICE.html.gz:assets/NOTICE.html.gz &&`,
+			android.SoongZip, ` -o $out.config -C $$(dirname ${config}) -f ${config} && `,
+			android.MergeZips, ` $out $out.base $out.config`,
+		),
+		Description: "app bundle",
 	}, "abi", "config")
 
 	diffApexContentRule = pctx.StaticRule("diffApexContentRule", blueprint.RuleParams{
