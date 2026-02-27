@@ -27,7 +27,6 @@ var prepareRavenwoodRuntime = android.GroupFixturePreparers(
 	android.FixtureRegisterWithContext(func(ctx android.RegistrationContext) {
 		RegisterRavenwoodBuildComponents(ctx)
 	}),
-	android.PrepareForTestWithHostTools("aconfig-to-metalava-flags", "record-finalized-flags"),
 	android.FixtureAddTextFile("ravenwood/Android.bp", `
 		all_aconfig_declarations {
 			name: "all_aconfig_declarations",
