@@ -285,7 +285,14 @@ func (binary *binaryDecorator) linkerFlags(ctx ModuleContext, flags Flags) Flags
 				} else {
 					switch ctx.Os() {
 					case android.Android:
-						if ctx.bootstrap() && !ctx.inRecovery() && !ctx.inRamdisk() && !ctx.inVendorRamdisk() {
+
+						// Check if this module needs to use the bootstrap linker
+						useBootstrap := ctx.bootstrap() && !ctx.inRecovery() && !ctx.inRamdisk() && !ctx.inVendorRamdisk()
+						if ctx.Config().GetBuildFlagBool("RELEASE_DEPRECATE_RUNTIME_APEX") {
+							useBootstrap = false
+						}
+
+						if useBootstrap {
 							flags.DynamicLinker = "/system/bin/bootstrap/linker"
 						} else {
 							flags.DynamicLinker = "/system/bin/linker"

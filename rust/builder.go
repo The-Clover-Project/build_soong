@@ -436,7 +436,12 @@ func transformSrctoCrate(ctx android.ModuleContext, main android.Path, deps Path
 	linkerScriptFlags = append(linkerScriptFlags, flags.LinkerScriptFlags...)
 
 	// Check if this module needs to use the bootstrap linker
-	if t.bootstrap && !t.inRecovery && !t.inRamdisk && !t.inVendorRamdisk {
+	useBootstrap := t.bootstrap && !t.inRecovery && !t.inRamdisk && !t.inVendorRamdisk
+	if ctx.Config().GetBuildFlagBool("RELEASE_DEPRECATE_RUNTIME_APEX") {
+		useBootstrap = false
+	}
+
+	if useBootstrap {
 		dynamicLinker := "-Wl,-dynamic-linker,/system/bin/bootstrap/linker"
 		if t.is64Bit {
 			dynamicLinker += "64"

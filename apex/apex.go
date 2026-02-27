@@ -1422,6 +1422,9 @@ func (a *apexBundle) IsSanitizerEnabled(config android.Config, sanitizerName str
 }
 
 func (a *apexBundle) AddSanitizerDependencies(ctx android.BottomUpMutatorContext, sanitizerName string) {
+	if ctx.Config().GetBuildFlagBool("RELEASE_DEPRECATE_RUNTIME_APEX") {
+		return
+	}
 	// TODO(jiyong): move this info (the sanitizer name, the lib name, etc.) to cc/sanitize.go
 	// Keep only the mechanism here.
 	if sanitizerName == "hwaddress" && strings.HasPrefix(a.Name(), "com.android.runtime") {
