@@ -628,6 +628,7 @@ func newConfig(ctx Context, isDumpVar bool, args ...string) Config {
 			ret.environ.Set(k, v)
 		}
 	}
+	ret.updateSisoConfigVars(map[string]string{})
 
 	// BUILD_NUMBER should be set to the source control value that
 	// represents the current state of the source code.  E.g., a
@@ -660,6 +661,27 @@ func newConfig(ctx Context, isDumpVar bool, args ...string) Config {
 	c := Config{ret}
 	storeConfigMetrics(ctx, c)
 	return c
+}
+
+// Update or create the config variables for Siso.
+//
+// This is called in newConfig() to ensure that siso_config parses.
+// It is then called in dumpMakeVars() to set values based on product config.
+func (config *configImpl) updateSisoConfigVars(makeVars map[string]string) {
+	if config.SisoStringVars == nil {
+		config.SisoStringVars = make(map[string]string)
+	}
+	for _, k := range sisoStringVars {
+		// If the variable is not found, we want to set it to the empty string.
+		config.SisoStringVars[k] = makeVars[k]
+	}
+	if config.IsActionSandboxedBuild() {
+		config.SisoStringVars["nsjail_path"] = config.PrebuiltBuildTool("nsjail")
+	}
+	config.SisoBoolVars = map[string]bool{
+		"use_rbe":      config.UseRBE(),
+		"use_reclient": config.UseRewrapper(),
+	}
 }
 
 func ConfigJavaEnvironment(ctx Context, config *configImpl) {

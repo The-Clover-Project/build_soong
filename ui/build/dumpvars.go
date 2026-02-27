@@ -36,6 +36,14 @@ const (
 	DUMPVARS_USER
 )
 
+// These are needed to configure Siso's RBE rules.
+var sisoStringVars = []string{
+	"JAVA_HOME",
+	"OUT_DIR",
+	"RBE_container_image",
+	"RELEASE_BUILD_CLANG_VERSION",
+}
+
 // DumpMakeVars can be used to extract the values of Make variables after the
 // product configurations are loaded. This is roughly equivalent to the
 // `get_build_var` bash function.
@@ -262,14 +270,6 @@ func runMakeProductConfig(ctx Context, config Config) {
 		"TOOLCHAIN_RUSAGE_OUTPUT",
 	}
 
-	// These are needed to configure Siso's RBE rules.
-	sisoStringVars := []string{
-		"JAVA_HOME",
-		"OUT_DIR",
-		"RBE_container_image",
-		"RELEASE_BUILD_CLANG_VERSION",
-	}
-
 	allVars := slices.Concat([]string{
 		// Used to execute Kati and Ninja
 		"NINJA_GOALS",
@@ -378,18 +378,7 @@ func runMakeProductConfig(ctx Context, config Config) {
 	config.useRkati = makeVars["RELEASE_USE_RKATI"] == "true" || os.Getenv("SOONG_USE_RKATI") == "true"
 	config.setupSandboxConfig(ctx, makeVars)
 
-	config.SisoStringVars = make(map[string]string)
-	for _, k := range sisoStringVars {
-		config.SisoStringVars[k] = makeVars[k]
-	}
-	if config.IsActionSandboxedBuild() {
-		config.SisoStringVars["nsjail_path"] = config.PrebuiltBuildTool("nsjail")
-	}
-	config.SisoBoolVars = map[string]bool{
-		"use_rbe":      config.UseRBE(),
-		"use_reclient": config.UseRewrapper(),
-	}
-
+	config.updateSisoConfigVars(makeVars)
 	config.SetBuildBrokenDupRules(makeVars["BUILD_BROKEN_DUP_RULES"] == "true")
 	config.SetBuildBrokenUsesNetwork(makeVars["BUILD_BROKEN_USES_NETWORK"] == "true")
 	config.SetBuildBrokenNinjaUsesEnvVars(strings.Fields(makeVars["BUILD_BROKEN_NINJA_USES_ENV_VARS"]))
