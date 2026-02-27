@@ -741,7 +741,11 @@ func (a *androidDevice) distFiles(ctx android.ModuleContext) {
 			ctx.DistForGoal("target-files-package-soong-diff-test", a.superImgFromTargetFilesZip)
 		} else {
 			// Create an empty phony target for soong diff test
-			ctx.DistForGoal("target-files-package-soong-diff-test")
+			rule := android.NewRuleBuilder(pctx, ctx)
+			rule.SetPhonyOutput()
+			rule.Command().
+				ImplicitOutput(android.PathForPhony(ctx, "target-files-package-soong-diff-test"))
+			rule.Build("target-files-package-soong-diff-test", "target-files-package-soong-diff-test")
 		}
 		if a.superImageInfo.SuperEmptyImage != nil {
 			ctx.DistForGoal("dist_files", a.superImageInfo.SuperEmptyImage)
@@ -1941,7 +1945,7 @@ func (a *androidDevice) extractKernelVersionAndConfigs(ctx android.ModuleContext
 		if ctx.Config().EnableUffdGc() == "default" {
 			kernelVersionFile := android.PathForOutput(ctx, "dexpreopt/kernel_version_for_uffd_gc.txt")
 			ctx.Build(pctx, android.BuildParams{
-				Rule:   android.CpIfChanged,
+				Rule:   android.CpIfChangedRule,
 				Input:  extractedVersionFile,
 				Output: kernelVersionFile,
 			})

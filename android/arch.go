@@ -830,20 +830,21 @@ func addTargetProperties(m Module, target Target, multiTargets []Target, primary
 // multilib from the factory's call to InitAndroidArchModule if none was set.  For modules that
 // called InitAndroidMultiTargetsArchModule it always returns "common" for multilib, and returns
 // the actual multilib in extraMultilib.
-func decodeMultilib(ctx ConfigContext, base *ModuleBase) (multilib, extraMultilib string) {
+func decodeMultilib(ctx ConfigurableEvaluatorContext, base *ModuleBase) (multilib, extraMultilib string) {
 	os := base.commonProperties.CompileOS
 	ignorePrefer32OnDevice := ctx.Config().IgnorePrefer32OnDevice()
+	evaluator := base.ConfigurableEvaluator(ctx)
 	// First check the "android.compile_multilib" or "host.compile_multilib" properties.
 	switch os.Class {
 	case Device:
-		multilib = String(base.commonProperties.Target.Android.Compile_multilib)
+		multilib = base.commonProperties.Target.Android.Compile_multilib.GetOrDefault(evaluator, "")
 	case Host:
-		multilib = String(base.commonProperties.Target.Host.Compile_multilib)
+		multilib = base.commonProperties.Target.Host.Compile_multilib.GetOrDefault(evaluator, "")
 	}
 
 	// If those aren't set, try the "compile_multilib" property.
 	if multilib == "" {
-		multilib = String(base.commonProperties.Compile_multilib)
+		multilib = base.commonProperties.Compile_multilib.GetOrDefault(evaluator, "")
 	}
 
 	// If that wasn't set, use the default multilib set by the factory.

@@ -16,6 +16,7 @@ package config
 
 import (
 	"fmt"
+	"slices"
 	"strings"
 
 	"android/soong/android"
@@ -68,6 +69,10 @@ var (
 		"-D clippy::undocumented_unsafe_blocks",
 	}
 
+	extraDesktopClippyLints = []string{
+		"-A clippy::unnecessary-unwrap",
+	}
+
 	// Rust lints for vendor code.
 	defaultRustcVendorLints = []string{
 		"-A deprecated",
@@ -104,6 +109,14 @@ func init() {
 		return strings.Join(defaultClippyLints, " ")
 	})
 
+	// Rust lints that apply to desktop code.
+	pctx.VariableFunc("ClippyDesktopLints", func(ctx android.PackageVarContext) string {
+		if override := ctx.Config().Getenv("CLIPPY_DESKTOP_LINTS"); override != "" {
+			return override
+		}
+		return strings.Join(slices.Concat(defaultClippyLints, extraDesktopClippyLints), " ")
+	})
+
 	// Rust lints that only applies to external code.
 	pctx.VariableFunc("RustVendorLints", func(ctx android.PackageVarContext) string {
 		if override := ctx.Config().Getenv("RUST_VENDOR_LINTS"); override != "" {
@@ -125,6 +138,7 @@ const rustcDefault = "${config.RustDefaultLints}"
 const rustcVendor = "${config.RustVendorLints}"
 const rustcAllowAll = "${config.RustAllowAllLints}"
 const clippyDefault = "${config.ClippyDefaultLints}"
+const clippyDesktop = "${config.ClippyDesktopLints}"
 const clippyVendor = "${config.ClippyVendorLints}"
 
 // lintConfig defines a set of lints and clippy configuration.
@@ -136,6 +150,7 @@ type lintConfig struct {
 
 const (
 	androidLints = "android"
+	desktopLints = "desktop"
 	vendorLints  = "vendor"
 	noneLints    = "none"
 )
@@ -145,6 +160,7 @@ const (
 // eliminate clippyVendor, CLIPPY_VENDOR_LINTS, etc.
 var lintSets = map[string]lintConfig{
 	androidLints: {rustcDefault, true, clippyDefault},
+	desktopLints: {rustcDefault, true, clippyDesktop},
 	vendorLints:  {rustcVendor, false, clippyVendor},
 	noneLints:    {rustcAllowAll, false, noLint},
 }
@@ -161,6 +177,7 @@ var defaultLintSetForPath = []pathLintSet{
 	{"external", noneLints},
 	{"hardware", vendorLints},
 	{"prebuilts", noneLints},
+	{"vendor/google/desktop", desktopLints},
 	{"vendor/google", androidLints},
 	{"vendor", vendorLints},
 }

@@ -27,7 +27,7 @@ func TestAllArtlessDenylistDependency(t *testing.T) {
 		prepareForCcTest,
 		android.FixtureAddTextFile("build/soong/cc/Android.bp", `
 			all_artless_denylists {
-				name: "all_denylists",
+				name: "libandroid_native_denylist",
 			}
 
 			all_artless_blocked_symbol_files {
@@ -81,8 +81,8 @@ func TestAllArtlessDenylistDependency(t *testing.T) {
 
 	ctx := result.TestContext
 
-	// Check if all_denylists depends on libfoo_denylist
-	allDenylists := ctx.ModuleForTests(t, "all_denylists", "android_arm64_armv8-a_shared").Module()
+	// Check if libandroid_native_denylist depends on libfoo_denylist
+	allDenylists := ctx.ModuleForTests(t, "libandroid_native_denylist", "android_arm64_armv8-a_shared").Module()
 	libfooDenylist := ctx.ModuleForTests(t, "libfoo_denylist", "android_arm64_armv8-a_static").Module()
 	libcDenylist := ctx.ModuleForTests(t, "libc_denylist", "android_arm64_armv8-a_static").Module()
 	libmDenylist := ctx.ModuleForTests(t, "libm_denylist", "android_arm64_armv8-a_static").Module()

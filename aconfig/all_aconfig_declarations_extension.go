@@ -56,6 +56,10 @@ var allAconfigDeclarationsDependencyTag allAconfigDeclarationsDependencyTagStruc
 
 func (ext *allAconfigDeclarationsExtension) DepsMutator(ctx android.BottomUpMutatorContext) {
 	ctx.AddDependency(ctx.Module(), allAconfigDeclarationsDependencyTag, proptools.StringDefault(ext.properties.Base, "all_aconfig_declarations"))
+	ctx.AddHostToolDependencies("aconfig-to-metalava-flags", "metalava", "record-finalized-flags")
+	if finalizeNonApiFlags(ctx.Config()) {
+		ctx.AddHostToolDependencies("finalize-non-api-flags")
+	}
 }
 
 func (ext *allAconfigDeclarationsExtension) GenerateAndroidBuildActions(ctx android.ModuleContext) {

@@ -29,7 +29,6 @@ import (
 	"android/soong/android"
 	"android/soong/dexpreopt"
 	"android/soong/java"
-
 	"github.com/google/blueprint"
 	"github.com/google/blueprint/proptools"
 )
@@ -101,6 +100,12 @@ var createStorageInfo = []createStorageStruct{
 }
 
 var (
+	apex_elf_checker   = pctx.HostTool("apex_elf_checker")
+	host_apex_verifier = pctx.HostTool("host_apex_verifier")
+	deapexer           = pctx.HostTool("deapexer")
+	debugfs            = pctx.HostTool("debugfs")
+	fsck_erofs         = pctx.HostTool("fsck.erofs")
+
 	apexManifestRule = pctx.StaticRule("apexManifestRule", blueprint.RuleParams{
 		Command: `rm -f $out && ${jsonmodify} $in ` +
 			`-a provideNativeLibs ${provideNativeLibs} ` +
@@ -140,7 +145,8 @@ var (
 			`--canned_fs_config ${canned_fs_config} ` +
 			`--include_build_info ` +
 			`--payload_type image ` +
-			`--key ${key} ${opt_flags} ${image_dir} ${out} `,
+			`--key ${key} ${opt_flags} ${image_dir} ${out} ` +
+			`&& ${soong_zip} -d -C ${image_dir} -D ${image_dir} -o ${image_zip}`,
 		CommandDeps: []string{"${apexer}", "${avbtool}", "${e2fsdroid}", "${merge_zips}",
 			"${mke2fs}", "${resize2fs}", "${sefcontext_compile}", "${make_f2fs}", "${sload_f2fs}", "${make_erofs}",
 			"${soong_zip}", "${zipalign}", "${aapt2}", "prebuilts/sdk/current/public/android.jar"},
@@ -148,7 +154,7 @@ var (
 		RspfileContent:  "${copy_commands}",
 		Description:     "APEX ${image_dir} => ${out}",
 		SandboxDisabled: true,
-	}, "tool_path", "image_dir", "copy_commands", "file_contexts", "canned_fs_config", "key",
+	}, "tool_path", "image_dir", "image_zip", "copy_commands", "file_contexts", "canned_fs_config", "key",
 		"opt_flags", "manifest")
 
 	DCLAApexRule = pctx.StaticRule("DCLAApexRule", blueprint.RuleParams{
@@ -167,7 +173,8 @@ var (
 			`--key ${key} ` +
 			`--file_contexts ${file_contexts} ` +
 			`--manifest ${manifest} ` +
-			`${opt_flags} `,
+			`${opt_flags} ` +
+			`&& ${soong_zip} -d -C ${image_dir} -D ${image_dir} -o ${image_zip}`,
 		CommandDeps: []string{"${apexer_with_DCLA_preprocessing}", "${apexer}", "${avbtool}", "${e2fsdroid}",
 			"${merge_zips}", "${mke2fs}", "${resize2fs}", "${sefcontext_compile}", "${make_f2fs}",
 			"${sload_f2fs}", "${make_erofs}", "${soong_zip}", "${zipalign}", "${aapt2}",
@@ -176,7 +183,7 @@ var (
 		RspfileContent:  "${copy_commands}",
 		Description:     "APEX ${image_dir} => ${out}",
 		SandboxDisabled: true,
-	}, "tool_path", "image_dir", "copy_commands", "file_contexts", "canned_fs_config", "key",
+	}, "tool_path", "image_dir", "image_zip", "copy_commands", "file_contexts", "canned_fs_config", "key",
 		"opt_flags", "manifest", "is_DCLA")
 
 	apexProtoConvertRule = pctx.AndroidStaticRule("apexProtoConvertRule",
@@ -235,18 +242,23 @@ var (
 	}, "image_dir")
 
 	apexHostVerifierRule = pctx.StaticRule("apexHostVerifierRule", blueprint.RuleParams{
-		Command: `${host_apex_verifier} --deapexer=${deapexer} --debugfs=${debugfs} ` +
-			`--fsckerofs=${fsck_erofs} --apex=${in} --partition_tag=${partition_tag} && touch ${out}`,
-		CommandDeps:     []string{"${host_apex_verifier}", "${deapexer}", "${debugfs}", "${fsck_erofs}"},
-		Description:     "run host_apex_verifier",
-		SandboxDisabled: true,
+		Command2: blueprint.NewCommand(
+			host_apex_verifier, ` --deapexer=`, deapexer, ` --debugfs=`, debugfs, ` `,
+			`--fsckerofs=`, fsck_erofs, ` --apex=${in} --partition_tag=${partition_tag} && `,
+			android.Touch, ` ${out}`),
+		Description: "run host_apex_verifier",
 	}, "partition_tag")
 
 	apexElfCheckerUnwantedRule = pctx.StaticRule("apexElfCheckerUnwantedRule", blueprint.RuleParams{
-		Command:         `${apex_elf_checker} --tool_path ${tool_path} --unwanted ${unwanted} ${in} && touch ${out}`,
-		CommandDeps:     []string{"${apex_elf_checker}", "${deapexer}", "${debugfs}", "${fsck_erofs}", "${config.ClangBin}/llvm-readelf"},
-		Description:     "run apex_elf_checker --unwanted",
-		SandboxDisabled: true,
+		Command2: blueprint.NewCommand(
+			apex_elf_checker, ` --tool_path ${tool_path} --unwanted ${unwanted} ${in} && `,
+			android.Touch, ` ${out}`),
+		CommandDeps: []string{
+			"${config.ClangBin}/llvm-readelf",
+			"${config.ClangBin}/llvm-readobj",
+		},
+		CommandDepsTools: []*blueprint.HostTool{&deapexer, &debugfs, &fsck_erofs},
+		Description:      "run apex_elf_checker --unwanted",
 	}, "tool_path", "unwanted")
 
 	apexAconfigFlagsPbRule = pctx.StaticRule("apexAconfigFlagsPbRule", blueprint.RuleParams{
@@ -882,15 +894,18 @@ func (a *apexBundle) buildApex(ctx android.ModuleContext) {
 		optFlags = append(optFlags, "--non_production")
 	}
 
+	imageZipOut := android.PathForModuleOut(ctx, "image.zip")
 	if a.dynamic_common_lib_apex() {
 		ctx.Build(pctx, android.BuildParams{
-			Rule:        DCLAApexRule,
-			Implicits:   implicitInputs,
-			Output:      unsignedOutputFile,
-			Description: "apex",
+			Rule:           DCLAApexRule,
+			Implicits:      implicitInputs,
+			Output:         unsignedOutputFile,
+			ImplicitOutput: imageZipOut,
+			Description:    "apex",
 			Args: map[string]string{
 				"tool_path":        outHostBinDir + ":" + prebuiltSdkToolsBinDir,
 				"image_dir":        imageDir.String(),
+				"image_zip":        imageZipOut.String(),
 				"copy_commands":    strings.Join(copyCommands, " && "),
 				"manifest":         a.manifestPbOut.String(),
 				"file_contexts":    fileContexts.String(),
@@ -901,13 +916,15 @@ func (a *apexBundle) buildApex(ctx android.ModuleContext) {
 		})
 	} else {
 		ctx.Build(pctx, android.BuildParams{
-			Rule:        apexRule,
-			Implicits:   implicitInputs,
-			Output:      unsignedOutputFile,
-			Description: "apex",
+			Rule:           apexRule,
+			Implicits:      implicitInputs,
+			Output:         unsignedOutputFile,
+			ImplicitOutput: imageZipOut,
+			Description:    "apex",
 			Args: map[string]string{
 				"tool_path":        outHostBinDir + ":" + prebuiltSdkToolsBinDir,
 				"image_dir":        imageDir.String(),
+				"image_zip":        imageZipOut.String(),
 				"copy_commands":    strings.Join(copyCommands, " && "),
 				"manifest":         a.manifestPbOut.String(),
 				"file_contexts":    fileContexts.String(),

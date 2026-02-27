@@ -659,13 +659,13 @@ func (l *lintSingleton) copyLintDependencies(ctx android.SingletonContext) {
 		}
 
 		ctx.Build(pctx, android.BuildParams{
-			Rule:   android.CpIfChanged,
+			Rule:   android.CpIfChangedRule,
 			Input:  android.OutputFileForModule(ctx, *sdkAnnotations, ""),
 			Output: copiedLintDatabaseFilesPath(ctx, files.annotationCopiedName),
 		})
 
 		ctx.Build(pctx, android.BuildParams{
-			Rule:   android.CpIfChanged,
+			Rule:   android.CpIfChangedRule,
 			Input:  android.OutputFileForModule(ctx, *apiVersionsDb, ".api_versions.xml"),
 			Output: copiedLintDatabaseFilesPath(ctx, files.apiVersionsCopiedName),
 		})

@@ -93,7 +93,7 @@ func (m *buildFlags) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	// build_flags_<target_product>-<partition>.json file.
 	// Update the output file only if the source file is changed.
 	ctx.Build(pctx, android.BuildParams{
-		Rule:   android.CpIfChanged,
+		Rule:   android.CpIfChangedRule,
 		Input:  srcPath,
 		Output: outputPath,
 	})
