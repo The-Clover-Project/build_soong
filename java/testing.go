@@ -44,7 +44,6 @@ const testDefaultUpdatableModuleVersion = "340090000"
 var PrepareForTestWithJavaBuildComponents = android.GroupFixturePreparers(
 	// Make sure that mutators and module types, e.g. prebuilt mutators available.
 	android.PrepareForTestWithAndroidBuildComponents,
-	android.PrepareForTestWithHostTools("metalava"),
 	// Make java build components available to the test.
 	android.FixtureRegisterWithContext(registerRequiredBuildComponentsForTest),
 	android.FixtureRegisterWithContext(registerJavaPluginBuildComponents),

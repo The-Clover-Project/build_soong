@@ -294,6 +294,45 @@ func TestR8Flags(t *testing.T) {
 		appR8.Args["r8Flags"], "--android-platform-build")
 }
 
+func TestR8DefaultAppFlags(t *testing.T) {
+	for _, optimizeDefault := range []bool{true, false} {
+		t.Run(fmt.Sprintf("optimize_by_default=%t", optimizeDefault), func(t *testing.T) {
+			t.Parallel()
+			result := android.GroupFixturePreparers(
+				PrepareForTestWithJavaDefaultModules,
+				android.PrepareForTestWithBuildFlag("RELEASE_R8_OPTIMIZE_BY_DEFAULT", strconv.FormatBool(optimizeDefault)),
+			).RunTestWithBp(t, `
+				android_app {
+					name: "app",
+					srcs: ["foo.java"],
+					platform_apis: true,
+				}
+			`)
+
+			app := result.ModuleForTests(t, "app", "android_common")
+			appR8 := app.Rule("r8")
+
+			// R8's shrink and obfuscate flags are on by default for apps unless explicitly disabled.
+			android.AssertStringDoesNotContain(t, "expected no -dontshrink in app r8 flags",
+				appR8.Args["r8Flags"], "-dontshrink")
+			android.AssertStringDoesContain(t, "expected -dontobfuscate in app r8 flags",
+				appR8.Args["r8Flags"], "-dontobfuscate")
+
+			if optimizeDefault {
+				android.AssertStringDoesNotContain(t, "expected no -dontoptimize in app r8 flags",
+					appR8.Args["r8Flags"], "-dontoptimize")
+				android.AssertStringDoesNotContain(t, "expected no -ignorewarnings in app r8 flags",
+					appR8.Args["r8Flags"], "-ignorewarnings")
+			} else {
+				android.AssertStringDoesContain(t, "expected -dontoptimize in app r8 flags",
+					appR8.Args["r8Flags"], "-dontoptimize")
+				android.AssertStringDoesContain(t, "expected -ignorewarnings in app r8 flags",
+					appR8.Args["r8Flags"], "-ignorewarnings")
+			}
+		})
+	}
+}
+
 func TestD8(t *testing.T) {
 	t.Parallel()
 	result := PrepareForTestWithJavaDefaultModules.RunTestWithBp(t, `

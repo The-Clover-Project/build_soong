@@ -334,6 +334,7 @@ func rustEnvVars(ctx android.ModuleContext, deps PathDeps, crateName string, car
 			envVars["CARGO_BIN_NAME"] = bin.getStem(ctx)
 		}
 		envVars["CARGO_CRATE_NAME"] = crateName
+		envVars["CARGO_MANIFEST_DIR"] = ctx.ModuleDir()
 		envVars["CARGO_PKG_NAME"] = crateName
 		pkgVersion := rustMod.compiler.cargoPkgVersion()
 		if pkgVersion != "" {
@@ -435,7 +436,12 @@ func transformSrctoCrate(ctx android.ModuleContext, main android.Path, deps Path
 	linkerScriptFlags = append(linkerScriptFlags, flags.LinkerScriptFlags...)
 
 	// Check if this module needs to use the bootstrap linker
-	if t.bootstrap && !t.inRecovery && !t.inRamdisk && !t.inVendorRamdisk {
+	useBootstrap := t.bootstrap && !t.inRecovery && !t.inRamdisk && !t.inVendorRamdisk
+	if ctx.Config().GetBuildFlagBool("RELEASE_DEPRECATE_RUNTIME_APEX") {
+		useBootstrap = false
+	}
+
+	if useBootstrap {
 		dynamicLinker := "-Wl,-dynamic-linker,/system/bin/bootstrap/linker"
 		if t.is64Bit {
 			dynamicLinker += "64"

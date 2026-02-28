@@ -504,6 +504,7 @@ func (b *BootclasspathFragmentModule) ComponentDepsMutator(ctx android.BottomUpM
 		}
 		ctx.AddDependency(module, bootclasspathFragmentContentDepTag, name)
 	}
+
 }
 
 func (b *BootclasspathFragmentModule) DepsMutator(ctx android.BottomUpMutatorContext) {
@@ -538,7 +539,6 @@ func (b *BootclasspathFragmentModule) DepsMutator(ctx android.BottomUpMutatorCon
 	for _, name := range b.properties.Contents.GetOrDefault(ctx, nil) {
 		ctx.AddDependency(ctx.Module(), moduleInFragmentDepTag, name)
 	}
-	ctx.AddHostToolDependencies("metalava")
 }
 
 func (b *BootclasspathFragmentModule) GenerateAndroidBuildActions(ctx android.ModuleContext) {

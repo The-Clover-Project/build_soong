@@ -714,7 +714,7 @@ type ApiStubsParams struct {
 }
 
 // GetApiStubsFlags calculates the genstubFlags string to pass to ParseNativeAbiDefinition
-func GetApiStubsFlags(api ApiStubsParams) string {
+func GetApiStubsFlags(ctx android.ModuleContext, api ApiStubsParams) string {
 	var flag string
 
 	// b/239274367 --apex and --systemapi filters symbols tagged with # apex and #
@@ -741,12 +741,19 @@ func GetApiStubsFlags(api ApiStubsParams) string {
 	}
 
 	// TODO(b/361303067): Remove this special case if bionic/ projects are added to ART development branches.
-	if isBionic(api.BaseModuleName) {
+	if !ctx.Config().GetBuildFlagBool("RELEASE_DEPRECATE_RUNTIME_APEX") && isBionic(api.BaseModuleName) {
 		// set the flags explicitly for bionic libs.
 		// this is necessary for development in minimal branches which does not contain bionic/*.
 		// In such minimal branches, e.g. on the prebuilt libc stubs
 		// 1. IsNdk will return false (since the ndk_library definition for libc does not exist)
 		// 2. NotInPlatform will return true (since the source com.android.runtime does not exist)
+		flag = "--apex"
+	}
+
+	// TODO(b/369944471) Fix mapfile.py so that libclang_rt.hwasan's mapfile
+	// exports symbols with "# systemapi".
+	if ctx.Config().GetBuildFlagBool("RELEASE_DEPRECATE_RUNTIME_APEX") &&
+		strings.HasPrefix(api.BaseModuleName, "libclang_rt.hwasan") {
 		flag = "--apex"
 	}
 
@@ -770,7 +777,7 @@ func (library *libraryDecorator) compileModuleLibApiStubs(ctx ModuleContext, fla
 		BaseModuleName: ctx.baseModuleName(),
 		ModuleName:     ctx.ModuleName(),
 	}
-	flag := GetApiStubsFlags(apiParams)
+	flag := GetApiStubsFlags(ctx, apiParams)
 
 	nativeAbiResult := ParseNativeAbiDefinition(ctx,
 		symbolFile,

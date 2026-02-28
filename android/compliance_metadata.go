@@ -66,7 +66,8 @@ var (
 		CIPD_VERSION string
 
 		// module_type=prebuilt modules
-		CIPD_SRC string
+		CIPD_SRC          string
+		PREBUILT_SRC_FILE string
 	}{
 		"name",
 		"package",
@@ -98,6 +99,7 @@ var (
 		"cipd_version",
 
 		"cipd_src",
+		"prebuilt_src_file",
 	}
 
 	// A constant list of all property names in compliance metadata
@@ -140,6 +142,7 @@ var (
 		ComplianceMetadataProp.CIPD_VERSION,
 		// module_type=prebuilt modules
 		ComplianceMetadataProp.CIPD_SRC,
+		ComplianceMetadataProp.PREBUILT_SRC_FILE,
 	}
 )
 
@@ -233,7 +236,7 @@ func (c *ComplianceMetadataInfo) AddBuiltFiles(files ...string) {
 	c.SetListValue(ComplianceMetadataProp.BUILT_FILES, builtFiles)
 }
 
-func (c *ComplianceMetadataInfo) SetCipdSrc(ctx ModuleContext, src string) {
+func (c *ComplianceMetadataInfo) SetPrebuiltSrc(ctx ModuleContext, src string) {
 	if module, tag := SrcIsModuleWithTag(src); module != "" {
 		m := GetModuleProxyFromPathDep(ctx, module, tag)
 		baseModuleType := OtherModuleProviderOrDefault(ctx, m, CommonModuleInfoProvider).BaseModuleType
@@ -246,8 +249,18 @@ func (c *ComplianceMetadataInfo) SetCipdSrc(ctx ModuleContext, src string) {
 			for _, p := range paths {
 				if strings.HasPrefix(p.String(), ctx.Config().SoongOutDir()) {
 					c.SetStringValue(ComplianceMetadataProp.CIPD_SRC, p.String())
+				} else {
+					c.SetStringValue(ComplianceMetadataProp.PREBUILT_SRC_FILE, p.String())
 				}
 			}
+		}
+	} else {
+		paths, err := expandOneSrcPath(sourcePathInput{context: ctx, path: src, includeDirs: true})
+		if err != nil {
+			panic(err)
+		}
+		for _, p := range paths {
+			c.SetStringValue(ComplianceMetadataProp.PREBUILT_SRC_FILE, p.String())
 		}
 	}
 }

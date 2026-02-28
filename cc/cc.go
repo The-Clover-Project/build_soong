@@ -1771,6 +1771,10 @@ func isBionic(name string) bool {
 }
 
 func InstallToBootstrap(name string, config android.Config) bool {
+	// With Bionic in /system, no bootstrap needed
+	if config.GetBuildFlagBool("RELEASE_DEPRECATE_RUNTIME_APEX") {
+		return false
+	}
 	if name == "libclang_rt.hwasan" || name == "libc_hwasan" {
 		return true
 	}
@@ -2951,7 +2955,7 @@ func buildComplianceMetadataInfo(ctx ModuleContext, c *Module, deps PathDeps) {
 	complianceMetadataInfo.SetListValue(android.ComplianceMetadataProp.HEADER_LIBS, android.FirstUniqueStrings(headerLibDepNames))
 
 	if p, ok := c.linker.(*prebuiltLibraryLinker); ok && len(p.SingleSource(ctx)) > 0 {
-		complianceMetadataInfo.SetCipdSrc(ctx, p.SingleSource(ctx))
+		complianceMetadataInfo.SetPrebuiltSrc(ctx, p.SingleSource(ctx))
 	}
 }
 
@@ -4169,6 +4173,11 @@ func ShouldUseStubForApex(ctx android.ModuleContext, parent android.ModuleProxy,
 			inVendorOrProduct = linkable.InVendorOrProduct
 			bootstrap = linkable.Bootstrap
 		}
+	}
+
+	// With Bionic in /system, no bootstrap needed. Ignore "bootstrap: true".
+	if ctx.Config().GetBuildFlagBool("RELEASE_DEPRECATE_RUNTIME_APEX") {
+		bootstrap = false
 	}
 
 	apexInfo, _ := android.OtherModuleProvider(ctx, parent, android.ApexInfoProvider)

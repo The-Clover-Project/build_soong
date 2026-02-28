@@ -114,17 +114,6 @@ func (this *allAconfigDeclarationsSingleton) sortedConfigNames(releaseMap map[st
 	return names
 }
 
-func finalizeNonApiFlags(config android.Config) bool {
-	return config.GetBuildFlagBool("RELEASE_ACONFIG_FINALIZE_NON_API_FLAGS")
-}
-
-func (this *allAconfigDeclarationsModule) DepsMutator(ctx android.BottomUpMutatorContext) {
-	ctx.AddHostToolDependencies("aconfig-to-metalava-flags", "metalava", "record-finalized-flags")
-	if finalizeNonApiFlags(ctx.Config()) {
-		ctx.AddHostToolDependencies("finalize-non-api-flags")
-	}
-}
-
 func GenerateFinalizedFlagsForApiSurface(ctx android.ModuleContext, outputPath android.WritablePath,
 	parsedFlagsFile android.Path, apiSurface ApiSurfaceContributorProperties) {
 
@@ -136,10 +125,12 @@ func GenerateFinalizedFlagsForApiSurface(ctx android.ModuleContext, outputPath a
 	}
 	finalizedFlagsFile := android.PathForModuleSrc(ctx, apiSurface.Finalized_flags_file)
 
+	finalizeNonApiFlags := ctx.Config().GetBuildFlagBool("RELEASE_ACONFIG_FINALIZE_NON_API_FLAGS")
+
 	intermediateMetalavaFlagsConfig := android.PathForModuleOut(ctx, "metalava-flags.config")
 	intermediateFlagReport := android.PathForModuleOut(ctx, "metalava-flag-report.csv")
 	intermediateNonApiFinalizedFlags := android.PathForModuleOut(ctx, "intermediate-non-api-finalized-flags.txt")
-	builder := android.NewRuleBuilder(pctx, ctx)
+	builder := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
 	builder.Command().
 		BuiltTool("aconfig-to-metalava-flags").
 		Input(parsedFlagsFile).
@@ -150,7 +141,7 @@ func GenerateFinalizedFlagsForApiSurface(ctx android.ModuleContext, outputPath a
 		FlagWithInput("--config-file ", intermediateMetalavaFlagsConfig).
 		FlagWithOutput("--output-file ", intermediateFlagReport).
 		Inputs(apiSignatureFiles)
-	if finalizeNonApiFlags(ctx.Config()) {
+	if finalizeNonApiFlags {
 		builder.Command().
 			BuiltTool("finalize-non-api-flags").
 			FlagWithInput("--cache ", parsedFlagsFile).

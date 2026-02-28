@@ -29,6 +29,7 @@ import (
 	"android/soong/android"
 	"android/soong/dexpreopt"
 	"android/soong/java"
+
 	"github.com/google/blueprint"
 	"github.com/google/blueprint/proptools"
 )
@@ -100,36 +101,41 @@ var createStorageInfo = []createStorageStruct{
 }
 
 var (
-	apex_elf_checker   = pctx.HostTool("apex_elf_checker")
-	host_apex_verifier = pctx.HostTool("host_apex_verifier")
-	deapexer           = pctx.HostTool("deapexer")
-	debugfs            = pctx.HostTool("debugfs")
-	fsck_erofs         = pctx.HostTool("fsck.erofs")
+	apex_elf_checker    = pctx.HostTool("apex_elf_checker")
+	host_apex_verifier  = pctx.HostTool("host_apex_verifier")
+	deapexer            = pctx.HostTool("deapexer")
+	debugfs             = pctx.HostTool("debugfs")
+	fsck_erofs          = pctx.HostTool("fsck.erofs")
+	aconfigTool         = pctx.HostTool("aconfig")
+	apex_ls             = pctx.HostTool("apex-ls")
+	apex_sepolicy_tests = pctx.HostTool("apex_sepolicy_tests")
+	zip2zip             = pctx.HostTool("zip2zip")
+	jsonmodify          = pctx.HostTool("jsonmodify")
+	conv_apex_manifest  = pctx.HostTool("conv_apex_manifest")
 
 	apexManifestRule = pctx.StaticRule("apexManifestRule", blueprint.RuleParams{
-		Command: `rm -f $out && ${jsonmodify} $in ` +
-			`-a provideNativeLibs ${provideNativeLibs} ` +
-			`-a requireNativeLibs ${requireNativeLibs} ` +
-			`-se version 0 ${default_version} ` +
-			`${opt} ` +
-			`-o $out`,
-		CommandDeps:     []string{"${jsonmodify}"},
-		Description:     "prepare ${out}",
-		SandboxDisabled: true,
+		Command2: blueprint.NewCommand(
+			android.Rm, ` -f $out && `, jsonmodify, ` $in `,
+			`-a provideNativeLibs ${provideNativeLibs} `,
+			`-a requireNativeLibs ${requireNativeLibs} `,
+			`-se version 0 ${default_version} `,
+			`${opt} -o $out`,
+		),
+		Description: "prepare ${out}",
 	}, "provideNativeLibs", "requireNativeLibs", "default_version", "opt")
 
 	stripApexManifestRule = pctx.StaticRule("stripApexManifestRule", blueprint.RuleParams{
-		Command:         `rm -f $out && ${conv_apex_manifest} strip $in -o $out`,
-		CommandDeps:     []string{"${conv_apex_manifest}"},
-		Description:     "strip ${in}=>${out}",
-		SandboxDisabled: true,
+		Command2: blueprint.NewCommand(
+			android.Rm, ` -f $out && `, conv_apex_manifest, ` strip $in -o $out`,
+		),
+		Description: "strip ${in}=>${out}",
 	})
 
 	pbApexManifestRule = pctx.StaticRule("pbApexManifestRule", blueprint.RuleParams{
-		Command:         `rm -f $out && ${conv_apex_manifest} proto $in -o $out`,
-		CommandDeps:     []string{"${conv_apex_manifest}"},
-		Description:     "convert ${in}=>${out}",
-		SandboxDisabled: true,
+		Command2: blueprint.NewCommand(
+			android.Rm, ` -f $out && `, conv_apex_manifest, ` proto $in -o $out`,
+		),
+		Description: "convert ${in}=>${out}",
 	})
 
 	// TODO(b/113233103): make sure that file_contexts is as expected, i.e., validate
@@ -193,30 +199,31 @@ var (
 		})
 
 	apexBundleRule = pctx.StaticRule("apexBundleRule", blueprint.RuleParams{
-		Command: `${zip2zip} -i $in -o $out.base ` +
-			`apex_payload.img:apex/${abi}.img ` +
-			`apex_build_info.pb:apex/${abi}.build_info.pb ` +
-			`apex_manifest.json:root/apex_manifest.json ` +
-			`apex_manifest.pb:root/apex_manifest.pb ` +
-			`AndroidManifest.xml:manifest/AndroidManifest.xml ` +
-			`assets/NOTICE.html.gz:assets/NOTICE.html.gz &&` +
-			`${soong_zip} -o $out.config -C $$(dirname ${config}) -f ${config} && ` +
-			`${merge_zips} $out $out.base $out.config`,
-		CommandDeps:     []string{"${zip2zip}", "${soong_zip}", "${merge_zips}"},
-		Description:     "app bundle",
-		SandboxDisabled: true,
+		Command2: blueprint.NewCommand(
+			zip2zip, ` -i $in -o $out.base `,
+			`apex_payload.img:apex/${abi}.img `,
+			`apex_build_info.pb:apex/${abi}.build_info.pb `,
+			`apex_manifest.json:root/apex_manifest.json `,
+			`apex_manifest.pb:root/apex_manifest.pb `,
+			`AndroidManifest.xml:manifest/AndroidManifest.xml `,
+			`assets/NOTICE.html.gz:assets/NOTICE.html.gz &&`,
+			android.SoongZip, ` -o $out.config -C $$(dirname ${config}) -f ${config} && `,
+			android.MergeZips, ` $out $out.base $out.config`,
+		),
+		Description: "app bundle",
 	}, "abi", "config")
 
 	diffApexContentRule = pctx.StaticRule("diffApexContentRule", blueprint.RuleParams{
-		Command: `diff --unchanged-group-format='' \` +
-			`--changed-group-format='%<' \` +
-			`${image_content_file} ${allowed_files_file} || (` +
-			`echo "New unexpected files were added to ${apex_module_name}." ` +
-			` "To fix the build run following command:" && ` +
-			`echo "system/apex/tools/update_allowed_list.sh ${allowed_files_file} ${image_content_file}" && ` +
-			`exit 1); touch ${out}`,
-		Description:     "Diff ${image_content_file} and ${allowed_files_file}",
-		SandboxDisabled: true,
+		Command2: blueprint.NewCommand(
+			`diff --unchanged-group-format='' \`,
+			`--changed-group-format='%<' \`,
+			`${image_content_file} ${allowed_files_file} || (`,
+			android.Echo, ` "New unexpected files were added to ${apex_module_name}." `,
+			` "To fix the build run following command:" && `,
+			android.Echo, ` "system/apex/tools/update_allowed_list.sh ${allowed_files_file} ${image_content_file}" && `,
+			`exit 1); `, android.Touch, ` ${out}`,
+		),
+		Description: "Diff ${image_content_file} and ${allowed_files_file}",
 	}, "image_content_file", "allowed_files_file", "apex_module_name")
 
 	generateAPIsUsedbyApexRule = pctx.StaticRule("generateAPIsUsedbyApexRule", blueprint.RuleParams{
@@ -227,11 +234,12 @@ var (
 	}, "image_dir", "readelf")
 
 	apexSepolicyTestsRule = pctx.StaticRule("apexSepolicyTestsRule", blueprint.RuleParams{
-		Command: `${apex_ls} -Z ${in} > ${out}.fc` +
-			` && ${apex_sepolicy_tests} -f ${out}.fc --partition ${partition_tag} && touch ${out}`,
-		CommandDeps:     []string{"${apex_sepolicy_tests}", "${apex_ls}"},
-		Description:     "run apex_sepolicy_tests",
-		SandboxDisabled: true,
+		Command2: blueprint.NewCommand(
+			apex_ls, ` -Z ${in} > ${out}.fc`,
+			` &&`, apex_sepolicy_tests, ` -f ${out}.fc --partition ${partition_tag}`,
+			` &&`, android.Touch, ` ${out}`,
+		),
+		Description: "run apex_sepolicy_tests",
 	}, "partition_tag")
 
 	apexLinkerconfigValidationRule = pctx.StaticRule("apexLinkerconfigValidationRule", blueprint.RuleParams{
@@ -262,11 +270,10 @@ var (
 	}, "tool_path", "unwanted")
 
 	apexAconfigFlagsPbRule = pctx.StaticRule("apexAconfigFlagsPbRule", blueprint.RuleParams{
-		Command: `${aconfig} dump-cache --dedup --format protobuf --out ${out} ` +
-			`--filter container:${container}+namespace:!${beta_namespace} ${cache_files}`,
-		CommandDeps:     []string{"${aconfig}"},
-		Description:     "create aconfig_flags.pb file",
-		SandboxDisabled: true,
+		Command2: blueprint.NewCommand(
+			aconfigTool, ` dump-cache --dedup --format protobuf --out ${out} `,
+			`--filter container:${container}+namespace:!${beta_namespace} ${cache_files}`),
+		Description: "create aconfig_flags.pb file",
 	}, "container", "beta_namespace", "cache_files")
 )
 
@@ -1037,16 +1044,16 @@ func (a *apexBundle) buildApex(ctx android.ModuleContext) {
 		args["outCommaList"] = signedOutputFile.String()
 	}
 	var validations android.Paths
-	validations = append(validations, runApexLinkerconfigValidation(ctx, unsignedOutputFile, imageDir))
+	validations = append(validations, runApexLinkerconfigValidation(ctx, signedOutputFile, imageDir))
 	if !a.skipValidation(apexSepolicyTests) && android.InList(a.payloadFsType, []fsType{ext4, erofs}) {
-		validations = append(validations, runApexSepolicyTests(ctx, a, unsignedOutputFile))
+		validations = append(validations, runApexSepolicyTests(ctx, a, signedOutputFile))
 	}
 	if !a.testApex && len(a.properties.Unwanted_transitive_deps) > 0 {
 		validations = append(validations,
-			runApexElfCheckerUnwanted(ctx, unsignedOutputFile, a.properties.Unwanted_transitive_deps))
+			runApexElfCheckerUnwanted(ctx, signedOutputFile, a.properties.Unwanted_transitive_deps))
 	}
 	if !a.skipValidation(hostApexVerifier) && android.InList(a.payloadFsType, []fsType{ext4, erofs}) {
-		validations = append(validations, runApexHostVerifier(ctx, a, unsignedOutputFile))
+		validations = append(validations, runApexHostVerifier(ctx, a, signedOutputFile))
 	}
 	ctx.Build(pctx, android.BuildParams{
 		Rule:        rule,

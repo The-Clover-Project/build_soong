@@ -896,7 +896,7 @@ func (library *libraryDecorator) compileModuleLibApiStubs(ctx ModuleContext, ccF
 		BaseModuleName: mod.BaseModuleName(),
 		ModuleName:     ctx.ModuleName(),
 	}
-	flag := cc.GetApiStubsFlags(apiParams)
+	flag := cc.GetApiStubsFlags(ctx, apiParams)
 
 	nativeAbiResult := cc.ParseNativeAbiDefinition(ctx, symbolFile,
 		android.ApiLevelOrPanic(ctx, library.MutatedProperties.StubsVersion), flag)
