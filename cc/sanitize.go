@@ -695,6 +695,13 @@ func (sanitize *sanitize) begin(ctx BaseModuleContext) {
 		s.Integer_overflow = nil
 	}
 
+	// LFI doesn't support MTE
+	if ctx.Target().LFI {
+		s.Memtag_globals = nil
+		s.Memtag_heap = nil
+		s.Memtag_stack = nil
+	}
+
 	if ctx.inRamdisk() || ctx.inVendorRamdisk() || ctx.inRecovery() {
 		// HWASan ramdisk (which is built from recovery) goes over some bootloader limit.
 		// Keep libc instrumented so that ramdisk / vendor_ramdisk / recovery can run hwasan-instrumented code if necessary.
