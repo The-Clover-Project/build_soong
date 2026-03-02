@@ -266,7 +266,8 @@ func (r *ravenwoodTest) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 		installDeps = append(installDeps, installJni)
 	}
 
-	resApkInstallPath := installPath.Join(ctx, "ravenwood-res-apks")
+	resPath := "ravenwood-res-apks"
+	resApkInstallPath := installPath.Join(ctx, resPath)
 
 	var resApkName string
 	var targetResApkName string
@@ -293,6 +294,15 @@ func (r *ravenwoodTest) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	targetPackageName := proptools.StringDefault(r.ravenwoodTestProperties.Target_package_name, "")
 	instClassName := proptools.StringDefault(r.ravenwoodTestProperties.Instrumentation_class, "")
 
+	resApkPath := ""
+	if resApkName != "" {
+		resApkPath = resPath + "/" + resApkName
+	}
+	targetResApkPath := ""
+	if targetResApkName != "" {
+		targetResApkPath = resPath + "/" + targetResApkName
+	}
+
 	propertiesContents := fmt.Sprintf(`
 targetSdkVersionInt=%d
 targetSdkVersionRaw=%s
@@ -302,7 +312,7 @@ instrumentationClass=%s
 moduleName=%s
 resourceApk=%s
 targetResourceApk=%s
-`, targetSdkVersionInt, targetSdkVersion, packageName, targetPackageName, instClassName, ctx.ModuleName(), resApkName, targetResApkName)
+`, targetSdkVersionInt, targetSdkVersion, packageName, targetPackageName, instClassName, ctx.ModuleName(), resApkPath, targetResApkPath)
 
 	propertiesContents = strings.TrimPrefix(propertiesContents, "\n")
 
