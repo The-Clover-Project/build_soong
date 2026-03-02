@@ -1447,7 +1447,7 @@ func bootImageProfileRuleCommon(ctx android.ModuleContext, name string, dexFiles
 
 	profile := android.PathForModuleOut(ctx, name, "boot.prof")
 
-	rule.Command().
+	cmd := rule.Command().
 		Text(`ANDROID_LOG_TAGS="*:e"`).
 		Tool(globalSoong.Profman).
 		Flag("--output-profile-type=boot").
@@ -1455,6 +1455,16 @@ func bootImageProfileRuleCommon(ctx android.ModuleContext, name string, dexFiles
 		FlagForEachInput("--apk=", dexFiles).
 		FlagForEachArg("--dex-location=", dexLocations).
 		FlagWithOutput("--reference-profile-file=", profile)
+
+	if ctx.Config().GetBuildFlagBool("RELEASE_ART_NOPRELOAD_CLASSES_IN_PROFILE") {
+		// The same preloaded-classes-denylist is used for all profiles, and we always expect to find it.
+		noPreloadClassesPath := android.ExistentPathForSource(ctx, "frameworks/base/config/preloaded-classes-denylist")
+		if !noPreloadClassesPath.Valid() {
+			ctx.ModuleErrorf("cannot find preloaded-classes-denylist file")
+		}
+		cmd.FlagWithInput("--preloaded-classes-denylist=", noPreloadClassesPath.Path()).
+			Flag("--record-preloaded-classes-denylist")
+	}
 
 	rule.Build("bootJarsProfile_"+name, "profile boot jars "+name)
 
