@@ -2331,27 +2331,28 @@ var denylist = []string{
 	"libsqlite", // TODO (b/448182248): This seems to cause a circular dependency. Fix and remove this.
 }
 
+func prebuiltOrSourceWithPrebuilt(ctx android.BaseModuleContext) bool {
+	if p := android.GetEmbeddedPrebuilt(ctx.Module()); p != nil {
+		return true
+	}
+	sourceWithPrebuilt := false
+	// Source with prebuilt (TODO b/448182248): Handle source modules with prebuilts
+	ctx.VisitDirectDepsProxyWithTag(android.PrebuiltDepTag, func(m android.ModuleProxy) {
+		sourceWithPrebuilt = true
+	})
+	return sourceWithPrebuilt
+}
+
 func (l linkageTransitionMutator) splitAll(ctx android.BaseModuleContext) bool {
 	// Not cc
 	if _, isCc := ctx.Module().(*Module); !isCc {
 		return true
 	}
 	// Prebuilt (TODO: b/448182248) Handle prebuilts
-	if p := android.GetEmbeddedPrebuilt(ctx.Module()); p != nil {
-		return true
-	}
-	// Source with prebuilt (TODO b/448182248): Handle source modules with prebuilts
-	sourceWithPrebuilt := false
-	ctx.VisitDirectDepsProxyWithTag(android.PrebuiltDepTag, func(m android.ModuleProxy) {
-		sourceWithPrebuilt = true
-	})
-	if sourceWithPrebuilt {
+	if prebuiltOrSourceWithPrebuilt(ctx) {
 		return true
 	}
 	if android.InList(ctx.ModuleName(), denylist) {
-		return true
-	}
-	if c, ok := ctx.Module().(*Module); ok && c.HasStubsVariants() {
 		return true
 	}
 	// Soong benchmark builds
@@ -2543,14 +2544,21 @@ func setStubsVersions(mctx android.BaseModuleContext, module VersionedLinkableIn
 // (which is unnamed) and zero or more stubs variants.
 type versionTransitionMutator struct{}
 
-func (versionTransitionMutator) Split(ctx android.BaseModuleContext) []string {
+func (v versionTransitionMutator) split(ctx android.BaseModuleContext) []string {
 	if ctx.Os() != android.Android || ctx.Target().LFI {
 		return []string{""}
 	}
 	if m, ok := ctx.Module().(VersionedLinkableInterface); ok {
 		if m.CcLibraryInterface() && canBeVersionVariant(m) {
 			setStubsVersions(ctx, m)
-			return append(slices.Clone(m.VersionedInterface().AllStubsVersions()), "")
+			if v.splitAll(ctx) {
+				// The empty impl variant appears last to support inter-variant deps.
+				return append(slices.Clone(m.VersionedInterface().AllStubsVersions()), "")
+			} else {
+				// The empty impl variant is the primary variant.
+				// The version variants will be created on demand.
+				return append([]string{""}, slices.Clone(m.VersionedInterface().AllStubsVersions())...)
+			}
 		} else if m.SplitPerApiLevel() && m.IsSdkVariant() {
 			return perApiVersionVariations(ctx, m.MinSdkVersion(ctx))
 		}
@@ -2559,8 +2567,37 @@ func (versionTransitionMutator) Split(ctx android.BaseModuleContext) []string {
 	return []string{""}
 }
 
-func (versionTransitionMutator) SplitOnDemand(ctx android.BaseModuleContext) []string {
-	return nil
+func (v versionTransitionMutator) splitAll(ctx android.BaseModuleContext) bool {
+	// Prebuilt (TODO: b/448182248) Handle prebuilts
+	if prebuiltOrSourceWithPrebuilt(ctx) {
+		return true
+	}
+	if ctx.Module().SplitAllVariants() || ctx.Config().AllowMissingDependencies() || ctx.Config().KatiEnabled() {
+		// blueprint's transition.go keeps the frontloaded variant creation when ctx.SplitAllVariants is true.
+		// soong's android/transition.go also concatenates the SplitOnDemand values to Split values when
+		// android.Module's split_all_variants is true.
+		// (TODO: b/448182248): Dedupe this.
+		return true
+	}
+	return !ctx.Config().GetBuildFlagBool("RELEASE_SOONG_VERSION_VARIANT_ON_DEMAND")
+}
+
+func (v versionTransitionMutator) Split(ctx android.BaseModuleContext) []string {
+	allSplits := v.split(ctx)
+	if !v.splitAll(ctx) {
+		return allSplits[0:1]
+	} else {
+		return allSplits
+	}
+}
+
+func (v versionTransitionMutator) SplitOnDemand(ctx android.BaseModuleContext) []string {
+	allSplits := v.split(ctx)
+	if len(allSplits) <= 1 || v.splitAll(ctx) {
+		return nil
+	} else {
+		return allSplits[1:]
+	}
 }
 
 func (versionTransitionMutator) OutgoingTransition(ctx android.OutgoingTransitionContext, sourceVariation string) string {
