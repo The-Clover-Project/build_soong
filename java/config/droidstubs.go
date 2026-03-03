@@ -20,7 +20,7 @@ var (
 	metalavaFlags = []string{
 		"--color",
 		"--quiet",
-		"--format=v2",
+		"--format=2.0",
 		"--repeat-errors-max 10",
 		"--hide UnresolvedImport",
 
