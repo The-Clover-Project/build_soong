@@ -496,6 +496,12 @@ func commonDefaultModules() string {
 			product_available: true,
 			cmake_snapshot_supported: true,
 		}
+
+		cc_library_static {
+			name: "libFuzzer_mte_crash_handler",
+			stl: "none",
+			system_shared_libs: [],
+		}
 	`
 }
 
