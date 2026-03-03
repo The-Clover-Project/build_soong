@@ -250,7 +250,7 @@ func (s *singletonContextAdaptor) Variable(pctx PackageContext, name, value stri
 }
 
 func (s *singletonContextAdaptor) Rule(pctx PackageContext, name string, params blueprint.RuleParams, argNames ...string) blueprint.Rule {
-	if s.Config().UseRemoteBuild() {
+	if s.Config().REWrapperRemoteBuild() {
 		if params.Pool == nil {
 			// When USE_REWRAPPER=true is set and the rule is not supported by RBE,
 			// restrict jobs to the local parallelism value

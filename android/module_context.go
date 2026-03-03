@@ -444,7 +444,7 @@ func (m *moduleContext) Variable(pctx PackageContext, name, value string) {
 func (m *moduleContext) Rule(pctx PackageContext, name string, params blueprint.RuleParams,
 	argNames ...string) blueprint.Rule {
 
-	if m.config.UseRemoteBuild() {
+	if m.config.REWrapperRemoteBuild() {
 		if params.Pool == nil {
 			// When USE_REWRAPPER=true is set and the rule is not supported by RBE,
 			// restrict jobs to the local parallelism value
