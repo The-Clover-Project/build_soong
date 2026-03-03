@@ -135,11 +135,11 @@ type PrebuiltCommonProperties struct {
 
 	// List of bootclasspath fragments inside this prebuilt APEX bundle and for which this APEX
 	// bundle will create an APEX variant.
-	Exported_bootclasspath_fragments []string
+	Exported_bootclasspath_fragments proptools.Configurable[[]string]
 
 	// List of systemserverclasspath fragments inside this prebuilt APEX bundle and for which this
 	// APEX bundle will create an APEX variant.
-	Exported_systemserverclasspath_fragments []string
+	Exported_systemserverclasspath_fragments proptools.Configurable[[]string]
 
 	// Path to the .prebuilt_info file of the prebuilt apex.
 	// In case of mainline modules, the .prebuilt_info file contains the build_id that was used to
@@ -298,9 +298,9 @@ func (p *prebuiltCommon) AndroidMkEntries() []android.AndroidMkEntries {
 	return entriesList
 }
 
-func (p *prebuiltCommon) hasExportedDeps() bool {
-	return len(p.prebuiltCommonProperties.Exported_bootclasspath_fragments) > 0 ||
-		len(p.prebuiltCommonProperties.Exported_systemserverclasspath_fragments) > 0
+func (p *prebuiltCommon) hasExportedDeps(ctx android.ModuleContext) bool {
+	return len(p.prebuiltCommonProperties.Exported_bootclasspath_fragments.GetOrDefault(ctx, nil)) > 0 ||
+		len(p.prebuiltCommonProperties.Exported_systemserverclasspath_fragments.GetOrDefault(ctx, nil)) > 0
 }
 
 type appInPrebuiltApexDepTag struct {
@@ -315,13 +315,13 @@ var appInPrebuiltApexTag = appInPrebuiltApexDepTag{}
 func (p *prebuiltCommon) prebuiltApexContentsDeps(ctx android.BottomUpMutatorContext) {
 	module := ctx.Module()
 
-	for _, dep := range p.prebuiltCommonProperties.Exported_bootclasspath_fragments {
+	for _, dep := range p.prebuiltCommonProperties.Exported_bootclasspath_fragments.GetOrDefault(ctx, nil) {
 		prebuiltDep := android.PrebuiltNameFromSource(dep)
 		ctx.AddDependency(module, exportedBootclasspathFragmentTag, prebuiltDep)
 		ctx.AddDependency(module, fragmentInApexTag, prebuiltDep)
 	}
 
-	for _, dep := range p.prebuiltCommonProperties.Exported_systemserverclasspath_fragments {
+	for _, dep := range p.prebuiltCommonProperties.Exported_systemserverclasspath_fragments.GetOrDefault(ctx, nil) {
 		prebuiltDep := android.PrebuiltNameFromSource(dep)
 		ctx.AddDependency(module, exportedSystemserverclasspathFragmentTag, prebuiltDep)
 	}
@@ -601,7 +601,7 @@ func (p *Prebuilt) ApexTransitionMutatorMutate(ctx android.BottomUpMutatorContex
 
 // creates the build rules to deapex the prebuilt, and returns a deapexerInfo
 func (p *prebuiltCommon) getDeapexerInfo(ctx android.ModuleContext, apexFile android.Path) *android.DeapexerInfo {
-	if !p.hasExportedDeps() {
+	if !p.hasExportedDeps(ctx) {
 		// nothing to do
 		return nil
 	}
