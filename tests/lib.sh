@@ -143,6 +143,7 @@ function create_mock_soong {
   symlink_directory external/sqlite
   symlink_directory external/starlark-go
   symlink_directory prebuilts/build-tools
+  symlink_directory prebuilts/siso
   symlink_directory prebuilts/clang/host
   symlink_directory prebuilts/go
   symlink_directory prebuilts/sdk
