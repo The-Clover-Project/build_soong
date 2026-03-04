@@ -321,6 +321,10 @@ func (c Config) ReleaseUseUncompressedFonts() bool {
 	return c.config.productVariables.GetBuildFlagBool("RELEASE_SOONG_UNCOMPRESSED_FONTS")
 }
 
+func (c Config) ReleaseUseFnoCommonFor3pCode() bool {
+	return c.config.productVariables.GetBuildFlagBool("RELEASE_SOONG_FNO_COMMON_FOR_3P_CODE")
+}
+
 func (c Config) ReleaseAconfigStorageVersion() string {
 	if val, exists := c.GetBuildFlag("RELEASE_ACONFIG_STORAGE_VERSION"); exists {
 		return val
