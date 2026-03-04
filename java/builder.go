@@ -311,10 +311,10 @@ var (
 		&remoteexec.REParams{
 			ExecStrategy: "${config.REJarExecStrategy}",
 			Inputs:       []string{"${config.SoongZipCmd}", "${out}.rsp"},
-			RSPFiles:     []string{"${out}.rsp"},
+			RSPFiles:     []string{"$rspFiles"},
 			OutputFiles:  []string{"$out"},
 			Platform:     map[string]string{remoteexec.PoolKey: "${config.REJavaPool}"},
-		}, []string{"jarArgs"}, nil)
+		}, []string{"jarArgs"}, []string{"rspFiles"})
 
 	zip, zipRE = pctx.RemoteStaticRules("zip",
 		blueprint.RuleParams{
@@ -1021,17 +1021,23 @@ func TransformResourcesToJar(ctx android.ModuleContext, outputFile android.Writa
 	jarArgs []string, deps android.Paths) {
 
 	rule := jar
+	args := map[string]string{
+		"jarArgs": strings.Join(proptools.NinjaAndShellEscapeList(jarArgs), " "),
+	}
 	if ctx.Config().UseREWrapper() && ctx.Config().IsEnvTrue("RBE_JAR") {
 		rule = jarRE
+		// Create an RSP file listing all the inputs for RBE.
+		rbeInputs := android.PathForModuleOut(ctx, "rbe_inputs.rsp")
+		android.WriteFileRule(ctx, rbeInputs, strings.Join(deps.Strings(), " "))
+		args["rspFiles"] = rbeInputs.String()
+		deps = append(deps, rbeInputs)
 	}
 	ctx.Build(pctx, android.BuildParams{
 		Rule:        rule,
 		Description: "jar",
 		Output:      outputFile,
 		Implicits:   deps,
-		Args: map[string]string{
-			"jarArgs": strings.Join(proptools.NinjaAndShellEscapeList(jarArgs), " "),
-		},
+		Args:        args,
 	})
 }
 
