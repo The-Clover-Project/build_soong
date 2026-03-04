@@ -916,7 +916,7 @@ func (r *RuleBuilder) Build(name string, desc string) {
 		pool = remotePool
 	} else if r.highmem {
 		pool = highmemPool
-	} else if r.ctx.Config().UseRemoteBuild() {
+	} else if r.ctx.Config().REWrapperRemoteBuild() {
 		pool = localPool
 	}
 

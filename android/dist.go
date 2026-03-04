@@ -330,7 +330,7 @@ func (s *soongDist) addDistsToPhonyMap(ctx SingletonContext, phonyMap phonyMap) 
 }
 
 // writeNinjaFiles writes the two extra ninja files for use when dist is and is not enabled.
-func (s *soongDist) writeNinjaFiles(soongDistFile, soongNoDistFile Path, useRemoteBuild bool) []error {
+func (s *soongDist) writeNinjaFiles(soongDistFile, soongNoDistFile Path, rewrapperRemoteBuild bool) []error {
 	wg := WaitGroupWithErrorCollector{}
 
 	wg.Go(func() error {
@@ -340,9 +340,9 @@ func (s *soongDist) writeNinjaFiles(soongDistFile, soongNoDistFile Path, useRemo
 		}
 		defer f.Close()
 		if len(s.conflicts) == 0 {
-			return s.generateSoongDistNinja(f, useRemoteBuild)
+			return s.generateSoongDistNinja(f, rewrapperRemoteBuild)
 		} else {
-			return s.generateSoongConflictDistNinja(f, useRemoteBuild)
+			return s.generateSoongConflictDistNinja(f, rewrapperRemoteBuild)
 		}
 	})
 
@@ -362,7 +362,7 @@ func (s *soongDist) writeNinjaFiles(soongDistFile, soongNoDistFile Path, useRemo
 // generateSoongDistNinja generates a ninja file to be used when dist is enabled which contains
 // copy rules for all the dist files, and the intermediate phony targets with dependencies
 // on the copy rules.
-func (s *soongDist) generateSoongDistNinja(w io.StringWriter, useRemoteBuild bool) error {
+func (s *soongDist) generateSoongDistNinja(w io.StringWriter, rewrapperRemoteBuild bool) error {
 	var err error
 	write := func(s string) {
 		if err == nil {
@@ -374,7 +374,7 @@ func (s *soongDist) generateSoongDistNinja(w io.StringWriter, useRemoteBuild boo
 		" description = Dist $out\n" +
 		" command = rm -f $out && cp $in $out\n" +
 		" sandbox_disabled = true\n")
-	if useRemoteBuild {
+	if rewrapperRemoteBuild {
 		write(" pool = local_pool\n")
 	}
 	write("\n")
@@ -410,7 +410,7 @@ func (s *soongDist) generateSoongDistNinja(w io.StringWriter, useRemoteBuild boo
 // generated when `dist` was on the command line, and is necessary because mainline builds
 // that configure multiple targets with conflicting multilib values (e.g. arm64 and x86_64)
 // exist but don't use `dist.
-func (s *soongDist) generateSoongConflictDistNinja(w io.StringWriter, useRemoteBuild bool) error {
+func (s *soongDist) generateSoongConflictDistNinja(w io.StringWriter, rewrapperRemoteBuild bool) error {
 	var err error
 	write := func(s string) {
 		if err == nil {
@@ -423,7 +423,7 @@ func (s *soongDist) generateSoongConflictDistNinja(w io.StringWriter, useRemoteB
 		" command = echo $distErrorMsg; false\n" +
 		" sandbox_disabled = true\n" +
 		" phony_output = true\n")
-	if useRemoteBuild {
+	if rewrapperRemoteBuild {
 		write(" pool = local_pool\n")
 	}
 

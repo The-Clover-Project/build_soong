@@ -46,5 +46,5 @@ func (zipper *TestConfigZipper) writeZip(ctx android.SingletonContext) {
 	builder.Build(TestConfigsZipPhonyTarget, "Creating test-configs.zip")
 
 	ctx.Phony(TestConfigsZipPhonyTarget, zipOut)
-	ctx.DistForGoals([]string{TestConfigsZipPhonyTarget, "test_mapping", "dist_files"}, zipOut)
+	ctx.DistForGoals([]string{TestConfigsZipPhonyTarget, "test_mapping", "dist_files", "apps_only"}, zipOut)
 }
