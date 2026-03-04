@@ -995,7 +995,7 @@ func TestBootclasspathFragmentContentsNoName(t *testing.T) {
 		}
 		android.AssertPathRelativeToTopEquals(t, name+" dex", expectedDexJar, dexJar)
 
-		expectedCopyCommand := fmt.Sprintf("&& cp -f %s out/soong/.intermediates/myapex/android_common_myapex/image.apex/javalib/%s.jar", expectedDexJar, name)
+		expectedCopyCommand := fmt.Sprintf("cp -f %s out/soong/.intermediates/myapex/android_common_myapex/image.apex/javalib/%s.jar", expectedDexJar, name)
 		android.AssertStringDoesContain(t, name+" apex copy command", copyCommands, expectedCopyCommand)
 	}
 
