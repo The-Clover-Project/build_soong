@@ -1007,8 +1007,6 @@ func (j *Module) deps(ctx android.BottomUpMutatorContext) {
 	}
 
 	j.EmbeddableSdkLibraryComponent.setComponentDependencyInfoProvider(ctx)
-
-	ctx.AddHostToolDependencies("cp_if_changed")
 }
 
 func hasSrcExt(srcs []string, ext string) bool {
