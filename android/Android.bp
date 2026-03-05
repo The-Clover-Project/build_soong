@@ -41,7 +41,6 @@ bootstrap_go_package {
         "androidmk.go",
         "apex.go",
         "apex_contributions.go",
-        "api_domain.go",
         "api_levels.go",
         "arch.go",
         "arch_list.go",
