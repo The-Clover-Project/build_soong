@@ -234,7 +234,6 @@ func TestCipdPackage_FilesSelect(t *testing.T) {
 		version: "version1",
 		files: select(soong_config_variable("test", "var"), {
 			any @ v: ["file1-" + v],
-			default: ["file1"],
 		}),
 		resolved_versions_file: "cipd.versions",
 	}
