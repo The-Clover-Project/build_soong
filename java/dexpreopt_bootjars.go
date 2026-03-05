@@ -1305,7 +1305,7 @@ func buildBootImageVariant(ctx android.ModuleContext, image *bootImageVariant, p
 		cmd.FlagWithArg("--base=", ctx.Config().LibartImgDeviceBaseAddress())
 	}
 
-	if len(image.preloadedClassesFile) > 0 {
+	if !ctx.Config().GetBuildFlagBool("RELEASE_ART_NOPRELOAD_CLASSES_IN_PROFILE") && len(image.preloadedClassesFile) > 0 {
 		// We always expect a preloaded classes file to be available. However, if we cannot find it, it's
 		// OK to not pass the flag to dex2oat.
 		preloadedClassesPath := android.ExistentPathForSource(ctx, image.preloadedClassesFile)
