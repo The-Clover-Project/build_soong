@@ -9665,6 +9665,21 @@ func (r IdeInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		}
 	}
 
+	if r.Javacflags == nil {
+		if err = gobtools.EncodeInt(buf, -1); err != nil {
+			return err
+		}
+	} else {
+		if err = gobtools.EncodeInt(buf, len(r.Javacflags)); err != nil {
+			return err
+		}
+		for val21 := 0; val21 < len(r.Javacflags); val21++ {
+			if err = gobtools.EncodeString(buf, r.Javacflags[val21]); err != nil {
+				return err
+			}
+		}
+	}
+
 	if r.Annotation_processor_flags == nil {
 		if err = gobtools.EncodeInt(buf, -1); err != nil {
 			return err
@@ -9673,8 +9688,8 @@ func (r IdeInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		if err = gobtools.EncodeInt(buf, len(r.Annotation_processor_flags)); err != nil {
 			return err
 		}
-		for val21 := 0; val21 < len(r.Annotation_processor_flags); val21++ {
-			if err = gobtools.EncodeString(buf, r.Annotation_processor_flags[val21]); err != nil {
+		for val22 := 0; val22 < len(r.Annotation_processor_flags); val22++ {
+			if err = gobtools.EncodeString(buf, r.Annotation_processor_flags[val22]); err != nil {
 				return err
 			}
 		}
@@ -9688,8 +9703,8 @@ func (r IdeInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 		if err = gobtools.EncodeInt(buf, len(r.Plugins)); err != nil {
 			return err
 		}
-		for val22 := 0; val22 < len(r.Plugins); val22++ {
-			if err = gobtools.EncodeString(buf, r.Plugins[val22]); err != nil {
+		for val23 := 0; val23 < len(r.Plugins); val23++ {
+			if err = gobtools.EncodeString(buf, r.Plugins[val23]); err != nil {
 				return err
 			}
 		}
@@ -9699,7 +9714,7 @@ func (r IdeInfo) Encode(ctx gobtools.EncContext, buf *bytes.Buffer) error {
 
 func (r IdeInfo) CustomHash(hasher *proptools.Hasher) error {
 	hasher.WriteString(":android.IdeInfo")
-	hasher.WriteInt(26)
+	hasher.WriteInt(27)
 	hasher.WriteString(":.string")
 	hasher.WriteString(r.BaseModuleName)
 	hasher.WriteString(":.string")
@@ -9856,16 +9871,22 @@ func (r IdeInfo) CustomHash(hasher *proptools.Hasher) error {
 		hasher.WriteString(r.Kotlincflags[val23])
 	}
 	hasher.WriteString(":.[]string")
-	hasher.WriteInt(len(r.Annotation_processor_flags))
-	for val24 := 0; val24 < len(r.Annotation_processor_flags); val24++ {
+	hasher.WriteInt(len(r.Javacflags))
+	for val24 := 0; val24 < len(r.Javacflags); val24++ {
 		hasher.WriteString(":.string")
-		hasher.WriteString(r.Annotation_processor_flags[val24])
+		hasher.WriteString(r.Javacflags[val24])
+	}
+	hasher.WriteString(":.[]string")
+	hasher.WriteInt(len(r.Annotation_processor_flags))
+	for val25 := 0; val25 < len(r.Annotation_processor_flags); val25++ {
+		hasher.WriteString(":.string")
+		hasher.WriteString(r.Annotation_processor_flags[val25])
 	}
 	hasher.WriteString(":.[]string")
 	hasher.WriteInt(len(r.Plugins))
-	for val25 := 0; val25 < len(r.Plugins); val25++ {
+	for val26 := 0; val26 < len(r.Plugins); val26++ {
 		hasher.WriteString(":.string")
-		hasher.WriteString(r.Plugins[val25])
+		hasher.WriteString(r.Plugins[val26])
 	}
 	return nil
 }
@@ -10190,9 +10211,9 @@ func (r *IdeInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 		return err
 	}
 	if val83 != -1 {
-		r.Annotation_processor_flags = make([]string, val83)
+		r.Javacflags = make([]string, val83)
 		for val84 := 0; val84 < int(val83); val84++ {
-			err = gobtools.DecodeString(buf, &r.Annotation_processor_flags[val84])
+			err = gobtools.DecodeString(buf, &r.Javacflags[val84])
 			if err != nil {
 				return err
 			}
@@ -10205,9 +10226,24 @@ func (r *IdeInfo) Decode(ctx gobtools.EncContext, buf *bytes.Reader) error {
 		return err
 	}
 	if val87 != -1 {
-		r.Plugins = make([]string, val87)
+		r.Annotation_processor_flags = make([]string, val87)
 		for val88 := 0; val88 < int(val87); val88++ {
-			err = gobtools.DecodeString(buf, &r.Plugins[val88])
+			err = gobtools.DecodeString(buf, &r.Annotation_processor_flags[val88])
+			if err != nil {
+				return err
+			}
+		}
+	}
+
+	var val91 int
+	err = gobtools.DecodeInt(buf, &val91)
+	if err != nil {
+		return err
+	}
+	if val91 != -1 {
+		r.Plugins = make([]string, val91)
+		for val92 := 0; val92 < int(val91); val92++ {
+			err = gobtools.DecodeString(buf, &r.Plugins[val92])
 			if err != nil {
 				return err
 			}

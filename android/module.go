@@ -3736,6 +3736,7 @@ type IdeInfo struct {
 	Resource_dirs              []string        `json:"resource_dirs,omitempty"`
 	Associates                 []string        `json:"associates,omitempty"`
 	Kotlincflags               []string        `json:"kotlincflags,omitempty"`
+	Javacflags                 []string        `json:"javacflags,omitempty"`
 	Annotation_processor_flags []string        `json:"annotation_processor_flags,omitempty"`
 	Plugins                    []string        `json:"plugins,omitempty"`
 }
@@ -3788,6 +3789,7 @@ func (i IdeInfo) Merge(other *IdeInfo) IdeInfo {
 		Resource_dirs:              mergeStringLists(i.Resource_dirs, other.Resource_dirs),
 		Associates:                 mergeStringLists(i.Associates, other.Associates),
 		Kotlincflags:               mergeStringLists(i.Kotlincflags, other.Kotlincflags),
+		Javacflags:                 mergeStringLists(i.Javacflags, other.Javacflags),
 		Annotation_processor_flags: mergeStringLists(i.Annotation_processor_flags, other.Annotation_processor_flags),
 		Plugins:                    mergeStringLists(i.Plugins, other.Plugins),
 	}

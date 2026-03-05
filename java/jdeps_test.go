@@ -364,6 +364,24 @@ func TestCollectJavaLibraryPropertiesAddKotlincFlags(t *testing.T) {
 	}
 }
 
+func TestCollectJavaLibraryPropertiesAddJavacFlags(t *testing.T) {
+	t.Parallel()
+	ctx, _ := testJava(t,
+		`
+		java_library {
+			name: "javalib",
+			javacflags: ["-flag1", "-flag2"],
+		}
+	`)
+	module := ctx.ModuleForTests(t, "javalib", "android_common").Module().(*Library)
+	dpInfo := getIdeInfo(ctx, module)
+
+	expectedJavacFlags := []string{"-flag1", "-flag2"}
+	if !reflect.DeepEqual(dpInfo.Javacflags, expectedJavacFlags) {
+		t.Errorf("Library.IDEInfo() Javacflags = %v, want %v", dpInfo.Javacflags, expectedJavacFlags)
+	}
+}
+
 func TestCollectJavaLibraryPropertiesAddAnnotationProcessorFlags(t *testing.T) {
 	t.Parallel()
 	ctx, _ := testJava(t,
