@@ -931,6 +931,7 @@ func (j *Module) useKsp() bool {
 }
 
 func (j *Module) deps(ctx android.BottomUpMutatorContext) {
+	j.dexpreopter.DepsMutator(ctx)
 	j.setOptimizeForceDisabled(proptools.Bool(j.properties.Is_stubs_module))
 	if ctx.Device() {
 		j.linter.deps(ctx)
@@ -1007,6 +1008,8 @@ func (j *Module) deps(ctx android.BottomUpMutatorContext) {
 	}
 
 	j.EmbeddableSdkLibraryComponent.setComponentDependencyInfoProvider(ctx)
+
+	ctx.AddHostToolDependencies("cp_if_changed")
 }
 
 func hasSrcExt(srcs []string, ext string) bool {

@@ -303,7 +303,8 @@ var (
 type bottomUpMutatorContext struct {
 	bp blueprint.BottomUpMutatorContext
 	baseModuleContext
-	finalPhase bool
+	finalPhase        bool
+	addedHostToolDeps map[string]struct{}
 }
 
 // callers must immediately follow the call to this function with defer bottomUpMutatorContextPool.Put(mctx).
@@ -578,7 +579,16 @@ func (b *bottomUpMutatorContext) AddFarVariationDependencies(variations []bluepr
 }
 
 func (b *bottomUpMutatorContext) AddHostToolDependencies(tools ...string) {
-	b.AddFarVariationDependencies(b.Config().BuildOSTarget.Variations(), HostToolDepTag, tools...)
+	if b.addedHostToolDeps == nil {
+		b.addedHostToolDeps = make(map[string]struct{})
+	}
+	for _, tool := range tools {
+		if _, ok := b.addedHostToolDeps[tool]; ok {
+			continue
+		}
+		b.addedHostToolDeps[tool] = struct{}{}
+		b.AddFarVariationDependencies(b.Config().BuildOSTarget.Variations(), HostToolDepTag, tool)
+	}
 }
 
 func (b *bottomUpMutatorContext) ReplaceDependencies(name string) {
