@@ -47,6 +47,7 @@ var PrepareForTestWithJavaBuildComponents = android.GroupFixturePreparers(
 	// Make java build components available to the test.
 	android.FixtureRegisterWithContext(registerRequiredBuildComponentsForTest),
 	android.FixtureRegisterWithContext(registerJavaPluginBuildComponents),
+	android.PrepareForTestWithHostTools("cp_if_changed", "rm", "touch", "grep"),
 	// Additional files needed in tests that disallow non-existent source files.
 	// This includes files that are needed by all, or at least most, instances of a java module type.
 	android.MockFS{
@@ -613,7 +614,11 @@ func getModuleDependencies(t *testing.T, ctx *android.TestContext, name, variant
 	t.Helper()
 	module := ctx.ModuleForTests(t, name, variant).Module()
 	deps := []string{}
-	ctx.VisitDirectDepsProxies(module, func(m android.ModuleProxy) {
+	ctx.VisitDirectDepsProxiesWithTags(module, func(m blueprint.ModuleProxy, tag blueprint.DependencyTag) {
+		if _, ok := tag.(android.HostToolDepTagType); ok {
+			// ignore host tools
+			return
+		}
 		deps = append(deps, m.Name())
 	})
 	return android.SortedUniqueStrings(deps)
