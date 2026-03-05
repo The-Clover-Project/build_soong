@@ -656,10 +656,6 @@ func validateApexClasspathFragments(ctx android.ModuleContext) {
 	})
 }
 
-func (p *Prebuilt) DepsMutator(ctx android.BottomUpMutatorContext) {
-	ctx.AddHostToolDependencies("cp_if_changed")
-}
-
 func (p *Prebuilt) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	// Validate contents of classpath fragments
 	if !p.IsHideFromMake() {

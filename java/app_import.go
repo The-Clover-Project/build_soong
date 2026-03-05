@@ -293,8 +293,6 @@ func (a *AndroidAppImport) DepsMutator(ctx android.BottomUpMutatorContext) {
 		}
 	}
 
-	ctx.AddHostToolDependencies("cp_if_changed")
-
 	a.usesLibrary.deps(ctx, true)
 }
 

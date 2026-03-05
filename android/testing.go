@@ -1598,16 +1598,11 @@ func PrepareForTestWithHostTools(hostTools ...string) FixturePreparer {
 	fs := make(MockFS)
 
 	for _, hostTool := range hostTools {
-		if _, ok := commonToyboxSymlinks[hostTool]; ok {
-			fs["prebuilts/build-tools/linux-x86/bin/toybox"] = []byte{}
-			fs["prebuilts/build-tools/path/linux-x86/"+hostTool] = []byte{}
-		} else {
-			fs[fmt.Sprintf("host_tools/%s/Android.bp", hostTool)] = fmt.Appendf(nil, `
-			host_mock_module {
-				name: "%s"
-			}
-			`, hostTool)
+		fs[fmt.Sprintf("host_tools/%s/Android.bp", hostTool)] = fmt.Appendf(nil, `
+		host_mock_module {
+			name: "%s"
 		}
+		`, hostTool)
 	}
 
 	return GroupFixturePreparers(
