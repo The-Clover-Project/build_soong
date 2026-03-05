@@ -2355,6 +2355,9 @@ func (l linkageTransitionMutator) splitAll(ctx android.BaseModuleContext) bool {
 	if android.InList(ctx.ModuleName(), denylist) {
 		return true
 	}
+	if c, ok := ctx.Module().(*Module); ok && c.HasStubsVariants() {
+		return true
+	}
 	// Soong benchmark builds
 	if ctx.Config().IsEnvTrue("SOONG_SPLIT_OPT_IN_VARIANTS_ON_DEMAND") {
 		return false
@@ -2572,7 +2575,11 @@ func (v versionTransitionMutator) splitAll(ctx android.BaseModuleContext) bool {
 	if prebuiltOrSourceWithPrebuilt(ctx) {
 		return true
 	}
-	if ctx.Module().SplitAllVariants() || ctx.Config().AllowMissingDependencies() || ctx.Config().KatiEnabled() {
+	if ctx.Module().SplitAllVariants() ||
+		ctx.Config().AllowMissingDependencies() ||
+		ctx.Config().KatiEnabled() ||
+		ctx.Config().IsEnvTrue("SOONG_SPLIT_ALL_VARIANTS") ||
+		ctx.Config().IsEnvTrue("RUN_BUILD_TESTS") {
 		// blueprint's transition.go keeps the frontloaded variant creation when ctx.SplitAllVariants is true.
 		// soong's android/transition.go also concatenates the SplitOnDemand values to Split values when
 		// android.Module's split_all_variants is true.
