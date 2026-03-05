@@ -39,7 +39,7 @@ type DexProperties struct {
 	Compile_dex *bool
 
 	// list of module-specific flags that will be used for dex compiles
-	Dxflags []string `android:"arch_variant"`
+	Dxflags proptools.Configurable[[]string] `android:"arch_variant"`
 
 	// A list of files containing rules that specify the classes to keep in the main dex file.
 	Main_dex_rules []string `android:"path"`
@@ -610,7 +610,7 @@ var proguardDictToProto = pctx.AndroidStaticRule("proguard_dict_to_proto", bluep
 func (d *dexer) dexCommonFlags(ctx android.ModuleContext,
 	dexParams *compileDexParams) (flags []string, deps android.Paths, incD8Compatible bool) {
 
-	flags = d.dexProperties.Dxflags
+	flags = d.dexProperties.Dxflags.GetOrDefault(ctx, nil)
 	// Translate all the DX flags to D8 ones until all the build files have been migrated
 	// to D8 flags. See: b/69377755
 	flags = android.RemoveListFromList(flags,

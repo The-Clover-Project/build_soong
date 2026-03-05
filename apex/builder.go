@@ -101,18 +101,29 @@ var createStorageInfo = []createStorageStruct{
 }
 
 var (
-	apex_elf_checker    = pctx.HostTool("apex_elf_checker")
-	host_apex_verifier  = pctx.HostTool("host_apex_verifier")
-	deapexer            = pctx.HostTool("deapexer")
-	debugfs             = pctx.HostTool("debugfs")
-	fsck_erofs          = pctx.HostTool("fsck.erofs")
-	aconfigTool         = pctx.HostTool("aconfig")
-	apex_ls             = pctx.HostTool("apex-ls")
-	apex_sepolicy_tests = pctx.HostTool("apex_sepolicy_tests")
-	zip2zip             = pctx.HostTool("zip2zip")
-	jsonmodify          = pctx.HostTool("jsonmodify")
-	conv_apex_manifest  = pctx.HostTool("conv_apex_manifest")
-	conv_linker_config  = pctx.HostTool("conv_linker_config")
+	apexer                         = pctx.HostTool("apexer")
+	apexer_with_DCLA_preprocessing = pctx.HostTool("apexer_with_DCLA_preprocessing")
+	avbtool                        = pctx.HostTool("avbtool")
+	e2fsdroid                      = pctx.HostTool("e2fsdroid")
+	mke2fs                         = pctx.HostTool("mke2fs")
+	resize2fs                      = pctx.HostTool("resize2fs")
+	sefcontext_compile             = pctx.HostTool("sefcontext_compile")
+	make_f2fs                      = pctx.HostTool("make_f2fs")
+	sload_f2fs                     = pctx.HostTool("sload_f2fs")
+	make_erofs                     = pctx.HostTool("mkfs.erofs")
+	zipalign                       = pctx.HostTool("zipalign")
+	apex_elf_checker               = pctx.HostTool("apex_elf_checker")
+	host_apex_verifier             = pctx.HostTool("host_apex_verifier")
+	deapexer                       = pctx.HostTool("deapexer")
+	debugfs                        = pctx.HostTool("debugfs")
+	fsck_erofs                     = pctx.HostTool("fsck.erofs")
+	aconfigTool                    = pctx.HostTool("aconfig")
+	apex_ls                        = pctx.HostTool("apex-ls")
+	apex_sepolicy_tests            = pctx.HostTool("apex_sepolicy_tests")
+	zip2zip                        = pctx.HostTool("zip2zip")
+	jsonmodify                     = pctx.HostTool("jsonmodify")
+	conv_apex_manifest             = pctx.HostTool("conv_apex_manifest")
+	conv_linker_config             = pctx.HostTool("conv_linker_config")
 
 	apexManifestRule = pctx.StaticRule("apexManifestRule", blueprint.RuleParams{
 		Command2: blueprint.NewCommand(
@@ -144,52 +155,54 @@ var (
 
 	// TODO(b/114327326): automate the generation of file_contexts
 	apexRule = pctx.StaticRule("apexRule", blueprint.RuleParams{
-		Command: `rm -rf ${image_dir} && mkdir -p ${image_dir} && ` +
-			`(. ${out}.copy_commands) && ` +
-			`APEXER_TOOL_PATH=${tool_path} ` +
-			`${apexer} --force --manifest ${manifest} ` +
-			`--file_contexts ${file_contexts} ` +
-			`--canned_fs_config ${canned_fs_config} ` +
-			`--include_build_info ` +
-			`--payload_type image ` +
-			`--key ${key} ${opt_flags} ${image_dir} ${out} ` +
-			`&& ${soong_zip} -d -C ${image_dir} -D ${image_dir} -o ${image_zip}`,
-		CommandDeps: []string{"${apexer}", "${avbtool}", "${e2fsdroid}", "${merge_zips}",
-			"${mke2fs}", "${resize2fs}", "${sefcontext_compile}", "${make_f2fs}", "${sload_f2fs}", "${make_erofs}",
-			"${soong_zip}", "${zipalign}", "${aapt2}", "prebuilts/sdk/current/public/android.jar"},
-		Rspfile:         "${out}.copy_commands",
-		RspfileContent:  "${copy_commands}",
-		Description:     "APEX ${image_dir} => ${out}",
-		SandboxDisabled: true,
+		Command2: blueprint.NewCommand(
+			android.Rm, ` -rf ${image_dir} && `, android.Mkdir, ` -p ${image_dir} && `,
+			`(. ${out}.copy_commands) && `,
+			`APEXER_TOOL_PATH=${tool_path} `,
+			apexer, ` --force --manifest ${manifest} `,
+			`--file_contexts ${file_contexts} `,
+			`--canned_fs_config ${canned_fs_config} `,
+			`--include_build_info `,
+			`--payload_type image `,
+			`--key ${key} ${opt_flags} ${image_dir} ${out} && `,
+			android.SoongZip, ` -d -C ${image_dir} -D ${image_dir} -o ${image_zip}`,
+		),
+		CommandDeps: []string{"${aapt2}", "prebuilts/sdk/current/public/android.jar"},
+		CommandDepsTools: []blueprint.HostTool{avbtool, e2fsdroid, android.MergeZips,
+			mke2fs, resize2fs, sefcontext_compile, make_f2fs, sload_f2fs, make_erofs,
+			android.SoongZip, zipalign, android.Cp, android.Ln, android.ZipSync},
+		Rspfile:        "${out}.copy_commands",
+		RspfileContent: "${copy_commands}",
+		Description:    "APEX ${image_dir} => ${out}",
 	}, "tool_path", "image_dir", "image_zip", "copy_commands", "file_contexts", "canned_fs_config", "key",
 		"opt_flags", "manifest")
 
 	DCLAApexRule = pctx.StaticRule("DCLAApexRule", blueprint.RuleParams{
-		Command: `rm -rf ${image_dir} && mkdir -p ${image_dir} && ` +
-			`(. ${out}.copy_commands) && ` +
-			`APEXER_TOOL_PATH=${tool_path} ` +
-			`${apexer_with_DCLA_preprocessing} ` +
-			`--apexer ${apexer} ` +
-			`--canned_fs_config ${canned_fs_config} ` +
-			`${image_dir} ` +
-			`${out} ` +
-			`-- ` +
-			`--include_build_info ` +
-			`--force ` +
-			`--payload_type image ` +
-			`--key ${key} ` +
-			`--file_contexts ${file_contexts} ` +
-			`--manifest ${manifest} ` +
-			`${opt_flags} ` +
-			`&& ${soong_zip} -d -C ${image_dir} -D ${image_dir} -o ${image_zip}`,
-		CommandDeps: []string{"${apexer_with_DCLA_preprocessing}", "${apexer}", "${avbtool}", "${e2fsdroid}",
-			"${merge_zips}", "${mke2fs}", "${resize2fs}", "${sefcontext_compile}", "${make_f2fs}",
-			"${sload_f2fs}", "${make_erofs}", "${soong_zip}", "${zipalign}", "${aapt2}",
-			"prebuilts/sdk/current/public/android.jar"},
-		Rspfile:         "${out}.copy_commands",
-		RspfileContent:  "${copy_commands}",
-		Description:     "APEX ${image_dir} => ${out}",
-		SandboxDisabled: true,
+		Command2: blueprint.NewCommand(
+			android.Rm, ` -rf ${image_dir} && `, android.Mkdir, ` -p ${image_dir} && `,
+			`(. ${out}.copy_commands) && `,
+			`APEXER_TOOL_PATH=${tool_path} `,
+			apexer_with_DCLA_preprocessing, ` --apexer `, apexer,
+			` --canned_fs_config ${canned_fs_config} `,
+			`${image_dir} `,
+			`${out} `,
+			`-- `,
+			`--include_build_info `,
+			`--force `,
+			`--payload_type image `,
+			`--key ${key} `,
+			`--file_contexts ${file_contexts} `,
+			`--manifest ${manifest} `,
+			`${opt_flags} && `,
+			android.SoongZip, ` -d -C ${image_dir} -D ${image_dir} -o ${image_zip}`,
+		),
+		CommandDeps: []string{"${aapt2}", "prebuilts/sdk/current/public/android.jar"},
+		CommandDepsTools: []blueprint.HostTool{avbtool, e2fsdroid, android.MergeZips,
+			mke2fs, resize2fs, sefcontext_compile, make_f2fs, sload_f2fs, make_erofs,
+			android.SoongZip, zipalign, android.Cp, android.Ln, android.ZipSync},
+		Rspfile:        "${out}.copy_commands",
+		RspfileContent: "${copy_commands}",
+		Description:    "APEX ${image_dir} => ${out}",
 	}, "tool_path", "image_dir", "image_zip", "copy_commands", "file_contexts", "canned_fs_config", "key",
 		"opt_flags", "manifest", "is_DCLA")
 
@@ -676,15 +689,20 @@ func (a *apexBundle) buildApex(ctx android.ModuleContext) {
 	// TODO(jiyong): use the RuleBuilder
 	var copyCommands []string
 	var implicitInputs []android.Path
+	rmCmd, _, _ := android.Rm.GetValueAndDeps(ctx.Config())
+	mkdirCmd, _, _ := android.Mkdir.GetValueAndDeps(ctx.Config())
+	lnCmd, _, _ := android.Ln.GetValueAndDeps(ctx.Config())
+	cpCmd, _, _ := android.Cp.GetValueAndDeps(ctx.Config())
+	zipSyncCmd, _, _ := android.ZipSync.GetValueAndDeps(ctx.Config())
 	apexDir := android.PathForModuleInPartitionInstall(ctx, "apex", apexName)
 	for _, fi := range a.filesInfo {
 		destPath := imageDir.Join(ctx, fi.path()).String()
 		// Prepare the destination path
 		destPathDir := filepath.Dir(destPath)
 		if fi.class == appSet {
-			copyCommands = append(copyCommands, "rm -rf "+destPathDir)
+			copyCommands = append(copyCommands, rmCmd+" -rf "+destPathDir)
 		}
-		copyCommands = append(copyCommands, "mkdir -p "+destPathDir)
+		copyCommands = append(copyCommands, mkdirCmd+" -p "+destPathDir)
 
 		installMapPath := fi.builtFile
 
@@ -692,21 +710,21 @@ func (a *apexBundle) buildApex(ctx android.ModuleContext) {
 		// on, place a symlink to the corresponding file in /system partition instead.
 		if a.linkToSystemLib && fi.transitiveDep && fi.availableToPlatform() {
 			pathOnDevice := filepath.Join("/", fi.partition, fi.path())
-			copyCommands = append(copyCommands, "ln -sfn "+pathOnDevice+" "+destPath)
+			copyCommands = append(copyCommands, lnCmd+" -sfn "+pathOnDevice+" "+destPath)
 		} else {
 			// Copy the file into APEX
 			if !a.testApex && shouldApplyAssembleVintf(fi) {
 				// copy the output of assemble_vintf instead of the original
 				vintfFragment := runAssembleVintf(ctx, fi.builtFile)
-				copyCommands = append(copyCommands, "cp -f "+vintfFragment.String()+" "+destPath)
+				copyCommands = append(copyCommands, cpCmd+" -f "+vintfFragment.String()+" "+destPath)
 				implicitInputs = append(implicitInputs, vintfFragment)
 			} else {
-				copyCommands = append(copyCommands, "cp -f "+fi.builtFile.String()+" "+destPath)
+				copyCommands = append(copyCommands, cpCmd+" -f "+fi.builtFile.String()+" "+destPath)
 				implicitInputs = append(implicitInputs, fi.builtFile)
 			}
 			if fi.extraZip.Valid() {
 				copyCommands = append(copyCommands,
-					fmt.Sprintf("unzip -qDD -d %s %s", destPathDir, fi.extraZip.String()))
+					fmt.Sprintf("%s -d %s %s", zipSyncCmd, destPathDir, fi.extraZip.String()))
 				implicitInputs = append(implicitInputs, fi.extraZip.Path())
 			}
 
@@ -725,7 +743,7 @@ func (a *apexBundle) buildApex(ctx android.ModuleContext) {
 			// this is independent from the symlink optimization.
 			for _, symlinkPath := range fi.symlinkPaths() {
 				symlinkDest := imageDir.Join(ctx, symlinkPath).String()
-				copyCommands = append(copyCommands, "ln -sfn "+filepath.Base(destPath)+" "+symlinkDest)
+				copyCommands = append(copyCommands, lnCmd+" -sfn "+filepath.Base(destPath)+" "+symlinkDest)
 				if installSymbolFiles {
 					ctx.InstallSymlink(apexDir.Join(ctx, filepath.Dir(symlinkPath)), filepath.Base(symlinkPath), installedPath)
 				}
@@ -740,7 +758,7 @@ func (a *apexBundle) buildApex(ctx android.ModuleContext) {
 			relPath := d.ToRelativeInstallPath()
 			dataDest := imageDir.Join(ctx, fi.apexRelativePath(relPath)).String()
 
-			copyCommands = append(copyCommands, "cp -f "+d.SrcPath.String()+" "+dataDest)
+			copyCommands = append(copyCommands, cpCmd+" -f "+d.SrcPath.String()+" "+dataDest)
 			implicitInputs = append(implicitInputs, d.SrcPath)
 		}
 
