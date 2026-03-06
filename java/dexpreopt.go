@@ -314,6 +314,12 @@ Please make sure that the value of PRODUCT_APEX_(SYSTEM_SERVER|STANDALONE_SYSTEM
 	d.dexpreopt(ctx, libraryName, dexJarFile)
 }
 
+// dexpreopter is not a real module, but is included in other modules. They should call this
+// DepsMutator method if they use dexpreopter.dexpreopt().
+func (d *dexpreopter) DepsMutator(ctx android.BottomUpMutatorContext) {
+	ctx.AddHostToolDependencies("cp_if_changed")
+}
+
 func (d *dexpreopter) dexpreopt(ctx android.ModuleContext, libName string, dexJarFile android.Path) {
 	global := dexpreopt.GetGlobalConfig(ctx)
 
@@ -472,22 +478,24 @@ func (d *dexpreopter) dexpreopt(ctx android.ModuleContext, libName string, dexJa
 	appProductPackagesStaging := appProductPackages.ReplaceExtension(ctx, "txt.tmp")
 	clcNames, _ := dexpreopt.ComputeClassLoaderContextDependencies(dexpreoptConfig.ClassLoaderContexts)
 	sort.Strings(clcNames) // The order needs to be deterministic.
-	productPackagesRule := android.NewRuleBuilder(pctx, ctx).SandboxDisabled()
+	productPackagesRule := android.NewRuleBuilder(pctx, ctx)
 	if len(clcNames) > 0 {
 		productPackagesRule.Command().
-			Text("grep -F -x").
+			BuiltTool("grep").
+			Text("-F -x").
 			FlagForEachArg("-e ", clcNames).
 			Input(productPackages).
 			FlagWithOutput("> ", appProductPackagesStaging).
 			Text("|| true")
 	} else {
 		productPackagesRule.Command().
-			Text("rm -f").Output(appProductPackagesStaging).
+			BuiltTool("rm").
+			Flag("-f").Output(appProductPackagesStaging).
 			Text("&&").
-			Text("touch").Output(appProductPackagesStaging)
+			BuiltTool("touch").Output(appProductPackagesStaging)
 	}
 	productPackagesRule.Command().
-		Text("rsync --checksum").
+		BuiltTool("cp_if_changed").
 		Input(appProductPackagesStaging).
 		Output(appProductPackages)
 	productPackagesRule.Restat().Build("product_packages."+dexJarStem, "dexpreopt product_packages")
