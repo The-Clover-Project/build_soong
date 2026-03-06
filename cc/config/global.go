@@ -387,8 +387,6 @@ var (
 	// that enables -Wall, -Wextra, or a particular warnings explicitly triggers
 	// newly added warnings. See note above noOverrideGlobalCflags.
 	noOverrideExternalGlobalCflags = []string{
-		// http://b/151457797
-		"-fcommon",
 		// http://b/191699019
 		"-Wno-format-insufficient-args",
 		// http://b/296321508
@@ -526,7 +524,13 @@ func init() {
 
 	pctx.StaticVariable("NoOverride64GlobalCflags", strings.Join(noOverride64GlobalCflags, " "))
 	pctx.StaticVariable("HostGlobalCflags", strings.Join(hostGlobalCflags, " "))
-	pctx.StaticVariable("NoOverrideExternalGlobalCflags", strings.Join(noOverrideExternalGlobalCflags, " "))
+	pctx.VariableFunc("NoOverrideExternalGlobalCflags", func(ctx android.PackageVarContext) string {
+		flags := noOverrideExternalGlobalCflags
+		if !ctx.Config().ReleaseUseFnoCommonFor3pCode() {
+			flags = append(flags, "-fcommon")
+		}
+		return strings.Join(flags, " ")
+	})
 	pctx.StaticVariable("CommonGlobalCppflags", strings.Join(commonGlobalCppflags, " "))
 	pctx.StaticVariable("NoOverrideTestsGlobalCflags", strings.Join(noOverrideTestsGlobalCflags, " "))
 	pctx.StaticVariable("TestsCflags", strings.Join(extraTestsCflags, " "))

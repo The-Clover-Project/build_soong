@@ -313,16 +313,16 @@ func (c Config) ReleaseUseSystemFeatureXmlForUnavailableFeatures() bool {
 	return c.config.productVariables.GetBuildFlagBool("RELEASE_USE_SYSTEM_FEATURE_XML_FOR_UNAVAILABLE_FEATURES")
 }
 
-func (c Config) ReleaseRustUseArmTargetArchVariant() bool {
-	return c.config.productVariables.GetBuildFlagBool("RELEASE_RUST_USE_ARM_TARGET_ARCH_VARIANT")
-}
-
 func (c Config) ReleaseUseSparseEncoding() bool {
 	return c.config.productVariables.GetBuildFlagBool("RELEASE_SOONG_SPARSE_ENCODING")
 }
 
 func (c Config) ReleaseUseUncompressedFonts() bool {
 	return c.config.productVariables.GetBuildFlagBool("RELEASE_SOONG_UNCOMPRESSED_FONTS")
+}
+
+func (c Config) ReleaseUseFnoCommonFor3pCode() bool {
+	return c.config.productVariables.GetBuildFlagBool("RELEASE_SOONG_FNO_COMMON_FOR_3P_CODE")
 }
 
 func (c Config) ReleaseAconfigStorageVersion() string {
@@ -2168,11 +2168,11 @@ func (c *config) MemtagHeapDisabledForPath(path string) bool {
 	return HasAnyPrefix(path, c.productVariables.MemtagHeapExcludePaths)
 }
 
-func (c *config) MemtagHeapAsyncDisabledForPath(path string) bool {
-	if len(c.productVariables.MemtagHeapAsyncExcludePaths) == 0 {
+func (c *config) MemtagHeapAsyncEnabledForPath(path string) bool {
+	if len(c.productVariables.MemtagHeapAsyncIncludePaths) == 0 {
 		return false
 	}
-	return HasAnyPrefix(path, c.productVariables.MemtagHeapAsyncExcludePaths) || c.MemtagHeapDisabledForPath(path)
+	return HasAnyPrefix(path, c.productVariables.MemtagHeapAsyncIncludePaths) && !c.MemtagHeapDisabledForPath(path)
 }
 
 func (c *config) MemtagHeapSyncEnabledForPath(path string) bool {
