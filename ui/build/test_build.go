@@ -66,7 +66,6 @@ func testForDanglingRules(ctx Context, config Config) {
 	outDir := config.OutDir()
 	modulePathsDir := filepath.Join(outDir, ".module_paths")
 	rawFilesDir := filepath.Join(outDir, "soong", "raw")
-	pathInterposerDir := filepath.Join(outDir, ".path")
 	variablesFilePath := config.SoongVarsFile()
 	extraVariablesFilePath := config.SoongExtraVarsFile()
 
@@ -107,7 +106,6 @@ func testForDanglingRules(ctx Context, config Config) {
 		}
 		if strings.HasPrefix(line, modulePathsDir) ||
 			strings.HasPrefix(line, rawFilesDir) ||
-			strings.HasPrefix(line, pathInterposerDir) ||
 			line == variablesFilePath ||
 			line == extraVariablesFilePath ||
 			line == dexpreoptConfigFilePath ||

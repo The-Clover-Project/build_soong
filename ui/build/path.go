@@ -236,25 +236,12 @@ func SetupPath(ctx Context, config Config) {
 		}
 	}
 
-	myPathWithSrc := myPath
-	// Should be appended with /src if OutDir is not absolute.
-	if !filepath.IsAbs(myPath) {
-		myPathWithSrc = filepath.Join("/src", myPath)
-	}
 	myPath, _ = filepath.Abs(myPath)
 
 	// We put some prebuilts in $PATH, since it's infeasible to add dependencies
 	// for all of them.
-	prebuiltsPathRel := "prebuilts/build-tools/path/" + config.PrebuiltOS()
-	prebuiltsPath, _ := filepath.Abs(prebuiltsPathRel)
+	prebuiltsPath, _ := filepath.Abs("prebuilts/build-tools/path/" + config.PrebuiltOS())
 	myPath = prebuiltsPath + string(os.PathListSeparator) + myPath
-
-	// Add /src/$OUT_DIR/.path to PATH for action sandboxed build.
-	if config.IsActionSandboxedBuild() {
-		myPath = myPath + string(os.PathListSeparator) + myPathWithSrc
-		prebuiltsPathRel = filepath.Join("/src", prebuiltsPathRel)
-		myPath = myPath + string(os.PathListSeparator) + prebuiltsPathRel
-	}
 
 	// Replace the $PATH variable with the path_interposer symlinks, and
 	// checked-in prebuilts.
