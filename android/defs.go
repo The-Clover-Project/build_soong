@@ -117,8 +117,7 @@ var (
 		blueprint.RuleParams{
 			Command2: blueprint.NewCommand(
 				Rm, " -f $out && ", Ln, " -f -s $fromPath $out"),
-			Description:     "symlink $out",
-			SandboxDisabled: true,
+			Description: "symlink $out",
 		},
 		"fromPath")
 
