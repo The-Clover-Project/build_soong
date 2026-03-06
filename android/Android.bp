@@ -74,7 +74,6 @@ bootstrap_go_package {
         "licenses.go",
         "logtags.go",
         "makevars.go",
-        "soong_api.go",
         "metrics.go",
         "module.go",
         "module_context.go",
