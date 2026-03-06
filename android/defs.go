@@ -181,8 +181,7 @@ var (
 	AssembleVintfRule = pctx.StaticRule("AssembleVintfRule", blueprint.RuleParams{
 		Command2: blueprint.NewCommand(
 			Rm, " -f $out && VINTF_IGNORE_TARGET_FCM_VERSION=true ", assembleVintf, " -i $in -o $out"),
-		Description:     "run assemble_vintf",
-		SandboxDisabled: true,
+		Description: "run assemble_vintf",
 	})
 
 	depfileVerifierRule = pctx.AndroidStaticRule("DepfileVerifierRule",
