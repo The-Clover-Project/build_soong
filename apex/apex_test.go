@@ -120,7 +120,7 @@ var prepareForApexTest = android.GroupFixturePreparers(
 	// General preparers in alphabetical order as test infrastructure will enforce correct
 	// registration order.
 	android.PrepareForTestWithAndroidBuildComponents,
-	android.PrepareForTestWithHostTools("kernel_modules_builder", "soong_zip", "merge_zips", "depmod"),
+	android.PrepareForTestWithHostTools("kernel_modules_builder", "zipsync", "soong_zip", "merge_zips", "depmod"),
 	bpf.PrepareForTestWithBpf,
 	cc.PrepareForTestWithCcBuildComponents,
 	java.PrepareForTestWithDexpreopt,
