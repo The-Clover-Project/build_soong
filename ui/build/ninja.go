@@ -326,7 +326,6 @@ func runNinja(ctx Context, config Config, ninjaArgs []string) {
 			"BUILD_BROKEN_INCORRECT_PARTITION_IMAGES",
 			// Do not do reanalysis just because we changed ninja commands.
 			"SOONG_NINJA",
-			"SOONG_USE_N2",
 			"RUST_BACKTRACE",
 			"RUST_LOG",
 
