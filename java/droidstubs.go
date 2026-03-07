@@ -1301,9 +1301,12 @@ func (d *Droidstubs) optionalStubCmd(ctx android.ModuleContext, params stubsComm
 
 	cmd := d.commonMetalavaStubCmd(ctx, rule, params)
 
-	// Add the default Metalava format specifier used for producing the signature files and stubs that
-	// are finalized and end up in the Android SDK and mainline module drops.
-	formatSpecifier := config.DefaultMetalavaExportableFormatSpecifier
+	// Add the Metalava format specifier used for producing the signature files and stubs that are
+	// finalized and end up in the Android SDK and mainline module drops.
+	formatSpecifier := ctx.Config().GetenvWithDefault(
+		"SOONG_SDK_SNAPSHOT_SIGNATURE_FORMAT_SPECIFIER",
+		config.DefaultMetalavaExportableFormatSpecifier,
+	)
 	cmd.FlagWithArg("--format ", formatSpecifier)
 
 	if params.stubConfig.doApiLint {
