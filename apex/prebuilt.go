@@ -213,6 +213,10 @@ func (p *prebuiltCommon) initApexFilesForAndroidMk(ctx android.ModuleContext) {
 	p.systemServerDexJars = append(p.systemServerDexJars, p.Dexpreopter.ApexSystemServerDexJars()...)
 }
 
+func (p *prebuiltCommon) DepsMutator(ctx android.BottomUpMutatorContext) {
+	p.Dexpreopter.DepsMutator(ctx)
+}
+
 // If this prebuilt has system server jar, create the rules to dexpreopt it and install it alongside the prebuilt apex
 func (p *prebuiltCommon) dexpreoptSystemServerJars(ctx android.ModuleContext, di *android.DeapexerInfo) {
 	if di == nil {
@@ -654,10 +658,6 @@ func validateApexClasspathFragments(ctx android.ModuleContext) {
 			ctx.ModuleErrorf("%s in contents of %s must also be declared in PRODUCT_APEX_BOOT_JARS", info.UnknownJars, info.ClasspathFragmentModuleName)
 		}
 	})
-}
-
-func (p *Prebuilt) DepsMutator(ctx android.BottomUpMutatorContext) {
-	ctx.AddHostToolDependencies("cp_if_changed")
 }
 
 func (p *Prebuilt) GenerateAndroidBuildActions(ctx android.ModuleContext) {

@@ -314,6 +314,12 @@ Please make sure that the value of PRODUCT_APEX_(SYSTEM_SERVER|STANDALONE_SYSTEM
 	d.dexpreopt(ctx, libraryName, dexJarFile)
 }
 
+// dexpreopter is not a real module, but is included in other modules. They should call this
+// DepsMutator method if they use dexpreopter.dexpreopt().
+func (d *dexpreopter) DepsMutator(ctx android.BottomUpMutatorContext) {
+	ctx.AddHostToolDependencies("cp_if_changed")
+}
+
 func (d *dexpreopter) dexpreopt(ctx android.ModuleContext, libName string, dexJarFile android.Path) {
 	global := dexpreopt.GetGlobalConfig(ctx)
 

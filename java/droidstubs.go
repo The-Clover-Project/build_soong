@@ -879,6 +879,9 @@ func metalavaCmd(ctx android.ModuleContext, rule *android.RuleBuilder, srcs andr
 
 	cmd.Flag(config.MetalavaFlags)
 
+	providerName := ctx.Config().GetenvWithDefault("SOONG_METALAVA_SOURCE_MODEL_PROVIDER", "psi")
+	cmd.FlagWithArg("--source-model-provider ", providerName)
+
 	addMetalavaConfigFilesToCmd(cmd, configFiles)
 
 	addOptionalApiSurfaceToCmd(cmd, apiSurface)

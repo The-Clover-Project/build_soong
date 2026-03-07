@@ -337,6 +337,11 @@ func newConfig(ctx Context, isDumpVar bool, args ...string) Config {
 		}
 	}
 
+	// TODO(b/490207582): SISO doesn't work on older versions of mac os that our CI builders use
+	if runtime.GOOS == "darwin" && ret.ninjaCommand == NINJA_SISO {
+		ret.ninjaCommand = NINJA_NINJA
+	}
+
 	if value, ok := ret.environ.Get("SOONG_ONLY"); ok && !ret.skipKatiControlledByFlags {
 		if value == "true" || value == "1" || value == "y" || value == "yes" {
 			ret.soongOnlyRequested = true

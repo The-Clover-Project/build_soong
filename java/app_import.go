@@ -278,6 +278,8 @@ func disablePrebuiltsWithoutApkMutator(ctx android.BottomUpMutatorContext) {
 }
 
 func (a *AndroidAppImport) DepsMutator(ctx android.BottomUpMutatorContext) {
+	a.dexpreopter.DepsMutator(ctx)
+
 	cert := android.SrcIsModule(a.properties.Certificate.GetOrDefault(ctx, ""))
 	if cert != "" {
 		ctx.AddDependency(ctx.Module(), certificateTag, cert)
@@ -292,8 +294,6 @@ func (a *AndroidAppImport) DepsMutator(ctx android.BottomUpMutatorContext) {
 				`must be names of android_app_certificate modules in the form ":module"`)
 		}
 	}
-
-	ctx.AddHostToolDependencies("cp_if_changed")
 
 	a.usesLibrary.deps(ctx, true)
 }

@@ -3702,7 +3702,7 @@ func (j *DexImport) IsInstallable() bool {
 }
 
 func (j *DexImport) DepsMutator(ctx android.BottomUpMutatorContext) {
-	ctx.AddHostToolDependencies("cp_if_changed")
+	j.dexpreopter.DepsMutator(ctx)
 }
 
 func (j *DexImport) GenerateAndroidBuildActions(ctx android.ModuleContext) {
