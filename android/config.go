@@ -1049,6 +1049,11 @@ func (c *config) HostCcSharedLibPath(ctx PathContext, lib string) Path {
 
 // PrebuiltOS returns the name of the host OS used in prebuilts directories.
 func (c *config) PrebuiltOS() string {
+	return prebuiltOS()
+}
+
+// PrebuiltOS returns the name of the host OS used in prebuilts directories.
+func prebuiltOS() string {
 	switch runtime.GOOS {
 	case "linux":
 		switch runtime.GOARCH {
