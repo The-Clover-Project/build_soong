@@ -771,7 +771,7 @@ func (p *PackagingBase) CopySpecsToDirs(ctx ModuleContext, builder *RuleBuilder,
 				builder.Command().Textf("mkdir -p %s", destDir)
 			}
 			if ps.symlinkTarget == "" {
-				cmd := builder.Command().Text("cp")
+				cmd := builder.Command().Text("cp").Text(ctx.Config().CpPreserveSymlinksFlags())
 				if preserveTimestamps {
 					cmd.Flag("-p")
 				}
