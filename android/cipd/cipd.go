@@ -15,8 +15,8 @@
 package cipd
 
 import (
+	"errors"
 	"fmt"
-	"strings"
 
 	"android/soong/android"
 
@@ -72,8 +72,25 @@ var (
 )
 
 type cipdPackageProperties struct {
-	// The name of the cipd package, like "android/prebuilts/GmsCorePrebuilt/arm64"
+	// For packages with no variants, this should contain the full name of the CIPD
+	// package, like "android/prebuilts/MyPrebuiltApp". For a package with
+	// variants, leave this unset, and use package_prefix and package_suffix instead.
+	// TODO(b/482841429): Change to non-configurable once all dynamic packages are
+	// migrated to use package_prefix and package_suffix.
 	Package proptools.Configurable[string]
+
+	// For a package with variants, this should contain the static prefix for
+	// the package name -- that is, the part that does not depend on any variables.
+	// For example, "android/prebuilts/GmsCorePrebuit" (do not include a trailing
+	// slash). For a package with no variants, leave this unset, and use "package"
+	// instead.
+	Package_prefix string
+
+	// For a package with variants, this should contain the dynamic suffix for
+	// the package name (that is, computed using variables). The suffix is joined
+	// to package_prefix with a slash ('/') in between. For a package with no
+	// variants, leave this unset, and use "package" instead.
+	Package_suffix proptools.Configurable[string]
 
 	// The version tag of the package.
 	Version proptools.Configurable[string]
@@ -92,6 +109,82 @@ type cipdPackageModule struct {
 	properties cipdPackageProperties
 }
 
+// In parsing the package and version properties, we signal two types of errors:
+//
+//  1. evaluation-time errors mean that the soong module is malformed, such as
+//     missing required properties. These are triggered using ctx.PropertyErrorf().
+//
+//  2. run-time errors trigger a failure only if the cipd_package build action
+//     is executed. These allow for leaving "package", "package_suffix", or "version"
+//     empty or unset in cases where the cipd_package will not be used (such as if it
+//     is a conditional dependency). These are triggered by returning an error type,
+//     which is put into an ErrorRule.
+
+func (p *cipdPackageModule) computePackageNoVariant(ctx android.ModuleContext) (pkg string, err error) {
+	packageProp, err := p.properties.Package.GetOrErr(ctx)
+	if err != nil {
+		return pkg, err
+	}
+	pkg = packageProp.GetOrDefault("")
+	if len(pkg) == 0 {
+		return pkg, errors.New("package property is empty")
+	}
+	if len(p.properties.Package_prefix) > 0 {
+		ctx.PropertyErrorf("package", "must not specify both package and package_prefix")
+	}
+	if pkgSuffixProp, err := p.properties.Package_suffix.GetOrErr(ctx); err != nil || pkgSuffixProp.IsPresent() {
+		ctx.PropertyErrorf("package", "must not specify both package and package_suffix")
+	}
+	return pkg, nil
+}
+
+func (p *cipdPackageModule) computePackage(ctx android.ModuleContext) (pkg string, err error) {
+	packagePrefix := p.properties.Package_prefix
+	if len(packagePrefix) == 0 {
+		ctx.PropertyErrorf("package_prefix", "must not be empty")
+	}
+
+	if pkgProp, err := p.properties.Package.GetOrErr(ctx); err != nil || pkgProp.IsPresent() {
+		ctx.PropertyErrorf("package", "cannot be specified together with package_prefix")
+	}
+
+	packageSuffixProp, err := p.properties.Package_suffix.GetOrErr(ctx)
+	if err != nil {
+		return pkg, err
+	}
+	packageSuffix := packageSuffixProp.GetOrDefault("")
+	if len(packageSuffix) == 0 {
+		return pkg, errors.New("package_suffix must not be empty")
+	}
+	return packagePrefix + "/" + packageSuffix, nil
+}
+
+func (p *cipdPackageModule) computePackageVersion(ctx android.ModuleContext) (pkg, version string, err error) {
+	var errs []error
+	// TODO(b/482841429): once "package" becomes non-configurable, it should
+	// be an evaluation error to leave both "package" and "package_prefix"
+	// unset.
+	if len(p.properties.Package_prefix) > 0 {
+		pkg, err = p.computePackage(ctx)
+	} else {
+		pkg, err = p.computePackageNoVariant(ctx)
+	}
+	if err != nil {
+		errs = append(errs, err)
+	}
+
+	versionProp, err := p.properties.Version.GetOrErr(ctx)
+	if err != nil {
+		errs = append(errs, err)
+	} else {
+		version = versionProp.GetOrDefault("")
+		if len(version) == 0 {
+			errs = append(errs, errors.New("version property is empty"))
+		}
+	}
+	return pkg, version, errors.Join(errs...)
+}
+
 func (p *cipdPackageModule) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	ensureFile := android.PathForModuleOut(ctx, "ensure.txt")
 	outPath := android.PathForModuleOut(ctx, "package")
@@ -104,32 +197,11 @@ func (p *cipdPackageModule) GenerateAndroidBuildActions(ctx android.ModuleContex
 		android.PathForModuleSrc(ctx, p.properties.Resolved_versions_file),
 		resolvedVersionsFile.OutputPath)
 
-	ensureContents := fmt.Sprintf("$ResolvedVersions %s\n", resolvedVersionsTxt)
-	var errors []string
-	var packageVal, version string
-	packageProp, err := p.properties.Package.GetOrErr(ctx)
-	if err == nil {
-		packageVal = packageProp.GetOrDefault("")
-		if len(packageVal) == 0 {
-			errors = append(errors, "package property is empty")
-		}
+	pkg, version, err := p.computePackageVersion(ctx)
+	if err != nil {
+		android.ErrorRule(ctx, ensureFile, p.Name()+": "+err.Error())
 	} else {
-		errors = append(errors, err.Error())
-	}
-	versionProp, err := p.properties.Version.GetOrErr(ctx)
-	if err == nil {
-		version = versionProp.GetOrDefault("")
-		if len(version) == 0 {
-			errors = append(errors, "version property is empty")
-		}
-	} else {
-		errors = append(errors, err.Error())
-	}
-	if len(errors) > 0 {
-		android.ErrorRule(ctx, ensureFile, p.Name()+": "+strings.Join(errors, ","))
-	} else {
-		ensureContents += fmt.Sprintf("%s %s\n", packageVal, version)
-		android.WriteFileRule(ctx, ensureFile, ensureContents)
+		android.WriteFileRule(ctx, ensureFile, fmt.Sprintf("$ResolvedVersions %s\n%s %s\n", resolvedVersionsTxt, pkg, version))
 	}
 
 	files := p.properties.Files.GetOrDefault(ctx, nil)
@@ -146,7 +218,7 @@ func (p *cipdPackageModule) GenerateAndroidBuildActions(ctx android.ModuleContex
 			Implicit: resolvedVersionsFile,
 			Args: map[string]string{
 				"root":    outPath.String(),
-				"package": packageVal,
+				"package": pkg,
 				"version": version,
 			},
 		})
@@ -164,7 +236,7 @@ func (p *cipdPackageModule) GenerateAndroidBuildActions(ctx android.ModuleContex
 		Implicit: resolvedVersionsFile,
 		Args: map[string]string{
 			"tempZipDir": tempZipDir.String(),
-			"package":    packageVal,
+			"package":    pkg,
 			"version":    version,
 		},
 	})
