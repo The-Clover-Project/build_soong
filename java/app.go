@@ -443,6 +443,10 @@ func (a *AndroidTestHelperApp) GenerateAndroidBuildActions(ctx android.ModuleCon
 		}
 		a.aapt.manifestValues.applicationId = *applicationId
 	}
+
+	if Bool(a.appTestHelperAppProperties.Enable_static_aconfig_pb) {
+		addStaticAconfigProto(ctx, &a.extraResources)
+	}
 	a.generateAndroidBuildActions(ctx)
 	ctx.SetTestModuleInfo(&android.TestModuleInformation{
 		TestOnly: true,
@@ -1787,9 +1791,7 @@ func (a *AndroidTest) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	}
 
 	if Bool(a.testProperties.Enable_static_aconfig_pb) {
-		if pb := getCombinedAconfigProtoFile(ctx); pb != nil {
-			a.extraResources = append(a.extraResources, pb)
-		}
+		addStaticAconfigProto(ctx, &a.extraResources)
 	}
 
 	a.generateAndroidBuildActions(ctx)
@@ -1996,6 +1998,10 @@ type appTestHelperAppProperties struct {
 	Per_testcase_directory *bool
 
 	Manifest_values Manifest_values
+
+	// Whether to include a static aconfig pb as a test resource. If the pb is included and a
+	// flag is read-only, tests read the flag value from the static pb.
+	Enable_static_aconfig_pb *bool
 }
 
 type AndroidTestHelperApp struct {
