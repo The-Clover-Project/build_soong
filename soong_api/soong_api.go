@@ -62,6 +62,10 @@ type SoongApiModuleRecord struct {
 
 	// Java
 	TransitiveSrcFiles []string `json:"transitive_src_files,omitempty"`
+
+	// Test related
+	TestOnly       bool `json:"test_only,omitempty"`
+	TopLevelTarget bool `json:"top_level_target,omitempty"`
 }
 
 func soongApiSingletonFactory() android.Singleton {
@@ -112,6 +116,11 @@ func (c *soongApiSingleton) GenerateBuildActions(ctx android.SingletonContext) {
 			if len(srcFiles) > 0 {
 				record.TransitiveSrcFiles = pathsToStrings(srcFiles)
 			}
+		}
+
+		if commonInfo.TestModuleInfo != nil {
+			record.TestOnly = commonInfo.TestModuleInfo.TestOnly
+			record.TopLevelTarget = commonInfo.TestModuleInfo.TopLevelTarget
 		}
 
 		records = append(records, record)
