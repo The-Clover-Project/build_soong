@@ -24,13 +24,21 @@ var (
 		"--hide UnresolvedImport",
 	}
 
+	// formatVersion is the default version used for new files.
+	formatVersion = "2.0"
+
+	// formatProperties are the default format properties that are combined with the formatVersion
+	// and used for new and existing files (unless explicitly overridden by the file).
+	//
+	// Force metalava to sort overloaded methods by their order in the source code.
+	// See b/285312164 for more information.
+	// And add concrete overrides of abstract methods.
+	// See b/299366704 for more information.
+	formatProperties = "overloaded-method-order=source,add-additional-overrides=yes"
+
 	defaultMetalavaFormatFlags = []string{
-		"--format=2.0",
-		// Force metalava to sort overloaded methods by their order in the source code.
-		// See b/285312164 for more information.
-		// And add concrete overrides of abstract methods, see b/299366704 for more
-		// information.
-		"--format-defaults overloaded-method-order=source,add-additional-overrides=yes",
+		"--format " + formatVersion,
+		"--format-defaults " + formatProperties,
 	}
 
 	// Flags common to all metalava invocations.
@@ -40,9 +48,9 @@ var (
 	// the "everything" Metalava invocations.
 	DefaultMetalavaEverythingFormatFlags = strings.Join(defaultMetalavaFormatFlags, " ")
 
-	// DefaultMetalavaExportableFormatFlags are the default format flags used by
-	// the "exportable" Metalava invocations.
-	DefaultMetalavaExportableFormatFlags = DefaultMetalavaEverythingFormatFlags
+	// DefaultMetalavaExportableFormatSpecifier is the default format used by the "exportable" Metalava
+	// invocations.
+	DefaultMetalavaExportableFormatSpecifier = formatVersion + ":" + formatProperties
 
 	metalavaAnnotationsFlags = []string{
 		"--include-annotations",
