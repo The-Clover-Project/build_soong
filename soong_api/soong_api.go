@@ -24,6 +24,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/google/blueprint"
 	"github.com/google/blueprint/proptools"
@@ -60,8 +61,16 @@ type SoongApiModuleRecord struct {
 	BuiltFiles   []string `json:"built_files,omitempty"`
 	Licenses     []string `json:"license,omitempty"`
 
+	// Test related
+	TestOnly       bool `json:"test_only,omitempty"`
+	TopLevelTarget bool `json:"top_level_target,omitempty"`
+
 	// Java
-	TransitiveSrcFiles []string `json:"transitive_src_files,omitempty"`
+	TransitiveSrcFiles []string `json:"transitive_src_files,omitempty"` // Srcs
+	Libs               []string `json:"libs,omitempty"`                 // Module names
+	LibFiles           []string `json:"lib_flies,omitempty"`            // Lib paths to jars
+	StaticLibs         []string `json:"static_libs,omitempty"`          // Module names
+	StaticLibFiles     []string `json:"static_lib_files,omitempty"`     // Path to jars
 }
 
 func soongApiSingletonFactory() android.Singleton {
@@ -112,6 +121,32 @@ func (c *soongApiSingleton) GenerateBuildActions(ctx android.SingletonContext) {
 			if len(srcFiles) > 0 {
 				record.TransitiveSrcFiles = pathsToStrings(srcFiles)
 			}
+
+			// Module name of Java libs and staitc_libs
+			ctx.VisitDirectDepsProxies(m, func(dep android.ModuleProxy) {
+				tag := ctx.OtherModuleDependencyTag(dep)
+				depName := ctx.ModuleName(dep)
+				tagStr := fmt.Sprintf("%v", tag)
+
+				// Get direct dep's Provider
+				if depJavaInfo, ok := android.OtherModuleProvider(ctx, dep, java.JavaInfoProvider); ok {
+					// Collect only the direct dep's own output files (non-transitive)
+					depFiles := depJavaInfo.ImplementationJars.Strings()
+
+					if strings.Contains(tagStr, "static") {
+						record.StaticLibs = append(record.StaticLibs, depName)
+						record.StaticLibFiles = append(record.StaticLibFiles, depFiles...)
+					} else if strings.Contains(tagStr, "lib") {
+						record.Libs = append(record.Libs, depName)
+						record.LibFiles = append(record.LibFiles, depFiles...)
+					}
+				}
+			})
+		}
+
+		if commonInfo.TestModuleInfo != nil {
+			record.TestOnly = commonInfo.TestModuleInfo.TestOnly
+			record.TopLevelTarget = commonInfo.TestModuleInfo.TopLevelTarget
 		}
 
 		records = append(records, record)

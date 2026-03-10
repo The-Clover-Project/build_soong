@@ -323,6 +323,8 @@ func newConfig(ctx Context, isDumpVar bool, args ...string) Config {
 	ret.parseArgs(ctx, args)
 
 	switch os.Getenv("SOONG_NINJA") {
+	case "ninja":
+		ret.ninjaCommand = NINJA_NINJA
 	case "n2":
 		ret.ninjaCommand = NINJA_N2
 	case "siso":
