@@ -20,10 +20,12 @@ var (
 	metalavaFlags = []string{
 		"--color",
 		"--quiet",
-		"--format=2.0",
 		"--repeat-errors-max 10",
 		"--hide UnresolvedImport",
+	}
 
+	defaultMetalavaFormatFlags = []string{
+		"--format=2.0",
 		// Force metalava to sort overloaded methods by their order in the source code.
 		// See b/285312164 for more information.
 		// And add concrete overrides of abstract methods, see b/299366704 for more
@@ -31,7 +33,16 @@ var (
 		"--format-defaults overloaded-method-order=source,add-additional-overrides=yes",
 	}
 
+	// Flags common to all metalava invocations.
 	MetalavaFlags = strings.Join(metalavaFlags, " ")
+
+	// DefaultMetalavaEverythingFormatFlags are the default format flags used by
+	// the "everything" Metalava invocations.
+	DefaultMetalavaEverythingFormatFlags = strings.Join(defaultMetalavaFormatFlags, " ")
+
+	// DefaultMetalavaExportableFormatFlags are the default format flags used by
+	// the "exportable" Metalava invocations.
+	DefaultMetalavaExportableFormatFlags = DefaultMetalavaEverythingFormatFlags
 
 	metalavaAnnotationsFlags = []string{
 		"--include-annotations",
