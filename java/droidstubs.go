@@ -1074,6 +1074,10 @@ func (d *Droidstubs) everythingStubCmd(ctx android.ModuleContext, params stubsCo
 
 	cmd := d.commonMetalavaStubCmd(ctx, rule, commonCmdParams)
 
+	// Add the default Metalava format flags used for producing the signature files that are checked
+	// in and the stub files against which Android itself builds.
+	cmd.Flag(config.DefaultMetalavaEverythingFormatFlags)
+
 	d.everythingOptionalCmd(ctx, cmd, params.doApiLint, params.doCheckReleased)
 
 	var everythingStubsCmd *android.RuleBuilderCommand
@@ -1296,6 +1300,14 @@ func (d *Droidstubs) optionalStubCmd(ctx android.ModuleContext, params stubsComm
 	}
 
 	cmd := d.commonMetalavaStubCmd(ctx, rule, params)
+
+	// Add the Metalava format specifier used for producing the signature files and stubs that are
+	// finalized and end up in the Android SDK and mainline module drops.
+	formatSpecifier := ctx.Config().GetenvWithDefault(
+		"SOONG_SDK_SNAPSHOT_SIGNATURE_FORMAT_SPECIFIER",
+		config.DefaultMetalavaExportableFormatSpecifier,
+	)
+	cmd.FlagWithArg("--format ", formatSpecifier)
 
 	if params.stubConfig.doApiLint {
 		// Pass the lint baseline file as an input to resolve the lint errors.

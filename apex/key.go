@@ -177,9 +177,11 @@ func writeApexKeys(ctx android.ModuleContext, module android.Module) android.Wri
 var (
 	pemToDer = pctx.AndroidStaticRule("pem_to_der",
 		blueprint.RuleParams{
-			Command:         `openssl x509 -inform PEM -outform DER -in $in -out $out`,
-			Description:     "Convert certificate from PEM to DER format",
-			SandboxDisabled: true,
+			Command2: blueprint.NewCommand(
+				`$openssl x509 -inform PEM -outform DER -in $in -out $out`,
+			),
+			CommandDeps: []string{"${openssl}"},
+			Description: "Convert certificate from PEM to DER format",
 		},
 	)
 )

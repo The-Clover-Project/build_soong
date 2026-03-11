@@ -85,6 +85,7 @@ func init() {
 	pctx.HostBinToolVariable("apex_elf_checker", "apex_elf_checker")
 	pctx.HostBinToolVariable("aconfig", "aconfig")
 	pctx.HostBinToolVariable("host_apex_verifier", "host_apex_verifier")
+	pctx.SourcePathVariable("openssl", "prebuilts/build-tools/${android.HostPrebuiltTag}/bin/openssl")
 }
 
 type createStorageStruct struct {

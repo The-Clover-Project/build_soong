@@ -244,7 +244,7 @@ var (
 				`--add-exports=jdk.internal.opt/jdk.internal.opt=ALL-UNNAMED ` +
 				`-jar ${config.JavaKytheExtractorJar} ` +
 				`${config.JavacHeapFlags} ${config.CommonJdkFlags} ` +
-				`$processorpath $processor $javacFlags $bootClasspath $classpath ` +
+				`$processorpath $processor $javacFlags $bootClasspath ` +
 				`-source $javaVersion -target $javaVersion ` +
 				`-d $outDir -s $annoDir @$out.rsp @$srcJarDir/list)`,
 			CommandDeps: []string{
@@ -255,7 +255,7 @@ var (
 			},
 			CommandOrderOnly: []string{"${config.SoongJavacWrapper}"},
 			Rspfile:          "$out.rsp",
-			RspfileContent:   "$in",
+			RspfileContent:   "$classpath\n$in",
 			SandboxDisabled:  true,
 		},
 		"javacFlags", "bootClasspath", "classpath", "processorpath", "processor", "srcJars", "srcJarDir",
@@ -598,6 +598,8 @@ func emitXrefRule(ctx android.ModuleContext, xrefFile android.WritablePath, idx 
 		intermediatesDir += strconv.Itoa(idx)
 	}
 
+	classpathArg := classpath.FormJavaClassPath("-classpath")
+
 	ctx.Build(pctx,
 		android.BuildParams{
 			Rule:        kytheExtract,
@@ -608,7 +610,7 @@ func emitXrefRule(ctx android.ModuleContext, xrefFile android.WritablePath, idx 
 			Args: map[string]string{
 				"annoDir":       android.PathForModuleOut(ctx, intermediatesDir, "anno").String(),
 				"bootClasspath": bootClasspath,
-				"classpath":     classpath.FormJavaClassPath("-classpath"),
+				"classpath":     classpathArg,
 				"javacFlags":    flags.javacFlags,
 				"javaVersion":   flags.javaVersion.String(),
 				"outDir":        android.PathForModuleOut(ctx, "javac", "classes.xref").String(),

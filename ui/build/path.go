@@ -16,7 +16,6 @@ package build
 
 import (
 	"fmt"
-	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -144,10 +143,20 @@ func SetupPath(ctx Context, config Config) {
 		ctx.Fatalln("Failed to build path interposer:", err)
 	}
 
-	// Save the original $PATH in a file.
-	if err := ioutil.WriteFile(interposer+"_origpath", []byte(origPath), 0777); err != nil {
-		ctx.Fatalln("Failed to write original path:", err)
+	// envsetup.sh can keep prepending paths across consecutive runs, causing
+	// origPath to change slightly. Deduplicate the path list before checking.
+	var cleanPath []string
+	seenPath := make(map[string]bool)
+	for _, p := range filepath.SplitList(origPath) {
+		if p != "" && !seenPath[p] {
+			seenPath[p] = true
+			cleanPath = append(cleanPath, p)
+		}
 	}
+	cleanOrigPath := strings.Join(cleanPath, string(os.PathListSeparator))
+
+	// Save the original $PATH in a file if it has changed.
+	writeValueIfChanged(ctx, interposer+"_origpath", cleanOrigPath)
 
 	// Communication with the path interposer works over log entries. Set up the
 	// listener channel for the log entries here.
@@ -196,11 +205,12 @@ func SetupPath(ctx Context, config Config) {
 	}()
 
 	// Create the .path directory.
-	ensureEmptyDirectoriesExist(ctx, myPath)
+	// Do not wipe out the entire .path directory; only ensure that the directory exists.
+	ensureDirectoriesExist(ctx, myPath)
 
 	// Compute the full list of binaries available in the original $PATH.
 	var execs []string
-	for _, pathEntry := range filepath.SplitList(origPath) {
+	for _, pathEntry := range filepath.SplitList(cleanOrigPath) {
 		if pathEntry == "" {
 			// Ignore the current directory
 			continue
@@ -225,6 +235,11 @@ func SetupPath(ctx Context, config Config) {
 	for _, name := range execs {
 		if !paths.GetConfig(name).Symlink {
 			// Ignore host tools that shouldn't be symlinked.
+			continue
+		}
+
+		// check if a file already exists and skip if it does
+		if _, err := os.Lstat(filepath.Join(myPath, name)); err == nil {
 			continue
 		}
 
