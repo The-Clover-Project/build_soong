@@ -30,6 +30,7 @@ var PrepareForTestWithApexBuildComponents = android.GroupFixturePreparers(
 	android.MockFS{
 		// Needed by apex.
 		"system/core/rootdir/etc/public.libraries.android.txt": nil,
+		"build/soong/scripts/gen_ndk_backedby_apex.sh":         nil,
 		// Needed by prebuilt_apex.
 		"build/soong/scripts/unpack-prebuilt-apex.sh": nil,
 		// Needed by all_apex_certs
@@ -41,10 +42,8 @@ var PrepareForTestWithApexBuildComponents = android.GroupFixturePreparers(
 		"apex_compression_tool",
 		"cat",
 		"cp",
-		"dexdeps",
 		"find",
 		"echo",
-		"gen_apex_symbols",
 		"sort",
 		"zipinfo",
 		"zipsync",
