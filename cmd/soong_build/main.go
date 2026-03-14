@@ -89,6 +89,7 @@ func init() {
 	// the time to remove them yet
 	flag.BoolVar(&cmdlineArgs.RunGoTests, "t", false, "build and run go tests during bootstrap")
 	flag.BoolVar(&cmdlineArgs.IncrementalBuildActions, "incremental-build-actions", false, "generate build actions incrementally")
+	flag.StringVar(&cmdlineArgs.PartialAnalysisTargets, "partial-analysis-targets", "", "partial analysis targets")
 	flag.BoolVar(&cmdlineArgs.IncrementalProviderTest, "incremental-provider-test", false, "test incremental providers restoring")
 	flag.StringVar(&cmdlineArgs.IncrementalDebugFile, "incremental-debug-file", "", "incremental debug file")
 
@@ -327,6 +328,12 @@ func main() {
 	android.InitSandbox(topDir)
 
 	availableEnv := parseAvailableEnv()
+
+	if availableEnv["SOONG_ENFORCE_NO_REANALYSIS"] == "true" {
+		fmt.Fprintln(os.Stderr, "Reanalysis will run due to build graph or product configuration change.")
+		os.Exit(1)
+	}
+
 	configuration, err := android.NewConfig(cmdlineArgs, availableEnv)
 	maybeQuit(err, "")
 	if configuration.Getenv("ALLOW_MISSING_DEPENDENCIES") == "true" {
@@ -350,6 +357,7 @@ func main() {
 		ctx.SetIncrementalProviderTest(incremental && cmdlineArgs.IncrementalProviderTest)
 	}
 	ctx.SetIncrementalAnalysis(incremental)
+	ctx.SetPartialAnalysisTargets(cmdlineArgs.PartialAnalysisTargets)
 	ctx.SetIncrementalDebugFile(cmdlineArgs.IncrementalDebugFile)
 
 	if configuration.Getenv("SOONG_SPLIT_ALL_VARIANTS") == "true" ||
