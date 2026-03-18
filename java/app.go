@@ -371,6 +371,12 @@ func (a *AndroidApp) DepsMutator(ctx android.BottomUpMutatorContext) {
 	for _, aconfig_declaration := range a.aaptProperties.Flags_packages {
 		ctx.AddDependency(ctx.Module(), aconfigDeclarationTag, aconfig_declaration)
 	}
+
+	// Only require APEX symbol tools if we are doing a full tree build,
+	// or if this app is explicitly requested in an unbundled build.
+	if !ctx.Config().UnbundledBuild() || slices.Contains(ctx.Config().UnbundledBuildApps(), a.Name()) {
+		ctx.AddHostToolDependencies("gen_apex_symbols", "dexdeps")
+	}
 }
 
 func (a *AndroidApp) OverridablePropertiesDepsMutator(ctx android.BottomUpMutatorContext) {
@@ -442,6 +448,10 @@ func (a *AndroidTestHelperApp) GenerateAndroidBuildActions(ctx android.ModuleCon
 			ctx.PropertyErrorf("manifest_values.applicationId", "property is not supported when property package_name is set.")
 		}
 		a.aapt.manifestValues.applicationId = *applicationId
+	}
+
+	if Bool(a.appTestHelperAppProperties.Enable_static_aconfig_pb) {
+		addStaticAconfigProto(ctx, &a.extraResources)
 	}
 	a.generateAndroidBuildActions(ctx)
 	ctx.SetTestModuleInfo(&android.TestModuleInformation{
@@ -1793,9 +1803,7 @@ func (a *AndroidTest) GenerateAndroidBuildActions(ctx android.ModuleContext) {
 	}
 
 	if Bool(a.testProperties.Enable_static_aconfig_pb) {
-		if pb := getCombinedAconfigProtoFile(ctx); pb != nil {
-			a.extraResources = append(a.extraResources, pb)
-		}
+		addStaticAconfigProto(ctx, &a.extraResources)
 	}
 
 	a.generateAndroidBuildActions(ctx)
@@ -2002,6 +2010,10 @@ type appTestHelperAppProperties struct {
 	Per_testcase_directory *bool
 
 	Manifest_values Manifest_values
+
+	// Whether to include a static aconfig pb as a test resource. If the pb is included and a
+	// flag is read-only, tests read the flag value from the static pb.
+	Enable_static_aconfig_pb *bool
 }
 
 type AndroidTestHelperApp struct {
