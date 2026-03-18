@@ -16,15 +16,19 @@ import argparse
 import os
 import sys
 import json
-from typing import Any
+from typing import Any, Optional
 import traceback
 from pathlib import Path
+import io
+import contextlib
 
 # Add the SDK root to sys.path for absolute imports
 # This file is in interface/cli.py, so root is two levels up
 sdk_root = Path(__file__).resolve().parent.parent
 if str(sdk_root) not in sys.path:
     sys.path.insert(0, str(sdk_root))
+
+from interface.errors import ToolError
 
 from api.env import BuildContext
 # Import defs to ensure tools are registered
@@ -131,16 +135,57 @@ def main() -> None:
         tool_args_obj = tool_def.args_model.from_dict(data)
 
         if hasattr(tool_args_obj, 'product') and hasattr(tool_args_obj, 'release') and hasattr(tool_args_obj, 'variant'):
-             ctx = BuildContext(tool_args_obj.product, tool_args_obj.release, tool_args_obj.variant)
+             args_env_vars = getattr(tool_args_obj, 'env_vars', None)
+             ctx = BuildContext(tool_args_obj.product, tool_args_obj.release, tool_args_obj.variant, args_env_vars)
         else:
-             raise ValueError(f"Tool arguments for '{args.command}' must contain product, release, and variant.")
+             raise ToolError(f"Tool arguments for '{args.command}' must contain product, release, and variant.")
 
-        tool_def.implementation(ctx, tool_args_obj)
+        output_text = ""
+        error_text = ""
+        f_out = io.StringIO()
+        f_err = io.StringIO()
+
+        def progress_callback(current: float, total: Optional[float] = None) -> None:
+            msg = {"mcp_type": "progress", "current": current}
+            if total is not None:
+                msg["total"] = total
+            sys.__stderr__.write(json.dumps(msg) + "\n")
+            sys.__stderr__.flush()
+
+        try:
+            with contextlib.redirect_stdout(f_out), contextlib.redirect_stderr(f_err):
+                try:
+                    result = tool_def.implementation(ctx, tool_args_obj, progress_callback=progress_callback)
+                except TypeError as e:
+                    if "unexpected keyword argument 'progress_callback'" in str(e):
+                        result = tool_def.implementation(ctx, tool_args_obj)
+                    else:
+                        raise e
+
+        finally:
+            output_text = f_out.getvalue()
+            error_text = f_err.getvalue()
+
+        # Build output envelope
+        response = {
+            "status": "success",
+            "result": result
+        }
+        if output_text:
+            response["stdout"] = output_text
+        if error_text:
+            response["stderr"] = error_text
+
+        print(json.dumps(response, indent=2))
+
     except Exception as e:
+        error_response = {
+            "status": "error",
+            "message": str(e)
+        }
         if debug_mode:
-            traceback.print_exc()
-        else:
-            print(f"Error executing command '{args.command}': {e}", file=sys.stderr)
+            error_response["traceback"] = traceback.format_exc()
+        print(json.dumps(error_response, indent=2))
         sys.exit(1)
 
 if __name__ == "__main__":
