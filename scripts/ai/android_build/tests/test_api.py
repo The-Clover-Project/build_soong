@@ -155,17 +155,37 @@ build nothing: phony
         self.assertFalse(result.success)
         self.assertEqual(result.exit_code, 1)
         self.assertIsNotNone(result.failure_details)
-        self.assertEqual(result.failure_details[0].message, "something broke") # type: ignore
+        self.assertEqual(result.failure_details[0].message, "compiler error") # type: ignore
 
     def test_parse_build_log_structured(self) -> None:
         raw_log = "FAILED: target\nError: compilation failed\nOutput:\nerror at line 1"
         result = parse_build_log(raw_log)
-        self.assertEqual(result[0].message, "compilation failed")
+        self.assertEqual(result[0].message, "error at line 1")
 
     def test_parse_build_log_unstructured(self) -> None:
         raw_log = "generic error"
         result = parse_build_log(raw_log)
         self.assertEqual(result[0].message, raw_log)
+
+    def test_parse_build_log_ansi(self) -> None:
+        # Siso log with ANSI codes and multiple lines of output
+        raw_log = (
+            "\x1b[31;1mFAILED: //.:target\x1b[0m\n"
+            "Output:\n"
+            "some_file.cpp:1:5: \x1b[31merror:\x1b[0m use of undeclared identifier 'x'\n"
+            "    1 | int x = y;\n"
+            "      |         ^\n"
+            "\n"
+            "\x1b[31;1mFAILED: //.:next_target\x1b[0m\n"
+        )
+        result = parse_build_log(raw_log)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].target, "//.:target")
+        self.assertIn("use of undeclared identifier 'x'", result[0].message)
+        self.assertIn("int x = y;", result[0].message)
+        # Ensure ANSI codes are stripped from fields
+        self.assertNotIn("\x1b[", result[0].target or "")
+        self.assertNotIn("\x1b[", result[0].message or "")
 
     @patch("subprocess.run")
     def test_get_build_vars(self, mock_run: MagicMock) -> None:

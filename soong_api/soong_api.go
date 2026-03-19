@@ -57,14 +57,19 @@ type SoongApiModuleRecord struct {
 	Variant       string `json:"variant,omitempty"`
 
 	// Status
-	Enabled bool `json:"enabled"`
+	Enabled *bool `json:"enabled,omitempty"`
 
 	// Artifacts
 	TrendyTeamId                     string   `json:"trendy_team_id,omitempty"`
 	InstallFiles                     []string `json:"install_files,omitempty"`
 	BuiltFiles                       []string `json:"built_files,omitempty"`
 	Licenses                         []string `json:"license,omitempty"`
+	LicenseKinds                     []string `json:"license_kinds,omitempty"`
+	LicenseText                      []string `json:"license_text,omitempty"`
+	LicensePackageName               string   `json:"license_package_name,omitempty"`
 	PackageDefaultApplicableLicenses []string `json:"package_default_applicable_licenses,omitempty"` // module_type=package
+	LicenseKindConditions            []string `json:"license_kind_conditions,omitempty"`
+	LicenseKindUrl                   string   `json:"license_kind_url,omitempty"`
 
 	// Test related
 	TestOnly       bool `json:"test_only,omitempty"`
@@ -106,13 +111,22 @@ func (c *soongApiSingleton) GenerateBuildActions(ctx android.SingletonContext) {
 			Name:          ctx.ModuleName(m),
 			Type:          ctx.ModuleType(m),
 			Path:          ctx.ModuleDir(m),
-			Enabled:       commonInfo.Enabled,
 			Variant:       ctx.ModuleSubDir(m),
 			IsPrimaryArch: ctx.IsPrimaryModule(m),
 		}
 
+		if !commonInfo.Enabled {
+			record.Enabled = proptools.BoolPtr(false)
+		}
+
 		if commonInfo.BaseModuleType != "" {
 			record.BaseType = commonInfo.BaseModuleType
+		}
+
+		if licInfo, ok := android.OtherModuleProvider(ctx, m, android.LicenseInfoProvider); ok {
+			record.LicensePackageName = proptools.String(licInfo.PackageName)
+			record.LicenseKinds = licInfo.EffectiveLicenseKinds
+			record.LicenseText = licInfo.EffectiveLicenseText.Strings()
 		}
 
 		if record.Type == "package" && commonInfo.PackageInfo != nil {
@@ -137,6 +151,11 @@ func (c *soongApiSingleton) GenerateBuildActions(ctx android.SingletonContext) {
 
 		if commonInfo.Licenses != nil {
 			record.Licenses = commonInfo.Licenses.Licenses
+		}
+
+		if kindInfo, ok := android.OtherModuleProvider(ctx, m, android.LicenseKindInfoProvider); ok {
+			record.LicenseKindConditions = kindInfo.Conditions
+			record.LicenseKindUrl = kindInfo.Url
 		}
 
 		if _, ok := android.OtherModuleProvider(ctx, m, java.JavaInfoProvider); ok {
